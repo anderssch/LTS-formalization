@@ -39,11 +39,11 @@ abbreviation
   step_star_trans ("(_\<Rightarrow>\<^sup>*_\<Rightarrow>\<^sup>*_)" 80) where 
   "c \<Rightarrow>\<^sup>* c' \<Rightarrow>\<^sup>* c'' \<equiv> (c \<Rightarrow>\<^sup>* c') \<and> (c' \<Rightarrow>\<^sup>* c'')"
 
-(* For a set of configurations C, post*(C) is the set of all configurations reachable from C. *) (* TODO: copy into LTS *)
+(* For a set of configurations C, post*(C) is the set of all configurations reachable from C. *)
 definition pds_post_star :: "'state set \<Rightarrow> 'state set" where
   "pds_post_star C \<equiv> {c'. \<exists>c \<in> C. c \<Rightarrow>\<^sup>* c'}"
 
-(* And pre*(C) is the set of all configurations that can reach a configuration in C. *)  (* TODO: copy into LTS *)
+(* And pre*(C) is the set of all configurations that can reach a configuration in C. *)
 definition pds_pre_star :: "'state set \<Rightarrow> 'state set" where
   "pds_pre_star C \<equiv> {c'. \<exists>c \<in> C. c' \<Rightarrow>\<^sup>* c}"
 
@@ -56,8 +56,11 @@ inductive_set spath :: "'state list set" where
 (* Labeled paths as defined in the thesis *)
 inductive_set lspath :: "('state * 'label list * 'state) set" where
   transition_star_refl[iff]: "(p, [], p) \<in> lspath"
-| transition_star_step: "\<lbrakk>(p,\<gamma>,q') \<in> t; (q',w,q) \<in> lspath\<rbrakk>
+| transition_star_step: "\<lbrakk>(p,\<gamma>,q') \<in> transition_relation; (q',w,q) \<in> lspath\<rbrakk>
                            \<Longrightarrow> (p, \<gamma>#w, q) \<in> lspath"
+
+inductive_cases lspath_empty [elim]: "(p, [], q) \<in> lspath"
+inductive_cases lspath_cons: "(p, \<gamma>#w, q) \<in> lspath"
 
 (* TODO: Prove correspondences between spath, path and lspath.
    "Lift" path's theorem to spath and lspath
@@ -65,6 +68,9 @@ inductive_set lspath :: "('state * 'label list * 'state) set" where
 
 abbreviation transition_star :: "('state \<times> 'label list \<times> 'state) set" where (* Morten terminology -- but I dropped the transition set *)
   "transition_star \<equiv> lspath"
+
+lemmas transition_star_empty = lspath_empty
+lemmas transition_star_cons = lspath_cons
 
 (* lemma transition_star_mono[mono]: "mono transition_star" *) (* Not possible with my definition of transition_star *)
 
@@ -141,8 +147,6 @@ interpretation transition_system_initial execute enabled initial .
 
 interpretation autom: LTS trans .
 
-
-
 fun accepts :: "('ctr_loc, 'label) conf \<Rightarrow> bool" where
   "accepts (p,l) \<longleftrightarrow> (\<exists>q \<in> F_locs. (p,l,q) \<in> autom.lspath)" 
 (* Here acceptance is defined for any p, but in the paper p has to be in P_locs *)
@@ -155,19 +159,33 @@ lemma accepts_cons: "(p, \<gamma>, q) \<in> trans \<Longrightarrow> accepts (q, 
   by (meson accepts.simps autom.lspath.intros(2))
 
 lemma accepts_unfold: "accepts (p, \<gamma> # w) \<Longrightarrow> \<exists>q. (p, \<gamma>, q) \<in> trans \<and> accepts (q, w)"
-proof -
-  assume "accepts (p, \<gamma> # w)"
-  then obtain q where "q \<in> F_locs \<and> (p,\<gamma> # w,q) \<in> autom.lspath"
-    by auto
-  find_theorems autom.lspath
+  by (meson accepts.simps autom.transition_star_cons)
 
-  have "(p, \<gamma>, q') \<in> trans \<and> accepts (q', w)"
-    sorry
+lemma accepts_unfoldn: "accepts (p, w' @ w) \<Longrightarrow> \<exists>q. (p, w', q) \<in> autom.transition_star \<and> accepts (q, w)"
+  apply (induct w' arbitrary: p w)
+   apply auto[1]
+  apply (metis accepts_unfold append_Cons autom.lspath.transition_star_step)
+  done
+
+lemma accepts_append: "\<lbrakk>(p, w', q) \<in> autom.transition_star; accepts (q, w)\<rbrakk> \<Longrightarrow> accepts (p, w' @ w)"
+  apply (induct w' arbitrary: w p q)
+   apply auto[1]
+  apply (metis LTS.transition_star_cons accepts_cons append_Cons)
+  done
+
+definition language :: "('ctr_loc, 'label) conf set" where
+  "language = {c. accepts c}"
+
+subsection \<open>pre star\<close>
+
+inductive saturation_rule :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where
+  "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> (p', w, q) \<in> "
+
   
-  show "\<exists>q. (p, \<gamma>, q) \<in> trans \<and> accepts (q, w)"
-    sorry
-qed
 
+
+
+    
 
 
 
