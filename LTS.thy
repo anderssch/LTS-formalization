@@ -1,7 +1,9 @@
 theory LTS imports Transition_Systems_and_Automata.Transition_System_Construction begin
 
-type_synonym ('state, 'label) transition = "'state * 'label * 'state"
 
+section \<open>LTS\<close>
+
+type_synonym ('state, 'label) transition = "'state * 'label * 'state"
 
 locale LTS =
   fixes transition_relation :: "('state, 'label) transition set"
@@ -17,29 +19,33 @@ fun enabled :: "('state, 'label) transition \<Rightarrow> 'state \<Rightarrow> b
 
 text \<open>We interpret transition_system_initial.\<close>
 
-interpretation ts: transition_system execute enabled .
-
-
-find_theorems execute
-
-text \<open>We "open" the interpretation.\<close>
-
-abbreviation successors :: "'state \<Rightarrow> 'state set" where
-   "successors == ts.successors"
-
-abbreviation path :: "('state, 'label) transition list \<Rightarrow> 'state \<Rightarrow> bool" where 
-  "path s p == ts.path s p" (* s is a path from p. *)
-
-abbreviation run :: "('state, 'label) transition stream \<Rightarrow> 'state \<Rightarrow> bool" where 
-  "run == ts.run"
-
-abbreviation reachable :: "'state \<Rightarrow> 'state set" where
-  "reachable == ts.reachable"
-
-abbreviation reachablep :: "'state \<Rightarrow> 'state \<Rightarrow> bool" where
-  "reachablep == ts.reachablep"
+interpretation transition_system execute enabled .
 
 text \<open>More definitions.\<close>
+
+abbreviation step_starp (infix "\<Rightarrow>\<^sup>*" 80) where
+  "step_starp == reachablep"  (* Morten/Stefan terminology *) 
+
+definition step_relp  :: "'state \<Rightarrow> 'state \<Rightarrow> bool" (infix "\<Rightarrow>" 80) where
+  "c \<Rightarrow> c' \<equiv> c' \<in> successors c"
+
+definition step_rel :: "'state rel" where 
+  "step_rel \<equiv> {(c, c'). step_relp c c'}"
+
+definition step_star :: "'state rel" where 
+  "step_star \<equiv> {(c, c'). step_starp c c'}"
+
+abbreviation
+  step_star_trans ("(_\<Rightarrow>\<^sup>*_\<Rightarrow>\<^sup>*_)" 80) where 
+  "c \<Rightarrow>\<^sup>* c' \<Rightarrow>\<^sup>* c'' \<equiv> (c \<Rightarrow>\<^sup>* c') \<and> (c' \<Rightarrow>\<^sup>* c'')"
+
+(* For a set of configurations C, post*(C) is the set of all configurations reachable from C. *) (* TODO: copy into LTS *)
+definition pds_post_star :: "'state set \<Rightarrow> 'state set" where
+  "pds_post_star C \<equiv> {c'. \<exists>c \<in> C. c \<Rightarrow>\<^sup>* c'}"
+
+(* And pre*(C) is the set of all configurations that can reach a configuration in C. *)  (* TODO: copy into LTS *)
+definition pds_pre_star :: "'state set \<Rightarrow> 'state set" where
+  "pds_pre_star C \<equiv> {c'. \<exists>c \<in> C. c' \<Rightarrow>\<^sup>* c}"
 
 (* Paths as defined in the thesis: *)
 inductive_set spath :: "'state list set" where
@@ -64,20 +70,21 @@ abbreviation transition_star :: "('state \<times> 'label list \<times> 'state) s
 
 end
 
+section\<open>LTS init\<close>
+
 locale LTS_init = LTS transition_relation for transition_relation :: "('state, 'label) transition set" +
   fixes r :: 'state
 begin
 
-text \<open>We interpret transition_system_initial.\<close>
+abbreviation initial where "initial == (\<lambda>r'. r' = r)"
 
-interpretation ts: transition_system_initial execute enabled "\<lambda>r'. r' = r" .
+interpretation ts: transition_system execute enabled .
 
-text \<open>We "open" the interpretation.\<close>
-
-abbreviation nodes :: "'state set" where
-  "nodes == ts.nodes"
+interpretation tsi: transition_system_initial execute enabled initial .
 
 end
+
+section \<open>PDS\<close>
 
 datatype 'label operation = pop | swap 'label | push 'label 'label
 type_synonym ('ctr_loc, 'label) rule = "('ctr_loc \<times> 'label) \<times> ('ctr_loc \<times> 'label operation)"
@@ -108,73 +115,13 @@ definition is_rule :: "'ctr_loc \<times> 'label \<Rightarrow> 'ctr_loc \<times> 
 inductive_set transition_rel :: "(('ctr_loc, 'label) conf \<times> 'label \<times> ('ctr_loc, 'label) conf) set" where
   "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> ((p, \<gamma>#w'), \<gamma>, (p', (op_labels w)@w')) \<in> transition_rel"
 
-text \<open>We interpret LTS.\<close>
-
-interpretation pds: LTS_init transition_rel c0 .
-(* Det er måske lidt problematisk at P_locs ikke bliver sendt der ind. *)
-
-text \<open>We "open" the interpretation.\<close>
-
-abbreviation pds_execute :: "(('ctr_loc, 'label) conf, 'label) transition \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> ('ctr_loc, 'label) conf" where
-  "pds_execute == pds.execute"
-
-abbreviation pds_enabled :: "(('ctr_loc, 'label) conf, 'label) transition \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
-  "pds_enabled == pds.enabled"
-
-abbreviation pds_successors :: "('ctr_loc, 'label) conf \<Rightarrow> ('ctr_loc, 'label) conf set" where
-  "pds_successors == pds.successors"
-
-abbreviation "pds_step == pds_successors" (* Morten/Stefan terminology *)
-
-abbreviation pds_path :: "(('ctr_loc, 'label) conf, 'label) transition list \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
-  "pds_path == pds.path"
-
-abbreviation pds_run :: "(('ctr_loc, 'label) conf, 'label) transition stream \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
-  "pds_run == pds.run"
-
-abbreviation pds_reachable :: "('ctr_loc, 'label) conf \<Rightarrow> ('ctr_loc, 'label) conf set" where
-  "pds_reachable == pds.reachable"
-
-abbreviation pds_reachablep :: "('ctr_loc, 'label) conf \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" (infix "\<Rightarrow>\<^sup>*" 80) where
-  "c \<Rightarrow>\<^sup>* c' == pds.reachablep c c'"
-
-
-abbreviation pds_nodes :: "('ctr_loc, 'label) conf set" where
-  "pds_nodes == pds.nodes"
-
-definition pds_step_relp  :: "('ctr_loc, 'label) conf \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" (infix "\<Rightarrow>" 80) where
-  "c \<Rightarrow> c' \<equiv> c' \<in> pds_successors c"
-
-definition psd_spath :: " ('ctr_loc, 'label) conf list set" where
-  "psd_spath \<equiv> pds.spath"
-
-definition psd_lspath :: "(('ctr_loc, 'label) conf \<times> 'label list \<times> ('ctr_loc, 'label) conf) set" where
-  "psd_lspath \<equiv> pds.lspath"
-
-
-text \<open>More definitions\<close>
-
-abbreviation "pds_step_starp == pds_reachablep" (* Morten/Stefan terminology *) (* TODO: copy into LTS *)
-
-definition pds_step_rel :: "('ctr_loc, 'label) conf rel" where (* TODO: copy into LTS *)
-  "pds_step_rel \<equiv> {(c, c'). pds_step_relp c c'}"
-
-definition pds_step_star :: "('ctr_loc, 'label) conf rel" where (* TODO: copy into LTS *)
-  "pds_step_star \<equiv> {(c, c'). pds_step_starp c c'}"
-
-abbreviation
-  pds_step_star_trans ("(_\<Rightarrow>\<^sup>*_\<Rightarrow>\<^sup>*_)" 80) where (* TODO: copy into LTS *)
-  "c \<Rightarrow>\<^sup>* c' \<Rightarrow>\<^sup>* c'' \<equiv> (c \<Rightarrow>\<^sup>* c') \<and> (c' \<Rightarrow>\<^sup>* c'')"
-
-(* For a set of configurations C, post*(C) is the set of all configurations reachable from C. *) (* TODO: copy into LTS *)
-definition pds_post_star :: "('ctr_loc, 'label) conf set \<Rightarrow> ('ctr_loc, 'label) conf set" where
-  "pds_post_star C \<equiv> {c'. \<exists>c \<in> C. c \<Rightarrow>\<^sup>* c'}"
-
-(* And pre*(C) is the set of all configurations that can reach a configuration in C. *)  (* TODO: copy into LTS *)
-definition pds_pre_star :: "('ctr_loc, 'label) conf set \<Rightarrow> ('ctr_loc, 'label) conf set" where
-  "pds_pre_star C \<equiv> {c'. \<exists>c \<in> C. c' \<Rightarrow>\<^sup>* c}"
+interpretation LTS_init transition_rel c0 .
+interpretation transition_system execute enabled .
+interpretation transition_system_initial execute enabled initial .
 
 end
+
+section \<open>PDS with P automaton\<close>
 
 locale PDS_with_P_automaton = PDS P_locs \<Gamma>
   for P_locs :: "'ctr_loc set" 
@@ -188,44 +135,16 @@ locale PDS_with_P_automaton = PDS P_locs \<Gamma>
     and "F_locs \<subseteq> Q_locs"
 begin
 
+interpretation LTS_init transition_rel c0 .
+interpretation transition_system execute enabled .
+interpretation transition_system_initial execute enabled initial .
+
 interpretation autom: LTS trans .
 
 
-text \<open>We "open" the interpretation.\<close>
-abbreviation autom_execute :: "('ctr_loc, 'label) transition \<Rightarrow> 'ctr_loc \<Rightarrow> 'ctr_loc" where 
-  "autom_execute \<equiv> autom.execute"
-
-abbreviation autom_enabled :: "('ctr_loc, 'label) transition \<Rightarrow> 'ctr_loc \<Rightarrow> bool" where 
-  "autom_enabled  \<equiv> autom.enabled"
-
-abbreviation autom_successors :: "'ctr_loc \<Rightarrow> 'ctr_loc set" where 
-   "autom_successors \<equiv> autom.successors"
-
-abbreviation autom_path :: "('ctr_loc, 'label) transition list \<Rightarrow> 'ctr_loc \<Rightarrow> bool" where
-  "autom_path \<equiv> autom.path"
-
-abbreviation autom_run  :: "('ctr_loc, 'label) transition stream \<Rightarrow> 'ctr_loc \<Rightarrow> bool" where
-  "autom_run \<equiv> autom.run"
-
-abbreviation autom_reachable :: "'ctr_loc \<Rightarrow> 'ctr_loc set" where
-  "autom_reachable \<equiv> autom.reachable"
-
-abbreviation autom_reachablep :: "'ctr_loc \<Rightarrow> 'ctr_loc \<Rightarrow> bool" where 
-  "autom_reachablep \<equiv> autom.reachablep"
-
-abbreviation autom_spath :: "'ctr_loc list set" where
-  "autom_spath \<equiv> autom.spath"
-
-abbreviation autom_lspath :: "('ctr_loc * 'label list * 'ctr_loc) set" where
-  "autom_lspath \<equiv> autom.lspath"
-
-abbreviation autom_transition_star :: "('ctr_loc \<times> 'label list \<times> 'ctr_loc) set" where 
-  "autom_transition_star \<equiv> autom.transition_star"
-
-text \<open>More definitions\<close>
 
 fun accepts :: "('ctr_loc, 'label) conf \<Rightarrow> bool" where
-  "accepts (p,l) \<longleftrightarrow> (\<exists>q \<in> F_locs. (p,l,q) \<in> autom_lspath)" 
+  "accepts (p,l) \<longleftrightarrow> (\<exists>q \<in> F_locs. (p,l,q) \<in> autom.lspath)" 
 (* Here acceptance is defined for any p, but in the paper p has to be in P_locs *)
 
 (* Potentially useful lemmas. *)
@@ -238,11 +157,12 @@ lemma accepts_cons: "(p, \<gamma>, q) \<in> trans \<Longrightarrow> accepts (q, 
 lemma accepts_unfold: "accepts (p, \<gamma> # w) \<Longrightarrow> \<exists>q. (p, \<gamma>, q) \<in> trans \<and> accepts (q, w)"
 proof -
   assume "accepts (p, \<gamma> # w)"
-  then obtain q where "q \<in> F_locs \<and> (p,\<gamma> # w,q) \<in> autom_lspath"
+  then obtain q where "q \<in> F_locs \<and> (p,\<gamma> # w,q) \<in> autom.lspath"
     by auto
-  find_theorems autom_lspath
+  find_theorems autom.lspath
 
   have "(p, \<gamma>, q') \<in> trans \<and> accepts (q', w)"
+    sorry
   
   show "\<exists>q. (p, \<gamma>, q) \<in> trans \<and> accepts (q, w)"
     sorry
