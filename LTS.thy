@@ -208,7 +208,7 @@ next
   then show ?case by (metis LTS.lspath.transition_star_step accepts_unfold append_Cons)
 qed
 
-lemma accepts_append: "\<lbrakk>(p, w', q) \<in> LTS.transition_star ts; accepts ts (q, w)\<rbrakk> \<Longrightarrow> accepts ts (p, w' @ w)"
+lemma accepts_append: "(p, w', q) \<in> LTS.transition_star ts \<Longrightarrow> accepts ts (q, w) \<Longrightarrow> accepts ts (p, w' @ w)"
 proof (induct w' arbitrary: w p q)
   case Nil
   then show ?case 
@@ -224,8 +224,10 @@ definition language :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_lo
 
 subsection \<open>pre star\<close>
 
+(* pre_star_step' *)
 inductive saturation_rule :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where
   "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> (p', op_labels w, q) \<in> LTS.transition_star ts \<Longrightarrow> (p', \<gamma>, q) \<notin> ts \<Longrightarrow> saturation_rule ts (ts \<union> {(p', \<gamma>, q)})"
+
 
 lemma saturation_rule_mono:
   "saturation_rule ts ts' \<Longrightarrow> ts \<subset> ts'"
@@ -308,6 +310,8 @@ TODO: Prove that saturations are unique. (Priority 2)
 TODO: Prove more theorems from the book. (Priority 1)
 
 *)
+
+
 
 
 
