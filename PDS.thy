@@ -1,4 +1,4 @@
-theory LTS imports Transition_Systems_and_Automata.Transition_System_Construction begin
+theory PDS imports Transition_Systems_and_Automata.Transition_System_Construction begin
 
 
 section \<open>LTS\<close>
@@ -24,10 +24,24 @@ interpretation transition_system execute enabled .
 text \<open>More definitions.\<close>
 
 abbreviation step_starp (infix "\<Rightarrow>\<^sup>*" 80) where
-  "step_starp == reachablep"  (* Morten/Stefan terminology *) 
+  "step_starp == reachablep" (* Morten/Stefan terminology *) 
 
 definition step_relp  :: "'state \<Rightarrow> 'state \<Rightarrow> bool" (infix "\<Rightarrow>" 80) where
   "c \<Rightarrow> c' \<equiv> c' \<in> successors c"
+
+lemma "step_relp\<^sup>*\<^sup>* c c' \<longleftrightarrow> reachablep c c'"
+  apply rule
+  subgoal
+    apply (induction rule: rtranclp_induct)
+     apply blast
+    apply (meson reachable_successors reachable_trans reachablep_reachable_eq step_relp_def subsetD)
+    done
+  subgoal
+    apply (induction rule: reachablep.induct)
+     apply simp
+    apply (metis (mono_tags, lifting) mem_Collect_eq rtranclp.rtrancl_into_rtrancl step_relp_def)
+    done
+  done
 
 definition step_rel :: "'state rel" where 
   "step_rel \<equiv> {(c, c'). step_relp c c'}"
@@ -141,9 +155,14 @@ locale PDS_with_P_automaton = PDS P_locs \<Delta>
     and "F_locs \<subseteq> Q_locs"
 begin
 
-interpretation pds: LTS_init transition_rel c0 .
-interpretation transition_system pds.execute pds.enabled .
-interpretation transition_system_initial pds.execute pds.enabled pds.initial .
+interpretation LTS_init transition_rel c0 .
+interpretation transition_system execute enabled .
+interpretation transition_system_initial execute enabled initial .
+
+(* BEGIN "IMPORT NOTATION" *)
+abbreviation step_starp_notation (infix "\<Rightarrow>\<^sup>*" 80) where
+  "step_starp_notation == reachablep"
+(* END "IMPORT NOTATION" *)
 
 fun accepts :: "('ctr_loc \<times> 'label \<times> 'ctr_loc) set \<Rightarrow> 'ctr_loc \<times> 'label list \<Rightarrow> bool" where
   "accepts ts (p,l) \<longleftrightarrow> (\<exists>q \<in> F_locs. (p,l,q) \<in> LTS.lspath ts)"
@@ -226,15 +245,20 @@ subsection \<open>pre star\<close>
 
 (* pre_star_step' *)
 inductive saturation_rule :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where
-  "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> (p', op_labels w, q) \<in> LTS.transition_star ts \<Longrightarrow> (p', \<gamma>, q) \<notin> ts \<Longrightarrow> saturation_rule ts (ts \<union> {(p', \<gamma>, q)})"
+  add_trans: "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> (p', op_labels w, q) \<in> LTS.transition_star ts \<Longrightarrow> (p', \<gamma>, q) \<notin> ts \<Longrightarrow> saturation_rule ts (ts \<union> {(p', \<gamma>, q)})"
 
+abbreviation "pre_star' \<equiv> saturation_rule\<^sup>*\<^sup>*" 
 
 lemma saturation_rule_mono:
   "saturation_rule ts ts' \<Longrightarrow> ts \<subset> ts'"
   unfolding saturation_rule.simps by auto
 
+definition saturated :: "('ctr_loc, 'label) transition set \<Rightarrow> bool" where
+  "saturated ts \<longleftrightarrow> (\<nexists>ts'. saturation_rule ts ts')"
+
 definition saturation :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where
-  "saturation ts ts' \<longleftrightarrow> rtranclp saturation_rule ts ts' \<and> (\<nexists>ts''. saturation_rule ts' ts'')"
+  "saturation ts ts' \<longleftrightarrow> saturation_rule\<^sup>*\<^sup>* ts ts' \<and> saturated ts'"
+
 
 lemma saturation_rule_card_Suc: "saturation_rule ts ts' \<Longrightarrow> card ts' = Suc (card ts)"
   unfolding saturation_rule.simps by auto
@@ -275,14 +299,14 @@ proof (rule ccontr) (* TODO: it would be nice to avoid ccontr *)
   assume a: "\<nexists>ts'. saturation ts ts'"
   define g where "g ts = (SOME ts'. saturation_rule ts ts')" for ts
   define tts where "tts i = (g ^^ i) ts" for i
-  have "\<forall>i :: nat. rtranclp saturation_rule ts (tts i) \<and> saturation_rule (tts i) (tts (Suc i))"
+  have "\<forall>i :: nat. saturation_rule\<^sup>*\<^sup>* ts (tts i) \<and> saturation_rule (tts i) (tts (Suc i))"
   proof 
     fix i
     show "saturation_rule\<^sup>*\<^sup>* ts (tts i) \<and> saturation_rule (tts i) (tts (Suc i))"
     proof (induction i)
       case 0
       have "saturation_rule ts (g ts)"
-        by (metis g_def a rtranclp.rtrancl_refl saturation_def someI)
+        by (metis g_def a rtranclp.rtrancl_refl saturation_def saturated_def someI)
       then show ?case
         using tts_def a saturation_def by auto 
     next
@@ -290,7 +314,7 @@ proof (rule ccontr) (* TODO: it would be nice to avoid ccontr *)
       then have sat_Suc: "saturation_rule\<^sup>*\<^sup>* ts (tts (Suc i))"
         by fastforce
       then have "saturation_rule (g ((g ^^ i) ts)) (g (g ((g ^^ i) ts)))"
-        by (metis Suc.IH tts_def g_def a r_into_rtranclp rtranclp_trans saturation_def someI)
+        by (metis Suc.IH tts_def g_def a r_into_rtranclp rtranclp_trans saturation_def saturated_def someI)
       then have "saturation_rule (tts (Suc i)) (tts (Suc (Suc i)))"
         unfolding tts_def by simp
       then show ?case
@@ -311,6 +335,49 @@ TODO: Prove more theorems from the book. (Priority 1)
 
 *)
 
+lemma saturation_rule_incr: "saturation_rule A B \<Longrightarrow> A \<subseteq> B"
+proof(induction rule: saturation_rule.inducts)
+  case (add_trans p \<gamma> p' w q rel)
+  then show ?case 
+    by auto
+qed
+
+lemma saturation_rtranclp_rule_incr: "saturation_rule\<^sup>*\<^sup>* A B \<Longrightarrow> A \<subseteq> B"
+ proof (induction rule: rtranclp_induct)
+  case base
+  then show ?case by auto
+next
+  case (step y z)
+  then show ?case
+    using saturation_rule_incr by auto
+qed
+
+lemma pre_star'_incr_transition_star:
+  "pre_star' A A' \<Longrightarrow> LTS.transition_star A \<subseteq> LTS.transition_star A'"
+  using mono_def LTS_lspath_mono saturation_rtranclp_rule_incr by metis
+  
+lemma pre_star_lim'_incr_transition_star:
+  "saturation A A' \<Longrightarrow> LTS.transition_star A \<subseteq> LTS.transition_star A'"
+  by (simp add: pre_star'_incr_transition_star saturation_def)
+
+lemma lemma_3_1':
+  assumes "(p',w) \<Rightarrow>\<^sup>* (p,v)"
+      and "(p,v) \<in> language A"
+      and "pre_star_lim' A A'"
+    shows "accepts A' (p',w)"
+  using assms 
+proof(induction)
+  case reflexive
+  then show ?case sorry
+next
+  case (execute q a)
+  then show ?case sorry
+qed
+
+find_theorems reachablep
+
+
+  
 
 
 
