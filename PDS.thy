@@ -1,4 +1,4 @@
-theory PDS imports Transition_Systems_and_Automata.Transition_System_Construction begin
+theory PDS imports Main begin
 
 
 section \<open>LTS\<close>
@@ -9,39 +9,13 @@ locale LTS =
   fixes transition_relation :: "('state, 'label) transition set"
 begin
 
-text \<open>We define execution and what it means to be enabled.\<close>
-
-fun execute :: "('state, 'label) transition \<Rightarrow> 'state \<Rightarrow> 'state" where 
-  "execute (s, l, s') s'' = s'"
-
-fun enabled :: "('state, 'label) transition \<Rightarrow> 'state \<Rightarrow> bool" where
-  "enabled (s, l, s') s'' \<longleftrightarrow> (s, l, s') \<in> transition_relation \<and> s = s''"
-
-text \<open>We interpret transition_system_initial.\<close>
-
-interpretation transition_system execute enabled .
-
 text \<open>More definitions.\<close>
 
-abbreviation step_starp (infix "\<Rightarrow>\<^sup>*" 80) where
-  "step_starp == reachablep" (* Morten/Stefan terminology *) 
-
 definition step_relp  :: "'state \<Rightarrow> 'state \<Rightarrow> bool" (infix "\<Rightarrow>" 80) where
-  "c \<Rightarrow> c' \<equiv> c' \<in> successors c"
+  "c \<Rightarrow> c' \<equiv> \<exists>l. (c, l, c') \<in> transition_relation"
 
-lemma "step_relp\<^sup>*\<^sup>* c c' \<longleftrightarrow> reachablep c c'"
-  apply rule
-  subgoal
-    apply (induction rule: rtranclp_induct)
-     apply blast
-    apply (meson reachable_successors reachable_trans reachablep_reachable_eq step_relp_def subsetD)
-    done
-  subgoal
-    apply (induction rule: reachablep.induct)
-     apply simp
-    apply (metis (mono_tags, lifting) mem_Collect_eq rtranclp.rtrancl_into_rtrancl step_relp_def)
-    done
-  done
+abbreviation step_starp (infix "\<Rightarrow>\<^sup>*" 80) where
+  "step_starp == step_relp\<^sup>*\<^sup>*" (* Morten/Stefan terminology *) 
 
 definition step_rel :: "'state rel" where 
   "step_rel \<equiv> {(c, c'). step_relp c c'}"
@@ -62,26 +36,28 @@ definition pds_pre_star :: "'state set \<Rightarrow> 'state set" where
   "pds_pre_star C \<equiv> {c'. \<exists>c \<in> C. c' \<Rightarrow>\<^sup>* c}"
 
 (* Paths as defined in the thesis: *)
-inductive_set spath :: "'state list set" where
-  "[] \<in> spath"
-| "[s] \<in> spath"
-| "(s'#ss) \<in> spath \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss) \<in> spath"
+inductive_set path :: "'state list set" where
+  "[] \<in> path"
+| "[s] \<in> path"
+| "(s'#ss) \<in> path \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss) \<in> path"
 
 (* Labeled paths as defined in the thesis *)
-inductive_set lspath :: "('state * 'label list * 'state) set" where
-  transition_star_refl[iff]: "(p, [], p) \<in> lspath"
-| transition_star_step: "\<lbrakk>(p,\<gamma>,q') \<in> transition_relation; (q',w,q) \<in> lspath\<rbrakk>
-                           \<Longrightarrow> (p, \<gamma>#w, q) \<in> lspath"
+inductive_set lpath :: "('state * 'label list * 'state) set" where
+  transition_star_refl[iff]: "(p, [], p) \<in> lpath"
+| transition_star_step: "\<lbrakk>(p,\<gamma>,q') \<in> transition_relation; (q',w,q) \<in> lpath\<rbrakk>
+                           \<Longrightarrow> (p, \<gamma>#w, q) \<in> lpath"
 
-inductive_cases lspath_empty [elim]: "(p, [], q) \<in> lspath"
-inductive_cases lspath_cons: "(p, \<gamma>#w, q) \<in> lspath"
+term rtranclp
+
+inductive_cases lspath_empty [elim]: "(p, [], q) \<in> lpath"
+inductive_cases lspath_cons: "(p, \<gamma>#w, q) \<in> lpath"
 
 (* TODO: Prove correspondences between spath, path and lspath.
    "Lift" path's theorem to spath and lspath
  *)
 
 abbreviation transition_star :: "('state \<times> 'label list \<times> 'state) set" where (* Morten terminology -- but I dropped the transition set *)
-  "transition_star \<equiv> lspath"
+  "transition_star \<equiv> lpath"
 
 lemmas transition_star_empty = lspath_empty
 lemmas transition_star_cons = lspath_cons
@@ -95,10 +71,6 @@ locale LTS_init = LTS transition_relation for transition_relation :: "('state, '
 begin
 
 abbreviation initial where "initial == (\<lambda>r'. r' = r)"
-
-interpretation ts: transition_system execute enabled .
-
-interpretation tsi: transition_system_initial execute enabled initial .
 
 end
 
@@ -134,8 +106,6 @@ inductive_set transition_rel :: "(('ctr_loc, 'label) conf \<times> 'label \<time
   "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> ((p, \<gamma>#w'), \<gamma>, (p', (op_labels w)@w')) \<in> transition_rel"
 
 interpretation LTS_init transition_rel c0 .
-interpretation transition_system execute enabled .
-interpretation transition_system_initial execute enabled initial .
 
 lemma finite_P_locs: "finite P_locs"
   by simp  
@@ -156,40 +126,38 @@ locale PDS_with_P_automaton = PDS P_locs \<Delta>
 begin
 
 interpretation LTS_init transition_rel c0 .
-interpretation transition_system execute enabled .
-interpretation transition_system_initial execute enabled initial .
 
 (* BEGIN "IMPORT NOTATION" *)
 abbreviation step_starp_notation (infix "\<Rightarrow>\<^sup>*" 80) where
-  "step_starp_notation == reachablep"
-(* END "IMPORT NOTATION" *)
+  "step_starp_notation == step_starp"
+  (* END "IMPORT NOTATION" *)
 
-fun accepts :: "('ctr_loc \<times> 'label \<times> 'ctr_loc) set \<Rightarrow> 'ctr_loc \<times> 'label list \<Rightarrow> bool" where
-  "accepts ts (p,l) \<longleftrightarrow> (\<exists>q \<in> F_locs. (p,l,q) \<in> LTS.lspath ts)"
+definition accepts :: "('ctr_loc \<times> 'label \<times> 'ctr_loc) set \<Rightarrow> 'ctr_loc \<times> 'label list \<Rightarrow> bool" where
+  "accepts ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,q) \<in> LTS.lpath ts)"
   (* Here acceptance is defined for any p, but in the paper p has to be in P_locs *)
 
 lemma LTS_lspath_mono: (* Move *)
-  "mono LTS.lspath"
+  "mono LTS.lpath"
 proof (rule, rule)
   fix pwq :: "'a \<times> 'b list \<times> 'a"
   fix ts ts' :: "('a, 'b) transition set"
   assume sub: "ts \<subseteq> ts'"
-  assume awb_ts: "pwq \<in> LTS.lspath ts"
+  assume awb_ts: "pwq \<in> LTS.lpath ts"
   then obtain p w q where pwq_p: "pwq = (p, w, q)"
     using prod_cases3 by blast
-  then have "(p, w, q) \<in> LTS.lspath ts"
+  then have "(p, w, q) \<in> LTS.lpath ts"
     using awb_ts by auto
-  then have "(p, w, q) \<in>  LTS.lspath ts'"
+  then have "(p, w, q) \<in>  LTS.lpath ts'"
   proof(induction w arbitrary: p)
     case Nil
     then show ?case
-      by (metis LTS.lspath.transition_star_refl LTS.transition_star_empty)
+      by (metis LTS.lpath.transition_star_refl LTS.transition_star_empty)
   next
     case (Cons \<gamma> w)
     then show ?case
-      by (meson LTS.lspath.simps LTS.transition_star_cons sub subsetD)
+      by (meson LTS.lpath.simps LTS.transition_star_cons sub subsetD)
   qed
-  then show "pwq \<in> LTS.lspath ts'"
+  then show "pwq \<in> LTS.lpath ts'"
     unfolding pwq_p .
 qed
 
@@ -201,30 +169,31 @@ proof (rule, rule)
   assume tsts': "ts \<subseteq> ts'"
   obtain p l where pl_p: "c = (p,l)"
     by (cases c)
-  obtain q where q_p:  "q \<in> F_locs \<and> (p, l, q) \<in> LTS.lspath ts"
-    using accepts_xa unfolding pl_p accepts.simps by auto
-  then have "(p, l, q) \<in> LTS.lspath ts'"
+  obtain q where q_p:  "q \<in> F_locs \<and> (p, l, q) \<in> LTS.lpath ts"
+    using accepts_xa unfolding pl_p accepts_def by auto
+  then have "(p, l, q) \<in> LTS.lpath ts'"
     using tsts' LTS_lspath_mono monoD by blast 
   then have "accepts ts' (p,l)"
-    unfolding accepts.simps using q_p by auto
+    unfolding accepts_def using q_p by auto
   then show "accepts ts' c"
     unfolding pl_p .
 qed
 
 lemma accepts_cons: "(p, \<gamma>, q) \<in> ts \<Longrightarrow> accepts ts (q, w) \<Longrightarrow> accepts ts (p, \<gamma> # w)"
-  by (meson LTS.lspath.transition_star_step PDS_with_P_automaton.accepts.simps PDS_with_P_automaton_axioms)
+  using LTS.lpath.transition_star_step accepts_def PDS_with_P_automaton_axioms by fastforce
+
 
 
 lemma accepts_unfold: "accepts ts (p, \<gamma> # w) \<Longrightarrow> \<exists>q. (p, \<gamma>, q) \<in> ts \<and> accepts ts (q, w)"
-  by (meson LTS.transition_star_cons accepts.simps)
+  using LTS.transition_star_cons accepts_def case_prod_conv by force 
 
 lemma accepts_unfoldn: "accepts ts (p, w' @ w) \<Longrightarrow> \<exists>q. (p, w', q) \<in> LTS.transition_star ts \<and> accepts ts (q, w)"
 proof (induct w' arbitrary: p w)
   case Nil
-  then show ?case by (metis LTS.lspath.transition_star_refl append_Nil)
+  then show ?case by (metis LTS.lpath.transition_star_refl append_Nil)
 next
   case (Cons a w')
-  then show ?case by (metis LTS.lspath.transition_star_step accepts_unfold append_Cons)
+  then show ?case by (metis LTS.lpath.transition_star_step accepts_unfold append_Cons)
 qed
 
 lemma accepts_append: "(p, w', q) \<in> LTS.transition_star ts \<Longrightarrow> accepts ts (q, w) \<Longrightarrow> accepts ts (p, w' @ w)"
@@ -245,7 +214,7 @@ subsection \<open>pre star\<close>
 
 (* pre_star_step' *)
 inductive saturation_rule :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where
-  add_trans: "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> (p', op_labels w, q) \<in> LTS.transition_star ts \<Longrightarrow> (p', \<gamma>, q) \<notin> ts \<Longrightarrow> saturation_rule ts (ts \<union> {(p', \<gamma>, q)})"
+  add_trans: "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> (p', op_labels w, q) \<in> LTS.transition_star ts \<Longrightarrow> (p, \<gamma>, q) \<notin> ts \<Longrightarrow> saturation_rule ts (ts \<union> {(p, \<gamma>, q)})"
 
 abbreviation "pre_star' \<equiv> saturation_rule\<^sup>*\<^sup>*" 
 
@@ -291,7 +260,7 @@ proof -
 qed
 
 lemma saturation_termination: (* Maybe lazy lists are better? *)
-   "\<not>(\<exists>tts. (\<forall>i :: nat. saturation_rule (tts i) (tts (Suc i))))"
+  "\<not>(\<exists>tts. (\<forall>i :: nat. saturation_rule (tts i) (tts (Suc i))))"
   using no_infinite by presburger
 
 lemma saturation_exi: "\<exists>ts'. saturation ts ts'"
@@ -318,9 +287,9 @@ proof (rule ccontr) (* TODO: it would be nice to avoid ccontr *)
       then have "saturation_rule (tts (Suc i)) (tts (Suc (Suc i)))"
         unfolding tts_def by simp
       then show ?case
-         using sat_Suc by auto
-     qed
-   qed
+        using sat_Suc by auto
+    qed
+  qed
   then have "\<forall>i. saturation_rule (tts i) (tts (Suc i))"
     by auto
   then show False
@@ -343,7 +312,7 @@ proof(induction rule: saturation_rule.inducts)
 qed
 
 lemma saturation_rtranclp_rule_incr: "saturation_rule\<^sup>*\<^sup>* A B \<Longrightarrow> A \<subseteq> B"
- proof (induction rule: rtranclp_induct)
+proof (induction rule: rtranclp_induct)
   case base
   then show ?case by auto
 next
@@ -355,29 +324,79 @@ qed
 lemma pre_star'_incr_transition_star:
   "pre_star' A A' \<Longrightarrow> LTS.transition_star A \<subseteq> LTS.transition_star A'"
   using mono_def LTS_lspath_mono saturation_rtranclp_rule_incr by metis
-  
+
 lemma pre_star_lim'_incr_transition_star:
   "saturation A A' \<Longrightarrow> LTS.transition_star A \<subseteq> LTS.transition_star A'"
   by (simp add: pre_star'_incr_transition_star saturation_def)
 
+lemma transition_star_split:
+  assumes "(p'', u1 @ w1, q) \<in> LTS.transition_star A'"
+  shows "\<exists>q1. (p'', u1, q1) \<in> LTS.transition_star A' \<and> (q1, w1, q) \<in> LTS.transition_star A'"
+  sorry
+
 lemma lemma_3_1':
   assumes "(p',w) \<Rightarrow>\<^sup>* (p,v)"
-      and "(p,v) \<in> language A"
-      and "pre_star_lim' A A'"
-    shows "accepts A' (p',w)"
+    and "(p,v) \<in> language A"
+    and "saturation A A'"
+  shows "accepts A' (p',w)"
   using assms 
-proof(induction)
-  case reflexive
-  then show ?case sorry
+proof (induct rule: converse_rtranclp_induct)
+  case base
+  then have "\<exists>q \<in> F_locs. (p, v, q) \<in> LTS.transition_star A'"
+    unfolding language_def using pre_star_lim'_incr_transition_star accepts_def by fastforce 
+  then show ?case
+    unfolding accepts_def by auto
 next
-  case (execute q a)
-  then show ?case sorry
+  case (step p'w p''u)
+  define p' where "p' = fst p'w"
+  define w  where "w = snd p'w"
+  define p'' where "p'' = fst p''u"
+  define u  where "u = snd p''u"
+  have p'w_def: "p'w = (p', w)"
+    using p'_def w_def by auto
+  have p''u_def: "p''u = (p'', u)"
+    using p''_def u_def by auto
+
+  have "accepts A' (p'', u)" 
+    using step unfolding p''_def u_def by auto
+  then obtain q where q_p: "q \<in> F_locs \<and> (p'', u, q) \<in> LTS.transition_star A'"
+    unfolding accepts_def using p''_def u_def by auto
+  then have "(p'', u, q) \<in> LTS.transition_star A'"
+    by auto
+  have "\<exists>\<gamma> w1 u1. w=\<gamma>#w1 \<and> u=op_labels u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)"
+  proof -
+    from step(1) obtain \<gamma> w1 where w_exp: "w=\<gamma>#w1"
+      unfolding p''u_def p'w_def using list.exhaust by (meson LTS.step_relp_def transition_rel.cases) 
+    from step(1) have "\<exists>u1. u=op_labels u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)" 
+      unfolding step_relp_def p''u_def p'w_def w_exp using transition_rel.cases by force 
+    then show "\<exists>\<gamma> w1 u1. w=\<gamma>#w1 \<and> u=op_labels u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)"
+      using w_exp by auto
+  qed
+  then obtain \<gamma> w1 u1 where \<gamma>_w1_u1_p: "w=\<gamma>#w1 \<and> u=op_labels u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)"
+    by blast
+
+  have "\<exists>q1. (p'', op_labels u1, q1) \<in> LTS.transition_star A' \<and> (q1, w1, q) \<in> LTS.transition_star A'"
+    using q_p \<gamma>_w1_u1_p transition_star_split by auto
+
+  then obtain q1 where q1_p: "(p'', op_labels u1, q1) \<in> LTS.transition_star A' \<and> (q1, w1, q) \<in> LTS.transition_star A'"
+    by auto
+
+  then have in_A': "(p', \<gamma>, q1) \<in> A'"
+    using \<gamma>_w1_u1_p add_trans step.prems(2)
+    using saturated_def saturation_def by blast
+
+  then have "(p', \<gamma>#w1, q) \<in> LTS.transition_star A'"
+    using in_A' transition_star_step q1_p
+    by (meson LTS.lpath.transition_star_step)
+  then have t_in_A': "(p', w, q) \<in> LTS.transition_star A'"
+    using \<gamma>_w1_u1_p by blast
+
+  from q_p t_in_A' have "q \<in> F_locs \<and> (p', w, q) \<in> LTS.transition_star A'"
+    using p'_def w_def by auto
+  then show ?case
+    unfolding accepts_def p'w_def using q_p by auto 
 qed
 
-find_theorems reachablep
-
-
-  
 
 
 

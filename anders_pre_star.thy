@@ -8,7 +8,8 @@ definition pre_star_step :: "transition set \<Rightarrow> transition \<Rightarro
   "pre_star_step rel \<equiv> \<lambda>(p,\<gamma>,q). (\<exists>p' w. (p,\<gamma>) \<hookrightarrow> (p',w) \<and> (p', op_labels w, q) \<in> (transition_star rel))"
 
 inductive pre_star_step' :: "transition set \<Rightarrow> transition set \<Rightarrow> bool" where
-  add_trans: "(p,\<gamma>) \<hookrightarrow> (p',w) \<Longrightarrow> (p', op_labels w, q) \<in> transition_star rel \<Longrightarrow> pre_star_step' rel (rel \<union> {(p,\<gamma>,q)})"
+  add_trans: "(p,\<gamma>) \<hookrightarrow> (p',w) \<Longrightarrow> (p', op_labels w, q) \<in> transition_star rel \<Longrightarrow> (p, \<gamma>, q) \<notin> rel \<Longrightarrow> pre_star_step' rel (rel \<union> {(p,\<gamma>,q)})"
+(* It is wrong to have "op_labels" in all these. *)
 
 definition pre_star' :: "transition set \<Rightarrow> transition set \<Rightarrow> bool" where
   "pre_star' \<equiv> rtranclp pre_star_step'"
@@ -99,6 +100,10 @@ lemma pre_star_lim'_incr_transition_star:
 lemma step_relp_non_empty: "step_relp (p',w) (p'',u) \<Longrightarrow> w \<noteq> []"
   by (metis case_prod_conv empty_iff step'.simps(1) step_def step_relp_def)
 
+lemma transition_star_split:
+  assumes "(p'', u1 @ w1, q) \<in> transition_star A'"
+  shows "\<exists>q1. (p'', u1, q1) \<in> transition_star A' \<and> (q1, w1, q) \<in> transition_star A'"
+  sorry
 
 lemma lemma_3_1':
   assumes "(p',w) \<Rightarrow>\<^sup>* (p,v)"
@@ -123,13 +128,14 @@ next
   have p''u_def: "p''u = (p'', u)"
     using p''_def u_def by auto
 
-  have "accepts A' p''u" 
+  have a: "accepts A' p''u" 
     using step by auto
+
+
   then obtain q where q_p: "q \<in> Q \<and> F q \<and> (p'', u, q) \<in> transition_star A'"
     unfolding accepts_def using p''_def u_def by auto
-  then have "(p'', u, q) \<in> transition_star A'"
-    by auto
-  have "\<exists>\<gamma> w1 u1. w=\<gamma>#w1 \<and> u=op_labels u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)"
+
+  have e: "\<exists>\<gamma> w1 u1. w=\<gamma>#w1 \<and> u=op_labels u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)"
   proof -
     from step(1) obtain \<gamma> w1 where w_exp: "w=\<gamma>#w1"
       unfolding p''u_def step_def p'w_def using step_relp_non_empty using list.exhaust by blast 
@@ -139,27 +145,30 @@ next
     then show "\<exists>\<gamma> w1 u1. w=\<gamma>#w1 \<and> u=op_labels u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)"
       using w_exp by auto
   qed
-  then obtain \<gamma> w1 u1 where \<gamma>_w1_u1_p: "w=\<gamma>#w1 \<and> u=op_labels u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)"
+
+  then obtain \<gamma> w1 u1 where w_p: "w=\<gamma>#w1" and u_p: "u=op_labels u1@w1" and u_tran: "(p', \<gamma>) \<hookrightarrow> (p'', u1)"
     by blast
+  note \<gamma>_w1_u1_p = w_p u_p u_tran
 
-  obtain q1 where q1_p: "(p'', op_labels u1, q1) \<in> transition_star A' \<and> (q1, w1, q) \<in> transition_star A'"
-    using \<gamma>_w1_u1_p accepts_unfoldn add_trans p''u_def pre_star_lim'_def saturated'_def step.hyps(3) step.prems(1) step.prems(2) by blast
+  have "\<exists>q1. (p'', op_labels u1, q1) \<in> transition_star A' \<and> (q1, w1, q) \<in> transition_star A'"
+    using q_p unfolding u_p using transition_star_split by auto
+  then obtain q1 where q1_p: "(p'', op_labels u1, q1) \<in> transition_star A' \<and> (q1, w1, q) \<in> transition_star A'"
+    by blast
+    
 
-  then have "(p', \<gamma>, q1) \<in> A'"
-    using \<gamma>_w1_u1_p add_trans pre_star_lim'_def saturated'_def step.prems(2) by blast
-
-  then have "(p', \<gamma>, q1) \<in> A' \<and> (q1, w, q) \<in> transition_star A'"
-    using \<gamma>_w1_u1_p q1_p add_trans pre_star_lim'_def saturated'_def step.prems(2) by blast
+  have \<gamma>_w1_u1_p_n: "(p', \<gamma>) \<hookrightarrow> (p'', u1)"
+    using \<gamma>_w1_u1_p by blast
 
   then have "(p', \<gamma>#w1, q) \<in> transition_star A'"
-    using transition_star_step q1_p by blast 
+    using transition_star_step q1_p
+    by (meson add_trans pre_star_lim'_def saturated'_def step.prems(2))  
   then have t_in_A': "(p', w, q) \<in> transition_star A'"
     using \<gamma>_w1_u1_p by blast
 
   from q_p t_in_A' have "F q \<and> (p', w, q) \<in> transition_star A'"
     using p'_def w_def by auto
   then show ?case
-    unfolding accepts_def p'w_def using q_p by auto 
+    unfolding accepts_def p'w_def using q_p by auto
 qed
 
 
