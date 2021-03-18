@@ -72,8 +72,6 @@ abbreviation transition_star :: "('state \<times> 'label list \<times> 'state) s
 lemmas transition_star_empty = lspath_empty
 lemmas transition_star_cons = lspath_cons
 
-(* lemma transition_star_mono[mono]: "mono transition_star" *) (* Not possible with my definition of transition_star *)
-
 end
 
 section\<open>LTS init\<close>
@@ -96,15 +94,15 @@ datatype 'label operation = pop | swap 'label | push 'label 'label
 type_synonym ('ctr_loc, 'label) rule = "('ctr_loc \<times> 'label) \<times> ('ctr_loc \<times> 'label operation)"
 type_synonym ('ctr_loc, 'label) conf = "'ctr_loc \<times> 'label list"
 
+
 text \<open>We define push down systems.\<close>
 
 locale PDS =
   (* 'ctr_loc is the type of control locations *)
-  fixes P_locs :: "'ctr_loc set" 
-    and \<Gamma> :: "'label set"
-    and \<Delta> :: "('ctr_loc, 'label) rule set"
+  fixes P_locs :: "'ctr_loc::finite set" 
+    and \<Delta> :: "('ctr_loc, 'label::finite) rule set"
     and c0 :: "('ctr_loc, 'label) conf"
-  assumes "\<Delta> \<subseteq> (P_locs \<times> UNIV) \<times> (P_locs \<times> UNIV)"
+  assumes \<Delta>_subset: "\<Delta> \<subseteq> (P_locs \<times> UNIV) \<times> (P_locs \<times> UNIV)"
 begin
 
 fun config_wf :: "('ctr_loc, 'label) conf \<Rightarrow> bool" where
@@ -125,13 +123,15 @@ interpretation LTS_init transition_rel c0 .
 interpretation transition_system execute enabled .
 interpretation transition_system_initial execute enabled initial .
 
+lemma finite_P_locs: "finite P_locs"
+  by simp  
+
 end
 
 section \<open>PDS with P automaton\<close>
 
-locale PDS_with_P_automaton = PDS P_locs \<Gamma>
-  for P_locs :: "'ctr_loc set" 
-    and \<Gamma> :: "'label set"
+locale PDS_with_P_automaton = PDS P_locs \<Delta>
+  for P_locs :: "'ctr_loc::finite set" and \<Delta> :: "('ctr_loc, 'label::finite) rule set"
     +
   fixes Q_locs :: "'ctr_loc set" 
     and trans :: "('ctr_loc, 'label) transition set" 
@@ -141,59 +141,173 @@ locale PDS_with_P_automaton = PDS P_locs \<Gamma>
     and "F_locs \<subseteq> Q_locs"
 begin
 
-interpretation LTS_init transition_rel c0 .
-interpretation transition_system execute enabled .
-interpretation transition_system_initial execute enabled initial .
+interpretation pds: LTS_init transition_rel c0 .
+interpretation transition_system pds.execute pds.enabled .
+interpretation transition_system_initial pds.execute pds.enabled pds.initial .
 
-interpretation autom: LTS trans .
+fun accepts :: "('ctr_loc \<times> 'label \<times> 'ctr_loc) set \<Rightarrow> 'ctr_loc \<times> 'label list \<Rightarrow> bool" where
+  "accepts ts (p,l) \<longleftrightarrow> (\<exists>q \<in> F_locs. (p,l,q) \<in> LTS.lspath ts)"
+  (* Here acceptance is defined for any p, but in the paper p has to be in P_locs *)
 
-fun accepts :: "('ctr_loc, 'label) conf \<Rightarrow> bool" where
-  "accepts (p,l) \<longleftrightarrow> (\<exists>q \<in> F_locs. (p,l,q) \<in> autom.lspath)" 
-(* Here acceptance is defined for any p, but in the paper p has to be in P_locs *)
+lemma LTS_lspath_mono: (* Move *)
+  "mono LTS.lspath"
+proof (rule, rule)
+  fix pwq :: "'a \<times> 'b list \<times> 'a"
+  fix ts ts' :: "('a, 'b) transition set"
+  assume sub: "ts \<subseteq> ts'"
+  assume awb_ts: "pwq \<in> LTS.lspath ts"
+  then obtain p w q where pwq_p: "pwq = (p, w, q)"
+    using prod_cases3 by blast
+  then have "(p, w, q) \<in> LTS.lspath ts"
+    using awb_ts by auto
+  then have "(p, w, q) \<in>  LTS.lspath ts'"
+  proof(induction w arbitrary: p)
+    case Nil
+    then show ?case
+      by (metis LTS.lspath.transition_star_refl LTS.transition_star_empty)
+  next
+    case (Cons \<gamma> w)
+    then show ?case
+      by (meson LTS.lspath.simps LTS.transition_star_cons sub subsetD)
+  qed
+  then show "pwq \<in> LTS.lspath ts'"
+    unfolding pwq_p .
+qed
 
-(* Potentially useful lemmas. *)
+lemma accepts_mono[mono]: "mono accepts" (* Hmm.. what does this actually mean? *)
+proof (rule, rule)
+  fix c :: "('ctr_loc, 'label) conf"
+  fix ts ts' :: "('ctr_loc, 'label) transition set"
+  assume accepts_xa: "accepts ts c"
+  assume tsts': "ts \<subseteq> ts'"
+  obtain p l where pl_p: "c = (p,l)"
+    by (cases c)
+  obtain q where q_p:  "q \<in> F_locs \<and> (p, l, q) \<in> LTS.lspath ts"
+    using accepts_xa unfolding pl_p accepts.simps by auto
+  then have "(p, l, q) \<in> LTS.lspath ts'"
+    using tsts' LTS_lspath_mono monoD by blast 
+  then have "accepts ts' (p,l)"
+    unfolding accepts.simps using q_p by auto
+  then show "accepts ts' c"
+    unfolding pl_p .
+qed
 
-(* lemma accepts_mono[mono]: "mono accepts" *) (* Not possible with my definition of transition_star *)
+lemma accepts_cons: "(p, \<gamma>, q) \<in> ts \<Longrightarrow> accepts ts (q, w) \<Longrightarrow> accepts ts (p, \<gamma> # w)"
+  by (meson LTS.lspath.transition_star_step PDS_with_P_automaton.accepts.simps PDS_with_P_automaton_axioms)
 
-lemma accepts_cons: "(p, \<gamma>, q) \<in> trans \<Longrightarrow> accepts (q, w) \<Longrightarrow> accepts (p, \<gamma> # w)"
-  by (meson accepts.simps autom.lspath.intros(2))
 
-lemma accepts_unfold: "accepts (p, \<gamma> # w) \<Longrightarrow> \<exists>q. (p, \<gamma>, q) \<in> trans \<and> accepts (q, w)"
-  by (meson accepts.simps autom.transition_star_cons)
+lemma accepts_unfold: "accepts ts (p, \<gamma> # w) \<Longrightarrow> \<exists>q. (p, \<gamma>, q) \<in> ts \<and> accepts ts (q, w)"
+  by (meson LTS.transition_star_cons accepts.simps)
 
-lemma accepts_unfoldn: "accepts (p, w' @ w) \<Longrightarrow> \<exists>q. (p, w', q) \<in> autom.transition_star \<and> accepts (q, w)"
-  apply (induct w' arbitrary: p w)
-   apply auto[1]
-  apply (metis accepts_unfold append_Cons autom.lspath.transition_star_step)
-  done
+lemma accepts_unfoldn: "accepts ts (p, w' @ w) \<Longrightarrow> \<exists>q. (p, w', q) \<in> LTS.transition_star ts \<and> accepts ts (q, w)"
+proof (induct w' arbitrary: p w)
+  case Nil
+  then show ?case by (metis LTS.lspath.transition_star_refl append_Nil)
+next
+  case (Cons a w')
+  then show ?case by (metis LTS.lspath.transition_star_step accepts_unfold append_Cons)
+qed
 
-lemma accepts_append: "\<lbrakk>(p, w', q) \<in> autom.transition_star; accepts (q, w)\<rbrakk> \<Longrightarrow> accepts (p, w' @ w)"
-  apply (induct w' arbitrary: w p q)
-   apply auto[1]
-  apply (metis LTS.transition_star_cons accepts_cons append_Cons)
-  done
+lemma accepts_append: "\<lbrakk>(p, w', q) \<in> LTS.transition_star ts; accepts ts (q, w)\<rbrakk> \<Longrightarrow> accepts ts (p, w' @ w)"
+proof (induct w' arbitrary: w p q)
+  case Nil
+  then show ?case 
+    by (metis LTS.transition_star_empty append_Nil)
+next
+  case (Cons a w')
+  then show ?case 
+    by (metis LTS.transition_star_cons accepts_cons append_Cons)
+qed
 
-definition language :: "('ctr_loc, 'label) conf set" where
-  "language = {c. accepts c}"
+definition language :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf set" where
+  "language ts = {c. accepts ts c}"
 
 subsection \<open>pre star\<close>
 
 inductive saturation_rule :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where
-  "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> (p', w, q) \<in> "
+  "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> (p', op_labels w, q) \<in> LTS.transition_star ts \<Longrightarrow> (p', \<gamma>, q) \<notin> ts \<Longrightarrow> saturation_rule ts (ts \<union> {(p', \<gamma>, q)})"
 
-  
+lemma saturation_rule_mono:
+  "saturation_rule ts ts' \<Longrightarrow> ts \<subset> ts'"
+  unfolding saturation_rule.simps by auto
 
+definition saturation :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where
+  "saturation ts ts' \<longleftrightarrow> rtranclp saturation_rule ts ts' \<and> (\<nexists>ts''. saturation_rule ts' ts'')"
 
+lemma saturation_rule_card_Suc: "saturation_rule ts ts' \<Longrightarrow> card ts' = Suc (card ts)"
+  unfolding saturation_rule.simps by auto
 
-    
+lemma no_infinite: (* Maybe lazy lists are better? *)
+  assumes "\<forall>i :: nat. saturation_rule (tts i) (tts (Suc i))"
+  shows "False"
+proof -
+  define f where "f i = card (tts i)" for i
+  have f_Suc: "\<forall>i. f i < f (Suc i)"
+    by (metis saturation_rule_card_Suc assms f_def lessI)
+  have "\<forall>i. \<exists>j. f j > i"
+  proof 
+    fix i
+    show "\<exists>j. i < f j"
+    proof(induction i)
+      case 0
+      then show ?case 
+        by (metis f_Suc neq0_conv)
+    next
+      case (Suc i)
+      then show ?case
+        by (metis Suc_lessI f_Suc)
+    qed
+  qed
+  then have "\<exists>j. f j > card (UNIV :: ('ctr_loc \<times> 'label \<times> 'ctr_loc) set)"
+    by auto
+  then show False
+    by (metis card_seteq f_def finite_UNIV le_eq_less_or_eq nat_neq_iff subset_UNIV)
+qed
 
+lemma saturation_termination: (* Maybe lazy lists are better? *)
+   "\<not>(\<exists>tts. (\<forall>i :: nat. saturation_rule (tts i) (tts (Suc i))))"
+  using no_infinite by presburger
 
+lemma saturation_exi: "\<exists>ts'. saturation ts ts'"
+proof (rule ccontr) (* TODO: it would be nice to avoid ccontr *)
+  assume a: "\<nexists>ts'. saturation ts ts'"
+  define g where "g ts = (SOME ts'. saturation_rule ts ts')" for ts
+  define tts where "tts i = (g ^^ i) ts" for i
+  have "\<forall>i :: nat. rtranclp saturation_rule ts (tts i) \<and> saturation_rule (tts i) (tts (Suc i))"
+  proof 
+    fix i
+    show "saturation_rule\<^sup>*\<^sup>* ts (tts i) \<and> saturation_rule (tts i) (tts (Suc i))"
+    proof (induction i)
+      case 0
+      have "saturation_rule ts (g ts)"
+        by (metis g_def a rtranclp.rtrancl_refl saturation_def someI)
+      then show ?case
+        using tts_def a saturation_def by auto 
+    next
+      case (Suc i)
+      then have sat_Suc: "saturation_rule\<^sup>*\<^sup>* ts (tts (Suc i))"
+        by fastforce
+      then have "saturation_rule (g ((g ^^ i) ts)) (g (g ((g ^^ i) ts)))"
+        by (metis Suc.IH tts_def g_def a r_into_rtranclp rtranclp_trans saturation_def someI)
+      then have "saturation_rule (tts (Suc i)) (tts (Suc (Suc i)))"
+        unfolding tts_def by simp
+      then show ?case
+         using sat_Suc by auto
+     qed
+   qed
+  then have "\<forall>i. saturation_rule (tts i) (tts (Suc i))"
+    by auto
+  then show False
+    using no_infinite by auto
+qed
 
+(*
 
+TODO: Prove that saturations are unique. (Priority 2)
 
+TODO: Prove more theorems from the book. (Priority 1)
 
-
-
+*)
 
 
 
