@@ -1,4 +1,4 @@
-theory pds imports Main
+theory anders_pds imports Main
 begin
 
 (* This is a formalization of pushdown systems. We follow the definitions, algorithms and proofs in:

@@ -1,4 +1,4 @@
-theory saturation imports Main "~~/src/HOL/Hoare/HeapSyntax" 
+theory morten_saturation imports Main "~~/src/HOL/Hoare/HeapSyntax" 
 begin
 
 (* Since both pre* and post* are described as saturation procedures, we here define a generalised

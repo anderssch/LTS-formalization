@@ -1,4 +1,4 @@
-theory pre_star imports saturation pds (* "~~/src/HOL/Hoare/HeapSyntax" *)
+theory anders_pre_star imports saturation pds (* "~~/src/HOL/Hoare/HeapSyntax" *)
 begin                      
 
 (* Here we define the saturation rule for pre* (pre_star), and try to prove the correctness of the saturation procedure. *)
