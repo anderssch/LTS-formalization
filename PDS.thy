@@ -62,6 +62,18 @@ abbreviation transition_star :: "('state \<times> 'label list \<times> 'state) s
 lemmas transition_star_empty = lspath_empty
 lemmas transition_star_cons = lspath_cons
 
+lemma transition_star_split:
+  assumes "(p'', u1 @ w1, q) \<in> transition_star"
+  shows "\<exists>q1. (p'', u1, q1) \<in> transition_star \<and> (q1, w1, q) \<in> transition_star"
+using assms proof(induction u1 arbitrary: p'')
+  case Nil
+  then show ?case by auto
+next
+  case (Cons a u1)
+  then show ?case
+    by (metis transition_star_step append_Cons transition_star_cons)
+qed
+
 end
 
 section\<open>LTS init\<close>
@@ -329,12 +341,7 @@ lemma pre_star_lim'_incr_transition_star:
   "saturation A A' \<Longrightarrow> LTS.transition_star A \<subseteq> LTS.transition_star A'"
   by (simp add: pre_star'_incr_transition_star saturation_def)
 
-lemma transition_star_split:
-  assumes "(p'', u1 @ w1, q) \<in> LTS.transition_star A'"
-  shows "\<exists>q1. (p'', u1, q1) \<in> LTS.transition_star A' \<and> (q1, w1, q) \<in> LTS.transition_star A'"
-  sorry
-
-lemma lemma_3_1':
+lemma lemma_3_1:
   assumes "(p',w) \<Rightarrow>\<^sup>* (p,v)"
     and "(p,v) \<in> language A"
     and "saturation A A'"
@@ -376,7 +383,7 @@ next
     by blast
 
   have "\<exists>q1. (p'', op_labels u1, q1) \<in> LTS.transition_star A' \<and> (q1, w1, q) \<in> LTS.transition_star A'"
-    using q_p \<gamma>_w1_u1_p transition_star_split by auto
+    using q_p \<gamma>_w1_u1_p LTS.transition_star_split by auto
 
   then obtain q1 where q1_p: "(p'', op_labels u1, q1) \<in> LTS.transition_star A' \<and> (q1, w1, q) \<in> LTS.transition_star A'"
     by auto
