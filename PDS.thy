@@ -1,4 +1,4 @@
-theory PDS imports Main begin
+theory PDS imports Main Nested_Multisets_Ordinals.Multiset_More begin
 
 
 section \<open>LTS\<close>
@@ -36,21 +36,74 @@ definition pre_star :: "'state set \<Rightarrow> 'state set" where
   "pre_star C \<equiv> {c'. \<exists>c \<in> C. c' \<Rightarrow>\<^sup>* c}"
 
 (* Paths as defined in the thesis: *)
-inductive_set path :: "'state list set" where
-  "[] \<in> path"
-| "[s] \<in> path"
-| "(s'#ss) \<in> path \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss) \<in> path"
+inductive_set path :: "'state list set" where (* But actually the thesis does not have empty paths *)
+  "[s] \<in> path"
+| "(s'#ss) \<in> path \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> s#s'#ss \<in> path"
+
 
 (* Labeled paths as defined in the thesis *)
 inductive_set lpath :: "('state * 'label list * 'state) set" where
   lpath_refl[iff]: "(p, [], p) \<in> lpath"
-| lpath_step: "\<lbrakk>(p,\<gamma>,q') \<in> transition_relation; (q',w,q) \<in> lpath\<rbrakk>
+| lpath_step: "(p,\<gamma>,q') \<in> transition_relation \<Longrightarrow> (q',w,q) \<in> lpath
                            \<Longrightarrow> (p, \<gamma>#w, q) \<in> lpath"
-
-inductive_set lspath :: "('state * ('label * 'state) list) set"
 
 inductive_cases lpath_empty [elim]: "(p, [], q) \<in> lpath"
 inductive_cases lpath_cons: "(p, \<gamma>#w, q) \<in> lpath"
+
+inductive_set path_with_word :: "('state list * 'label list) set" where
+  path_with_word_refl[iff]: "([s],[]) \<in> path_with_word"
+| path_with_word_step: "(s'#ss, w) \<in> path_with_word \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,l#w) \<in> path_with_word"
+
+inductive transition_of :: "('state, 'label) transition \<Rightarrow> 'state list * 'label list \<Rightarrow> bool" where
+  "transition_of (s1,\<gamma>,s2) (s1#s2#ss, \<gamma>#w)"
+| "transition_of (s1,\<gamma>,s2) (ss, w) \<Longrightarrow> transition_of (s1,\<gamma>,s2) (s#ss, \<mu>#w)"
+
+
+                                                  
+lemma path_with_word_not_empty[simp]: "\<not>([],w) \<in> path_with_word"
+  using path_with_word.cases by force
+  
+
+lemma lpath_path_with_word:
+  assumes "(p, w, q) \<in> lpath"
+  shows "\<exists>ss. hd ss = p \<and> last ss = q \<and> (ss, w) \<in> path_with_word"
+  using assms
+proof (induction rule: lpath.inducts)
+  case (lpath_refl p)
+  then show ?case
+    by (meson LTS.path_with_word.path_with_word_refl last.simps list.sel(1))
+next
+  case (lpath_step p \<gamma> q' w q)
+  then show ?case
+    by (metis LTS.path_with_word.simps hd_Cons_tl last_ConsR list.discI list.sel(1))
+qed
+
+lemma path_with_word_lpath:
+  assumes "(ss, w) \<in> path_with_word"
+  assumes "length ss \<noteq> 0"
+  shows "(hd ss, w, last ss) \<in> lpath"
+  using assms
+proof (induction rule: path_with_word.inducts)
+  case (path_with_word_refl s)
+  show ?case
+    by simp 
+next
+  case (path_with_word_step s' ss w s l)
+  then show ?case
+    using LTS.lpath.lpath_step by fastforce
+qed
+
+lemma path_with_word_lpath_Cons:
+  assumes "(s1#ss@[s2], w) \<in> path_with_word"
+  shows "(s1, w, s2) \<in> lpath"
+  using assms path_with_word_lpath by force 
+
+lemma path_with_word_lpath_Singleton:
+  assumes "([s2], w) \<in> path_with_word"
+  shows "(s2, [], s2) \<in> lpath"
+  using assms path_with_word_lpath by force
+
+
 
 (* TODO: Prove correspondences between path and lpath. *)
 
@@ -68,6 +121,12 @@ next
 qed
 
 end
+
+fun transitions_of :: "'state list * 'label list \<Rightarrow> ('state, 'label) transition multiset" where
+  "transitions_of (s1#s2#ss, \<gamma>#w) = {# (s1, \<gamma>, s2) #} + transitions_of (s2#ss, w)"
+| "transitions_of ([s1],_) = {#}"
+| "transitions_of ([],_) = {#}"
+| "transitions_of (_,[]) = {#}"
 
 lemma LTS_lpath_mono:
   "mono LTS.lpath"
@@ -402,7 +461,7 @@ lemma lemma_3_2_base:
 lemma saturation_rule_mono': "t \<in> LTS.lpath rel \<Longrightarrow> saturation_rule rel rel' \<Longrightarrow> t \<in> LTS.lpath (rel')"
   using pre_star'_incr_lpath by blast
 
-lemma lemma_3_2_b_aux':
+lemma lemma_3_2_b_aux': (* Morten's lemma *)
   assumes "(p, w, q) \<in> LTS.lpath A"
   assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs"
   assumes "q \<in> P_locs"
@@ -415,6 +474,40 @@ next
   case (2 p \<gamma> q' w q)
   then show ?case by blast
 qed
+
+lemma count_next_0:
+  assumes "count (transitions_of (s # s' # ss, l # w)) (p1, \<gamma>, q') = 0"
+  shows "count (transitions_of (s' # ss, w)) (p1, \<gamma>, q') = 0"
+  using assms by (cases "s = p1 \<and> l = \<gamma> \<and> s' = q'") auto
+
+lemma count_next_hd:
+  assumes "count (transitions_of (s # s' # ss, l # w)) (p1, \<gamma>, q') = 0"
+  shows "(s, l, s') \<noteq> (p1, \<gamma>, q')"
+  using assms by auto
+  
+
+lemma lemma_3_2_a'_Aux:
+  assumes "(ss, w) \<in> LTS.path_with_word Ai"
+  assumes "0 = count (transitions_of (ss, w)) (p1, \<gamma>, q')"
+  assumes "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}"
+  shows "(ss, w) \<in> LTS.path_with_word Aiminus1"
+  using assms
+proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
+  case (1 s)
+  then show ?case
+    by (simp add: LTS.path_with_word.path_with_word_refl)
+next
+  case (2 s' ss w s l)
+  from 2(5) have "0 = count (transitions_of (s' # ss, w)) (p1, \<gamma>, q')"
+    using count_next_0 by auto
+  then have x: "(s' # ss, w) \<in> LTS.path_with_word Aiminus1"
+    using 2 by auto
+  have "(s, l, s') \<in> Aiminus1"
+    using 2(2,5) assms(3) by force
+  then show ?case 
+    using x by (simp add: LTS.path_with_word.path_with_word_step) 
+qed
+
 
 lemma lemma_3_2_a':
   assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs"
@@ -433,10 +526,36 @@ next
                        (p1, \<gamma>) \<hookrightarrow> (p', w_gug) \<and> 
                        (p', op_labels w_gug, q') \<in> LTS.lpath Aiminus1"
     by (meson saturation_rule.cases)
-    
-  define t where "t = (p1, \<gamma>, q')"
 
-  
+  from step(5) obtain ss where ss_p: "hd ss = p" "last ss = q" "(ss, w) \<in> LTS.path_with_word Ai"
+    using LTS.lpath_path_with_word[of p w q Ai]
+    by auto
+
+  define t where "t = (p1, \<gamma>, q')"
+  define j where "j = count (transitions_of (ss, w)) t"
+
+  from j_def show ?case
+  proof (induction j)
+    case 0
+    then have "j = 0"
+      unfolding j_def by auto
+    have "(ss, w) \<in> LTS.path_with_word Aiminus1"
+      using 0 p1_\<gamma>_p'_w_q'_p ss_p(3)
+      using lemma_3_2_a'_Aux
+      using t_def by fastforce
+    then have "(p, w, q) \<in> LTS.lpath Aiminus1"
+      using LTS.path_with_word_lpath[of ss w Aiminus1] ss_p(1,2) LTS.path_with_word_not_empty by blast
+    then show ?case
+      using step.IH step.prems(1) by simp
+  next
+    case (Suc j')
+    then have "j = Suc j'"
+      sorry
+    then show ?case 
+      sorry
+  qed
+qed
+
 
     (* I think there is a challenge here.
      In the proof he looks at << p \<midarrow>w\<rightarrow>*_i q >> as if it were a path. But there can be
@@ -451,11 +570,5 @@ next
        But what then, hmmm.... not sure. And what does "uses t" even mean.
 
   *)
-  
-  
-  
-
-  from step show ?case sorry
-qed
 
 end
