@@ -515,16 +515,16 @@ lemma lemma_3_2_a':
   assumes "(p, w, q) \<in> LTS.lpath A'"
   shows "\<exists>p' w'. (p', w', q) \<in> LTS.lpath A \<and> (p, w) \<Rightarrow>\<^sup>* (p', w')"
   using assms(2) assms(1,3) 
-proof (induction rule: rtranclp_induct)
+proof (induction arbitrary: q w rule: rtranclp_induct )
   case base
   then show ?case
     by auto
 next
   case (step Aiminus1 Ai)
-  from step(2) obtain p1 \<gamma> p' w_gug q' where p1_\<gamma>_p'_w_q'_p: "
-                       Ai = Aiminus1 \<union> {(p1, \<gamma>, q')} \<and> 
-                       (p1, \<gamma>) \<hookrightarrow> (p', w_gug) \<and> 
-                       (p', op_labels w_gug, q') \<in> LTS.lpath Aiminus1"
+  from step(2) obtain p1 \<gamma> p2 w2 q' where p1_\<gamma>_p2_w2_q'_p:
+                       "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}" 
+                       "(p1, \<gamma>) \<hookrightarrow> (p2, w2)"
+                       "(p2, op_labels w2, q') \<in> LTS.lpath Aiminus1"
     by (meson saturation_rule.cases)
 
   from step(5) obtain ss where ss_p: "hd ss = p" "last ss = q" "(ss, w) \<in> LTS.path_with_word Ai"
@@ -534,23 +534,39 @@ next
   define t where "t = (p1, \<gamma>, q')"
   define j where "j = count (transitions_of (ss, w)) t"
 
-  from j_def show ?case
-  proof (induction j)
+  from j_def ss_p show ?case
+  proof (induction j arbitrary: q w ss)
     case 0
-    then have "j = 0"
-      unfolding j_def by auto
     have "(ss, w) \<in> LTS.path_with_word Aiminus1"
-      using 0 p1_\<gamma>_p'_w_q'_p ss_p(3)
+      using 0 p1_\<gamma>_p2_w2_q'_p 
       using lemma_3_2_a'_Aux
       using t_def by fastforce
     then have "(p, w, q) \<in> LTS.lpath Aiminus1"
-      using LTS.path_with_word_lpath[of ss w Aiminus1] ss_p(1,2) LTS.path_with_word_not_empty by blast
+      using LTS.path_with_word_lpath[of ss w Aiminus1] LTS.path_with_word_not_empty 0 by blast
     then show ?case
-      using step.IH step.prems(1) by simp
+      using step.IH step.prems(1) by metis
   next
     case (Suc j')
     then have "j = Suc j'"
       sorry
+    have "\<exists>u v. w = u@[\<gamma>]@v \<and> (p,u,p1) \<in> LTS.lpath Aiminus1 \<and> (p1,[\<gamma>], q') \<in> LTS.lpath Ai \<and> (q', v, q) \<in> LTS.lpath Ai"
+      using Suc    
+      sorry
+    then obtain u v where u_v_p: "w = u@[\<gamma>]@v" "(p,u,p1) \<in> LTS.lpath Aiminus1" "(p1,[\<gamma>], q') \<in> LTS.lpath Ai" "(q', v, q) \<in> LTS.lpath Ai"
+      by blast
+    have II: "p1 \<in> P_locs"
+      sorry
+    have "\<exists>p'' w''. (p'', w'', p1) \<in> LTS.lpath A \<and> (p, u) \<Rightarrow>\<^sup>* (p'', w'')"
+      using Suc(1)[of _ u p1] sorry
+    then obtain p'' w'' where p''_w'': "(p'', w'', p1) \<in> LTS.lpath A" "(p, u) \<Rightarrow>\<^sup>* (p'', w'')"
+      by blast
+    from this lemma_3_2_b_aux'[OF p''_w''(1) assms(1) II] have VIII: "(p, u) \<Rightarrow>\<^sup>* (p1, [])"
+      by auto
+    note IX = p1_\<gamma>_p2_w2_q'_p(2)
+    note III = p1_\<gamma>_p2_w2_q'_p(3)
+    from III u_v_p(4) have V: "(p2, op_labels w2, q') \<in> LTS.lpath Aiminus1 \<and> (q', v, q) \<in> LTS.lpath Ai"
+      sorry
+    
     then show ?case 
       sorry
   qed
