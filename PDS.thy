@@ -79,6 +79,11 @@ next
     by (metis LTS.path_with_word.simps hd_Cons_tl last_ConsR list.discI list.sel(1))
 qed
 
+lemma lpath_path_with_word':
+  assumes "(p, w, q) \<in> lpath"
+  shows "\<exists>ss. (p, w, ss, q) \<in> path_with_word'"
+  using assms lpath_path_with_word unfolding path_with_word'_def by force
+
 lemma path_with_word_lpath:
   assumes "(ss, w) \<in> path_with_word"
   assumes "length ss \<noteq> 0"
@@ -128,6 +133,9 @@ fun transitions_of :: "'state list * 'label list \<Rightarrow> ('state, 'label) 
 | "transitions_of ([s1],_) = {#}"
 | "transitions_of ([],_) = {#}"
 | "transitions_of (_,[]) = {#}"
+
+fun transitions_of' where
+  "transitions_of' (p,w,ss,q) = transitions_of (ss, w)"
 
 lemma LTS_lpath_mono:
   "mono LTS.lpath"
@@ -476,6 +484,15 @@ next
   then show ?case by blast
 qed
 
+lemma lemma_3_2_b_aux'': (* Morten's lemma 2*) (* Should this say something about ss also? *)
+  assumes "(p, w, ss, q) \<in> LTS.path_with_word' A"
+  assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs"
+  assumes "q \<in> P_locs"
+  shows "w = [] \<and> p = q"
+  using assms(2,3)
+  using lemma_3_2_b_aux' 
+  sorry
+
 lemma count_next_0:
   assumes "count (transitions_of (s # s' # ss, l # w)) (p1, \<gamma>, q') = 0"
   shows "count (transitions_of (s' # ss, w)) (p1, \<gamma>, q') = 0"
@@ -509,19 +526,132 @@ next
     using x by (simp add: LTS.path_with_word.path_with_word_step) 
 qed
 
+lemma lemma_3_2_a'_Aux_2:
+  assumes "(p, w, ss ,q) \<in> LTS.path_with_word' Ai"
+  assumes "0 = count (transitions_of' (p, w, ss, q)) (p1, \<gamma>, q')"
+  assumes "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}"
+  shows "(p, w, ss, q) \<in> LTS.path_with_word' Aiminus1"
+  using assms apply auto
+  unfolding LTS.path_with_word'_def
+  apply auto
+  using lemma_3_2_a'_Aux[of ss w _ p1 \<gamma> q' _] assms(2) assms(3)
+  apply auto
+  done
+
 
 lemma lemma_3_2_a':
   assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs"
   assumes "saturation_rule\<^sup>*\<^sup>* A A'"
-  assumes "(p, w, q) \<in> LTS.lpath A'"
-  shows "\<exists>p' w'. (p', w', q) \<in> LTS.lpath A \<and> (p, w) \<Rightarrow>\<^sup>* (p', w')"
+  assumes "(p, w, ss, q) \<in> LTS.path_with_word' A'"
+  shows "\<exists>p' w' ss'. (p', w', ss', q) \<in> LTS.path_with_word' A \<and> (p, w) \<Rightarrow>\<^sup>* (p', w')"
   using assms(2) assms(1,3) 
-proof (induction arbitrary: q w rule: rtranclp_induct )
+proof (induction arbitrary: p q w ss rule: rtranclp_induct)
   case base
   then show ?case
-    by auto
+    unfolding LTS.path_with_word'_def by auto
 next
   case (step Aiminus1 Ai)
+
+  from step(2) obtain p1 \<gamma> p2 w2 q' where p1_\<gamma>_p2_w2_q'_p:
+    "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}" 
+    "(p1, \<gamma>) \<hookrightarrow> (p2, w2)"
+    "(p2, op_labels w2, q') \<in> LTS.lpath Aiminus1"
+    by (meson saturation_rule.cases)
+
+  note ss_p = step(5)
+
+  define t where "t = (p1, \<gamma>, q')"
+  define j where "j = count (transitions_of' (p, w, ss, q)) t"
+
+  from j_def ss_p show ?case
+  proof (induction j arbitrary: p q w ss)
+    case 0
+    have "(p, w, ss, q) \<in> LTS.path_with_word' Aiminus1"
+      using lemma_3_2_a'_Aux_2
+      by (metis 0 p1_\<gamma>_p2_w2_q'_p(1) t_def) 
+    then show ?case
+      using step.IH step.prems(1) by metis
+  next
+    case (Suc j')
+    then have "\<exists>u v u_ss v_ss. ss = u_ss@v_ss \<and> w = u@[\<gamma>]@v \<and> (p,u,u_ss,p1) \<in> LTS.path_with_word' Aiminus1 \<and> (p1,[\<gamma>],q') \<in> LTS.lpath Ai \<and> (q',v,v_ss,q) \<in> LTS.path_with_word' Ai"
+      sorry
+    then obtain u v u_ss v_ss where
+      "ss = u_ss@v_ss \<and> w = u@[\<gamma>]@v" 
+      "(p,u,u_ss,p1) \<in> LTS.path_with_word' Aiminus1" 
+      "(p1,[\<gamma>],q') \<in> LTS.lpath Ai" 
+      "(q',v,v_ss,q) \<in> LTS.path_with_word' Ai"
+      by blast
+    have II: "p1 \<in> P_locs"
+      sorry
+    have "\<exists>p'' w'' ss''. (p'', w'', ss'', p1) \<in> LTS.path_with_word' A \<and> (p, u) \<Rightarrow>\<^sup>* (p'', w'')"
+      using Suc(1)[of p u _ p1]
+      using \<open>(p, u, u_ss, p1) \<in> LTS.path_with_word' Aiminus1\<close> step.IH step.prems(1) by blast 
+    then obtain p'' w'' ss'' where "(p'', w'', ss'', p1) \<in> LTS.path_with_word' A" "(p, u) \<Rightarrow>\<^sup>* (p'', w'')"
+      by blast
+    from this lemma_3_2_b_aux''[OF this(1) _ II] have VIII: "(p, u) \<Rightarrow>\<^sup>* (p1, [])"
+      using step.prems(1) by fastforce
+
+    note IX = p1_\<gamma>_p2_w2_q'_p(2)
+    note III = p1_\<gamma>_p2_w2_q'_p(3)
+    from III have III_2: "\<exists>w2_ss. (p2, op_labels w2, w2_ss, q') \<in> LTS.path_with_word' Aiminus1"
+      using LTS.lpath_path_with_word'[of p2 "op_labels w2" q' Aiminus1] by auto
+    then obtain w2_ss where III_2: "(p2, op_labels w2, w2_ss, q') \<in> LTS.path_with_word' Aiminus1"
+      by blast
+
+    from III have V: "(p2, op_labels w2, w2_ss, q') \<in> LTS.path_with_word' Aiminus1 \<and> (q', v, v_ss, q) \<in> LTS.path_with_word' Ai"
+      using III_2 \<open>(q', v, v_ss, q) \<in> LTS.path_with_word' Ai\<close> by auto
+
+    define w2v where "w2v = op_labels w2 @ v"
+    define w2v_ss where "w2v_ss = w2_ss @ tl v_ss"
+
+    then have V_merged: "(p2, w2v, w2v_ss, q) \<in> LTS.path_with_word' Ai"
+      sorry
+
+    have j'_gug: "j' = count (transitions_of' (p2, w2v, w2v_ss, q)) t"
+      sorry
+    
+    have "\<exists>p' w' ss'. (p', w', ss', q) \<in> LTS.path_with_word' A \<and> (p2, w2v) \<Rightarrow>\<^sup>* (p', w')"
+      using Suc(1) using j'_gug V_merged by auto
+    then obtain p' w' ss' where p'_w'_ss'_p: "(p', w', ss', q) \<in> LTS.path_with_word' A" "(p2, w2v) \<Rightarrow>\<^sup>* (p', w')"
+      by blast
+
+    note X = p'_w'_ss'_p(2)
+
+    from VIII IX X have
+      "(p,w) = (p,u@[\<gamma>]@v)"
+      "(p,u@[\<gamma>]@v) \<Rightarrow>\<^sup>* (p1,\<gamma>#v)"
+      "(p1,\<gamma>#v) \<Rightarrow> (p2, w2v)"
+      "(p2, w2v) \<Rightarrow>\<^sup>* (p', w')"
+      subgoal
+        using \<open>ss = u_ss @ v_ss \<and> w = u @ [\<gamma>] @ v\<close> apply blast
+        done
+      subgoal
+        sorry
+      subgoal
+        apply (metis IX LTS.step_relp_def transition_rel.intros w2v_def)
+        done
+      subgoal
+        apply (simp add: X)
+        done
+      done
+
+    have "(p, w) \<Rightarrow>\<^sup>* (p', w')"
+      using X \<open>(p, u @ [\<gamma>] @ v) \<Rightarrow>\<^sup>* (p1, \<gamma> # v)\<close> \<open>(p, w) = (p, u @ [\<gamma>] @ v)\<close> \<open>(p1, \<gamma> # v) \<Rightarrow> (p2, w2v)\<close> by auto
+
+    then have "(p', w', ss', q) \<in> LTS.path_with_word' A \<and> (p, w) \<Rightarrow>\<^sup>* (p', w')"
+      using p'_w'_ss'_p(1) by auto
+    then show ?case
+      by metis
+
+  qed
+qed 
+  
+
+
+
+
+(*
+  (* Old proof *)
   from step(2) obtain p1 \<gamma> p2 w2 q' where p1_\<gamma>_p2_w2_q'_p:
                        "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}" 
                        "(p1, \<gamma>) \<hookrightarrow> (p2, w2)"
@@ -598,7 +728,7 @@ next
       sorry
   qed
 qed
-
+*)
 
     (* I think there is a challenge here.
      In the proof he looks at << p \<midarrow>w\<rightarrow>*_i q >> as if it were a path. But there can be
