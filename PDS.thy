@@ -58,7 +58,8 @@ inductive transition_of :: "('state, 'label) transition \<Rightarrow> 'state lis
   "transition_of (s1,\<gamma>,s2) (s1#s2#ss, \<gamma>#w)"
 | "transition_of (s1,\<gamma>,s2) (ss, w) \<Longrightarrow> transition_of (s1,\<gamma>,s2) (s#ss, \<mu>#w)"
 
-
+definition path_with_word' where
+  "path_with_word' == {(p,w,ss,q) | p w ss q. (ss,w) \<in> path_with_word \<and> p = hd ss \<and> q = last ss}"
                                                   
 lemma path_with_word_not_empty[simp]: "\<not>([],w) \<in> path_with_word"
   using path_with_word.cases by force
@@ -549,11 +550,29 @@ next
     case (Suc j')
     then have "j = Suc j'"
       sorry
-    have "\<exists>u v. w = u@[\<gamma>]@v \<and> (p,u,p1) \<in> LTS.lpath Aiminus1 \<and> (p1,[\<gamma>], q') \<in> LTS.lpath Ai \<and> (q', v, q) \<in> LTS.lpath Ai"
+    have "\<exists>u v u_ss v_ss. ss = u_ss @ v_ss \<and> w = u@[\<gamma>]@v \<and> last u_ss = p1 \<and> hd v_ss = q' \<and> (u_ss,u) \<in> LTS.path_with_word Aiminus1 \<and> (p1,[\<gamma>], q') \<in> LTS.lpath Ai \<and> (v_ss,v) \<in> LTS.path_with_word Ai"
       using Suc    
       sorry
-    then obtain u v where u_v_p: "w = u@[\<gamma>]@v" "(p,u,p1) \<in> LTS.lpath Aiminus1" "(p1,[\<gamma>], q') \<in> LTS.lpath Ai" "(q', v, q) \<in> LTS.lpath Ai"
+    then obtain u v u_ss v_ss where guguguggu:
+      "ss = u_ss @ v_ss"
+      "w = u@[\<gamma>]@v"
+      "last u_ss = p1" 
+      "hd v_ss = q'"
+      "(u_ss,u) \<in> LTS.path_with_word Aiminus1"
+      "(p1,[\<gamma>], q') \<in> LTS.lpath Ai"
+      "(v_ss,v) \<in> LTS.path_with_word Ai"
       by blast
+    have "hd u_ss = p"
+      by (metis LTS.path_with_word_not_empty Suc.prems(2) \<open>(u_ss, u) \<in> LTS.path_with_word Aiminus1\<close> \<open>ss = u_ss @ v_ss\<close> hd_append2)
+    have "last v_ss = q"
+      by (metis LTS.path_with_word_not_empty Suc.prems(3) \<open>(v_ss, v) \<in> LTS.path_with_word Ai\<close> \<open>ss = u_ss @ v_ss\<close> last_append)
+    have u_v_p: "w = u@[\<gamma>]@v" "(p,u,p1) \<in> LTS.lpath Aiminus1" "(p1,[\<gamma>], q') \<in> LTS.lpath Ai" "(q', v, q) \<in> LTS.lpath Ai"
+         apply (simp add: \<open>w = u @ [\<gamma>] @ v\<close>)
+      using LTS.path_with_word_lpath LTS.path_with_word_not_empty \<open>(u_ss, u) \<in> LTS.path_with_word Aiminus1\<close> \<open>hd u_ss = p\<close> \<open>last u_ss = p1\<close> apply blast
+       apply (simp add: \<open>(p1, [\<gamma>], q') \<in> LTS.lpath Ai\<close>)
+      using LTS.path_with_word_lpath LTS.path_with_word_not_empty \<open>(v_ss, v) \<in> LTS.path_with_word Ai\<close> \<open>hd v_ss = q'\<close> \<open>last v_ss = q\<close> apply blast
+      done
+      
     have II: "p1 \<in> P_locs"
       sorry
     have "\<exists>p'' w''. (p'', w'', p1) \<in> LTS.lpath A \<and> (p, u) \<Rightarrow>\<^sup>* (p'', w'')"
@@ -564,7 +583,15 @@ next
       by auto
     note IX = p1_\<gamma>_p2_w2_q'_p(2)
     note III = p1_\<gamma>_p2_w2_q'_p(3)
+    from III have III_2: "\<exists>w2_ss. hd w2_ss = p2 \<and> last w2_ss = q' \<and> (w2_ss, op_labels w2) \<in> LTS.path_with_word Aiminus1"
+      using LTS.lpath_path_with_word[of p2 "op_labels w2" q' Aiminus1] by auto
+    then obtain w2_ss where w2_ss_p:
+      "hd w2_ss = p2" "last w2_ss = q'" "(w2_ss, op_labels w2) \<in> LTS.path_with_word Aiminus1"
+      by blast
     from III u_v_p(4) have V: "(p2, op_labels w2, q') \<in> LTS.lpath Aiminus1 \<and> (q', v, q) \<in> LTS.lpath Ai"
+      sorry
+    have V_2: "(w2_ss @ tl v_ss, (op_labels w2) @ v) \<in> LTS.path_with_word Ai"
+      using w2_ss_p(3) guguguggu(7) 
       sorry
     
     then show ?case 
