@@ -219,6 +219,9 @@ locale PDS =
   assumes \<Delta>_subset: "\<Delta> \<subseteq> (P_locs \<times> UNIV) \<times> (P_locs \<times> UNIV)"
 begin
 
+lemma finite_P_locs: "finite P_locs"
+  by simp
+
 fun config_wf :: "('ctr_loc, 'label) conf \<Rightarrow> bool" where
   "config_wf (c, l) \<longleftrightarrow> c \<in> P_locs"
 
@@ -233,10 +236,40 @@ definition is_rule :: "'ctr_loc \<times> 'label \<Rightarrow> 'ctr_loc \<times> 
 inductive_set transition_rel :: "(('ctr_loc, 'label) conf \<times> 'label \<times> ('ctr_loc, 'label) conf) set" where
   "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> ((p, \<gamma>#w'), \<gamma>, (p', (op_labels w)@w')) \<in> transition_rel"
 
-lemma finite_P_locs: "finite P_locs"
-  by simp  
-
 interpretation LTS_init transition_rel c0 .
+
+(* BEGIN "IMPORT NOTATION" *)
+abbreviation step_relp' (infix "\<Rightarrow>" 80) where
+  "c \<Rightarrow> c' \<equiv> step_relp c c'"
+
+abbreviation step_starp' (infix "\<Rightarrow>\<^sup>*" 80) where
+  "step_starp' == step_relp\<^sup>*\<^sup>*"
+(* END "IMPORT NOTATION" *)
+
+lemma step_relp'_P_locs1:
+  assumes "(q1, x) \<Rightarrow> (q2, y)"
+  shows "q1 \<in> P_locs"
+proof -
+  from assms have "\<exists>\<gamma> w. (q1, \<gamma>) \<hookrightarrow> (q2, w)"
+    by (metis PDS.transition_rel.cases PDS_axioms step_relp_def)
+  then show "?thesis"
+    using \<Delta>_subset unfolding is_rule_def
+    by auto
+qed
+
+lemma step_relp'_P_locs2:
+  assumes "(q1, x) \<Rightarrow> (q2, y)"
+  shows "q2 \<in> P_locs"
+proof -
+  from assms have "\<exists>\<gamma> w. (q1, \<gamma>) \<hookrightarrow> (q2, w)"
+    by (metis PDS.transition_rel.cases PDS_axioms step_relp_def)
+  then show "?thesis"
+    using \<Delta>_subset unfolding is_rule_def
+    by auto
+qed
+
+
+
 
 end
 
@@ -254,14 +287,6 @@ locale PDS_with_P_automaton = PDS P_locs \<Delta>
 begin
 
 interpretation LTS_init transition_rel c0 .
-
-(* BEGIN "IMPORT NOTATION" *)
-abbreviation step_relp' (infix "\<Rightarrow>" 80) where
-  "c \<Rightarrow> c' \<equiv> step_relp c c'"
-
-abbreviation step_starp' (infix "\<Rightarrow>\<^sup>*" 80) where
-  "step_starp' == step_relp\<^sup>*\<^sup>*"
-(* END "IMPORT NOTATION" *)
 
 definition accepts :: "('ctr_loc \<times> 'label \<times> 'ctr_loc) set \<Rightarrow> 'ctr_loc \<times> 'label list \<Rightarrow> bool" where
   "accepts ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,q) \<in> LTS.lpath ts)"
@@ -317,8 +342,8 @@ definition language :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_lo
 
 subsection \<open>pre star\<close>
 
-inductive saturation_rule :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where
-  add_trans: "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> (p', op_labels w, q) \<in> LTS.lpath ts \<Longrightarrow> (p, \<gamma>, q) \<notin> ts \<Longrightarrow> saturation_rule ts (ts \<union> {(p, \<gamma>, q)})"
+inductive saturation_rule :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where (* TODO: p' should also be in P_locs I guess... *)
+  add_trans: "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> p \<in> P_locs \<Longrightarrow> (p', op_labels w, q) \<in> LTS.lpath ts \<Longrightarrow> (p, \<gamma>, q) \<notin> ts \<Longrightarrow> saturation_rule ts (ts \<union> {(p, \<gamma>, q)})"
 
 lemma saturation_rule_mono:
   "saturation_rule ts ts' \<Longrightarrow> ts \<subset> ts'"
@@ -431,19 +456,19 @@ lemma pre_star_lim'_incr_lpath:
   by (simp add: pre_star'_incr_lpath saturation_def)
 
 lemma lemma_3_1:
-  assumes "(p',w) \<Rightarrow>\<^sup>* (p,v)"
-    and "(p,v) \<in> language A"
+  assumes "p'w \<Rightarrow>\<^sup>* pv"
+    and "pv \<in> language A"
     and "saturation A A'"
-  shows "accepts A' (p',w)"
+  shows "accepts A' p'w"
   using assms
 proof (induct rule: converse_rtranclp_induct)
   case base
-  then have "\<exists>q \<in> F_locs. (p, v, q) \<in> LTS.lpath A'"
+  then have "\<exists>q \<in> F_locs. (fst pv, snd pv, q) \<in> LTS.lpath A'"
     unfolding language_def using pre_star_lim'_incr_lpath accepts_def by fastforce 
   then show ?case
     unfolding accepts_def by auto
 next
-  case (step p'w p''u)
+  case (step p'w p''u) 
   define p' where "p' = fst p'w"
   define w  where "w = snd p'w"
   define p'' where "p'' = fst p''u"
@@ -453,8 +478,8 @@ next
   have p''u_def: "p''u = (p'', u)"
     using p''_def u_def by auto
 
-  have "accepts A' (p'', u)" 
-    using step unfolding p''_def u_def by auto
+  then have "accepts A' (p'', u)" 
+    using step unfolding p''u_def by auto
   then obtain q where q_p: "q \<in> F_locs \<and> (p'', u, q) \<in> LTS.lpath A'"
     unfolding accepts_def using p''_def u_def by auto
   then have "(p'', u, q) \<in> LTS.lpath A'"
@@ -471,6 +496,9 @@ next
   then obtain \<gamma> w1 u1 where \<gamma>_w1_u1_p: "w=\<gamma>#w1 \<and> u=op_labels u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)"
     by blast
 
+  have ffff: "p' \<in> P_locs"
+    using p''u_def p'w_def step.hyps(1) step_relp'_P_locs1 by auto
+
   have "\<exists>q1. (p'', op_labels u1, q1) \<in> LTS.lpath A' \<and> (q1, w1, q) \<in> LTS.lpath A'"
     using q_p \<gamma>_w1_u1_p LTS.lpath_split by auto
 
@@ -478,8 +506,16 @@ next
     by auto
 
   then have in_A': "(p', \<gamma>, q1) \<in> A'"
-    using \<gamma>_w1_u1_p add_trans step.prems(2)
-    using saturated_def saturation_def by blast
+    using \<gamma>_w1_u1_p 
+    using add_trans[of p' \<gamma> p'' u1 q1 A'] 
+    using step.prems(2)
+    using saturated_def
+    using saturation_def[of ]
+    using step.prems
+    using ffff
+    by blast
+    
+
 
   then have "(p', \<gamma>#w1, q) \<in> LTS.lpath A'"
     using in_A' lpath_step q1_p
@@ -768,6 +804,7 @@ next
     "(p1, \<gamma>) \<hookrightarrow> (p2, w2)"
     "(p2, op_labels w2, q') \<in> LTS.lpath Aiminus1"
     "(p1, \<gamma>, q') \<notin> Aiminus1"
+    "p1 \<in> P_locs"
     by (meson saturation_rule.cases)
 
   note ss_p = step(5)
@@ -795,37 +832,37 @@ next
       "(q',v,v_ss,q) \<in> LTS.path_with_word'' Ai"
       by blast
     have II: "p1 \<in> P_locs"
-      sorry
-    have "\<exists>p'' w'' ss''. (p'', w'', ss'', p1) \<in> LTS.path_with_word' A \<and> (p, u) \<Rightarrow>\<^sup>* (p'', w'')"
+      using p1_\<gamma>_p2_w2_q'_p by auto
+    have "\<exists>p'' w'' ss''. (p'', w'', ss'', p1) \<in> LTS.path_with_word'' A \<and> (p, u) \<Rightarrow>\<^sup>* (p'', w'')"
       using Suc(1)[of p u _ p1]
-      using \<open>(p, u, u_ss, p1) \<in> LTS.path_with_word' Aiminus1\<close> step.IH step.prems(1) by blast 
-    then obtain p'' w'' ss'' where "(p'', w'', ss'', p1) \<in> LTS.path_with_word' A" "(p, u) \<Rightarrow>\<^sup>* (p'', w'')"
+      using \<open>(p, u, u_ss, p1) \<in> LTS.path_with_word'' Aiminus1\<close> step.IH step.prems(1) by blast 
+    then obtain p'' w'' ss'' where "(p'', w'', ss'', p1) \<in> LTS.path_with_word'' A" "(p, u) \<Rightarrow>\<^sup>* (p'', w'')"
       by blast
-    from this lemma_3_2_b_aux''[OF this(1) _ II] have VIII: "(p, u) \<Rightarrow>\<^sup>* (p1, [])"
-      using step.prems(1) by fastforce
+    from this lemma_3_2_b_aux'''  this(1) II have VIII: "(p, u) \<Rightarrow>\<^sup>* (p1, [])"
+      using step.prems(1) by metis
 
     note IX = p1_\<gamma>_p2_w2_q'_p(2)
     note III = p1_\<gamma>_p2_w2_q'_p(3)
-    from III have III_2: "\<exists>w2_ss. (p2, op_labels w2, w2_ss, q') \<in> LTS.path_with_word' Aiminus1"
-      using LTS.lpath_path_with_word'[of p2 "op_labels w2" q' Aiminus1] by auto
-    then obtain w2_ss where III_2: "(p2, op_labels w2, w2_ss, q') \<in> LTS.path_with_word' Aiminus1"
+    from III have III_2: "\<exists>w2_ss. (p2, op_labels w2, w2_ss, q') \<in> LTS.path_with_word'' Aiminus1"
+      using LTS.lpath_path_with_word''[of p2 "op_labels w2" q' Aiminus1] by auto
+    then obtain w2_ss where III_2: "(p2, op_labels w2, w2_ss, q') \<in> LTS.path_with_word'' Aiminus1"
       by blast
 
-    from III have V: "(p2, op_labels w2, w2_ss, q') \<in> LTS.path_with_word' Aiminus1 \<and> (q', v, v_ss, q) \<in> LTS.path_with_word' Ai"
-      using III_2 \<open>(q', v, v_ss, q) \<in> LTS.path_with_word' Ai\<close> by auto
+    from III have V: "(p2, op_labels w2, w2_ss, q') \<in> LTS.path_with_word'' Aiminus1 \<and> (q', v, v_ss, q) \<in> LTS.path_with_word'' Ai"
+      using III_2 \<open>(q', v, v_ss, q) \<in> LTS.path_with_word'' Ai\<close> by auto
 
     define w2v where "w2v = op_labels w2 @ v"
     define w2v_ss where "w2v_ss = w2_ss @ tl v_ss"
 
-    then have V_merged: "(p2, w2v, w2v_ss, q) \<in> LTS.path_with_word' Ai"
+    then have V_merged: "(p2, w2v, w2v_ss, q) \<in> LTS.path_with_word'' Ai"
       sorry
 
     have j'_gug: "j' = count (transitions_of' (p2, w2v, w2v_ss, q)) t"
       sorry
     
-    have "\<exists>p' w' ss'. (p', w', ss', q) \<in> LTS.path_with_word' A \<and> (p2, w2v) \<Rightarrow>\<^sup>* (p', w')"
+    have "\<exists>p' w' ss'. (p', w', ss', q) \<in> LTS.path_with_word'' A \<and> (p2, w2v) \<Rightarrow>\<^sup>* (p', w')"
       using Suc(1) using j'_gug V_merged by auto
-    then obtain p' w' ss' where p'_w'_ss'_p: "(p', w', ss', q) \<in> LTS.path_with_word' A" "(p2, w2v) \<Rightarrow>\<^sup>* (p', w')"
+    then obtain p' w' ss' where p'_w'_ss'_p: "(p', w', ss', q) \<in> LTS.path_with_word'' A" "(p2, w2v) \<Rightarrow>\<^sup>* (p', w')"
       by blast
 
     note X = p'_w'_ss'_p(2)
@@ -851,7 +888,7 @@ next
     have "(p, w) \<Rightarrow>\<^sup>* (p', w')"
       using X \<open>(p, u @ [\<gamma>] @ v) \<Rightarrow>\<^sup>* (p1, \<gamma> # v)\<close> \<open>(p, w) = (p, u @ [\<gamma>] @ v)\<close> \<open>(p1, \<gamma> # v) \<Rightarrow> (p2, w2v)\<close> by auto
 
-    then have "(p', w', ss', q) \<in> LTS.path_with_word' A \<and> (p, w) \<Rightarrow>\<^sup>* (p', w')"
+    then have "(p', w', ss', q) \<in> LTS.path_with_word'' A \<and> (p, w) \<Rightarrow>\<^sup>* (p', w')"
       using p'_w'_ss'_p(1) by auto
     then show ?case
       by metis
