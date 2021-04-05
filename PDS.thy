@@ -42,17 +42,17 @@ inductive_set path :: "'state list set" where
 
 
 (* Labeled paths as defined in the thesis *)
-inductive_set lpath :: "('state * 'label list * 'state) set" where
-  lpath_refl[iff]: "(p, [], p) \<in> lpath"
-| lpath_step: "(p,\<gamma>,q') \<in> transition_relation \<Longrightarrow> (q',w,q) \<in> lpath
-                           \<Longrightarrow> (p, \<gamma>#w, q) \<in> lpath"
+inductive_set transition_star :: "('state * 'label list * 'state) set" where
+  transition_star_refl[iff]: "(p, [], p) \<in> transition_star"
+| transition_star_step: "(p,\<gamma>,q') \<in> transition_relation \<Longrightarrow> (q',w,q) \<in> transition_star
+                           \<Longrightarrow> (p, \<gamma>#w, q) \<in> transition_star"
 
-inductive_cases lpath_empty [elim]: "(p, [], q) \<in> lpath"
-inductive_cases lpath_cons: "(p, \<gamma>#w, q) \<in> lpath"
+inductive_cases transition_star_empty [elim]: "(p, [], q) \<in> transition_star"
+inductive_cases transition_star_cons: "(p, \<gamma>#w, q) \<in> transition_star"
 
 inductive_set path_with_word where
   path_with_word_refl''[iff]: "(p,[],[p],p) \<in> path_with_word"
-| lpath_step: "(p,\<gamma>,q') \<in> transition_relation \<Longrightarrow> (q',w,ss,q) \<in> path_with_word
+| path_with_word_step: "(p,\<gamma>,q') \<in> transition_relation \<Longrightarrow> (q',w,ss,q) \<in> path_with_word
                            \<Longrightarrow> (p, \<gamma>#w, p#ss, q) \<in> path_with_word"
 
 inductive_set path_with_word''' :: "('state list * 'label list) set" where
@@ -73,7 +73,7 @@ proof (induction rule: path_with_word.induct)
   case (path_with_word_refl'' p)
   then show ?case by auto
 next
-  case (lpath_step p \<gamma> q' w ss q)
+  case (path_with_word_step p \<gamma> q' w ss q)
   then show ?case
     by (smt (verit, ccfv_SIG) list.distinct(1) path_with_word.cases)
 qed
@@ -82,42 +82,42 @@ lemma path_with_word_not_empty[simp]: "\<not>([],w) \<in> path_with_word'''"
   using path_with_word'''.cases by force
   
 
-lemma lpath_path_with_word''':
-  assumes "(p, w, q) \<in> lpath"
+lemma transition_star_path_with_word''':
+  assumes "(p, w, q) \<in> transition_star"
   shows "\<exists>ss. hd ss = p \<and> last ss = q \<and> (ss, w) \<in> path_with_word'''"
   using assms
-proof (induction rule: lpath.inducts)
-  case (lpath_refl p)
+proof (induction rule: transition_star.inducts)
+  case (transition_star_refl p)
   then show ?case
     by (meson LTS.path_with_word'''.path_with_word_refl last.simps list.sel(1))
 next
-  case (lpath_step p \<gamma> q' w q)
+  case (transition_star_step p \<gamma> q' w q)
   then show ?case
     by (metis LTS.path_with_word'''.simps hd_Cons_tl last_ConsR list.discI list.sel(1))
 qed
 
-lemma lpath_path_with_word':
-  assumes "(p, w, q) \<in> lpath"
+lemma transition_star_path_with_word':
+  assumes "(p, w, q) \<in> transition_star"
   shows "\<exists>ss. (p, w, ss, q) \<in> path_with_word'"
-  using assms lpath_path_with_word''' unfolding path_with_word'_def by force
+  using assms transition_star_path_with_word''' unfolding path_with_word'_def by force
 
-lemma lpath_path_with_word:
-  assumes "(p, w, q) \<in> lpath"
+lemma transition_star_path_with_word:
+  assumes "(p, w, q) \<in> transition_star"
   shows "\<exists>ss. (p, w, ss, q) \<in> path_with_word"
   using assms 
-proof (induction rule: lpath.induct)
-  case (lpath_refl p)
+proof (induction rule: transition_star.induct)
+  case (transition_star_refl p)
   then show ?case by auto
 next
-  case (lpath_step p \<gamma> q' w q)
+  case (transition_star_step p \<gamma> q' w q)
   then show ?case
-    by (meson LTS.path_with_word.lpath_step)
+    by (meson LTS.path_with_word.path_with_word_step)
 qed
 
-lemma path_with_word'''_lpath:
+lemma path_with_word'''_transition_star:
   assumes "(ss, w) \<in> path_with_word'''"
   assumes "length ss \<noteq> 0"
-  shows "(hd ss, w, last ss) \<in> lpath"
+  shows "(hd ss, w, last ss) \<in> transition_star"
   using assms
 proof (induction rule: path_with_word'''.inducts)
   case (path_with_word_refl s)
@@ -126,34 +126,34 @@ proof (induction rule: path_with_word'''.inducts)
 next
   case (path_with_word_step s' ss w s l)
   then show ?case
-    using LTS.lpath.lpath_step by fastforce
+    using LTS.transition_star.transition_star_step by fastforce
 qed
 
-lemma path_with_word_lpath_Cons:
+lemma path_with_word_transition_star_Cons:
   assumes "(s1#ss@[s2], w) \<in> path_with_word'''"
-  shows "(s1, w, s2) \<in> lpath"
-  using assms path_with_word'''_lpath by force 
+  shows "(s1, w, s2) \<in> transition_star"
+  using assms path_with_word'''_transition_star by force 
 
-lemma path_with_word_lpath_Singleton:
+lemma path_with_word_transition_star_Singleton:
   assumes "([s2], w) \<in> path_with_word'''"
-  shows "(s2, [], s2) \<in> lpath"
-  using assms path_with_word'''_lpath by force
+  shows "(s2, [], s2) \<in> transition_star"
+  using assms path_with_word'''_transition_star by force
 
 
 
-(* TODO: Prove correspondences between path and lpath. *)
+(* TODO: Prove correspondences between path and transition_star. *)
 
 
-lemma lpath_split:
-  assumes "(p'', u1 @ w1, q) \<in> lpath"
-  shows "\<exists>q1. (p'', u1, q1) \<in> lpath \<and> (q1, w1, q) \<in> lpath"
+lemma transition_star_split:
+  assumes "(p'', u1 @ w1, q) \<in> transition_star"
+  shows "\<exists>q1. (p'', u1, q1) \<in> transition_star \<and> (q1, w1, q) \<in> transition_star"
 using assms proof(induction u1 arbitrary: p'')
   case Nil
   then show ?case by auto
 next
   case (Cons a u1)
   then show ?case
-    by (metis LTS.lpath.lpath_step LTS.lpath_cons append_Cons)
+    by (metis LTS.transition_star.transition_star_step LTS.transition_star_cons append_Cons)
 qed
 
 end
@@ -167,28 +167,28 @@ fun transitions_of :: "'state list * 'label list \<Rightarrow> ('state, 'label) 
 fun transitions_of' where
   "transitions_of' (p,w,ss,q) = transitions_of (ss, w)"
 
-lemma LTS_lpath_mono:
-  "mono LTS.lpath"
+lemma LTS_transition_star_mono:
+  "mono LTS.transition_star"
 proof (rule, rule)
   fix pwq :: "'a \<times> 'b list \<times> 'a"
   fix ts ts' :: "('a, 'b) transition set"
   assume sub: "ts \<subseteq> ts'"
-  assume awb_ts: "pwq \<in> LTS.lpath ts"
+  assume awb_ts: "pwq \<in> LTS.transition_star ts"
   then obtain p w q where pwq_p: "pwq = (p, w, q)"
     using prod_cases3 by blast
-  then have "(p, w, q) \<in> LTS.lpath ts"
+  then have "(p, w, q) \<in> LTS.transition_star ts"
     using awb_ts by auto
-  then have "(p, w, q) \<in>  LTS.lpath ts'"
+  then have "(p, w, q) \<in>  LTS.transition_star ts'"
   proof(induction w arbitrary: p)
     case Nil
     then show ?case
-      by (metis LTS.lpath.lpath_refl LTS.lpath_empty)
+      by (metis LTS.transition_star.transition_star_refl LTS.transition_star_empty)
   next
     case (Cons \<gamma> w)
     then show ?case
-      by (meson LTS.lpath.simps LTS.lpath_cons sub subsetD)
+      by (meson LTS.transition_star.simps LTS.transition_star_cons sub subsetD)
   qed
-  then show "pwq \<in> LTS.lpath ts'"
+  then show "pwq \<in> LTS.transition_star ts'"
     unfolding pwq_p .
 qed
 
@@ -289,7 +289,7 @@ begin
 interpretation LTS_init transition_rel c0 .
 
 definition accepts :: "('ctr_loc \<times> 'label \<times> 'ctr_loc) set \<Rightarrow> 'ctr_loc \<times> 'label list \<Rightarrow> bool" where
-  "accepts ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,q) \<in> LTS.lpath ts)"
+  "accepts ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,q) \<in> LTS.transition_star ts)"
   (* Here acceptance is defined for any p, but in the paper p has to be in P_locs *)
 
 lemma accepts_mono[mono]: "mono accepts" (* Hmm.. what does this actually mean? *)
@@ -300,10 +300,10 @@ proof (rule, rule)
   assume tsts': "ts \<subseteq> ts'"
   obtain p l where pl_p: "c = (p,l)"
     by (cases c)
-  obtain q where q_p:  "q \<in> F_locs \<and> (p, l, q) \<in> LTS.lpath ts"
+  obtain q where q_p:  "q \<in> F_locs \<and> (p, l, q) \<in> LTS.transition_star ts"
     using accepts_xa unfolding pl_p accepts_def by auto
-  then have "(p, l, q) \<in> LTS.lpath ts'"
-    using tsts' LTS_lpath_mono monoD by blast 
+  then have "(p, l, q) \<in> LTS.transition_star ts'"
+    using tsts' LTS_transition_star_mono monoD by blast 
   then have "accepts ts' (p,l)"
     unfolding accepts_def using q_p by auto
   then show "accepts ts' c"
@@ -311,29 +311,29 @@ proof (rule, rule)
 qed
 
 lemma accepts_cons: "(p, \<gamma>, q) \<in> ts \<Longrightarrow> accepts ts (q, w) \<Longrightarrow> accepts ts (p, \<gamma> # w)"
-  using LTS.lpath.lpath_step accepts_def PDS_with_P_automaton_axioms by fastforce
+  using LTS.transition_star.transition_star_step accepts_def PDS_with_P_automaton_axioms by fastforce
 
 lemma accepts_unfold: "accepts ts (p, \<gamma> # w) \<Longrightarrow> \<exists>q. (p, \<gamma>, q) \<in> ts \<and> accepts ts (q, w)"
-  using LTS.lpath_cons accepts_def case_prod_conv by force 
+  using LTS.transition_star_cons accepts_def case_prod_conv by force 
 
-lemma accepts_unfoldn: "accepts ts (p, w' @ w) \<Longrightarrow> \<exists>q. (p, w', q) \<in> LTS.lpath ts \<and> accepts ts (q, w)"
+lemma accepts_unfoldn: "accepts ts (p, w' @ w) \<Longrightarrow> \<exists>q. (p, w', q) \<in> LTS.transition_star ts \<and> accepts ts (q, w)"
 proof (induct w' arbitrary: p w)
   case Nil
-  then show ?case by (metis LTS.lpath.lpath_refl append_Nil)
+  then show ?case by (metis LTS.transition_star.transition_star_refl append_Nil)
 next
   case (Cons a w')
-  then show ?case by (metis LTS.lpath.lpath_step accepts_unfold append_Cons)
+  then show ?case by (metis LTS.transition_star.transition_star_step accepts_unfold append_Cons)
 qed
 
-lemma accepts_append: "(p, w', q) \<in> LTS.lpath ts \<Longrightarrow> accepts ts (q, w) \<Longrightarrow> accepts ts (p, w' @ w)"
+lemma accepts_append: "(p, w', q) \<in> LTS.transition_star ts \<Longrightarrow> accepts ts (q, w) \<Longrightarrow> accepts ts (p, w' @ w)"
 proof (induct w' arbitrary: w p q)
   case Nil
   then show ?case 
-    by (metis LTS.lpath_empty append_Nil)
+    by (metis LTS.transition_star_empty append_Nil)
 next
   case (Cons a w')
   then show ?case 
-    by (metis LTS.lpath_cons accepts_cons append_Cons)
+    by (metis LTS.transition_star_cons accepts_cons append_Cons)
 qed
 
 definition language :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf set" where
@@ -343,7 +343,7 @@ definition language :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_lo
 subsection \<open>pre star\<close>
 
 inductive saturation_rule :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where (* TODO: p' should also be in P_locs I guess... *)
-  add_trans: "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> p \<in> P_locs \<Longrightarrow> (p', op_labels w, q) \<in> LTS.lpath ts \<Longrightarrow> (p, \<gamma>, q) \<notin> ts \<Longrightarrow> saturation_rule ts (ts \<union> {(p, \<gamma>, q)})"
+  add_trans: "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> p \<in> P_locs \<Longrightarrow> (p', op_labels w, q) \<in> LTS.transition_star ts \<Longrightarrow> (p, \<gamma>, q) \<notin> ts \<Longrightarrow> saturation_rule ts (ts \<union> {(p, \<gamma>, q)})"
 
 lemma saturation_rule_mono:
   "saturation_rule ts ts' \<Longrightarrow> ts \<subset> ts'"
@@ -447,13 +447,13 @@ next
     using saturation_rule_incr by auto
 qed
 
-lemma pre_star'_incr_lpath:
-  "saturation_rule\<^sup>*\<^sup>* A A' \<Longrightarrow> LTS.lpath A \<subseteq> LTS.lpath A'"
-  using mono_def LTS_lpath_mono saturation_rtranclp_rule_incr by metis
+lemma pre_star'_incr_transition_star:
+  "saturation_rule\<^sup>*\<^sup>* A A' \<Longrightarrow> LTS.transition_star A \<subseteq> LTS.transition_star A'"
+  using mono_def LTS_transition_star_mono saturation_rtranclp_rule_incr by metis
 
-lemma pre_star_lim'_incr_lpath:
-  "saturation A A' \<Longrightarrow> LTS.lpath A \<subseteq> LTS.lpath A'"
-  by (simp add: pre_star'_incr_lpath saturation_def)
+lemma pre_star_lim'_incr_transition_star:
+  "saturation A A' \<Longrightarrow> LTS.transition_star A \<subseteq> LTS.transition_star A'"
+  by (simp add: pre_star'_incr_transition_star saturation_def)
 
 lemma lemma_3_1:
   assumes "p'w \<Rightarrow>\<^sup>* pv"
@@ -463,8 +463,8 @@ lemma lemma_3_1:
   using assms
 proof (induct rule: converse_rtranclp_induct)
   case base
-  then have "\<exists>q \<in> F_locs. (fst pv, snd pv, q) \<in> LTS.lpath A'"
-    unfolding language_def using pre_star_lim'_incr_lpath accepts_def by fastforce 
+  then have "\<exists>q \<in> F_locs. (fst pv, snd pv, q) \<in> LTS.transition_star A'"
+    unfolding language_def using pre_star_lim'_incr_transition_star accepts_def by fastforce 
   then show ?case
     unfolding accepts_def by auto
 next
@@ -480,9 +480,9 @@ next
 
   then have "accepts A' (p'', u)" 
     using step unfolding p''u_def by auto
-  then obtain q where q_p: "q \<in> F_locs \<and> (p'', u, q) \<in> LTS.lpath A'"
+  then obtain q where q_p: "q \<in> F_locs \<and> (p'', u, q) \<in> LTS.transition_star A'"
     unfolding accepts_def using p''_def u_def by auto
-  then have "(p'', u, q) \<in> LTS.lpath A'"
+  then have "(p'', u, q) \<in> LTS.transition_star A'"
     by auto
   have "\<exists>\<gamma> w1 u1. w=\<gamma>#w1 \<and> u=op_labels u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)"
   proof -
@@ -499,10 +499,10 @@ next
   have ffff: "p' \<in> P_locs"
     using p''u_def p'w_def step.hyps(1) step_relp'_P_locs1 by auto
 
-  have "\<exists>q1. (p'', op_labels u1, q1) \<in> LTS.lpath A' \<and> (q1, w1, q) \<in> LTS.lpath A'"
-    using q_p \<gamma>_w1_u1_p LTS.lpath_split by auto
+  have "\<exists>q1. (p'', op_labels u1, q1) \<in> LTS.transition_star A' \<and> (q1, w1, q) \<in> LTS.transition_star A'"
+    using q_p \<gamma>_w1_u1_p LTS.transition_star_split by auto
 
-  then obtain q1 where q1_p: "(p'', op_labels u1, q1) \<in> LTS.lpath A' \<and> (q1, w1, q) \<in> LTS.lpath A'"
+  then obtain q1 where q1_p: "(p'', op_labels u1, q1) \<in> LTS.transition_star A' \<and> (q1, w1, q) \<in> LTS.transition_star A'"
     by auto
 
   then have in_A': "(p', \<gamma>, q1) \<in> A'"
@@ -517,32 +517,32 @@ next
     
 
 
-  then have "(p', \<gamma>#w1, q) \<in> LTS.lpath A'"
-    using in_A' lpath_step q1_p
-    by (meson LTS.lpath.lpath_step)
-  then have t_in_A': "(p', w, q) \<in> LTS.lpath A'"
+  then have "(p', \<gamma>#w1, q) \<in> LTS.transition_star A'"
+    using in_A' transition_star_step q1_p
+    by (meson LTS.transition_star.transition_star_step)
+  then have t_in_A': "(p', w, q) \<in> LTS.transition_star A'"
     using \<gamma>_w1_u1_p by blast
 
-  from q_p t_in_A' have "q \<in> F_locs \<and> (p', w, q) \<in> LTS.lpath A'"
+  from q_p t_in_A' have "q \<in> F_locs \<and> (p', w, q) \<in> LTS.transition_star A'"
     using p'_def w_def by auto
   then show ?case
     unfolding accepts_def p'w_def using q_p by auto 
 qed
 
 lemma lemma_3_2_base: 
-  "(p, w, q) \<in> LTS.lpath rel \<Longrightarrow> \<exists>p' w'. (p, w) \<Rightarrow>\<^sup>* (p', w') \<and> (p', w', q) \<in> LTS.lpath rel"
+  "(p, w, q) \<in> LTS.transition_star rel \<Longrightarrow> \<exists>p' w'. (p, w) \<Rightarrow>\<^sup>* (p', w') \<and> (p', w', q) \<in> LTS.transition_star rel"
   by auto
 
-lemma saturation_rule_mono': "t \<in> LTS.lpath rel \<Longrightarrow> saturation_rule rel rel' \<Longrightarrow> t \<in> LTS.lpath (rel')"
-  using pre_star'_incr_lpath by blast
+lemma saturation_rule_mono': "t \<in> LTS.transition_star rel \<Longrightarrow> saturation_rule rel rel' \<Longrightarrow> t \<in> LTS.transition_star (rel')"
+  using pre_star'_incr_transition_star by blast
 
 lemma lemma_3_2_b_aux': (* Morten's lemma *)
-  assumes "(p, w, q) \<in> LTS.lpath A"
+  assumes "(p, w, q) \<in> LTS.transition_star A"
   assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs"
   assumes "q \<in> P_locs"
   shows "w = [] \<and> p = q"
   using assms(2,3)
-proof(induction rule: LTS.lpath.induct[of p w q A,OF assms(1)]) (* Strange induction. Why "OF"? *)
+proof(induction rule: LTS.transition_star.induct[of p w q A,OF assms(1)]) (* Strange induction. Why "OF"? *)
   case (1 p)
   show ?case by auto
 next
@@ -682,7 +682,7 @@ lemma guuggugugugugugugugugu:
   assumes "Suc j' = count (transitions_of' (p, w, ss, q)) (p1, \<gamma>, q')"
   assumes "(p1, \<gamma>, q') \<notin> Aiminus1"
   assumes "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}"
-  shows "\<exists>u v u_ss v_ss. ss = u_ss @ v_ss \<and> w = u @ [\<gamma>] @ v \<and> (p, u, u_ss, p1) \<in> LTS.path_with_word Aiminus1 \<and> (p1, [\<gamma>], q') \<in> LTS.lpath Ai \<and> (q', v, v_ss, q) \<in> LTS.path_with_word Ai"
+  shows "\<exists>u v u_ss v_ss. ss = u_ss @ v_ss \<and> w = u @ [\<gamma>] @ v \<and> (p, u, u_ss, p1) \<in> LTS.path_with_word Aiminus1 \<and> (p1, [\<gamma>], q') \<in> LTS.transition_star Ai \<and> (q', v, v_ss, q) \<in> LTS.path_with_word Ai"
   using assms
 proof(induction arbitrary: p rule: LTS.path_with_word.induct[OF assms(1)])
   case (1 p_add p)
@@ -711,14 +711,14 @@ next
     have "(p, u, u_ss, p1) \<in> LTS.path_with_word Aiminus1"
       using f2 unfolding u_def u_ss_def using LTS.path_with_word.intros
       using True by fastforce 
-    have "(p1, [\<gamma>], q') \<in> LTS.lpath Ai"
+    have "(p1, [\<gamma>], q') \<in> LTS.transition_star Ai"
       using f2_1
-      by (metis LTS.lpath.lpath_refl LTS.lpath.lpath_step True) 
+      by (metis LTS.transition_star.transition_star_refl LTS.transition_star.transition_star_step True) 
     have "(q', v, v_ss, q) \<in> LTS.path_with_word Ai"
       using f2(2)
       using True v_def v_ss_def by blast
     show ?thesis
-      by (metis (no_types, lifting) Pair_inject True \<open>(p, u, u_ss, p1) \<in> LTS.path_with_word Aiminus1\<close> \<open>(p1, [\<gamma>], q') \<in> LTS.lpath Ai\<close> \<open>(q', v, v_ss, q) \<in> LTS.path_with_word Ai\<close> append_Cons p_add_p self_append_conv2 u_def u_ss_def v_def v_ss_def)
+      by (metis (no_types, lifting) Pair_inject True \<open>(p, u, u_ss, p1) \<in> LTS.path_with_word Aiminus1\<close> \<open>(p1, [\<gamma>], q') \<in> LTS.transition_star Ai\<close> \<open>(q', v, v_ss, q) \<in> LTS.path_with_word Ai\<close> append_Cons p_add_p self_append_conv2 u_def u_ss_def v_def v_ss_def)
   next
     case False
     have "hd ss = q'_add"
@@ -729,13 +729,13 @@ next
       using ajskdlfjsla
        apply auto
       done
-    have "\<exists>u_ih v_ih u_ss_ih v_ss_ih. ss = u_ss_ih @ v_ss_ih \<and> w = u_ih @ [\<gamma>] @ v_ih \<and> (q'_add, u_ih, u_ss_ih, p1) \<in> LTS.path_with_word Aiminus1 \<and> (p1, [\<gamma>], q') \<in> LTS.lpath Ai \<and> (q', v_ih, v_ss_ih, q) \<in> LTS.path_with_word Ai"
+    have "\<exists>u_ih v_ih u_ss_ih v_ss_ih. ss = u_ss_ih @ v_ss_ih \<and> w = u_ih @ [\<gamma>] @ v_ih \<and> (q'_add, u_ih, u_ss_ih, p1) \<in> LTS.path_with_word Aiminus1 \<and> (p1, [\<gamma>], q') \<in> LTS.transition_star Ai \<and> (q', v_ih, v_ss_ih, q) \<in> LTS.path_with_word Ai"
       using f2(3)[of q'_add, OF f2(2) g f2(6) f2(7)] .
     then obtain u_ih v_ih u_ss_ih v_ss_ih where ppp:
       "ss = u_ss_ih @ v_ss_ih" 
       "w = u_ih @ [\<gamma>] @ v_ih"
       "(q'_add, u_ih, u_ss_ih, p1) \<in> LTS.path_with_word Aiminus1" 
-      "(p1, [\<gamma>], q') \<in> LTS.lpath Ai" 
+      "(p1, [\<gamma>], q') \<in> LTS.transition_star Ai" 
       "(q', v_ih, v_ss_ih, q) \<in> LTS.path_with_word Ai"
       by metis
     define v where "v = v_ih"
@@ -747,8 +747,8 @@ next
     have "\<gamma>' # w = u @ [\<gamma>] @ v"
       using ppp(2) u_def v_def by auto
     have "(p, u, u_ss, p1) \<in> LTS.path_with_word Aiminus1"
-      using False LTS.path_with_word.lpath_step f2(7) f2_1 ppp(3) u_def u_ss_def by fastforce
-    have "(p1, [\<gamma>], q') \<in> LTS.lpath Ai"
+      using False LTS.path_with_word.path_with_word_step f2(7) f2_1 ppp(3) u_def u_ss_def by fastforce
+    have "(p1, [\<gamma>], q') \<in> LTS.transition_star Ai"
       by (simp add: ppp(4))
     have "(q', v, v_ss, q) \<in> LTS.path_with_word Ai"
       by (simp add: ppp(5) v_def v_ss_def)
@@ -790,7 +790,7 @@ qed
           subgoal
             apply rule
             subgoal
-              apply (metis LTS.lpath.lpath_refl LTS.lpath.lpath_step)
+              apply (metis LTS.transition_star.transition_star_refl LTS.transition_star.transition_star_step)
               done
             subgoal
               apply (simp add: LTS.path_with_word.path_with_word_refl'')
@@ -835,7 +835,7 @@ next
   from step(2) obtain p1 \<gamma> p2 w2 q' where p1_\<gamma>_p2_w2_q'_p:
     "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}" 
     "(p1, \<gamma>) \<hookrightarrow> (p2, w2)"
-    "(p2, op_labels w2, q') \<in> LTS.lpath Aiminus1"
+    "(p2, op_labels w2, q') \<in> LTS.transition_star Aiminus1"
     "(p1, \<gamma>, q') \<notin> Aiminus1"
     "p1 \<in> P_locs"
     by (meson saturation_rule.cases)
@@ -855,13 +855,13 @@ next
       using step.IH step.prems(1) by metis
   next
     case (Suc j')
-    have "\<exists>u v u_ss v_ss. ss = u_ss@v_ss \<and> w = u@[\<gamma>]@v \<and> (p,u,u_ss,p1) \<in> LTS.path_with_word Aiminus1 \<and> (p1,[\<gamma>],q') \<in> LTS.lpath Ai \<and> (q',v,v_ss,q) \<in> LTS.path_with_word Ai"
+    have "\<exists>u v u_ss v_ss. ss = u_ss@v_ss \<and> w = u@[\<gamma>]@v \<and> (p,u,u_ss,p1) \<in> LTS.path_with_word Aiminus1 \<and> (p1,[\<gamma>],q') \<in> LTS.transition_star Ai \<and> (q',v,v_ss,q) \<in> LTS.path_with_word Ai"
       apply (rule guuggugugugugugugugugu[of p w ss q Ai j' p1 \<gamma> q' Aiminus1])
       using Suc(2,3) t_def  p1_\<gamma>_p2_w2_q'_p(1,4) t_def by auto
     then obtain u v u_ss v_ss where
       "ss = u_ss@v_ss \<and> w = u@[\<gamma>]@v" 
       "(p,u,u_ss,p1) \<in> LTS.path_with_word Aiminus1" 
-      "(p1,[\<gamma>],q') \<in> LTS.lpath Ai" 
+      "(p1,[\<gamma>],q') \<in> LTS.transition_star Ai" 
       "(q',v,v_ss,q) \<in> LTS.path_with_word Ai"
       by blast
     have II: "p1 \<in> P_locs"
@@ -877,7 +877,7 @@ next
     note IX = p1_\<gamma>_p2_w2_q'_p(2)
     note III = p1_\<gamma>_p2_w2_q'_p(3)
     from III have III_2: "\<exists>w2_ss. (p2, op_labels w2, w2_ss, q') \<in> LTS.path_with_word Aiminus1"
-      using LTS.lpath_path_with_word[of p2 "op_labels w2" q' Aiminus1] by auto
+      using LTS.transition_star_path_with_word[of p2 "op_labels w2" q' Aiminus1] by auto
     then obtain w2_ss where III_2: "(p2, op_labels w2, w2_ss, q') \<in> LTS.path_with_word Aiminus1"
       by blast
 
@@ -939,11 +939,11 @@ qed
   from step(2) obtain p1 \<gamma> p2 w2 q' where p1_\<gamma>_p2_w2_q'_p:
                        "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}" 
                        "(p1, \<gamma>) \<hookrightarrow> (p2, w2)"
-                       "(p2, op_labels w2, q') \<in> LTS.lpath Aiminus1"
+                       "(p2, op_labels w2, q') \<in> LTS.transition_star Aiminus1"
     by (meson saturation_rule.cases)
 
   from step(5) obtain ss where ss_p: "hd ss = p" "last ss = q" "(ss, w) \<in> LTS.path_with_word Ai"
-    using LTS.lpath_path_with_word[of p w q Ai]
+    using LTS.transition_star_path_with_word[of p w q Ai]
     by auto
 
   define t where "t = (p1, \<gamma>, q')"
@@ -956,15 +956,15 @@ qed
       using 0 p1_\<gamma>_p2_w2_q'_p 
       using lemma_3_2_a'_Aux
       using t_def by fastforce
-    then have "(p, w, q) \<in> LTS.lpath Aiminus1"
-      using LTS.path_with_word_lpath[of ss w Aiminus1] LTS.path_with_word_not_empty 0 by blast
+    then have "(p, w, q) \<in> LTS.transition_star Aiminus1"
+      using LTS.path_with_word_transition_star[of ss w Aiminus1] LTS.path_with_word_not_empty 0 by blast
     then show ?case
       using step.IH step.prems(1) by metis
   next
     case (Suc j')
     then have "j = Suc j'"
       sorry
-    have "\<exists>u v u_ss v_ss. ss = u_ss @ v_ss \<and> w = u@[\<gamma>]@v \<and> last u_ss = p1 \<and> hd v_ss = q' \<and> (u_ss,u) \<in> LTS.path_with_word Aiminus1 \<and> (p1,[\<gamma>], q') \<in> LTS.lpath Ai \<and> (v_ss,v) \<in> LTS.path_with_word Ai"
+    have "\<exists>u v u_ss v_ss. ss = u_ss @ v_ss \<and> w = u@[\<gamma>]@v \<and> last u_ss = p1 \<and> hd v_ss = q' \<and> (u_ss,u) \<in> LTS.path_with_word Aiminus1 \<and> (p1,[\<gamma>], q') \<in> LTS.transition_star Ai \<and> (v_ss,v) \<in> LTS.path_with_word Ai"
       using Suc    
       sorry
     then obtain u v u_ss v_ss where guguguggu:
@@ -973,36 +973,36 @@ qed
       "last u_ss = p1" 
       "hd v_ss = q'"
       "(u_ss,u) \<in> LTS.path_with_word Aiminus1"
-      "(p1,[\<gamma>], q') \<in> LTS.lpath Ai"
+      "(p1,[\<gamma>], q') \<in> LTS.transition_star Ai"
       "(v_ss,v) \<in> LTS.path_with_word Ai"
       by blast
     have "hd u_ss = p"
       by (metis LTS.path_with_word_not_empty Suc.prems(2) \<open>(u_ss, u) \<in> LTS.path_with_word Aiminus1\<close> \<open>ss = u_ss @ v_ss\<close> hd_append2)
     have "last v_ss = q"
       by (metis LTS.path_with_word_not_empty Suc.prems(3) \<open>(v_ss, v) \<in> LTS.path_with_word Ai\<close> \<open>ss = u_ss @ v_ss\<close> last_append)
-    have u_v_p: "w = u@[\<gamma>]@v" "(p,u,p1) \<in> LTS.lpath Aiminus1" "(p1,[\<gamma>], q') \<in> LTS.lpath Ai" "(q', v, q) \<in> LTS.lpath Ai"
+    have u_v_p: "w = u@[\<gamma>]@v" "(p,u,p1) \<in> LTS.transition_star Aiminus1" "(p1,[\<gamma>], q') \<in> LTS.transition_star Ai" "(q', v, q) \<in> LTS.transition_star Ai"
          apply (simp add: \<open>w = u @ [\<gamma>] @ v\<close>)
-      using LTS.path_with_word_lpath LTS.path_with_word_not_empty \<open>(u_ss, u) \<in> LTS.path_with_word Aiminus1\<close> \<open>hd u_ss = p\<close> \<open>last u_ss = p1\<close> apply blast
-       apply (simp add: \<open>(p1, [\<gamma>], q') \<in> LTS.lpath Ai\<close>)
-      using LTS.path_with_word_lpath LTS.path_with_word_not_empty \<open>(v_ss, v) \<in> LTS.path_with_word Ai\<close> \<open>hd v_ss = q'\<close> \<open>last v_ss = q\<close> apply blast
+      using LTS.path_with_word_transition_star LTS.path_with_word_not_empty \<open>(u_ss, u) \<in> LTS.path_with_word Aiminus1\<close> \<open>hd u_ss = p\<close> \<open>last u_ss = p1\<close> apply blast
+       apply (simp add: \<open>(p1, [\<gamma>], q') \<in> LTS.transition_star Ai\<close>)
+      using LTS.path_with_word_transition_star LTS.path_with_word_not_empty \<open>(v_ss, v) \<in> LTS.path_with_word Ai\<close> \<open>hd v_ss = q'\<close> \<open>last v_ss = q\<close> apply blast
       done
       
     have II: "p1 \<in> P_locs"
       sorry
-    have "\<exists>p'' w''. (p'', w'', p1) \<in> LTS.lpath A \<and> (p, u) \<Rightarrow>\<^sup>* (p'', w'')"
+    have "\<exists>p'' w''. (p'', w'', p1) \<in> LTS.transition_star A \<and> (p, u) \<Rightarrow>\<^sup>* (p'', w'')"
       using Suc(1)[of _ u p1] sorry
-    then obtain p'' w'' where p''_w'': "(p'', w'', p1) \<in> LTS.lpath A" "(p, u) \<Rightarrow>\<^sup>* (p'', w'')"
+    then obtain p'' w'' where p''_w'': "(p'', w'', p1) \<in> LTS.transition_star A" "(p, u) \<Rightarrow>\<^sup>* (p'', w'')"
       by blast
     from this lemma_3_2_b_aux'[OF p''_w''(1) assms(1) II] have VIII: "(p, u) \<Rightarrow>\<^sup>* (p1, [])"
       by auto
     note IX = p1_\<gamma>_p2_w2_q'_p(2)
     note III = p1_\<gamma>_p2_w2_q'_p(3)
     from III have III_2: "\<exists>w2_ss. hd w2_ss = p2 \<and> last w2_ss = q' \<and> (w2_ss, op_labels w2) \<in> LTS.path_with_word Aiminus1"
-      using LTS.lpath_path_with_word[of p2 "op_labels w2" q' Aiminus1] by auto
+      using LTS.transition_star_path_with_word[of p2 "op_labels w2" q' Aiminus1] by auto
     then obtain w2_ss where w2_ss_p:
       "hd w2_ss = p2" "last w2_ss = q'" "(w2_ss, op_labels w2) \<in> LTS.path_with_word Aiminus1"
       by blast
-    from III u_v_p(4) have V: "(p2, op_labels w2, q') \<in> LTS.lpath Aiminus1 \<and> (q', v, q) \<in> LTS.lpath Ai"
+    from III u_v_p(4) have V: "(p2, op_labels w2, q') \<in> LTS.transition_star Aiminus1 \<and> (q', v, q) \<in> LTS.transition_star Ai"
       sorry
     have V_2: "(w2_ss @ tl v_ss, (op_labels w2) @ v) \<in> LTS.path_with_word Ai"
       using w2_ss_p(3) guguguggu(7) 
