@@ -14,7 +14,7 @@ text \<open>More definitions.\<close>
 definition step_relp  :: "'state \<Rightarrow> 'state \<Rightarrow> bool" (infix "\<Rightarrow>" 80) where
   "c \<Rightarrow> c' \<equiv> \<exists>l. (c, l, c') \<in> transition_relation"
 
-abbreviation step_starp (infix "\<Rightarrow>\<^sup>*" 80) where
+abbreviation step_starp :: "'state \<Rightarrow> 'state \<Rightarrow> bool" (infix "\<Rightarrow>\<^sup>*" 80) where
   "c \<Rightarrow>\<^sup>* c' == step_relp\<^sup>*\<^sup>* c c'"
 
 definition step_rel :: "'state rel" where 
@@ -22,10 +22,6 @@ definition step_rel :: "'state rel" where
 
 definition step_star :: "'state rel" where 
   "step_star \<equiv> {(c, c'). step_starp c c'}"
-
-abbreviation
-  step_star_trans ("(_\<Rightarrow>\<^sup>*_\<Rightarrow>\<^sup>*_)" 80) where 
-  "c \<Rightarrow>\<^sup>* c' \<Rightarrow>\<^sup>* c'' \<equiv> (c \<Rightarrow>\<^sup>* c') \<and> (c' \<Rightarrow>\<^sup>* c'')"
 
 (* For a set of states C, post*(C) is the set of all states reachable from C. *)
 definition post_star :: "'state set \<Rightarrow> 'state set" where
@@ -50,7 +46,7 @@ inductive_set transition_star :: "('state * 'label list * 'state) set" where
 inductive_cases transition_star_empty [elim]: "(p, [], q) \<in> transition_star"
 inductive_cases transition_star_cons: "(p, \<gamma>#w, q) \<in> transition_star"
 
-inductive_set path_with_word where
+inductive_set path_with_word :: "('state * 'label list * 'state list * 'state) set" where
   path_with_word_refl''[iff]: "(p,[],[p],p) \<in> path_with_word"
 | path_with_word_step: "(p,\<gamma>,q') \<in> transition_relation \<Longrightarrow> (q',w,ss,q) \<in> path_with_word
                            \<Longrightarrow> (p, \<gamma>#w, p#ss, q) \<in> path_with_word"
@@ -59,12 +55,12 @@ inductive_set path_with_word''' :: "('state list * 'label list) set" where
   path_with_word_refl[iff]: "([s],[]) \<in> path_with_word'''"
 | path_with_word_step: "(s'#ss, w) \<in> path_with_word''' \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,l#w) \<in> path_with_word'''" 
 
+definition path_with_word' :: "('state \<times> 'label list \<times> 'state list \<times> 'state) set" where
+  "path_with_word' == {(p,w,ss,q) | p w ss q. (ss,w) \<in> path_with_word''' \<and> p = hd ss \<and> q = last ss}"
+
 inductive transition_of :: "('state, 'label) transition \<Rightarrow> 'state list * 'label list \<Rightarrow> bool" where
   "transition_of (s1,\<gamma>,s2) (s1#s2#ss, \<gamma>#w)"
 | "transition_of (s1,\<gamma>,s2) (ss, w) \<Longrightarrow> transition_of (s1,\<gamma>,s2) (s#ss, \<mu>#w)"
-
-definition path_with_word' where
-  "path_with_word' == {(p,w,ss,q) | p w ss q. (ss,w) \<in> path_with_word''' \<and> p = hd ss \<and> q = last ss}"
 
 lemma path_with_word_induct_non_empty_word: "(x10, x20, x30, x40) \<in> path_with_word \<Longrightarrow> x20 \<noteq> [] \<Longrightarrow>
 (\<And>p \<gamma> q'. (p, \<gamma>, q') \<in> transition_relation \<Longrightarrow> P p [\<gamma>] [p, q'] q') \<Longrightarrow>
@@ -81,7 +77,6 @@ qed
 lemma path_with_word_not_empty[simp]: "\<not>([],w) \<in> path_with_word'''"
   using path_with_word'''.cases by force
   
-
 lemma transition_star_path_with_word''':
   assumes "(p, w, q) \<in> transition_star"
   shows "\<exists>ss. hd ss = p \<and> last ss = q \<and> (ss, w) \<in> path_with_word'''"
@@ -139,11 +134,6 @@ lemma path_with_word_transition_star_Singleton:
   shows "(s2, [], s2) \<in> transition_star"
   using assms path_with_word'''_transition_star by force
 
-
-
-(* TODO: Prove correspondences between path and transition_star. *)
-
-
 lemma transition_star_split:
   assumes "(p'', u1 @ w1, q) \<in> transition_star"
   shows "\<exists>q1. (p'', u1, q1) \<in> transition_star \<and> (q1, w1, q) \<in> transition_star"
@@ -198,7 +188,8 @@ locale LTS_init = LTS transition_relation for transition_relation :: "('state, '
   fixes r :: 'state
 begin
 
-abbreviation initial where "initial == (\<lambda>r'. r' = r)"
+abbreviation initial :: "'state \<Rightarrow> bool" where
+  "initial == (\<lambda>r'. r' = r)"
 
 end
 
@@ -231,20 +222,20 @@ primrec op_labels :: "'label operation \<Rightarrow> 'label list" where
 | "op_labels (push \<gamma>  \<gamma>') = [\<gamma>, \<gamma>']"
 
 definition is_rule :: "'ctr_loc \<times> 'label \<Rightarrow> 'ctr_loc \<times> 'label operation \<Rightarrow> bool" (infix "\<hookrightarrow>" 80) where
-  "x \<hookrightarrow> y \<equiv> (x,y) \<in> \<Delta>"
+  "p\<gamma> \<hookrightarrow> p'w \<equiv> (p\<gamma>,p'w) \<in> \<Delta>"
 
 inductive_set transition_rel :: "(('ctr_loc, 'label) conf \<times> 'label \<times> ('ctr_loc, 'label) conf) set" where
   "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> ((p, \<gamma>#w'), \<gamma>, (p', (op_labels w)@w')) \<in> transition_rel"
 
 interpretation LTS_init transition_rel c0 .
 
-(* BEGIN "IMPORT NOTATION" *)
-abbreviation step_relp' (infix "\<Rightarrow>" 80) where
+(* Reintroducing notation from LTS *)
+abbreviation step_relp' :: "('ctr_loc, 'label) conf \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" (infix "\<Rightarrow>" 80) where
   "c \<Rightarrow> c' \<equiv> step_relp c c'"
 
-abbreviation step_starp' (infix "\<Rightarrow>\<^sup>*" 80) where
+(* Reintroducing notation from LTS *)
+abbreviation step_starp' :: "('ctr_loc, 'label) conf \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" (infix "\<Rightarrow>\<^sup>*" 80) where
   "step_starp' == step_relp\<^sup>*\<^sup>*"
-(* END "IMPORT NOTATION" *)
 
 lemma step_relp'_P_locs1:
   assumes "(q1, x) \<Rightarrow> (q2, y)"
@@ -288,7 +279,7 @@ begin
 
 interpretation LTS_init transition_rel c0 .
 
-definition accepts :: "('ctr_loc \<times> 'label \<times> 'ctr_loc) set \<Rightarrow> 'ctr_loc \<times> 'label list \<Rightarrow> bool" where
+definition accepts :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc , 'label) conf \<Rightarrow> bool" where
   "accepts ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,q) \<in> LTS.transition_star ts)"
   (* Here acceptance is defined for any p, but in the paper p has to be in P_locs *)
 
@@ -424,9 +415,7 @@ qed
 
 (*
 
-TODO: Prove that saturations are unique. (Priority 2)
-
-TODO: Prove more theorems from the book. (Priority 1)
+TODO: Prove that saturations are unique?
 
 *)
 
@@ -496,7 +485,7 @@ next
   then obtain \<gamma> w1 u1 where \<gamma>_w1_u1_p: "w=\<gamma>#w1 \<and> u=op_labels u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)"
     by blast
 
-  have ffff: "p' \<in> P_locs"
+  have p'_P_locs: "p' \<in> P_locs"
     using p''u_def p'w_def step.hyps(1) step_relp'_P_locs1 by auto
 
   have "\<exists>q1. (p'', op_labels u1, q1) \<in> LTS.transition_star A' \<and> (q1, w1, q) \<in> LTS.transition_star A'"
@@ -512,10 +501,8 @@ next
     using saturated_def
     using saturation_def[of ]
     using step.prems
-    using ffff
+    using p'_P_locs
     by blast
-    
-
 
   then have "(p', \<gamma>#w1, q) \<in> LTS.transition_star A'"
     using in_A' transition_star_step q1_p
@@ -569,15 +556,11 @@ lemma count_next_0:
   shows "count (transitions_of (s' # ss, w)) (p1, \<gamma>, q') = 0"
   using assms by (cases "s = p1 \<and> l = \<gamma> \<and> s' = q'") auto
 
-
-
-
 lemma count_next_hd:
   assumes "count (transitions_of (s # s' # ss, l # w)) (p1, \<gamma>, q') = 0"
   shows "(s, l, s') \<noteq> (p1, \<gamma>, q')"
   using assms by auto
   
-
 lemma lemma_3_2_a'_Aux:
   assumes "(ss, w) \<in> LTS.path_with_word''' Ai"
   assumes "0 = count (transitions_of (ss, w)) (p1, \<gamma>, q')"
@@ -675,7 +658,6 @@ next
   ultimately show ?case
     by auto
 qed
-
 
 lemma guuggugugugugugugugugu:
   assumes "(p, w, ss, q) \<in> LTS.path_with_word Ai"
