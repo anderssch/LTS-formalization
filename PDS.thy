@@ -36,8 +36,6 @@ inductive_set path :: "'state list set" where
   "[s] \<in> path"
 | "(s'#ss) \<in> path \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> s#s'#ss \<in> path"
 
-
-(* Labeled paths as defined in the thesis *)
 inductive_set transition_star :: "('state * 'label list * 'state) set" where
   transition_star_refl[iff]: "(p, [], p) \<in> transition_star"
 | transition_star_step: "(p,\<gamma>,q') \<in> transition_relation \<Longrightarrow> (q',w,q) \<in> transition_star
@@ -47,13 +45,13 @@ inductive_cases transition_star_empty [elim]: "(p, [], q) \<in> transition_star"
 inductive_cases transition_star_cons: "(p, \<gamma>#w, q) \<in> transition_star"
 
 inductive_set path_with_word :: "('state * 'label list * 'state list * 'state) set" where
-  path_with_word_refl''[iff]: "(p,[],[p],p) \<in> path_with_word"
+  path_with_word_refl[iff]: "(p,[],[p],p) \<in> path_with_word"
 | path_with_word_step: "(p,\<gamma>,q') \<in> transition_relation \<Longrightarrow> (q',w,ss,q) \<in> path_with_word
                            \<Longrightarrow> (p, \<gamma>#w, p#ss, q) \<in> path_with_word"
 
 inductive_set path_with_word''' :: "('state list * 'label list) set" where
-  path_with_word_refl[iff]: "([s],[]) \<in> path_with_word'''"
-| path_with_word_step: "(s'#ss, w) \<in> path_with_word''' \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,l#w) \<in> path_with_word'''" 
+  path_with_word_refl'''[iff]: "([s],[]) \<in> path_with_word'''"
+| path_with_word_step''': "(s'#ss, w) \<in> path_with_word''' \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,l#w) \<in> path_with_word'''" 
 
 definition path_with_word' :: "('state \<times> 'label list \<times> 'state list \<times> 'state) set" where
   "path_with_word' == {(p,w,ss,q) | p w ss q. (ss,w) \<in> path_with_word''' \<and> p = hd ss \<and> q = last ss}"
@@ -66,7 +64,7 @@ lemma path_with_word_induct_non_empty_word: "(x10, x20, x30, x40) \<in> path_wit
 (\<And>p \<gamma> q'. (p, \<gamma>, q') \<in> transition_relation \<Longrightarrow> P p [\<gamma>] [p, q'] q') \<Longrightarrow>
 (\<And>p \<gamma> q' w ss q. (p, \<gamma>, q') \<in> transition_relation \<Longrightarrow> w \<noteq> [] \<Longrightarrow> (q', w, ss, q) \<in> path_with_word \<Longrightarrow> P q' w ss q \<Longrightarrow> P p (\<gamma> # w) (p # ss) q) \<Longrightarrow> P x10 x20 x30 x40"
 proof (induction rule: path_with_word.induct)
-  case (path_with_word_refl'' p)
+  case (path_with_word_refl p)
   then show ?case by auto
 next
   case (path_with_word_step p \<gamma> q' w ss q)
@@ -84,7 +82,7 @@ lemma transition_star_path_with_word''':
 proof (induction rule: transition_star.inducts)
   case (transition_star_refl p)
   then show ?case
-    by (meson LTS.path_with_word'''.path_with_word_refl last.simps list.sel(1))
+    by (meson LTS.path_with_word'''.path_with_word_refl''' last.simps list.sel(1))
 next
   case (transition_star_step p \<gamma> q' w q)
   then show ?case
@@ -115,11 +113,11 @@ lemma path_with_word'''_transition_star:
   shows "(hd ss, w, last ss) \<in> transition_star"
   using assms
 proof (induction rule: path_with_word'''.inducts)
-  case (path_with_word_refl s)
+  case (path_with_word_refl''' s)
   show ?case
     by simp 
 next
-  case (path_with_word_step s' ss w s l)
+  case (path_with_word_step''' s' ss w s l)
   then show ?case
     using LTS.transition_star.transition_star_step by fastforce
 qed
@@ -259,10 +257,8 @@ proof -
     by auto
 qed
 
-
-
-
 end
+
 
 section \<open>PDS with P automaton\<close>
 
@@ -349,7 +345,8 @@ definition saturation :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_
 lemma saturation_rule_card_Suc: "saturation_rule ts ts' \<Longrightarrow> card ts' = Suc (card ts)"
   unfolding saturation_rule.simps by auto
 
-lemma no_infinite: (* Maybe lazy lists are better? *)
+lemma no_infinite: 
+(* Maybe lazy lists are better? *)
   assumes "\<forall>i :: nat. saturation_rule (tts i) (tts (Suc i))"
   shows "False"
 proof -
@@ -376,7 +373,8 @@ proof -
     by (metis card_seteq f_def finite_UNIV le_eq_less_or_eq nat_neq_iff subset_UNIV)
 qed
 
-lemma saturation_termination: (* Maybe lazy lists are better? *)
+lemma saturation_termination: 
+(* Maybe lazy lists are better? *)
   "\<not>(\<exists>tts. (\<forall>i :: nat. saturation_rule (tts i) (tts (Suc i))))"
   using no_infinite by presburger
 
@@ -523,7 +521,8 @@ lemma lemma_3_2_base:
 lemma saturation_rule_mono': "t \<in> LTS.transition_star rel \<Longrightarrow> saturation_rule rel rel' \<Longrightarrow> t \<in> LTS.transition_star (rel')"
   using pre_star'_incr_transition_star by blast
 
-lemma lemma_3_2_b_aux': (* Morten's lemma *)
+lemma lemma_3_2_b_aux':
+ (* Lemma from discussion with Morten *)
   assumes "(p, w, q) \<in> LTS.transition_star A"
   assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs"
   assumes "q \<in> P_locs"
@@ -537,7 +536,8 @@ next
   then show ?case by blast
 qed
 
-lemma lemma_3_2_b_aux''': (* Morten's lemma 3*) (* Should this say something about ss also? *)
+lemma lemma_3_2_b_aux''':
+ (* Lemma from discussion with Morten 2 *) (* Should this say something about ss also? *)
   assumes "(p, w, ss, q) \<in> LTS.path_with_word A"
   assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs"
   assumes "q \<in> P_locs"
@@ -570,7 +570,7 @@ lemma lemma_3_2_a'_Aux:
 proof (induction rule: LTS.path_with_word'''.induct[OF assms(1)])
   case (1 s)
   then show ?case
-    by (simp add: LTS.path_with_word'''.path_with_word_refl)
+    by (simp add: LTS.path_with_word'''.path_with_word_refl''')
 next
   case (2 s' ss w s l)
   from 2(5) have "0 = count (transitions_of (s' # ss, w)) (p1, \<gamma>, q')"
@@ -580,7 +580,7 @@ next
   have "(s, l, s') \<in> Aiminus1"
     using 2(2,5) assms(3) by force
   then show ?case 
-    using x by (simp add: LTS.path_with_word'''.path_with_word_step) 
+    using x by (simp add: LTS.path_with_word'''.path_with_word_step''') 
 qed
 
 lemma lemma_3_2_a'_Aux_2:
@@ -588,32 +588,18 @@ lemma lemma_3_2_a'_Aux_2:
   assumes "0 = count (transitions_of' (p, w, ss, q)) (p1, \<gamma>, q')"
   assumes "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}"
   shows "(p, w, ss, q) \<in> LTS.path_with_word' Aiminus1"
-  using assms apply auto
-  unfolding LTS.path_with_word'_def
-  apply auto
-  using lemma_3_2_a'_Aux[of ss w _ p1 \<gamma> q' _] assms(2) assms(3)
-  apply auto
-  done
+  using assms lemma_3_2_a'_Aux[of ss w _ p1 \<gamma> q' _] unfolding LTS.path_with_word'_def by auto
 
 lemma count_empty_zero: "count (transitions_of' (p, [], [p_add], p_add)) (p1, \<gamma>, q') = 0"
   by simp
 
-lemma ajskdlfjsla:
+lemma count_transitions_of'_tails:
   assumes "(p, \<gamma>', q'_add) \<noteq> (p1, \<gamma>, q')"
   shows "count (transitions_of' (p, \<gamma>' # w, p # q'_add # ss_rest, q)) (p1, \<gamma>, q') = count (transitions_of' (q'_add, w, q'_add # ss_rest, q)) (p1, \<gamma>, q')"
-  apply (cases w)
-  subgoal
-    using assms
-    apply auto
-    done
-  subgoal 
-    using assms 
-    apply -
-    apply auto
-    done
-  done
+  using assms by (cases w) auto
 
-lemma lemma_3_2_a'_Aux_3: (* This proof is a mess. Better start over. *)
+lemma lemma_3_2_a'_Aux_3:
+ (* This proof is a bit messy. *)
   assumes "(p, w, ss ,q) \<in> LTS.path_with_word Ai"
   assumes "0 = count (transitions_of' (p, w, ss, q)) (p1, \<gamma>, q')"
   assumes "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}"
@@ -625,29 +611,29 @@ proof (induction arbitrary: p rule: LTS.path_with_word.induct[OF assms(1)])
     by (metis LTS.path_with_word.simps list.distinct(1))
 next
   case (2 p' \<gamma>' q'' w ss q)
-  have ppp: "p' = p"
+  have p_is_p': "p' = p"
     by (meson "2.prems"(1) LTS.path_with_word.cases list.inject)
   { 
     assume a: "length ss > 0" 
-    have xxx: "(p, \<gamma>', hd ss) \<noteq> (p1, \<gamma>, q')"
+    have not_found: "(p, \<gamma>', hd ss) \<noteq> (p1, \<gamma>, q')"
       using LTS.path_with_word.cases count_next_hd list.sel(1) transitions_of'.simps
       using 2(4) 2(5) by (metis a hd_Cons_tl length_greater_0_conv) 
     have hdAI: "(p, \<gamma>', hd ss) \<in> Ai"
-      by (metis "2.hyps"(1) "2.hyps"(2) LTS.path_with_word.cases list.sel(1) ppp)
+      by (metis "2.hyps"(1) "2.hyps"(2) LTS.path_with_word.cases list.sel(1) p_is_p')
     have t: "(p, \<gamma>', hd ss) \<in> Aiminus1"
-      using 2 hdAI xxx by force 
+      using 2 hdAI not_found by force 
     have "(p, \<gamma>' # w, p' # ss, q) \<in> LTS.path_with_word (Aiminus1 \<union> {(p1, \<gamma>, q')})"
       using "2.prems"(1) assms(3) by fastforce
-    have f7: "hd ss # tl ss = ss"
+    have ss_hd_tl: "hd ss # tl ss = ss"
       using a hd_Cons_tl by blast
     moreover
     have "(hd ss, w, ss, q) \<in> LTS.path_with_word Ai"
-      using f7 "2.hyps"(2) using LTS.path_with_word.cases
+      using ss_hd_tl "2.hyps"(2) using LTS.path_with_word.cases
       by (metis list.sel(1))
     ultimately have "(hd ss, w, ss, q) \<in> LTS.path_with_word Aiminus1"
-      using f7 using "2.IH" "2.prems"(2) xxx ajskdlfjsla assms(3) by (smt (z3) ppp)
+      using ss_hd_tl using "2.IH" "2.prems"(2) not_found assms(3) p_is_p' count_transitions_of'_tails by (metis) 
     from this t have ?case
-      using LTS.path_with_word.intros(2)[of p \<gamma>' "hd ss" Aiminus1 w ss q] using ppp by auto
+      using LTS.path_with_word.intros(2)[of p \<gamma>' "hd ss" Aiminus1 w ss q] using p_is_p' by auto
   }
   moreover
   { 
@@ -659,7 +645,7 @@ next
     by auto
 qed
 
-lemma guuggugugugugugugugugu:
+lemma split_at_first_t:
   assumes "(p, w, ss, q) \<in> LTS.path_with_word Ai"
   assumes "Suc j' = count (transitions_of' (p, w, ss, q)) (p1, \<gamma>, q')"
   assumes "(p1, \<gamma>, q') \<notin> Aiminus1"
@@ -706,11 +692,7 @@ next
     have "hd ss = q'_add"
       by (metis LTS.path_with_word.cases f2(2) list.sel(1))
     from this False have g: "Suc j' = count (transitions_of' (q'_add, w, ss, q)) (p1, \<gamma>, q')"
-      using f2(5)  
-      apply (cases ss)
-      using ajskdlfjsla
-       apply auto
-      done
+      using f2(5) by (cases ss) auto
     have "\<exists>u_ih v_ih u_ss_ih v_ss_ih. ss = u_ss_ih @ v_ss_ih \<and> w = u_ih @ [\<gamma>] @ v_ih \<and> (q'_add, u_ih, u_ss_ih, p1) \<in> LTS.path_with_word Aiminus1 \<and> (p1, [\<gamma>], q') \<in> LTS.transition_star Ai \<and> (q', v_ih, v_ss_ih, q) \<in> LTS.path_with_word Ai"
       using f2(3)[of q'_add, OF f2(2) g f2(6) f2(7)] .
     then obtain u_ih v_ih u_ss_ih v_ss_ih where ppp:
@@ -745,8 +727,6 @@ qed
 
 
 (*
-
-
   case (1 p'' \<gamma>'' q'')
   then show ?case
     apply (cases "(p'', \<gamma>'', q'') = (p1, \<gamma>, q')")
@@ -838,7 +818,7 @@ next
   next
     case (Suc j')
     have "\<exists>u v u_ss v_ss. ss = u_ss@v_ss \<and> w = u@[\<gamma>]@v \<and> (p,u,u_ss,p1) \<in> LTS.path_with_word Aiminus1 \<and> (p1,[\<gamma>],q') \<in> LTS.transition_star Ai \<and> (q',v,v_ss,q) \<in> LTS.path_with_word Ai"
-      apply (rule guuggugugugugugugugugu[of p w ss q Ai j' p1 \<gamma> q' Aiminus1])
+      apply (rule split_at_first_t[of p w ss q Ai j' p1 \<gamma> q' Aiminus1])
       using Suc(2,3) t_def  p1_\<gamma>_p2_w2_q'_p(1,4) t_def by auto
     then obtain u v u_ss v_ss where
       "ss = u_ss@v_ss \<and> w = u@[\<gamma>]@v" 
@@ -870,14 +850,13 @@ next
     define w2v_ss where "w2v_ss = w2_ss @ tl v_ss"
 
     then have V_merged: "(p2, w2v, w2v_ss, q) \<in> LTS.path_with_word Ai"
-
       sorry
 
-    have j'_gug: "j' = count (transitions_of' (p2, w2v, w2v_ss, q)) t"
+    have j'_count: "j' = count (transitions_of' (p2, w2v, w2v_ss, q)) t"
       sorry
     
     have "\<exists>p' w' ss'. (p', w', ss', q) \<in> LTS.path_with_word A \<and> (p2, w2v) \<Rightarrow>\<^sup>* (p', w')"
-      using Suc(1) using j'_gug V_merged by auto
+      using Suc(1) using j'_count V_merged by auto
     then obtain p' w' ss' where p'_w'_ss'_p: "(p', w', ss', q) \<in> LTS.path_with_word A" "(p2, w2v) \<Rightarrow>\<^sup>* (p', w')"
       by blast
 
