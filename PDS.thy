@@ -725,62 +725,6 @@ next
   qed
 qed
 
-
-(*
-  case (1 p'' \<gamma>'' q'')
-  then show ?case
-    apply (cases "(p'', \<gamma>'', q'') = (p1, \<gamma>, q')")
-    subgoal
-      apply (rule_tac x="[]" in exI)
-      apply (rule_tac x="[]" in exI)
-      apply (rule_tac x="[p'']" in exI)
-      apply (rule_tac x="[q'']" in exI)
-      apply rule
-      subgoal
-        apply auto 
-        done
-      subgoal
-        apply rule
-        subgoal
-          apply auto
-          done
-        subgoal
-          apply rule
-          subgoal
-            apply (simp add: LTS.path_with_word.path_with_word_refl'')
-            done
-          subgoal
-            apply rule
-            subgoal
-              apply (metis LTS.transition_star.transition_star_refl LTS.transition_star.transition_star_step)
-              done
-            subgoal
-              apply (simp add: LTS.path_with_word.path_with_word_refl'')
-              done
-            done
-          done
-        done
-      done
-    subgoal
-      apply (subgoal_tac "(p'', \<gamma>'', q'') \<in> Aiminus1")
-      subgoal
-
-        apply (rule_tac x="[]" in exI)
-        apply (rule_tac x="[]" in exI)
-        apply (rule_tac x="[]" in exI)
-        apply (rule_tac x="[]" in exI)
-        sorry
-      subgoal
-        apply blast
-        done
-    done
-  
-next
-  case (2 p \<gamma> q' w ss q)
-  then show ?case sorry
-qed *)
-
-
 lemma lemma_3_2_a':
   assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs"
   assumes "saturation_rule\<^sup>*\<^sup>* A A'"
@@ -890,92 +834,9 @@ next
 
   qed
 qed 
-  
 
 
-
-
-(*
-  (* Old proof *)
-  from step(2) obtain p1 \<gamma> p2 w2 q' where p1_\<gamma>_p2_w2_q'_p:
-                       "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}" 
-                       "(p1, \<gamma>) \<hookrightarrow> (p2, w2)"
-                       "(p2, op_labels w2, q') \<in> LTS.transition_star Aiminus1"
-    by (meson saturation_rule.cases)
-
-  from step(5) obtain ss where ss_p: "hd ss = p" "last ss = q" "(ss, w) \<in> LTS.path_with_word Ai"
-    using LTS.transition_star_path_with_word[of p w q Ai]
-    by auto
-
-  define t where "t = (p1, \<gamma>, q')"
-  define j where "j = count (transitions_of (ss, w)) t"
-
-  from j_def ss_p show ?case
-  proof (induction j arbitrary: q w ss)
-    case 0
-    have "(ss, w) \<in> LTS.path_with_word Aiminus1"
-      using 0 p1_\<gamma>_p2_w2_q'_p 
-      using lemma_3_2_a'_Aux
-      using t_def by fastforce
-    then have "(p, w, q) \<in> LTS.transition_star Aiminus1"
-      using LTS.path_with_word_transition_star[of ss w Aiminus1] LTS.path_with_word_not_empty 0 by blast
-    then show ?case
-      using step.IH step.prems(1) by metis
-  next
-    case (Suc j')
-    then have "j = Suc j'"
-      sorry
-    have "\<exists>u v u_ss v_ss. ss = u_ss @ v_ss \<and> w = u@[\<gamma>]@v \<and> last u_ss = p1 \<and> hd v_ss = q' \<and> (u_ss,u) \<in> LTS.path_with_word Aiminus1 \<and> (p1,[\<gamma>], q') \<in> LTS.transition_star Ai \<and> (v_ss,v) \<in> LTS.path_with_word Ai"
-      using Suc    
-      sorry
-    then obtain u v u_ss v_ss where guguguggu:
-      "ss = u_ss @ v_ss"
-      "w = u@[\<gamma>]@v"
-      "last u_ss = p1" 
-      "hd v_ss = q'"
-      "(u_ss,u) \<in> LTS.path_with_word Aiminus1"
-      "(p1,[\<gamma>], q') \<in> LTS.transition_star Ai"
-      "(v_ss,v) \<in> LTS.path_with_word Ai"
-      by blast
-    have "hd u_ss = p"
-      by (metis LTS.path_with_word_not_empty Suc.prems(2) \<open>(u_ss, u) \<in> LTS.path_with_word Aiminus1\<close> \<open>ss = u_ss @ v_ss\<close> hd_append2)
-    have "last v_ss = q"
-      by (metis LTS.path_with_word_not_empty Suc.prems(3) \<open>(v_ss, v) \<in> LTS.path_with_word Ai\<close> \<open>ss = u_ss @ v_ss\<close> last_append)
-    have u_v_p: "w = u@[\<gamma>]@v" "(p,u,p1) \<in> LTS.transition_star Aiminus1" "(p1,[\<gamma>], q') \<in> LTS.transition_star Ai" "(q', v, q) \<in> LTS.transition_star Ai"
-         apply (simp add: \<open>w = u @ [\<gamma>] @ v\<close>)
-      using LTS.path_with_word_transition_star LTS.path_with_word_not_empty \<open>(u_ss, u) \<in> LTS.path_with_word Aiminus1\<close> \<open>hd u_ss = p\<close> \<open>last u_ss = p1\<close> apply blast
-       apply (simp add: \<open>(p1, [\<gamma>], q') \<in> LTS.transition_star Ai\<close>)
-      using LTS.path_with_word_transition_star LTS.path_with_word_not_empty \<open>(v_ss, v) \<in> LTS.path_with_word Ai\<close> \<open>hd v_ss = q'\<close> \<open>last v_ss = q\<close> apply blast
-      done
-      
-    have II: "p1 \<in> P_locs"
-      sorry
-    have "\<exists>p'' w''. (p'', w'', p1) \<in> LTS.transition_star A \<and> (p, u) \<Rightarrow>\<^sup>* (p'', w'')"
-      using Suc(1)[of _ u p1] sorry
-    then obtain p'' w'' where p''_w'': "(p'', w'', p1) \<in> LTS.transition_star A" "(p, u) \<Rightarrow>\<^sup>* (p'', w'')"
-      by blast
-    from this lemma_3_2_b_aux'[OF p''_w''(1) assms(1) II] have VIII: "(p, u) \<Rightarrow>\<^sup>* (p1, [])"
-      by auto
-    note IX = p1_\<gamma>_p2_w2_q'_p(2)
-    note III = p1_\<gamma>_p2_w2_q'_p(3)
-    from III have III_2: "\<exists>w2_ss. hd w2_ss = p2 \<and> last w2_ss = q' \<and> (w2_ss, op_labels w2) \<in> LTS.path_with_word Aiminus1"
-      using LTS.transition_star_path_with_word[of p2 "op_labels w2" q' Aiminus1] by auto
-    then obtain w2_ss where w2_ss_p:
-      "hd w2_ss = p2" "last w2_ss = q'" "(w2_ss, op_labels w2) \<in> LTS.path_with_word Aiminus1"
-      by blast
-    from III u_v_p(4) have V: "(p2, op_labels w2, q') \<in> LTS.transition_star Aiminus1 \<and> (q', v, q) \<in> LTS.transition_star Ai"
-      sorry
-    have V_2: "(w2_ss @ tl v_ss, (op_labels w2) @ v) \<in> LTS.path_with_word Ai"
-      using w2_ss_p(3) guguguggu(7) 
-      sorry
-    
-    then show ?case 
-      sorry
-  qed
-qed
-*)
-
-    (* I think there is a challenge here.
+ (*  I think there is a challenge here.
      In the proof he looks at << p \<midarrow>w\<rightarrow>*_i q >> as if it were a path. But there can be
      several paths like that. So I need to fix one.
 
