@@ -725,6 +725,51 @@ next
   qed
 qed
 
+lemma path_with_word_mono:
+  assumes "(p, w, ss, q) \<in> LTS.path_with_word A1"
+  assumes "A1 \<subseteq> A2"
+  shows "(p, w, ss, q) \<in> LTS.path_with_word A2"
+  using assms 
+proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by (simp add: LTS.path_with_word.path_with_word_refl)
+next
+  case (2 p \<gamma> q' w ss q)
+  then show ?case
+    by (meson LTS.path_with_word.path_with_word_step in_mono)
+
+qed
+
+lemma path_with_word_append:
+  assumes "(p2, w2, w2_ss, q') \<in> LTS.path_with_word Ai"
+  assumes "(q', v, v_ss, q) \<in> LTS.path_with_word Ai"
+  shows "(p2, w2 @ v, w2_ss @ tl v_ss, q) \<in> LTS.path_with_word Ai"
+using assms proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by (smt (verit, best) LTS.path_with_word.cases append_Cons append_Nil list.sel(3))
+next
+  case (2 p \<gamma> q' w ss q)
+  then show ?case
+    using LTS.path_with_word.path_with_word_step by fastforce 
+qed
+
+lemma XXX:
+  assumes "(p, u) \<Rightarrow>\<^sup>* (p1, [])"
+  shows "(p, u @ v) \<Rightarrow>\<^sup>* (p1, v)"
+  using assms 
+proof (induction u arbitrary: p)
+  case Nil
+  then show ?case
+    by (metis LTS.step_relp_def append_Nil converse_rtranclpE2 list.distinct(1) prod.inject rtranclp.simps transition_rel.cases)
+next
+  case (Cons a u)
+  then show ?case 
+    sorry
+qed
+
+
 lemma lemma_3_2_a':
   assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs"
   assumes "saturation_rule\<^sup>*\<^sup>* A A'"
@@ -787,16 +832,20 @@ next
     then obtain w2_ss where III_2: "(p2, op_labels w2, w2_ss, q') \<in> LTS.path_with_word Aiminus1"
       by blast
 
-    from III have V: "(p2, op_labels w2, w2_ss, q') \<in> LTS.path_with_word Aiminus1 \<and> (q', v, v_ss, q) \<in> LTS.path_with_word Ai"
+    from III have V: "(p2, op_labels w2, w2_ss, q') \<in> LTS.path_with_word Aiminus1" "(q', v, v_ss, q) \<in> LTS.path_with_word Ai"
       using III_2 \<open>(q', v, v_ss, q) \<in> LTS.path_with_word Ai\<close> by auto
 
     define w2v where "w2v = op_labels w2 @ v"
     define w2v_ss where "w2v_ss = w2_ss @ tl v_ss"
 
+    from V(1) have "(p2, op_labels w2, w2_ss, q') \<in> LTS.path_with_word Ai"
+      using path_with_word_mono p1_\<gamma>_p2_w2_q'_p(1) by (metis Un_iff subsetI) 
     then have V_merged: "(p2, w2v, w2v_ss, q) \<in> LTS.path_with_word Ai"
-      sorry
+      using V(2) unfolding w2v_def w2v_ss_def using path_with_word_append
+      by metis
 
     have j'_count: "j' = count (transitions_of' (p2, w2v, w2v_ss, q)) t"
+      using Suc (2)
       sorry
     
     have "\<exists>p' w' ss'. (p', w', ss', q) \<in> LTS.path_with_word A \<and> (p2, w2v) \<Rightarrow>\<^sup>* (p', w')"
@@ -815,7 +864,8 @@ next
         using \<open>ss = u_ss @ v_ss \<and> w = u @ [\<gamma>] @ v\<close> apply blast
         done
       subgoal
-        sorry
+        using VIII XXX apply auto
+        done
       subgoal
         apply (metis IX LTS.step_relp_def transition_rel.intros w2v_def)
         done
