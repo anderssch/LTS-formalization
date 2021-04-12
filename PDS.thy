@@ -73,7 +73,9 @@ next
 qed
                                                   
 lemma path_with_word_not_empty[simp]: "\<not>([],w) \<in> path_with_word'''"
-  using path_with_word'''.cases by force
+  using LTS.path_with_word'''.cases by blast
+  
+
   
 lemma transition_star_path_with_word''':
   assumes "(p, w, q) \<in> transition_star"
