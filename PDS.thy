@@ -157,6 +157,12 @@ fun transitions_of :: "'state list * 'label list \<Rightarrow> ('state, 'label) 
 fun transitions_of' where
   "transitions_of' (p,w,ss,q) = transitions_of (ss, w)"
 
+fun transition_list_of' where
+  "transition_list_of' (p,\<gamma>#w,p'#p''#ss,q) = (p, \<gamma>, p'')#(transition_list_of' (p'',w,p''#ss,q))"
+| "transition_list_of' (p, [], _, p'') = []"
+| "transition_list_of' (p, _, [], p'') = []" (* Equivalent to the above *)
+| "transition_list_of' (v, va # vc, [vf], ve) = []" (* Should not occur *)
+
 lemma LTS_transition_star_mono:
   "mono LTS.transition_star"
 proof (rule, rule)
@@ -229,13 +235,14 @@ inductive_set transition_rel :: "(('ctr_loc, 'label) conf \<times> 'label \<time
 
 interpretation LTS_init transition_rel c0 .
 
-(* Reintroducing notation from LTS *)
-abbreviation step_relp' :: "('ctr_loc, 'label) conf \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" (infix "\<Rightarrow>" 80) where
-  "c \<Rightarrow> c' \<equiv> step_relp c c'"
+notation step_relp (infix "\<Rightarrow>" 80)
+notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 
-(* Reintroducing notation from LTS *)
-abbreviation step_starp' :: "('ctr_loc, 'label) conf \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" (infix "\<Rightarrow>\<^sup>*" 80) where
-  "step_starp' == step_relp\<^sup>*\<^sup>*"
+lemma step_relp_def2:
+  "(p, \<gamma>w') \<Rightarrow> (p',ww') \<longleftrightarrow> (\<exists>\<gamma> w' w. \<gamma>w' = \<gamma>#w' \<and> ww' = (op_labels w)@w' \<and> (p, \<gamma>) \<hookrightarrow> (p', w))"
+  by (metis (no_types, lifting) PDS.transition_rel.intros PDS_axioms step_relp_def transition_rel.cases)
+
+
 
 lemma step_relp'_P_locs1:
   assumes "(q1, x) \<Rightarrow> (q2, y)"
@@ -276,6 +283,8 @@ locale PDS_with_P_automaton = PDS P_locs \<Delta>
 begin
 
 interpretation LTS_init transition_rel c0 .
+notation step_relp (infix "\<Rightarrow>" 80)
+notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 
 definition accepts :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc , 'label) conf \<Rightarrow> bool" where
   "accepts ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,q) \<in> LTS.transition_star ts)"
@@ -757,20 +766,49 @@ next
     using LTS.path_with_word.path_with_word_step by fastforce 
 qed
 
-lemma XXX:
-  assumes "(p, u) \<Rightarrow>\<^sup>* (p1, [])"
-  shows "(p, u @ v) \<Rightarrow>\<^sup>* (p1, v)"
+lemma step_relp_append_aux:
+  assumes "pu \<Rightarrow>\<^sup>* p1y"
+  shows "(fst pu, snd pu @ v) \<Rightarrow>\<^sup>* (fst p1y, snd p1y @ v)"
   using assms 
-proof (induction u arbitrary: p)
-  case Nil
-  then show ?case
-    by (metis LTS.step_relp_def append_Nil converse_rtranclpE2 list.distinct(1) prod.inject rtranclp.simps transition_rel.cases)
+proof (induction rule: rtranclp_induct)
+  case base
+  then show ?case by auto
 next
-  case (Cons a u)
-  then show ?case 
-    sorry
+  case (step p'w p1y)
+  define p where "p = fst pu"
+  define u where "u = snd pu"
+  define p' where "p' = fst p'w"
+  define w where "w = snd p'w"
+  define p1 where "p1 = fst p1y"
+  define y where "y = snd p1y"
+  have step_1: "(p,u) \<Rightarrow>\<^sup>* (p',w)"
+    by (simp add: p'_def p_def step.hyps(1) u_def w_def)
+  have step_2: "(p',w) \<Rightarrow> (p1,y)"
+    by (simp add: p'_def p1_def step.hyps(2) w_def y_def)
+  have step_3: "(p, u @ v) \<Rightarrow>\<^sup>* (p', w @ v)"
+    by (simp add: p'_def p_def step.IH u_def w_def)
+
+  note step' = step_1 step_2 step_3
+
+  from step'(2) have "\<exists>\<gamma> w' wa. w = \<gamma> # w' \<and> y = op_labels wa @ w' \<and> (p', \<gamma>) \<hookrightarrow> (p1, wa)"
+    using step_relp_def2[of p' w p1 y] by auto
+  then obtain \<gamma> w' wa where \<gamma>_w'_wa_p: " w = \<gamma> # w' \<and> y = op_labels wa @ w' \<and> (p', \<gamma>) \<hookrightarrow> (p1, wa)"
+    by metis
+  then have "(p, u @ v) \<Rightarrow>\<^sup>* (p1, y @ v)"
+    by (metis (no_types, lifting) PDS.step_relp_def2 PDS_axioms append.assoc append_Cons rtranclp.simps step_3)
+  then show ?case
+    by (simp add: p1_def p_def u_def y_def)
 qed
 
+lemma step_relp_append:
+  assumes "(p, u) \<Rightarrow>\<^sup>* (p1, y)"
+  shows "(p, u @ v) \<Rightarrow>\<^sup>* (p1, y @ v)"
+  using assms step_relp_append_aux by auto
+
+lemma step_relp_append_empty:
+  assumes "(p, u) \<Rightarrow>\<^sup>* (p1, [])"
+  shows "(p, u @ v) \<Rightarrow>\<^sup>* (p1, v)"
+  using step_relp_append[OF assms] by auto
 
 lemma lemma_3_2_a':
   assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs"
@@ -866,7 +904,7 @@ next
         using \<open>ss = u_ss @ v_ss \<and> w = u @ [\<gamma>] @ v\<close> apply blast
         done
       subgoal
-        using VIII XXX apply auto
+        using VIII step_relp_append_empty apply auto
         done
       subgoal
         apply (metis IX LTS.step_relp_def transition_rel.intros w2v_def)
@@ -901,5 +939,7 @@ qed
        But what then, hmmm.... not sure. And what does "uses t" even mean.
 
   *)
+
+end
 
 end
