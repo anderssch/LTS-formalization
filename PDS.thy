@@ -75,8 +75,6 @@ qed
 lemma path_with_word_not_empty[simp]: "\<not>([],w) \<in> path_with_word'''"
   using LTS.path_with_word'''.cases by blast
   
-
-  
 lemma transition_star_path_with_word''':
   assumes "(p, w, q) \<in> transition_star"
   shows "\<exists>ss. hd ss = p \<and> last ss = q \<and> (ss, w) \<in> path_with_word'''"
@@ -827,8 +825,66 @@ lemma step_relp_append_empty:
   shows "(p, u @ v) \<Rightarrow>\<^sup>* (p1, v)"
   using step_relp_append[OF assms] by auto
 
-fun appends_gug' :: "(('a \<times> 'b list \<times> 'a list \<times> 'a) * 'b) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@1" 65) where
+
+
+
+lemma counting:
+  "count (transitions_of' ((hdss1,ww1,ss1,lastss1))) (s1, \<gamma>, s2) = count (transitions_of ((ss1,ww1))) (s1, \<gamma>, s2)"
+  by force
+
+lemma UUUUU: (* TODO: rename *)
+  assumes "(p, u, u_ss, p1) \<in> LTS.path_with_word A"
+  shows "length u_ss = Suc (length u)"
+  using assms
+proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by simp
+next
+  case (2 p \<gamma> q' w ss q)
+  then show ?case
+    by simp
+qed
+
+lemma TTTTT: (* TODO: rename *)
+  assumes "(p, u, u_ss, p1) \<in> LTS.path_with_word A"
+  shows "p1 = last u_ss"
+  using assms 
+proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by simp
+next
+  case (2 p \<gamma> q' w ss q)
+  then show ?case
+    using LTS.path_with_word.cases by force
+qed
+
+lemma VBVBVBV: (* TODO: rename *)
+  assumes "(q', v, v_ss, q) \<in> LTS.path_with_word B"
+  shows "q' = hd v_ss"
+  using assms 
+proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by simp
+next
+  case (2 p \<gamma> q' w ss q)
+  then show ?case
+    by force
+qed
+
+fun appends_gug :: "(('a list \<times> 'b list) * 'b) \<Rightarrow> ('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list)" (infix "@@" 65) where (* TODO: rename *)
+  "((ss1,w1),\<gamma>) @@ (ss2,w2) = (ss1@ss2, w1 @ [\<gamma>] @ w2)"
+
+fun appends_gug_simple :: "('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list)" (infix "@@@" 65) where (* TODO: rename *)
+  "(ss1,w1) @@@ (ss2,w2) = (ss1@(tl ss2), w1 @ w2)"
+
+fun appends_gug' :: "(('a \<times> 'b list \<times> 'a list \<times> 'a) * 'b) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@1" 65) where (* TODO: rename *)
   "((p1,w1,ss1,q1),\<gamma>) @@1 (p2,w2,ss2,q2) = (p1, w1 @ [\<gamma>] @ w2, ss1@ss2, q2)"
+
+fun appends_gug_simple' :: "('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@@1" 65) where (* TODO: rename *)
+  "(p1,w1,ss1,q1) @@@1 (p2,w2,ss2,q2) = (p1, w1 @ w2, ss1@(tl ss2), q2)"
 
 fun hd_state' where
   "hd_state' (p,w,ss,q) = hd ss"
@@ -842,14 +898,11 @@ fun hd_state where
 fun last_state where
   "last_state (w,ss) = last ss"
 
-fun appends_gug :: "(('a list \<times> 'b list) * 'b) \<Rightarrow> ('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list)" (infix "@@" 65) where
-  "((ss1,w1),\<gamma>) @@ (ss2,w2) = (ss1@ss2, w1 @ [\<gamma>] @ w2)"
-
-lemma XXXXX:
+lemma XXXXX: (* TODO: rename *)
   assumes "length (ss1) = Suc (length (ww1))"
   assumes "ss2 \<noteq> []"
-  shows "count (transitions_of (((ss1,ww1),\<gamma>) @@ (ss2,ww2))) (s1, \<gamma>, s2) =
-         count (transitions_of (ss1,ww1)) (s1, \<gamma>, s2) + (if s1 = last ss1 \<and> s2 = hd ss2 then 1 else 0) + count (transitions_of (ss2,ww2)) (s1, \<gamma>, s2)"
+  shows "count (transitions_of (((ss1,ww1),\<gamma>') @@ (ss2,ww2))) (s1, \<gamma>, s2) =
+         count (transitions_of (ss1,ww1)) (s1, \<gamma>, s2) + (if s1 = last ss1 \<and> s2 = hd ss2 \<and> \<gamma> = \<gamma>' then 1 else 0) + count (transitions_of (ss2,ww2)) (s1, \<gamma>, s2)"
 using assms proof (induction ww1 arbitrary: ss1)
   case Nil
   note Nil_outer = Nil
@@ -883,87 +936,64 @@ next
     using Cons a b by (smt (z3) Suc_length_conv add.assoc append_Cons appends_gug.simps last_ConsR length_Cons list.simps(3) plus_multiset.rep_eq transitions_of.simps(1))
 qed
 
-lemma counting:
-  "count (transitions_of' ((hdss1,ww1,ss1,lastss1))) (s1, \<gamma>, s2) = count (transitions_of ((ss1,ww1))) (s1, \<gamma>, s2)"
-  by force
-
-lemma YYYYY:
+lemma XXXXX2: (* TODO: rename *)
   assumes "length (ss1) = Suc (length (ww1))"
   assumes "ss2 \<noteq> []"
-  shows "count (transitions_of' (((hdss1,ww1,ss1,lastss1),\<gamma>) @@1 (hdss2,ww2,ss2,lastss2))) (s1, \<gamma>, s2) =
-         count (transitions_of' (hdss1,ww1,ss1,lastss1)) (s1, \<gamma>, s2) + (if s1 = last ss1 \<and> s2 = hd ss2 then 1 else 0) + count (transitions_of' (hdss2,ww2,ss2,lastss2)) (s1, \<gamma>, s2)"
+  assumes "last ss1 = hd ss2"
+  shows "count (transitions_of (((ss1,ww1)) @@@ (ss2,ww2))) (s1, \<gamma>, s2) =
+         count (transitions_of (ss1,ww1)) (s1, \<gamma>, s2) + count (transitions_of (ss2,ww2)) (s1, \<gamma>, s2)"
+using assms proof (induction ww1 arbitrary: ss1)
+  case Nil
+  note Nil_outer = Nil
+  obtain s where s_p: "ss1 = [s]"
+    by (metis Suc_length_conv length_0_conv local.Nil(1))
+  then show ?case
+  proof (cases ss2)
+    case Nil
+    then show ?thesis
+      using assms by blast
+  next
+    case (Cons s2' ss2')
+    then show ?thesis 
+    proof (cases "s1 = s2'")
+      case True
+      then show ?thesis
+        using local.Cons s_p
+        using Nil_outer(3) by auto 
+    next
+      case False
+      then show ?thesis
+        using s_p local.Cons
+        using Nil_outer(3) by fastforce
+    qed
+  qed
+next
+  case (Cons w ww11)
+  obtain s2' ss2' where a: "ss2 = s2' # ss2'"
+    by (meson assms list.exhaust)
+  obtain s1' ss1' where b: "ss1 = s1' # ss1'"
+    by (meson Cons.prems(1) length_Suc_conv)
+  show ?case
+    using Cons 
+    using Suc_length_conv add.assoc append_Cons  last_ConsR  list.simps(3) plus_multiset.rep_eq transitions_of.simps(1) by (smt (z3) appends_gug_simple.simps)
+qed
+
+lemma YYYYY: (* TODO: rename *)
+  assumes "length (ss1) = Suc (length (ww1))"
+  assumes "ss2 \<noteq> []"
+  shows "count (transitions_of' (((hdss1,ww1,ss1,lastss1),\<gamma>') @@1 (hdss2,ww2,ss2,lastss2))) (s1, \<gamma>, s2) =
+         count (transitions_of' (hdss1,ww1,ss1,lastss1)) (s1, \<gamma>, s2) + (if s1 = last ss1 \<and> s2 = hd ss2 \<and> \<gamma> = \<gamma>' then 1 else 0) + count (transitions_of' (hdss2,ww2,ss2,lastss2)) (s1, \<gamma>, s2)"
   using assms XXXXX by force
 
-lemma UUUUU:
-  assumes "(p, u, u_ss, p1) \<in> LTS.path_with_word A"
-  shows "length u_ss = Suc (length u)"
-  using assms
-proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
-  case (1 p)
-  then show ?case
-    by simp
-next
-  case (2 p \<gamma> q' w ss q)
-  then show ?case
-    by simp
-qed
+lemma YYYYY2: (* TODO: rename *)
+  assumes "length (ss1) = Suc (length (ww1))"
+  assumes "ss2 \<noteq> []"
+  assumes "last ss1 = hd ss2"
+  shows "count (transitions_of' (((hdss1,ww1,ss1,lastss1)) @@@1 (hdss2,ww2,ss2,lastss2))) (s1, \<gamma>, s2) =
+         count (transitions_of' (hdss1,ww1,ss1,lastss1)) (s1, \<gamma>, s2) + count (transitions_of' (hdss2,ww2,ss2,lastss2)) (s1, \<gamma>, s2)"
+  using XXXXX2[OF assms(1) assms(2) assms(3), of ww2 s1 \<gamma> s2] by auto
 
-lemma TTTTT: 
-  assumes "(p, u, u_ss, p1) \<in> LTS.path_with_word A"
-  shows "p1 = last u_ss"
-  using assms 
-proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
-  case (1 p)
-  then show ?case
-    by simp
-next
-  case (2 p \<gamma> q' w ss q)
-  then show ?case
-    using LTS.path_with_word.cases by force
-qed
-
-lemma VBVBVBV:
-  assumes "(q', v, v_ss, q) \<in> LTS.path_with_word B"
-  shows "q' = hd v_ss"
-  using assms 
-proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
-  case (1 p)
-  then show ?case
-    by simp
-next
-  case (2 p \<gamma> q' w ss q)
-  then show ?case
-    by force
-qed
-
-lemma ZUZUUZUZUUZ:
-  assumes "ss = u_ss @ v_ss \<and> w = u @ [\<gamma>] @ v"
-  assumes "t = (p1, \<gamma>, q')"
-  assumes "(p, u, u_ss, p1) \<in> LTS.path_with_word A"
-  assumes "(q', v, v_ss, q) \<in> LTS.path_with_word B"
-  shows "count (transitions_of' (p, w, ss, q)) t = count (transitions_of' (p, u, u_ss, p1)) t + (if p1 = last u_ss \<and> q' = hd v_ss then 1 else 0) + count (transitions_of' (q', v, v_ss, q)) t"
-proof -
-  have v_ss_non_empt: "v_ss \<noteq> []"
-    using LTS.path_with_word.cases assms by force
-
-  have u_ss_l: "length u_ss = Suc (length u)"
-    using assms UUUUU by metis
-
-  have p1_u_ss:  "p1 = last u_ss"
-    using assms
-    using TTTTT by metis
-
-  have q'_v_ss: "q' = hd v_ss"
-    using assms VBVBVBV by metis
-
-  have one: "(if p1 = last u_ss \<and> q' = hd v_ss then 1 else 0) = 1"
-    using p1_u_ss q'_v_ss by auto
-
-  from YYYYY[of u_ss u v_ss p q \<gamma> q' v q p1 q'] show ?thesis
-    using assms(1) assms(2) assms(3) by (auto simp add: assms(3) one u_ss_l v_ss_non_empt)
-qed
-
-lemma ZZZZZ:
+lemma ZUZUUZUZUUZ: (* TODO: rename *)
   assumes "ss = u_ss @ v_ss \<and> w = u @ [\<gamma>] @ v"
   assumes "t = (p1, \<gamma>, q')"
   assumes "(p, u, u_ss, p1) \<in> LTS.path_with_word A"
@@ -986,7 +1016,34 @@ proof -
   have one: "(if p1 = last u_ss \<and> q' = hd v_ss then 1 else 0) = 1"
     using p1_u_ss q'_v_ss by auto
 
-  from YYYYY[of u_ss u v_ss p q \<gamma> q' v q p1 q'] show ?thesis
+  from YYYYY[of u_ss u v_ss p q \<gamma> q' v q p1] show ?thesis
+    using assms(1) assms(2) assms(3) by (auto simp add: assms(3) one u_ss_l v_ss_non_empt)
+qed
+
+lemma ZZZZZ: (* TODO: rename *)
+  assumes "ss = u_ss @ v_ss \<and> w = u @ [\<gamma>] @ v"
+  assumes "t = (p1, \<gamma>, q')"
+  assumes "(p, u, u_ss, p1) \<in> LTS.path_with_word A"
+  assumes "(q', v, v_ss, q) \<in> LTS.path_with_word B"
+  shows "count (transitions_of' (p, w, ss, q)) t = count (transitions_of' (p, u, u_ss, p1)) t + 1 + count (transitions_of' (q', v, v_ss, q)) t"
+proof -
+  have v_ss_non_empt: "v_ss \<noteq> []"
+    using LTS.path_with_word.cases assms by force
+
+  have u_ss_l: "length u_ss = Suc (length u)"
+    using assms UUUUU by metis
+
+  have p1_u_ss:  "p1 = last u_ss"
+    using assms
+    using TTTTT by metis
+
+  have q'_v_ss: "q' = hd v_ss"
+    using assms VBVBVBV by metis
+
+  have one: "(if p1 = last u_ss \<and> q' = hd v_ss then 1 else 0) = 1"
+    using p1_u_ss q'_v_ss by auto
+
+  from YYYYY[of u_ss u v_ss p q \<gamma> q' v q p1 ] show ?thesis
     using assms(1) assms(2) assms(3) by (auto simp add: assms(3) one u_ss_l v_ss_non_empt)
 qed
   
@@ -1079,8 +1136,20 @@ next
         using V avoid_count_zero p1_\<gamma>_p2_w2_q'_p(4) t_def by fastforce 
       then show "j' = count (transitions_of' (p2, w2v, w2v_ss, q)) t"
       proof -
-        have "count (transitions_of' (p2, w2v, w2v_ss, q)) t = count (transitions_of' (p2, op_labels w2, w2_ss, q')) t + 0 + count (transitions_of' (q', v, v_ss, q)) t"
-          using ZZZZZ[of AAA BBB CCC DDD EEE FFF GGG t III JJJ KKK LLL MMM NNN] sorry
+        have anders1: "length w2_ss = Suc (length (op_labels w2))" (* TODO: rename *)
+          by (meson III_2 UUUUU)
+        have anders2: "v_ss \<noteq> []" (* TODO: rename *)
+          using LTS.path_with_word.cases V(2) by force
+        have anders3: "last w2_ss = hd v_ss" (* TODO: rename *)
+          by (metis III_2 TTTTT V(2) VBVBVBV)
+        have "count (transitions_of' ((p2, op_labels w2, w2_ss, q') @@@1 (q', v, v_ss, q))) (p1, \<gamma>, q')
+          = count (transitions_of' (p2, w2v, w2v_ss, q))  (p1, \<gamma>, q')"
+          by (simp add: w2v_def w2v_ss_def)
+        then have "count (transitions_of' (p2, w2v, w2v_ss, q))  (p1, \<gamma>, q') = count (transitions_of' (p2, op_labels w2, w2_ss, q'))  (p1, \<gamma>, q') + count (transitions_of' (q', v, v_ss, q))  (p1, \<gamma>, q')"
+          using YYYYY2[of w2_ss "op_labels w2" v_ss p2 q' q' v q p1 \<gamma> q' ]
+          by (simp add: anders1 anders2 anders3) 
+        then have "count (transitions_of' (p2, w2v, w2v_ss, q)) t = count (transitions_of' (p2, op_labels w2, w2_ss, q')) t + count (transitions_of' (q', v, v_ss, q)) t"
+          using t_def by auto
         then show ?thesis
           using xx by auto
       qed
