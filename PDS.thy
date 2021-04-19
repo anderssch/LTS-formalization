@@ -53,9 +53,6 @@ inductive_set path_with_word :: "('state list * 'label list) set" where
   path_with_word_refl[iff]: "([s],[]) \<in> path_with_word"
 | path_with_word_step: "(s'#ss, w) \<in> path_with_word \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,l#w) \<in> path_with_word" 
 
-definition path_with_word' :: "('state \<times> 'label list \<times> 'state list \<times> 'state) set" where
-  "path_with_word' == {(p,w,ss,q) | p w ss q. (ss,w) \<in> path_with_word \<and> p = hd ss \<and> q = last ss}"
-
 inductive transition_of :: "('state, 'label) transition \<Rightarrow> 'state list * 'label list \<Rightarrow> bool" where
   "transition_of (s1,\<gamma>,s2) (s1#s2#ss, \<gamma>#w)"
 | "transition_of (s1,\<gamma>,s2) (ss, w) \<Longrightarrow> transition_of (s1,\<gamma>,s2) (s#ss, \<mu>#w)"
@@ -88,11 +85,6 @@ next
   then show ?case
     by (metis LTS.path_with_word.simps hd_Cons_tl last_ConsR list.discI list.sel(1))
 qed
-
-lemma transition_star_path_with_word':
-  assumes "(p, w, q) \<in> transition_star"
-  shows "\<exists>ss. (p, w, ss, q) \<in> path_with_word'"
-  using assms transition_star_path_with_word unfolding path_with_word'_def by force
 
 lemma transition_star_transition_star_states:
   assumes "(p, w, q) \<in> transition_star"
@@ -591,13 +583,6 @@ next
   then show ?case 
     using x by (simp add: LTS.path_with_word.path_with_word_step) 
 qed
-
-lemma lemma_3_2_a'_Aux_2:
-  assumes "(p, w, ss ,q) \<in> LTS.path_with_word' Ai"
-  assumes "0 = count (transitions_of' (p, w, ss, q)) (p1, \<gamma>, q')"
-  assumes "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}"
-  shows "(p, w, ss, q) \<in> LTS.path_with_word' Aiminus1"
-  using assms lemma_3_2_a'_Aux[of ss w _ p1 \<gamma> q' _] unfolding LTS.path_with_word'_def by auto
 
 lemma count_empty_zero: "count (transitions_of' (p, [], [p_add], p_add)) (p1, \<gamma>, q') = 0"
   by simp
