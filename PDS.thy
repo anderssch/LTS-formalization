@@ -859,39 +859,22 @@ next
     by force
 qed
 
-term path_with_word
+fun append_path_with_word :: "('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list)" (infix "@\<acute>" 65) where (* TODO: rename *)
+  "(ss1,w1) @\<acute> (ss2,w2) = (ss1@(tl ss2), w1 @ w2)"
 
-fun append_path_with_word :: "('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list)" (infix "@" 65) where (* TODO: rename *)
-  "(ss1,w1) @@@ (ss2,w2) = (ss1@(tl ss2), w1 @ w2)"
+fun append_path_with_word_\<gamma> :: "(('a list \<times> 'b list) * 'b) \<Rightarrow> ('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list)" (infix "@\<^sup>\<gamma>" 65) where (* TODO: rename *)
+  "((ss1,w1),\<gamma>) @\<^sup>\<gamma> (ss2,w2) = (ss1@ss2, w1 @ [\<gamma>] @ w2)"
 
-fun append_path_with_word_\<gamma> :: "(('a list \<times> 'b list) * 'b) \<Rightarrow> ('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list)" (infix "@@" 65) where (* TODO: rename *)
-  "((ss1,w1),\<gamma>) @@ (ss2,w2) = (ss1@ss2, w1 @ [\<gamma>] @ w2)"
+fun append_transition_star_states :: "('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@\<acute>" 65) where (* TODO: rename *)
+  "(p1,w1,ss1,q1) @@\<acute> (p2,w2,ss2,q2) = (p1, w1 @ w2, ss1@(tl ss2), q2)"
 
-fun append_transition_star_states :: "('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@@1" 65) where (* TODO: rename *)
-  "(p1,w1,ss1,q1) @@@1 (p2,w2,ss2,q2) = (p1, w1 @ w2, ss1@(tl ss2), q2)"
-
-fun append_transition_star_states_\<gamma> :: "(('a \<times> 'b list \<times> 'a list \<times> 'a) * 'b) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@1" 65) where (* TODO: rename *)
-  "((p1,w1,ss1,q1),\<gamma>) @@1 (p2,w2,ss2,q2) = (p1, w1 @ [\<gamma>] @ w2, ss1@ss2, q2)"
-
-
-term transition_star_states
-
-fun hd_state' where
-  "hd_state' (p,w,ss,q) = hd ss"
-
-fun last_state' where
-  "last_state' (p,w,ss,q) = last ss"
-
-fun hd_state where
-  "hd_state (w,ss) = hd ss"
-
-fun last_state where
-  "last_state (w,ss) = last ss"
+fun append_transition_star_states_\<gamma> :: "(('a \<times> 'b list \<times> 'a list \<times> 'a) * 'b) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@\<^sup>\<gamma>" 65) where (* TODO: rename *)
+  "((p1,w1,ss1,q1),\<gamma>) @@\<^sup>\<gamma> (p2,w2,ss2,q2) = (p1, w1 @ [\<gamma>] @ w2, ss1@ss2, q2)"
 
 lemma XXXXX: (* TODO: rename *)
   assumes "length (ss1) = Suc (length (ww1))"
   assumes "ss2 \<noteq> []"
-  shows "count (transitions_of (((ss1,ww1),\<gamma>') @@ (ss2,ww2))) (s1, \<gamma>, s2) =
+  shows "count (transitions_of (((ss1,ww1),\<gamma>') @\<^sup>\<gamma> (ss2,ww2))) (s1, \<gamma>, s2) =
          count (transitions_of (ss1,ww1)) (s1, \<gamma>, s2) + (if s1 = last ss1 \<and> s2 = hd ss2 \<and> \<gamma> = \<gamma>' then 1 else 0) + count (transitions_of (ss2,ww2)) (s1, \<gamma>, s2)"
 using assms proof (induction ww1 arbitrary: ss1)
   case Nil
@@ -930,7 +913,7 @@ lemma XXXXX2: (* TODO: rename *)
   assumes "length (ss1) = Suc (length (ww1))"
   assumes "ss2 \<noteq> []"
   assumes "last ss1 = hd ss2"
-  shows "count (transitions_of (((ss1,ww1)) @@@ (ss2,ww2))) (s1, \<gamma>, s2) =
+  shows "count (transitions_of (((ss1,ww1)) @\<acute> (ss2,ww2))) (s1, \<gamma>, s2) =
          count (transitions_of (ss1,ww1)) (s1, \<gamma>, s2) + count (transitions_of (ss2,ww2)) (s1, \<gamma>, s2)"
 using assms proof (induction ww1 arbitrary: ss1)
   case Nil
@@ -971,7 +954,7 @@ qed
 lemma YYYYY: (* TODO: rename *)
   assumes "length (ss1) = Suc (length (ww1))"
   assumes "ss2 \<noteq> []"
-  shows "count (transitions_of' (((hdss1,ww1,ss1,lastss1),\<gamma>') @@1 (hdss2,ww2,ss2,lastss2))) (s1, \<gamma>, s2) =
+  shows "count (transitions_of' (((hdss1,ww1,ss1,lastss1),\<gamma>') @@\<^sup>\<gamma> (hdss2,ww2,ss2,lastss2))) (s1, \<gamma>, s2) =
          count (transitions_of' (hdss1,ww1,ss1,lastss1)) (s1, \<gamma>, s2) + (if s1 = last ss1 \<and> s2 = hd ss2 \<and> \<gamma> = \<gamma>' then 1 else 0) + count (transitions_of' (hdss2,ww2,ss2,lastss2)) (s1, \<gamma>, s2)"
   using assms XXXXX by force
 
@@ -979,7 +962,7 @@ lemma YYYYY2: (* TODO: rename *)
   assumes "length (ss1) = Suc (length (ww1))"
   assumes "ss2 \<noteq> []"
   assumes "last ss1 = hd ss2"
-  shows "count (transitions_of' (((hdss1,ww1,ss1,lastss1)) @@@1 (hdss2,ww2,ss2,lastss2))) (s1, \<gamma>, s2) =
+  shows "count (transitions_of' (((hdss1,ww1,ss1,lastss1)) @@\<acute> (hdss2,ww2,ss2,lastss2))) (s1, \<gamma>, s2) =
          count (transitions_of' (hdss1,ww1,ss1,lastss1)) (s1, \<gamma>, s2) + count (transitions_of' (hdss2,ww2,ss2,lastss2)) (s1, \<gamma>, s2)"
   using XXXXX2[OF assms(1) assms(2) assms(3), of ww2 s1 \<gamma> s2] by auto
 
@@ -1132,7 +1115,7 @@ next
           using LTS.transition_star_states.cases V(2) by force
         have anders3: "last w2_ss = hd v_ss" (* TODO: rename *)
           by (metis III_2 transition_star_states_last V(2) transition_star_states_hd)
-        have "count (transitions_of' ((p2, op_labels w2, w2_ss, q') @@@1 (q', v, v_ss, q))) (p1, \<gamma>, q')
+        have "count (transitions_of' ((p2, op_labels w2, w2_ss, q') @@\<acute> (q', v, v_ss, q))) (p1, \<gamma>, q')
           = count (transitions_of' (p2, w2v, w2v_ss, q))  (p1, \<gamma>, q')"
           by (simp add: w2v_def w2v_ss_def)
         then have "count (transitions_of' (p2, w2v, w2v_ss, q))  (p1, \<gamma>, q') = count (transitions_of' (p2, op_labels w2, w2_ss, q'))  (p1, \<gamma>, q') + count (transitions_of' (q', v, v_ss, q))  (p1, \<gamma>, q')"
