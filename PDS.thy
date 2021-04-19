@@ -817,7 +817,7 @@ lemma counting:
   "count (transitions_of' ((hdss1,ww1,ss1,lastss1))) (s1, \<gamma>, s2) = count (transitions_of ((ss1,ww1))) (s1, \<gamma>, s2)"
   by force
 
-lemma transition_star_states_length: (* TODO: rename *)
+lemma transition_star_states_length:
   assumes "(p, u, u_ss, p1) \<in> LTS.transition_star_states A"
   shows "length u_ss = Suc (length u)"
   using assms
@@ -831,7 +831,7 @@ next
     by simp
 qed
 
-lemma transition_star_states_last: (* TODO: rename *)
+lemma transition_star_states_last:
   assumes "(p, u, u_ss, p1) \<in> LTS.transition_star_states A"
   shows "p1 = last u_ss"
   using assms 
@@ -845,7 +845,7 @@ next
     using LTS.transition_star_states.cases by force
 qed
 
-lemma transition_star_states_hd: (* TODO: rename *)
+lemma transition_star_states_hd:
   assumes "(q', v, v_ss, q) \<in> LTS.transition_star_states B"
   shows "q' = hd v_ss"
   using assms 
@@ -859,17 +859,22 @@ next
     by force
 qed
 
-fun appends_gug :: "(('a list \<times> 'b list) * 'b) \<Rightarrow> ('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list)" (infix "@@" 65) where (* TODO: rename *)
-  "((ss1,w1),\<gamma>) @@ (ss2,w2) = (ss1@ss2, w1 @ [\<gamma>] @ w2)"
+term path_with_word
 
-fun appends_gug_simple :: "('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list)" (infix "@@@" 65) where (* TODO: rename *)
+fun append_path_with_word :: "('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list)" (infix "@" 65) where (* TODO: rename *)
   "(ss1,w1) @@@ (ss2,w2) = (ss1@(tl ss2), w1 @ w2)"
 
-fun appends_gug' :: "(('a \<times> 'b list \<times> 'a list \<times> 'a) * 'b) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@1" 65) where (* TODO: rename *)
+fun append_path_with_word_\<gamma> :: "(('a list \<times> 'b list) * 'b) \<Rightarrow> ('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list)" (infix "@@" 65) where (* TODO: rename *)
+  "((ss1,w1),\<gamma>) @@ (ss2,w2) = (ss1@ss2, w1 @ [\<gamma>] @ w2)"
+
+fun append_transition_star_states :: "('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@@1" 65) where (* TODO: rename *)
+  "(p1,w1,ss1,q1) @@@1 (p2,w2,ss2,q2) = (p1, w1 @ w2, ss1@(tl ss2), q2)"
+
+fun append_transition_star_states_\<gamma> :: "(('a \<times> 'b list \<times> 'a list \<times> 'a) * 'b) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@1" 65) where (* TODO: rename *)
   "((p1,w1,ss1,q1),\<gamma>) @@1 (p2,w2,ss2,q2) = (p1, w1 @ [\<gamma>] @ w2, ss1@ss2, q2)"
 
-fun appends_gug_simple' :: "('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@@1" 65) where (* TODO: rename *)
-  "(p1,w1,ss1,q1) @@@1 (p2,w2,ss2,q2) = (p1, w1 @ w2, ss1@(tl ss2), q2)"
+
+term transition_star_states
 
 fun hd_state' where
   "hd_state' (p,w,ss,q) = hd ss"
@@ -918,7 +923,7 @@ next
   obtain s1' ss1' where b: "ss1 = s1' # ss1'"
     by (meson Cons.prems(1) length_Suc_conv)
   show ?case
-    using Cons a b by (smt (z3) Suc_length_conv add.assoc append_Cons appends_gug.simps last_ConsR length_Cons list.simps(3) plus_multiset.rep_eq transitions_of.simps(1))
+    using Cons a b by (smt (z3) Suc_length_conv add.assoc append_Cons append_path_with_word_\<gamma>.simps last_ConsR length_Cons list.simps(3) plus_multiset.rep_eq transitions_of.simps(1))
 qed
 
 lemma XXXXX2: (* TODO: rename *)
@@ -960,7 +965,7 @@ next
     by (meson Cons.prems(1) length_Suc_conv)
   show ?case
     using Cons 
-    using Suc_length_conv add.assoc append_Cons  last_ConsR  list.simps(3) plus_multiset.rep_eq transitions_of.simps(1) by (smt (z3) appends_gug_simple.simps)
+    using Suc_length_conv add.assoc append_Cons  last_ConsR  list.simps(3) plus_multiset.rep_eq transitions_of.simps(1) by (smt (z3) append_path_with_word.simps)
 qed
 
 lemma YYYYY: (* TODO: rename *)
