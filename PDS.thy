@@ -871,7 +871,7 @@ fun append_transition_star_states :: "('a \<times> 'b list \<times> 'a list \<ti
 fun append_transition_star_states_\<gamma> :: "(('a \<times> 'b list \<times> 'a list \<times> 'a) * 'b) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@\<^sup>\<gamma>" 65) where (* TODO: rename *)
   "((p1,w1,ss1,q1),\<gamma>) @@\<^sup>\<gamma> (p2,w2,ss2,q2) = (p1, w1 @ [\<gamma>] @ w2, ss1@ss2, q2)"
 
-lemma XXXXX: (* TODO: rename *)
+lemma count_append_path_with_word_\<gamma>:
   assumes "length (ss1) = Suc (length (ww1))"
   assumes "ss2 \<noteq> []"
   shows "count (transitions_of (((ss1,ww1),\<gamma>') @\<^sup>\<gamma> (ss2,ww2))) (s1, \<gamma>, s2) =
@@ -909,7 +909,7 @@ next
     using Cons a b by (smt (z3) Suc_length_conv add.assoc append_Cons append_path_with_word_\<gamma>.simps last_ConsR length_Cons list.simps(3) plus_multiset.rep_eq transitions_of.simps(1))
 qed
 
-lemma XXXXX2: (* TODO: rename *)
+lemma count_append_path_with_word:
   assumes "length (ss1) = Suc (length (ww1))"
   assumes "ss2 \<noteq> []"
   assumes "last ss1 = hd ss2"
@@ -951,22 +951,22 @@ next
     using Suc_length_conv add.assoc append_Cons  last_ConsR  list.simps(3) plus_multiset.rep_eq transitions_of.simps(1) by (smt (z3) append_path_with_word.simps)
 qed
 
-lemma YYYYY: (* TODO: rename *)
+lemma count_append_transition_star_states_\<gamma>:
   assumes "length (ss1) = Suc (length (ww1))"
   assumes "ss2 \<noteq> []"
   shows "count (transitions_of' (((hdss1,ww1,ss1,lastss1),\<gamma>') @@\<^sup>\<gamma> (hdss2,ww2,ss2,lastss2))) (s1, \<gamma>, s2) =
          count (transitions_of' (hdss1,ww1,ss1,lastss1)) (s1, \<gamma>, s2) + (if s1 = last ss1 \<and> s2 = hd ss2 \<and> \<gamma> = \<gamma>' then 1 else 0) + count (transitions_of' (hdss2,ww2,ss2,lastss2)) (s1, \<gamma>, s2)"
-  using assms XXXXX by force
+  using assms count_append_path_with_word_\<gamma> by force
 
-lemma YYYYY2: (* TODO: rename *)
+lemma count_append_transition_star_states:
   assumes "length (ss1) = Suc (length (ww1))"
   assumes "ss2 \<noteq> []"
   assumes "last ss1 = hd ss2"
   shows "count (transitions_of' (((hdss1,ww1,ss1,lastss1)) @@\<acute> (hdss2,ww2,ss2,lastss2))) (s1, \<gamma>, s2) =
          count (transitions_of' (hdss1,ww1,ss1,lastss1)) (s1, \<gamma>, s2) + count (transitions_of' (hdss2,ww2,ss2,lastss2)) (s1, \<gamma>, s2)"
-  using XXXXX2[OF assms(1) assms(2) assms(3), of ww2 s1 \<gamma> s2] by auto
+  using count_append_path_with_word[OF assms(1) assms(2) assms(3), of ww2 s1 \<gamma> s2] by auto
 
-lemma ZUZUUZUZUUZ: (* TODO: rename *)
+lemma count_combine_transition_star_states:
   assumes "ss = u_ss @ v_ss \<and> w = u @ [\<gamma>] @ v"
   assumes "t = (p1, \<gamma>, q')"
   assumes "(p, u, u_ss, p1) \<in> LTS.transition_star_states A"
@@ -989,34 +989,7 @@ proof -
   have one: "(if p1 = last u_ss \<and> q' = hd v_ss then 1 else 0) = 1"
     using p1_u_ss q'_v_ss by auto
 
-  from YYYYY[of u_ss u v_ss p q \<gamma> q' v q p1] show ?thesis
-    using assms(1) assms(2) assms(3) by (auto simp add: assms(3) one u_ss_l v_ss_non_empt)
-qed
-
-lemma ZZZZZ: (* TODO: rename *)
-  assumes "ss = u_ss @ v_ss \<and> w = u @ [\<gamma>] @ v"
-  assumes "t = (p1, \<gamma>, q')"
-  assumes "(p, u, u_ss, p1) \<in> LTS.transition_star_states A"
-  assumes "(q', v, v_ss, q) \<in> LTS.transition_star_states B"
-  shows "count (transitions_of' (p, w, ss, q)) t = count (transitions_of' (p, u, u_ss, p1)) t + 1 + count (transitions_of' (q', v, v_ss, q)) t"
-proof -
-  have v_ss_non_empt: "v_ss \<noteq> []"
-    using LTS.transition_star_states.cases assms by force
-
-  have u_ss_l: "length u_ss = Suc (length u)"
-    using assms transition_star_states_length by metis
-
-  have p1_u_ss:  "p1 = last u_ss"
-    using assms
-    using transition_star_states_last by metis
-
-  have q'_v_ss: "q' = hd v_ss"
-    using assms transition_star_states_hd by metis
-
-  have one: "(if p1 = last u_ss \<and> q' = hd v_ss then 1 else 0) = 1"
-    using p1_u_ss q'_v_ss by auto
-
-  from YYYYY[of u_ss u v_ss p q \<gamma> q' v q p1 ] show ?thesis
+  from count_append_transition_star_states_\<gamma>[of u_ss u v_ss p q \<gamma> q' v q p1 ] show ?thesis
     using assms(1) assms(2) assms(3) by (auto simp add: assms(3) one u_ss_l v_ss_non_empt)
 qed
   
@@ -1099,7 +1072,7 @@ next
     proof -
       have "Suc j' = count (transitions_of' (p, u, u_ss, p1)) t + 1 + count (transitions_of' (q', v, v_ss, q)) t"
         using u_v_u_ss_v_ss_p(2) u_v_u_ss_v_ss_p(4)
-        using ZZZZZ Suc(2) u_v_u_ss_v_ss_p(1) t_def by force
+        using count_combine_transition_star_states Suc(2) u_v_u_ss_v_ss_p(1) t_def by force
       then have "j' = count (transitions_of' (p, u, u_ss, p1)) t + count (transitions_of' (q', v, v_ss, q)) t"
         by auto
       then have "j' = 0 + count (transitions_of' (q', v, v_ss, q)) t"
@@ -1109,18 +1082,18 @@ next
         using V avoid_count_zero p1_\<gamma>_p2_w2_q'_p(4) t_def by fastforce 
       then show "j' = count (transitions_of' (p2, w2v, w2v_ss, q)) t"
       proof -
-        have anders1: "length w2_ss = Suc (length (op_labels w2))" (* TODO: rename *)
+        have l_w2_ss: "length w2_ss = Suc (length (op_labels w2))" 
           by (meson III_2 transition_star_states_length)
-        have anders2: "v_ss \<noteq> []" (* TODO: rename *)
+        have v_ss_non_empty: "v_ss \<noteq> []"
           using LTS.transition_star_states.cases V(2) by force
-        have anders3: "last w2_ss = hd v_ss" (* TODO: rename *)
+        have last_hd: "last w2_ss = hd v_ss"
           by (metis III_2 transition_star_states_last V(2) transition_star_states_hd)
         have "count (transitions_of' ((p2, op_labels w2, w2_ss, q') @@\<acute> (q', v, v_ss, q))) (p1, \<gamma>, q')
           = count (transitions_of' (p2, w2v, w2v_ss, q))  (p1, \<gamma>, q')"
           by (simp add: w2v_def w2v_ss_def)
         then have "count (transitions_of' (p2, w2v, w2v_ss, q))  (p1, \<gamma>, q') = count (transitions_of' (p2, op_labels w2, w2_ss, q'))  (p1, \<gamma>, q') + count (transitions_of' (q', v, v_ss, q))  (p1, \<gamma>, q')"
-          using YYYYY2[of w2_ss "op_labels w2" v_ss p2 q' q' v q p1 \<gamma> q' ]
-          by (simp add: anders1 anders2 anders3) 
+          using count_append_transition_star_states[of w2_ss "op_labels w2" v_ss p2 q' q' v q p1 \<gamma> q' ]
+          by (simp add: l_w2_ss v_ss_non_empty last_hd) 
         then have "count (transitions_of' (p2, w2v, w2v_ss, q)) t = count (transitions_of' (p2, op_labels w2, w2_ss, q')) t + count (transitions_of' (q', v, v_ss, q)) t"
           using t_def by auto
         then show ?thesis
