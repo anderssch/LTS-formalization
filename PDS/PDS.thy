@@ -1,4 +1,4 @@
-theory PDS imports LTS Nested_Multisets_Ordinals.Multiset_More begin
+theory PDS imports "../LTS" Nested_Multisets_Ordinals.Multiset_More begin
 
 
 section \<open>PDS\<close>
