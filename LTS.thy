@@ -1,4 +1,4 @@
-theory LTS imports Main Nested_Multisets_Ordinals.Multiset_More begin
+theory LTS imports Main "HOL-Library.Multiset_Order" begin
 
 
 section \<open>LTS\<close>
@@ -391,5 +391,7 @@ abbreviation initial :: "'state \<Rightarrow> bool" where
   "initial == (\<lambda>r'. r' = r)"
 
 end
+
+find_theorems "(@@\<acute>)"
 
 end
