@@ -71,11 +71,6 @@ definition get_end :: "('n node list \<times> 'v action list) \<Rightarrow> 'n n
 
 term "LTS.path_with_word :: ('n,'v) program_graph \<Rightarrow> ('n node list \<times> 'v action list) set"
 
-term transitions_of
-
-definition transition_list_of :: "'a list \<times> 'b list \<Rightarrow> ('a \<times> 'b \<times> 'a) list" where
-  "transition_list_of = undefined"
-
 
 section \<open>Execution Sequences\<close>
 
@@ -119,16 +114,16 @@ fun def_action :: "'v action \<Rightarrow> 'v set" where
 abbreviation def_edge :: "('n,'v) edge \<Rightarrow> 'v set" where
   "def_edge == \<lambda>(q1, a, q2). def_action a"
 
-abbreviation triple_of :: "'v \<Rightarrow> ('n,'v) edge \<Rightarrow> ('n,'v) triple" where
+definition triple_of :: "'v \<Rightarrow> ('n,'v) edge \<Rightarrow> ('n,'v) triple" where
   "triple_of == (\<lambda>x (q1, a, q2). (x, Some q1, q2))"
 
 definition def_var :: "('n,'v) edge list \<Rightarrow> 'v \<Rightarrow> ('n,'v) triple" where
   "def_var \<pi> x = (if (filter (\<lambda>e. x \<in> def_edge e) \<pi>) = []
-                    then (x, None, Start) 
+                    then (x, None, Start)
                     else (triple_of x (last (filter (\<lambda>e. x \<in> def_edge e) \<pi>))))"
 
 definition def_path :: "('n node list \<times> 'v action list) \<Rightarrow> ('n,'v) triple set" where
-  "def_path \<pi> = (def_var (transition_list_of \<pi>) ` UNIV)"
+  "def_path \<pi> = (def_var (LTS.transition_list \<pi>) ` UNIV)"
 (* Giver vel kun mening med et fixed og endeligt univers af variable.
    Eller hvad?
 *)
@@ -175,7 +170,7 @@ fun meaning_cls :: "('p,'x,'e) clause \<Rightarrow> ('p,'e) pred_val \<Rightarro
 definition solves_cls :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) clause \<Rightarrow> bool" where
   "solves_cls \<rho> c \<longleftrightarrow> (\<forall>\<sigma>. meaning_cls c \<rho> \<sigma>)"
 
-fun solves_program :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> bool" where
+definition solves_program :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> bool" where
   "solves_program \<rho> dl \<longleftrightarrow> (\<forall>c \<in> dl. solves_cls \<rho> c)"
 
 
@@ -183,8 +178,8 @@ section \<open>Queries (not in the book?)\<close>
 
 type_synonym ('p,'x,'e) query = "'p * ('x,'e) identifier list"
 
-fun solves_query :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) query \<Rightarrow> bool" where
-  "solves_query \<rho> (p,ids) \<longleftrightarrow> (\<forall>\<sigma>. map (eval_id \<sigma>) ids \<in> \<rho> p)" (* Is this correct?!?!?!?! *)
+definition solves_query :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) query \<Rightarrow> bool" where
+  "solves_query \<rho> = (\<lambda>(p,ids). (\<forall>\<sigma>. map (eval_id \<sigma>) ids \<in> \<rho> p))" (* Is this correct?!?!?!?! *)
 
 
 section \<open>Reaching Definitions in Datalog\<close>
@@ -203,18 +198,21 @@ datatype RD_pred =
    the_RD1
    | the_VAR
 
-abbreviation Encode_Node :: "'n node \<Rightarrow> ('x, ('n, 'v) RD_elem) identifier" where (* 'x could also be RD_var... *)
+abbreviation Encode_Node :: "'n node \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where (* 'x could also be RD_var... *)
   "Encode_Node n == DLElement (RD_Node n)"
 
-fun Encode_Node_Q :: "'n node option \<Rightarrow> ('x, ('n, 'v) RD_elem) identifier" where
+fun Encode_Node_Q :: "'n node option \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where
   "Encode_Node_Q (Some n) = DLElement (RD_Node n)"
 | "Encode_Node_Q None = DLElement Questionmark"
 
-abbreviation Encode_Var :: "'v \<Rightarrow> ('x, ('n, 'v) RD_elem) identifier" where
+abbreviation Encode_Var :: "'v \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where
   "Encode_Var v == DLElement (RD_Var v)"
 
-abbreviation RD1_Cls :: "('x, 'e) identifier list \<Rightarrow> (RD_pred, 'x, 'e) righthand list \<Rightarrow> (RD_pred, 'x, 'e) clause" ("RD1\<langle>_\<rangle> <- _ ") where 
-   "RD1\<langle>args\<rangle> <- ls \<equiv> Cls the_RD1 args ls"
+abbreviation RD1_Cls :: "(RD_var, 'e) identifier list \<Rightarrow> (RD_pred, RD_var, 'e) righthand list \<Rightarrow> (RD_pred, RD_var, 'e) clause" ("RD1\<langle>_\<rangle> :- _ .") where 
+   "RD1\<langle>args\<rangle> :- ls. \<equiv> Cls the_RD1 args ls"
+
+abbreviation VAR_Cls ("VAR\<langle>_\<rangle>.") where
+   "VAR\<langle>x\<rangle>. == Cls the_VAR [Encode_Var x] []"
 
 abbreviation "RD1 == PosRh the_RD1"
 abbreviation "VAR == PosRh the_VAR"
@@ -231,41 +229,48 @@ abbreviation \<w> :: "(RD_var, 'a) identifier" where
 fun ana_edge :: "('n, 'v) edge \<Rightarrow> (RD_pred, RD_var, ('n,'v) RD_elem) clause set" where
   "ana_edge (q\<^sub>s, x ::= a,q\<^sub>o) =
      {
-        RD1\<langle>[Encode_Node q\<^sub>s, \<uu>, \<v>, \<w>]\<rangle> <-
+        RD1\<langle>[Encode_Node q\<^sub>s, \<uu>, \<v>, \<w>]\<rangle> :-
           [
             RD1[Encode_Node q\<^sub>o, \<uu>, \<v>, \<w>],
             \<uu> \<^bold>\<noteq> (Encode_Var x)
-          ]
+          ].
         ,
-        RD1\<langle>[Encode_Node q\<^sub>s, Encode_Var x, Encode_Node q\<^sub>o, Encode_Node q\<^sub>s]\<rangle> <- []
+        RD1\<langle>[Encode_Node q\<^sub>s, Encode_Var x, Encode_Node q\<^sub>o, Encode_Node q\<^sub>s]\<rangle> :- [].
      }"
 | "ana_edge (q\<^sub>s, Bool b, q\<^sub>o) =
      {
-       RD1\<langle>[Encode_Node q\<^sub>s, \<uu>, \<v>, \<w>]\<rangle> <-
+       RD1\<langle>[Encode_Node q\<^sub>s, \<uu>, \<v>, \<w>]\<rangle> :-
          [
            RD1[Encode_Node q\<^sub>o, \<uu>, \<v>, \<w>]
-         ]
+         ].
      }"
 | "ana_edge (q\<^sub>s, Skip, q\<^sub>o) =
      {
-       RD1\<langle>[Encode_Node q\<^sub>s, \<uu>, \<v>, \<w>]\<rangle> <-
+       RD1\<langle>[Encode_Node q\<^sub>s, \<uu>, \<v>, \<w>]\<rangle> :-
          [
            RD1[Encode_Node q\<^sub>o, \<uu>, \<v>, \<w>]
-         ]
+         ].
      }"
 
 definition ana_entry_node :: "(RD_pred, RD_var, ('n,'v) RD_elem) clause set" where
   "ana_entry_node = 
      {
-       RD1\<langle>[Encode_Node Start, \<uu>, DLElement Questionmark, Encode_Node End]\<rangle> <-
+       RD1\<langle>[Encode_Node Start, \<uu>, DLElement Questionmark, Encode_Node Start]\<rangle> :-
          [
            VAR[\<uu>]
-         ]
+         ].
      }"
 
 
 definition ana_pg :: "('n, 'v) program_graph \<Rightarrow> (RD_pred, RD_var, ('n,'v) RD_elem) clause set" where
   "ana_pg pg = \<Union>(ana_edge ` pg) \<union> ana_entry_node"
+
+(* This makes VAR(x) true for the variables in the pg. This is not expanded so much on in the book. *)
+definition var_contraints :: "(RD_pred, RD_var, ('n,'v) RD_elem) clause set" where
+  "var_contraints = VAR_Cls ` UNIV"
+(* Only makes sense if UNIV is finite. Alternatively I could calculate what variables are in
+   the program and map VAR_Cls onto that set. *)
+
 
 (* Jeg skal på en eller anden måde trylle datalog programmet om til en analysis assignment.
    Eller definere hvad det betyder for programmet at det er en analysis assignment.
@@ -284,19 +289,105 @@ definition summarizes_dl :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('
    It can be done by adding a type annotation to solves_query.
  *)
 
-lemma RD_sound': (* TODO: We also need \<rho> to make VAR(x) true for the variables in the pg. *)
-  assumes "solves_program \<rho> (ana_pg pg)"
-  assumes "\<pi> \<in> LTS.path_with_word pg"
-  assumes "get_start \<pi> = Start"
-  assumes "(x,q1,q2) \<in> def_path \<pi>"
-  shows "solves_query_RD \<rho> (the_RD1,[Encode_Node (get_end \<pi>), Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
-  using assms apply (induction \<pi>)
-  sorry
+thm LTS.path_with_word.induct
 
-lemma RD_sound: (* TODO: We also need \<rho> to make VAR(x) true for the variables in the pg. *)
-  assumes "solves_program \<rho> (ana_pg pg)"
+lemma def_var_x: "fst (def_var ts x) = x"
+  unfolding def_var_def
+  apply auto
+  by (simp add: case_prod_beta triple_of_def)
+
+
+(* Ville det ikke være bedre hvis paths var lister af transitions?????????? *)
+(* Det er nok godt med et bevis på papir først :-D *)
+lemma RD_sound': 
+  assumes "(ss,w) \<in> LTS.path_with_word pg"
+  assumes "(solves_program :: (RD_pred,('a, 'b) RD_elem) pred_val \<Rightarrow> (RD_pred,RD_var,('a, 'b) RD_elem) dl_program \<Rightarrow> bool) \<rho> (var_contraints \<union> ana_pg pg)"
+  assumes "get_start (ss,w) = Start"
+  assumes "(x,q1,q2) \<in> def_path (ss,w)"
+  shows "solves_query_RD \<rho> (the_RD1,[Encode_Node (get_end (ss,w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
+  using assms 
+proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
+  case (1 s)
+  have "VAR\<langle>x\<rangle>. \<in> var_contraints"
+    unfolding var_contraints_def by auto
+  from assms(2) this have "solves_cls \<rho> (VAR\<langle>x\<rangle>.)"
+    unfolding solves_program_def by auto  
+  then have "\<forall>y. meaning_cls (VAR\<langle>x\<rangle>.) \<rho> y"
+    unfolding solves_cls_def by auto
+  then have x_sat: "[RD_Var x] \<in> \<rho> the_VAR"
+    by auto
+
+  have "RD1\<langle>[Encode_Node Start, \<uu>, DLElement Questionmark, Encode_Node Start]\<rangle> :-
+         [
+           VAR[\<uu>]
+         ]. \<in> ana_pg pg"
+    unfolding ana_pg_def ana_entry_node_def by auto
+  then have "(solves_cls \<rho> (RD1\<langle>[Encode_Node Start, \<uu>, DLElement Questionmark, Encode_Node Start]\<rangle> :-
+         [
+           VAR[\<uu>]
+         ].))"
+    using assms(2) unfolding solves_program_def by auto 
+   then have "\<forall>y. meaning_cls (RD1\<langle>[Encode_Node Start, \<uu>, DLElement Questionmark, Encode_Node Start]\<rangle> :-
+         [
+           VAR[\<uu>]
+         ].) \<rho> y"
+     unfolding solves_cls_def by metis
+   then have "meaning_cls (RD1\<langle>[Encode_Node Start, \<uu>, DLElement Questionmark, Encode_Node Start]\<rangle> :-
+         [
+           VAR[\<uu>]
+         ].) \<rho> (\<lambda>v. RD_Var x)"
+     by presburger
+   then have "[RD_Var x] \<in> \<rho> the_VAR \<longrightarrow> [RD_Node Start, RD_Var x, Questionmark, RD_Node Start] \<in> \<rho> the_RD1"
+     by simp
+   then have "[RD_Node Start, RD_Var x, Questionmark, RD_Node Start] \<in> \<rho> the_RD1"
+     using x_sat by auto
+
+   from this 1 show ?case
+     unfolding solves_query_def
+    apply auto
+    unfolding solves_cls_def
+    unfolding get_end_def
+    unfolding def_path_def
+    apply auto
+    unfolding def_var_def
+    apply auto
+    unfolding get_start_def
+    apply auto
+    done
+next
+  case (2 ss s w l s')
+  from 2(7) have "\<exists>v. def_var (transition_list (ss @ [s, s'], w @ [l])) v = (x, q1, q2)"
+    unfolding def_path_def by auto
+  then have defin: "def_var (transition_list (ss @ [s, s'], w @ [l])) x = (x, q1, q2)"
+    using def_var_x by (metis fst_conv)
+
+  then have "solves_query_RD \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
+  proof (cases "(filter (\<lambda>e. x \<in> def_edge e) (transition_list (ss @ [s, s'], w @ [l]))) = []")
+    case True
+    from this defin have ns: "(x, q1, q2) = (x, None, Start)" 
+      unfolding def_var_def by auto
+    then have "solves_query_RD \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q None, Encode_Node Start])"
+      using 2 sorry
+    then show ?thesis
+      using ns by auto
+  next
+    case False
+    from this defin have ns: "(x, q1, q2) = triple_of x (last (filter (\<lambda>e. x \<in> def_edge e) (transition_list (ss @ [s, s'], w @ [l]))))" 
+      unfolding def_var_def by auto
+    then have undefined
+      sorry
+    then show ?thesis sorry
+  qed
+  then show ?case
+    by (simp add: get_end_def)
+    
+(* It looks like the induction is going in the wrong direction *)
+qed
+
+lemma RD_sound:
+  assumes "solves_program \<rho> (var_contraints \<union> ana_pg pg)"
   shows "summarizes_dl \<rho> pg"
-  using assms RD_sound' unfolding summarizes_dl_def by metis
+  using assms RD_sound' unfolding summarizes_dl_def by fastforce 
 
 
 (* 

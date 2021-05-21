@@ -11,6 +11,12 @@ fun transitions_of :: "'state list * 'label list \<Rightarrow> ('state, 'label) 
 | "transitions_of ([],_) = {#}"
 | "transitions_of (_,[]) = {#}"
 
+fun transition_list :: "'state list * 'label list \<Rightarrow> ('state, 'label) transition list" where
+  "transition_list (s1#s2#ss, \<gamma>#w) = (s1, \<gamma>, s2) # (transition_list (s2#ss, w))"
+| "transition_list ([s1],_) = []"
+| "transition_list ([],_) = []"
+| "transition_list (_,[]) = []"
+
 fun transitions_of' :: "'state * 'label list * 'state list * 'state \<Rightarrow> ('state, 'label) transition multiset" where
   "transitions_of' (p,w,ss,q) = transitions_of (ss, w)"
 
