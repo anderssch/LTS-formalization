@@ -84,7 +84,14 @@ inductive_set transition_star_states :: "('state * 'label list * 'state list * '
 
 inductive_set path_with_word :: "('state list * 'label list) set" where
   path_with_word_refl[iff]: "([s],[]) \<in> path_with_word"
-| path_with_word_step: "(s'#ss, w) \<in> path_with_word \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,l#w) \<in> path_with_word" 
+| path_with_word_step: "(s'#ss, w) \<in> path_with_word \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,l#w) \<in> path_with_word"
+
+
+lemma path_with_word_induct_reverse: "(ss, w) \<in> path_with_word \<Longrightarrow>
+(\<And>s. P [s] []) \<Longrightarrow>
+(\<And>ss s w l s'. (ss @ [s], w) \<in> path_with_word \<Longrightarrow> P (ss @ [s]) w \<Longrightarrow> (s, l, s') \<in> transition_relation \<Longrightarrow> P (ss @ [s, s']) (w @ [l])) \<Longrightarrow>
+P ss w"
+  sorry
 
 inductive transition_of :: "('state, 'label) transition \<Rightarrow> 'state list * 'label list \<Rightarrow> bool" where
   "transition_of (s1,\<gamma>,s2) (s1#s2#ss, \<gamma>#w)"
