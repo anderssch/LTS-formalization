@@ -227,7 +227,7 @@ abbreviation \<w> :: "(RD_var, 'a) identifier" where
    "\<w> == DLVar the_\<w>"
 
 fun ana_edge :: "('n, 'v) edge \<Rightarrow> (RD_pred, RD_var, ('n,'v) RD_elem) clause set" where
-  "ana_edge (q\<^sub>s, x ::= a,q\<^sub>o) =
+  "ana_edge (q\<^sub>o, x ::= a, q\<^sub>s) =
      {
         RD1\<langle>[Encode_Node q\<^sub>s, \<uu>, \<v>, \<w>]\<rangle> :-
           [
@@ -237,14 +237,14 @@ fun ana_edge :: "('n, 'v) edge \<Rightarrow> (RD_pred, RD_var, ('n,'v) RD_elem) 
         ,
         RD1\<langle>[Encode_Node q\<^sub>s, Encode_Var x, Encode_Node q\<^sub>o, Encode_Node q\<^sub>s]\<rangle> :- [].
      }"
-| "ana_edge (q\<^sub>s, Bool b, q\<^sub>o) =
+| "ana_edge (q\<^sub>o, Bool b, q\<^sub>s) =
      {
        RD1\<langle>[Encode_Node q\<^sub>s, \<uu>, \<v>, \<w>]\<rangle> :-
          [
            RD1[Encode_Node q\<^sub>o, \<uu>, \<v>, \<w>]
          ].
      }"
-| "ana_edge (q\<^sub>s, Skip, q\<^sub>o) =
+| "ana_edge (q\<^sub>o, Skip, q\<^sub>s) =
      {
        RD1\<langle>[Encode_Node q\<^sub>s, \<uu>, \<v>, \<w>]\<rangle> :-
          [
@@ -378,7 +378,7 @@ next
       sorry
     then show ?thesis sorry
   qed
-  then show ?case
+  from 2 show ?case
     by (simp add: get_end_def)
     
 (* It looks like the induction is going in the wrong direction *)
