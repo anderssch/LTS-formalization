@@ -73,6 +73,8 @@ end
 
 section \<open>PDS with P automaton\<close>
 
+type_synonym ('ctr_loc, 'label) sat_rule = "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool"
+
 locale PDS_with_P_automaton = PDS P_locs \<Delta>
   for P_locs :: "'ctr_loc::finite set" and \<Delta> :: "('ctr_loc, 'label::finite) rule set"
     +
@@ -139,35 +141,35 @@ qed
 definition language :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf set" where
   "language ts = {c. accepts ts c}"
 
+
 subsection \<open>Saturations\<close>
 
+definition saturated :: "('ctr_loc, 'label) sat_rule \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where
+  "saturated rule ts \<longleftrightarrow> (\<nexists>ts'. rule ts ts')"
+
+definition saturation :: "('ctr_loc, 'label) sat_rule \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where
+  "saturation rule ts ts' \<longleftrightarrow> rule\<^sup>*\<^sup>* ts ts' \<and> saturated rule ts'"
 
 subsection \<open>Pre*\<close>
 
-inductive saturation_rule :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where (* TODO: p' should also be in P_locs I guess... *)
-  add_trans: "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> p \<in> P_locs \<Longrightarrow> (p', op_labels w, q) \<in> LTS.transition_star ts \<Longrightarrow> (p, \<gamma>, q) \<notin> ts \<Longrightarrow> saturation_rule ts (ts \<union> {(p, \<gamma>, q)})"
+inductive pre_star_rule :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where (* TODO: p' should also be in P_locs I guess... *)
+  add_trans: "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> p \<in> P_locs \<Longrightarrow> (p', op_labels w, q) \<in> LTS.transition_star ts \<Longrightarrow> (p, \<gamma>, q) \<notin> ts \<Longrightarrow> pre_star_rule ts (ts \<union> {(p, \<gamma>, q)})"
 
-lemma saturation_rule_mono:
-  "saturation_rule ts ts' \<Longrightarrow> ts \<subset> ts'"
-  unfolding saturation_rule.simps by auto
+lemma pre_star_rule_mono:
+  "pre_star_rule ts ts' \<Longrightarrow> ts \<subset> ts'"
+  unfolding pre_star_rule.simps by auto
 
-definition saturated :: "('ctr_loc, 'label) transition set \<Rightarrow> bool" where
-  "saturated ts \<longleftrightarrow> (\<nexists>ts'. saturation_rule ts ts')"
-
-definition saturation :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where
-  "saturation ts ts' \<longleftrightarrow> saturation_rule\<^sup>*\<^sup>* ts ts' \<and> saturated ts'"
-
-lemma saturation_rule_card_Suc: "saturation_rule ts ts' \<Longrightarrow> card ts' = Suc (card ts)"
-  unfolding saturation_rule.simps by auto
+lemma pre_star_rule_card_Suc: "pre_star_rule ts ts' \<Longrightarrow> card ts' = Suc (card ts)"
+  unfolding pre_star_rule.simps by auto
 
 lemma no_infinite: 
 (* Maybe lazy lists are better? *)
-  assumes "\<forall>i :: nat. saturation_rule (tts i) (tts (Suc i))"
+  assumes "\<forall>i :: nat. pre_star_rule (tts i) (tts (Suc i))"
   shows "False"
 proof -
   define f where "f i = card (tts i)" for i
   have f_Suc: "\<forall>i. f i < f (Suc i)"
-    by (metis saturation_rule_card_Suc assms f_def lessI)
+    by (metis pre_star_rule_card_Suc assms f_def lessI)
   have "\<forall>i. \<exists>j. f j > i"
   proof 
     fix i
@@ -190,37 +192,37 @@ qed
 
 lemma saturation_termination: 
 (* Maybe lazy lists are better? *)
-  "\<not>(\<exists>tts. (\<forall>i :: nat. saturation_rule (tts i) (tts (Suc i))))"
+  "\<not>(\<exists>tts. (\<forall>i :: nat. pre_star_rule (tts i) (tts (Suc i))))"
   using no_infinite by presburger
 
-lemma saturation_exi: "\<exists>ts'. saturation ts ts'"
+lemma saturation_exi: "\<exists>ts'. saturation pre_star_rule ts ts'"
 proof (rule ccontr) (* TODO: it would be nice to avoid ccontr *)
-  assume a: "\<nexists>ts'. saturation ts ts'"
-  define g where "g ts = (SOME ts'. saturation_rule ts ts')" for ts
+  assume a: "\<nexists>ts'. saturation pre_star_rule ts ts'"
+  define g where "g ts = (SOME ts'. pre_star_rule ts ts')" for ts
   define tts where "tts i = (g ^^ i) ts" for i
-  have "\<forall>i :: nat. saturation_rule\<^sup>*\<^sup>* ts (tts i) \<and> saturation_rule (tts i) (tts (Suc i))"
+  have "\<forall>i :: nat. pre_star_rule\<^sup>*\<^sup>* ts (tts i) \<and> pre_star_rule (tts i) (tts (Suc i))"
   proof 
     fix i
-    show "saturation_rule\<^sup>*\<^sup>* ts (tts i) \<and> saturation_rule (tts i) (tts (Suc i))"
+    show "pre_star_rule\<^sup>*\<^sup>* ts (tts i) \<and> pre_star_rule (tts i) (tts (Suc i))"
     proof (induction i)
       case 0
-      have "saturation_rule ts (g ts)"
+      have "pre_star_rule ts (g ts)"
         by (metis g_def a rtranclp.rtrancl_refl saturation_def saturated_def someI)
       then show ?case
         using tts_def a saturation_def by auto 
     next
       case (Suc i)
-      then have sat_Suc: "saturation_rule\<^sup>*\<^sup>* ts (tts (Suc i))"
+      then have sat_Suc: "pre_star_rule\<^sup>*\<^sup>* ts (tts (Suc i))"
         by fastforce
-      then have "saturation_rule (g ((g ^^ i) ts)) (g (g ((g ^^ i) ts)))"
+      then have "pre_star_rule (g ((g ^^ i) ts)) (g (g ((g ^^ i) ts)))"
         by (metis Suc.IH tts_def g_def a r_into_rtranclp rtranclp_trans saturation_def saturated_def someI)
-      then have "saturation_rule (tts (Suc i)) (tts (Suc (Suc i)))"
+      then have "pre_star_rule (tts (Suc i)) (tts (Suc (Suc i)))"
         unfolding tts_def by simp
       then show ?case
         using sat_Suc by auto
     qed
   qed
-  then have "\<forall>i. saturation_rule (tts i) (tts (Suc i))"
+  then have "\<forall>i. pre_star_rule (tts i) (tts (Suc i))"
     by auto
   then show False
     using no_infinite by auto
@@ -232,35 +234,35 @@ TODO: Prove that saturations are unique?
 
 *)
 
-lemma saturation_rule_incr: "saturation_rule A B \<Longrightarrow> A \<subseteq> B"
-proof(induction rule: saturation_rule.inducts)
+lemma pre_star_rule_incr: "pre_star_rule A B \<Longrightarrow> A \<subseteq> B"
+proof(induction rule: pre_star_rule.inducts)
   case (add_trans p \<gamma> p' w q rel)
   then show ?case 
     by auto
 qed
 
-lemma saturation_rtranclp_rule_incr: "saturation_rule\<^sup>*\<^sup>* A B \<Longrightarrow> A \<subseteq> B"
+lemma saturation_rtranclp_rule_incr: "pre_star_rule\<^sup>*\<^sup>* A B \<Longrightarrow> A \<subseteq> B"
 proof (induction rule: rtranclp_induct)
   case base
   then show ?case by auto
 next
   case (step y z)
   then show ?case
-    using saturation_rule_incr by auto
+    using pre_star_rule_incr by auto
 qed
 
 lemma pre_star'_incr_transition_star:
-  "saturation_rule\<^sup>*\<^sup>* A A' \<Longrightarrow> LTS.transition_star A \<subseteq> LTS.transition_star A'"
+  "pre_star_rule\<^sup>*\<^sup>* A A' \<Longrightarrow> LTS.transition_star A \<subseteq> LTS.transition_star A'"
   using mono_def LTS_transition_star_mono saturation_rtranclp_rule_incr by metis
 
 lemma pre_star_lim'_incr_transition_star:
-  "saturation A A' \<Longrightarrow> LTS.transition_star A \<subseteq> LTS.transition_star A'"
+  "saturation pre_star_rule A A' \<Longrightarrow> LTS.transition_star A \<subseteq> LTS.transition_star A'"
   by (simp add: pre_star'_incr_transition_star saturation_def)
 
 lemma lemma_3_1:
   assumes "p'w \<Rightarrow>\<^sup>* pv"
     and "pv \<in> language A"
-    and "saturation A A'"
+    and "saturation pre_star_rule A A'"
   shows "accepts A' p'w"
   using assms
 proof (induct rule: converse_rtranclp_induct)
@@ -315,7 +317,8 @@ next
     using saturation_def[of ]
     using step.prems
     using p'_P_locs
-    by blast
+    by force
+
 
   then have "(p', \<gamma>#w1, q) \<in> LTS.transition_star A'"
     using in_A' transition_star_step q1_p
@@ -333,7 +336,7 @@ lemma lemma_3_2_base:
   "(p, w, q) \<in> LTS.transition_star rel \<Longrightarrow> \<exists>p' w'. (p, w) \<Rightarrow>\<^sup>* (p', w') \<and> (p', w', q) \<in> LTS.transition_star rel"
   by auto
 
-lemma saturation_rule_mono': "t \<in> LTS.transition_star rel \<Longrightarrow> saturation_rule rel rel' \<Longrightarrow> t \<in> LTS.transition_star (rel')"
+lemma pre_star_rule_mono': "t \<in> LTS.transition_star rel \<Longrightarrow> pre_star_rule rel rel' \<Longrightarrow> t \<in> LTS.transition_star (rel')"
   using pre_star'_incr_transition_star by blast
 
 lemma lemma_3_2_b_aux:
@@ -619,7 +622,7 @@ qed
 
 lemma lemma_3_2_a':
   assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs"
-  assumes "saturation_rule\<^sup>*\<^sup>* A A'"
+  assumes "pre_star_rule\<^sup>*\<^sup>* A A'"
   assumes "(p, w, ss, q) \<in> LTS.transition_star_states A'"
   shows "\<exists>p' w' ss'. (p', w', ss', q) \<in> LTS.transition_star_states A \<and> (p, w) \<Rightarrow>\<^sup>* (p', w')"
   using assms(2) assms(1,3) 
@@ -636,7 +639,7 @@ next
     "(p2, op_labels w2, q') \<in> LTS.transition_star Aiminus1"
     "(p1, \<gamma>, q') \<notin> Aiminus1"
     "p1 \<in> P_locs"
-    by (meson saturation_rule.cases)
+    by (meson pre_star_rule.cases)
 
   note ss_p = step(5)
 
@@ -764,7 +767,7 @@ find_theorems transition_star transition_star_states
 
 lemma lemma_3_2_a'':
   assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs"
-  assumes "saturation_rule\<^sup>*\<^sup>* A A'"
+  assumes "pre_star_rule\<^sup>*\<^sup>* A A'"
   assumes "(p, w, q) \<in> LTS.transition_star A'"
   shows "\<exists>p' w' ss'. (p', w', q) \<in> LTS.transition_star A \<and> (p, w) \<Rightarrow>\<^sup>* (p', w')"
   using lemma_3_2_a' assms
@@ -772,7 +775,7 @@ lemma lemma_3_2_a'':
 
 lemma lemma_3_2_a:
   assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs"
-  assumes "saturation A A'"
+  assumes "saturation pre_star_rule A A'"
   assumes "(p, w, q) \<in> LTS.transition_star A'"
   shows "\<exists>p' w'. (p', w', q) \<in> LTS.transition_star A \<and> (p, w) \<Rightarrow>\<^sup>* (p', w')"
   using assms lemma_3_2_a'' saturation_def by auto 
@@ -782,7 +785,7 @@ lemmas lemma_3_2 = lemma_3_2_a lemma_3_2_b
 
 theorem theorem_3_2:
   assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs"
-  assumes "saturation A A'"
+  assumes "saturation pre_star_rule A A'"
   shows "{c. accepts A' c} = pre_star (language A)"
 proof (rule; rule)
 
