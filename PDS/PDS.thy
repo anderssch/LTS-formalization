@@ -75,6 +75,24 @@ section \<open>PDS with P automaton\<close>
 
 type_synonym ('ctr_loc, 'label) sat_rule = "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool"
 
+datatype ('ctr_loc, 'label) ctr_loc =
+  Ctr_Loc 'ctr_loc
+  | Ctr_Loc_Ext 'ctr_loc 'label
+
+find_theorems "finite UNIV"
+find_theorems class.finite
+
+instantiation  ctr_loc :: (finite, finite) finite begin
+
+(* Man kunne vise at der ikke er en injection
+   fra nat til vores type. *)
+
+instance 
+  apply standard
+  apply (rule Finite_Set.finite.finite_UNIV)
+  sorry
+end
+
 locale PDS_with_P_automaton = PDS P_locs \<Delta>
   for P_locs :: "'ctr_loc::finite set" and \<Delta> :: "('ctr_loc, 'label::finite) rule set"
     +
