@@ -211,8 +211,15 @@ abbreviation Encode_Var :: "'v \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifi
 abbreviation RD1_Cls :: "(RD_var, 'e) identifier list \<Rightarrow> (RD_pred, RD_var, 'e) righthand list \<Rightarrow> (RD_pred, RD_var, 'e) clause" ("RD1\<langle>_\<rangle> :- _ .") where 
    "RD1\<langle>args\<rangle> :- ls. \<equiv> Cls the_RD1 args ls"
 
-abbreviation VAR_Cls ("VAR\<langle>_\<rangle>.") where
-   "VAR\<langle>x\<rangle>. == Cls the_VAR [Encode_Var x] []"
+abbreviation VAR_Cls :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) clause" ("VAR\<langle>_\<rangle> :-.") where
+   "VAR\<langle>x\<rangle> :-. == Cls the_VAR [Encode_Var x] []"
+
+abbreviation RD1_Query :: "(RD_var, 'e) identifier list \<Rightarrow> (RD_pred, RD_var, 'e) query" ("RD1\<langle>_\<rangle>.") where 
+   "RD1\<langle>args\<rangle>. \<equiv> (the_RD1, args)"
+
+abbreviation VAR_Query :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) query" ("VAR\<langle>_\<rangle>.") where 
+   "VAR\<langle>x\<rangle>. \<equiv> (the_VAR, [Encode_Var x])"
+
 
 abbreviation "RD1 == PosRh the_RD1"
 abbreviation "VAR == PosRh the_VAR"
@@ -301,18 +308,18 @@ lemma def_var_x: "fst (def_var ts x) = x"
 (* Det er nok godt med et bevis på papir først :-D *)
 lemma RD_sound': 
   assumes "(ss,w) \<in> LTS.path_with_word pg"
-  assumes "(solves_program :: (RD_pred,('a, 'b) RD_elem) pred_val \<Rightarrow> (RD_pred,RD_var,('a, 'b) RD_elem) dl_program \<Rightarrow> bool) \<rho> (var_contraints \<union> ana_pg pg)"
+  assumes "(solves_program :: (RD_pred,('n, 'v) RD_elem) pred_val \<Rightarrow> (RD_pred,RD_var,('n, 'v) RD_elem) dl_program \<Rightarrow> bool) \<rho> (var_contraints \<union> ana_pg pg)"
   assumes "get_start (ss,w) = Start"
   assumes "(x,q1,q2) \<in> def_path (ss,w)"
   shows "solves_query_RD \<rho> (the_RD1,[Encode_Node (get_end (ss,w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
   using assms 
 proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   case (1 s)
-  have "VAR\<langle>x\<rangle>. \<in> var_contraints"
+  have "VAR\<langle>x\<rangle> :-. \<in> var_contraints"
     unfolding var_contraints_def by auto
-  from assms(2) this have "solves_cls \<rho> (VAR\<langle>x\<rangle>.)"
+  from assms(2) this have "solves_cls \<rho> (VAR\<langle>x\<rangle> :-.)"
     unfolding solves_program_def by auto  
-  then have "\<forall>y. meaning_cls (VAR\<langle>x\<rangle>.) \<rho> y"
+  then have "\<forall>y. meaning_cls (VAR\<langle>x\<rangle> :-.) \<rho> y"
     unfolding solves_cls_def by auto
   then have x_sat: "[RD_Var x] \<in> \<rho> the_VAR"
     by auto
@@ -356,32 +363,90 @@ proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
     done
 next
   case (2 ss s w l s')
-  from 2(7) have "\<exists>v. def_var (transition_list (ss @ [s, s'], w @ [l])) v = (x, q1, q2)"
-    unfolding def_path_def by auto
-  then have defin: "def_var (transition_list (ss @ [s, s'], w @ [l])) x = (x, q1, q2)"
-    using def_var_x by (metis fst_conv)
-
-  then have "solves_query_RD \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
-  proof (cases "(filter (\<lambda>e. x \<in> def_edge e) (transition_list (ss @ [s, s'], w @ [l]))) = []")
+  show ?case 
+  proof(cases "x \<in> def_action l")
     case True
-    from this defin have ns: "(x, q1, q2) = (x, None, Start)" 
-      unfolding def_var_def by auto
-    then have "solves_query_RD \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q None, Encode_Node Start])"
-      using 2 sorry
-    then show ?thesis
-      using ns by auto
+    then have sq: "Some s = q1 \<and> s' = q2" using 2(7)
+      (* otherwise (x, q1, q2) would have been "overwritten" by (x, s, s') *)
+      sorry
+    from True have "\<exists>e. (s,x ::= e,s') \<in> pg"
+      using "2.hyps"(2) by (cases l) auto
+    then have "RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- []. \<in> ana_pg pg"
+      using True ana_pg_def sq by fastforce
+    then have "solves_cls \<rho> (RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [].)"
+      using 2(5) unfolding solves_program_def by auto
+    then show ?thesis sorry
   next
     case False
-    from this defin have ns: "(x, q1, q2) = triple_of x (last (filter (\<lambda>e. x \<in> def_edge e) (transition_list (ss @ [s, s'], w @ [l]))))" 
-      unfolding def_var_def by auto
-    then have undefined
+    then have x_is_def: "(x, q1, q2) \<in> def_path (ss @ [s], w)" using 2(7)
       sorry
-    then show ?thesis sorry
+    then have "solves_query_RD \<rho> (RD1\<langle>[Encode_Node (get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
+    proof -
+      have "(ss @ [s], w) \<in> LTS.path_with_word pg"
+        using 2(1) by auto
+      moreover
+      have "solves_program \<rho> (var_contraints \<union> ana_pg pg)"
+        using 2(5) by auto
+      moreover
+      have "get_start (ss @ [s], w) = Start"
+        using 2(6)
+        by (metis append_self_conv2 fst_conv get_start_def hd_append2 list.sel(1)) 
+      moreover
+      have "(x, q1, q2) \<in> def_path (ss @ [s], w)"
+        using x_is_def by auto
+      ultimately
+      show "solves_query_RD \<rho> (the_RD1, [Encode_Node (get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
+        using 2(3) by auto
+    qed
+    then have ind: "solves_query_RD \<rho> (RD1\<langle>[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
+      by (simp add: get_end_def)
+    show ?thesis
+    proof (cases l)
+      case (Asg y e)
+      have xy: "x \<noteq> y"
+        using False Asg by auto
+      from this False have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
+          [
+            RD1[Encode_Node s, \<uu>, \<v>, \<w>],
+            \<uu> \<^bold>\<noteq> (Encode_Var y)
+          ].)"
+        sorry
+      from this xy ind have "solves_query_RD \<rho> (RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
+        sorry
+      then show ?thesis
+        by (simp add: get_end_def)
+    next
+      case (Bool b)
+      have "(s, Bool b, s') \<in> pg"
+        using "2.hyps"(2) Bool by auto
+      then have "RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
+         [
+           RD1[Encode_Node s, \<uu>, \<v>, \<w>]
+         ]. \<in> ana_pg pg"
+        unfolding ana_pg_def by force
+      then have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :- [RD1[Encode_Node s, \<uu>, \<v>, \<w>]].)"
+        sorry
+      then have "solves_query_RD \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
+        using ind sorry
+      then show ?thesis
+        by (simp add: get_end_def)
+    next
+      case Skip
+      have "(s, Skip, s') \<in> pg"
+        using "2.hyps"(2) Skip by auto
+      then have "RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
+         [
+           RD1[Encode_Node s, \<uu>, \<v>, \<w>]
+         ]. \<in> ana_pg pg"
+        unfolding ana_pg_def by force
+      then have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<uu>, \<v>, \<w>]] .)"
+        sorry
+      then have "solves_query_RD \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
+        using ind sorry
+      then show ?thesis
+        by (simp add: get_end_def)
+    qed
   qed
-  from 2 show ?case
-    by (simp add: get_end_def)
-    
-(* It looks like the induction is going in the wrong direction *)
 qed
 
 lemma RD_sound:

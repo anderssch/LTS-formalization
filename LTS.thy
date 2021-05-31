@@ -74,6 +74,8 @@ inductive_set transition_star :: "('state * 'label list * 'state) set" where
 | transition_star_step: "(p,\<gamma>,q') \<in> transition_relation \<Longrightarrow> (q',w,q) \<in> transition_star
                            \<Longrightarrow> (p, \<gamma>#w, q) \<in> transition_star"
 
+(* I could make a notation like p \<Midarrow>w\<Rightarrow>* q *)
+
 inductive_cases transition_star_empty [elim]: "(p, [], q) \<in> transition_star"
 inductive_cases transition_star_cons: "(p, \<gamma>#w, q) \<in> transition_star"
 
@@ -87,11 +89,73 @@ inductive_set path_with_word :: "('state list * 'label list) set" where
 | path_with_word_step: "(s'#ss, w) \<in> path_with_word \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,l#w) \<in> path_with_word"
 
 
+lemma path_with_word_length: (* TODO: move to LTS *)
+  assumes "(ss, w) \<in> LTS.path_with_word pg"
+  shows "length ss = length w + 1"
+  using assms 
+proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
+  case (1 s)
+  then show ?case by auto
+next
+  case (2 ss s w l s')
+  then show ?case by auto
+qed
+
 lemma path_with_word_induct_reverse: "(ss, w) \<in> path_with_word \<Longrightarrow>
 (\<And>s. P [s] []) \<Longrightarrow>
 (\<And>ss s w l s'. (ss @ [s], w) \<in> path_with_word \<Longrightarrow> P (ss @ [s]) w \<Longrightarrow> (s, l, s') \<in> transition_relation \<Longrightarrow> P (ss @ [s, s']) (w @ [l])) \<Longrightarrow>
 P ss w"
-  sorry
+proof (induction rule: path_with_word.induct)
+  case (path_with_word_refl s)
+  then show ?case
+    by simp
+next
+  case (path_with_word_step s' ss w s l)
+  have "length ss = length w"
+    using path_with_word_length
+    by (metis One_nat_def add_right_cancel list.size(4) path_with_word_step.hyps(1)) 
+
+  have "(ss = []) \<or> length ss = 1 \<or> length ss \<ge> 2"
+    by (metis One_nat_def Suc_1 Suc_leI length_greater_0_conv less_le)
+  then show ?case
+  proof
+    assume tv: "ss = []"
+
+    have Ps: "P [s] []"
+      by (simp add: path_with_word_step.prems(1))
+    have tr: "(s, l, s') \<in> transition_relation"
+      by (simp add: path_with_word_step.hyps(2))
+    from tv Ps tr have "P ([s,s']) [l]"
+      using path_with_word_step(5)[of "[]" s "[]" l s']
+      by auto
+    then show "P (s # s' # ss) (l # w)"
+      using \<open>length ss = length w\<close> tv by fastforce
+  next
+    assume "length ss = 1 \<or> 2 \<le> length ss"
+    then show ?case
+    proof
+      assume "length ss = 1"
+      then obtain s'' where "ss = [s'']"
+        by (metis One_nat_def length_0_conv length_Suc_conv)
+      obtain l' where "w = [l']"
+        by (metis One_nat_def Suc_length_conv \<open>length ss = 1\<close> \<open>length ss = length w\<close> length_0_conv)
+      have "([s] @ [s'], [l]) \<in> path_with_word"
+        by (simp add: LTS.path_with_word.path_with_word_step path_with_word_step.hyps(2))
+      have "P ([s] @ [s']) [l]"
+        by (metis append_Cons append_Nil path_with_word.path_with_word_refl path_with_word_step.hyps(2) path_with_word_step.prems(1) path_with_word_step.prems(2))
+      have "P [s, s', s''] [l, l']"
+        using path_with_word_step(5)[of "[s]" s' "[l]" l' s'' ]
+        using \<open>([s] @ [s'], [l]) \<in> path_with_word\<close> \<open>P ([s] @ [s']) [l]\<close> \<open>ss = [s'']\<close> \<open>w = [l']\<close> path_with_word.cases path_with_word_step.hyps(1) by auto
+      then show "P (s # s' # ss) (l # w)"
+        by (simp add: \<open>ss = [s'']\<close> \<open>w = [l']\<close>) 
+    next
+      assume "2 \<le> length ss"
+      then show "P (s # s' # ss) (l # w)"
+        sorry
+    qed
+  qed
+qed
+
 
 inductive transition_of :: "('state, 'label) transition \<Rightarrow> 'state list * 'label list \<Rightarrow> bool" where
   "transition_of (s1,\<gamma>,s2) (s1#s2#ss, \<gamma>#w)"

@@ -112,6 +112,16 @@ definition accepts :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc
   "accepts ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,q) \<in> LTS.transition_star ts)"
   (* Here acceptance is defined for any p, but in the paper p has to be in P_locs *)
 
+definition epsilon :: 'label where "epsilon = undefined"
+
+inductive epsilon_exp where
+  "epsilon_exp [] []"
+| "epsilon_exp ls ls' \<Longrightarrow> epsilon_exp (l#ls) (l#ls')"
+| "epsilon_exp ls ls' \<Longrightarrow> epsilon_exp ls (epsilon#ls')"
+
+definition accepts_epsilon :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc , 'label) conf \<Rightarrow> bool" where
+  "accepts_epsilon ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,q) \<in> LTS.transition_star ts)"
+
 lemma accepts_mono[mono]: "mono accepts" (* Hmm.. what does this actually mean? *)
 proof (rule, rule)
   fix c :: "('ctr_loc, 'label) conf"
