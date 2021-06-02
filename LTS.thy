@@ -101,61 +101,88 @@ next
   then show ?case by auto
 qed
 
+lemma path_with_word_butlast:
+  assumes "(ss, w) \<in> path_with_word"
+  assumes "length ss \<ge> 2"
+  shows "(butlast ss, butlast w) \<in> path_with_word"
+using assms proof (induction rule: path_with_word.induct)
+case (path_with_word_refl s)
+  then show ?case
+    by force
+next
+  case (path_with_word_step s' ss w s l)
+  then show ?case
+    by (smt (z3) LTS.path_with_word.path_with_word_step LTS.path_with_word_length One_nat_def Suc_1 Suc_inject Suc_leI Suc_le_mono butlast.simps(2) le_less length_0_conv length_Cons list.distinct(1) list.size(4) path_with_word.path_with_word_refl) 
+qed
+
+
+lemma transition_butlast:
+  assumes "(ss, w) \<in> path_with_word"
+  assumes "length ss \<ge> 2"
+  shows "(last (butlast ss), last w, last ss) \<in> transition_relation"
+using assms proof (induction rule: path_with_word.induct)
+  case (path_with_word_refl s)
+  then show ?case
+    by force 
+next
+  case (path_with_word_step s' ss w s l)
+  then show ?case
+    by (smt (z3) LTS.path_with_word_length One_nat_def Suc_1 Suc_inject Suc_leI Suc_le_mono butlast.simps(2) last.simps le_less length_0_conv length_Cons list.distinct(1) list.size(4))
+qed
+
+
 lemma path_with_word_induct_reverse: "(ss, w) \<in> path_with_word \<Longrightarrow>
 (\<And>s. P [s] []) \<Longrightarrow>
 (\<And>ss s w l s'. (ss @ [s], w) \<in> path_with_word \<Longrightarrow> P (ss @ [s]) w \<Longrightarrow> (s, l, s') \<in> transition_relation \<Longrightarrow> P (ss @ [s, s']) (w @ [l])) \<Longrightarrow>
 P ss w"
-proof (induction rule: path_with_word.induct)
-  case (path_with_word_refl s)
+proof (induction "length ss" arbitrary: ss w)
+  case 0
   then show ?case
-    by simp
+    by (metis LTS.path_with_word_length Suc_eq_plus1 Zero_not_Suc)
 next
-  case (path_with_word_step s' ss w s l)
-  have "length ss = length w"
-    using path_with_word_length
-    by (metis One_nat_def add_right_cancel list.size(4) path_with_word_step.hyps(1)) 
-
-  have "(ss = []) \<or> length ss = 1 \<or> length ss \<ge> 2"
-    by (metis One_nat_def Suc_1 Suc_leI length_greater_0_conv less_le)
-  then show ?case
-  proof
-    assume tv: "ss = []"
-
-    have Ps: "P [s] []"
-      by (simp add: path_with_word_step.prems(1))
-    have tr: "(s, l, s') \<in> transition_relation"
-      by (simp add: path_with_word_step.hyps(2))
-    from tv Ps tr have "P ([s,s']) [l]"
-      using path_with_word_step(5)[of "[]" s "[]" l s']
-      by auto
-    then show "P (s # s' # ss) (l # w)"
-      using \<open>length ss = length w\<close> tv by fastforce
+  case (Suc n)
+  
+  show ?case
+  proof (cases "n = 0")
+    case True
+    then show ?thesis
+      by (metis LTS.path_with_word_length Suc.hyps(2) Suc.prems(1) Suc.prems(2) Suc_eq_plus1 Suc_inject Suc_length_conv length_0_conv)
   next
-    assume "length ss = 1 \<or> 2 \<le> length ss"
-    then show ?case
-    proof
-      assume "length ss = 1"
-      then obtain s'' where "ss = [s'']"
-        by (metis One_nat_def length_0_conv length_Suc_conv)
-      obtain l' where "w = [l']"
-        by (metis One_nat_def Suc_length_conv \<open>length ss = 1\<close> \<open>length ss = length w\<close> length_0_conv)
-      have "([s] @ [s'], [l]) \<in> path_with_word"
-        by (simp add: LTS.path_with_word.path_with_word_step path_with_word_step.hyps(2))
-      have "P ([s] @ [s']) [l]"
-        by (metis append_Cons append_Nil path_with_word.path_with_word_refl path_with_word_step.hyps(2) path_with_word_step.prems(1) path_with_word_step.prems(2))
-      have "P [s, s', s''] [l, l']"
-        using path_with_word_step(5)[of "[s]" s' "[l]" l' s'' ]
-        using \<open>([s] @ [s'], [l]) \<in> path_with_word\<close> \<open>P ([s] @ [s']) [l]\<close> \<open>ss = [s'']\<close> \<open>w = [l']\<close> path_with_word.cases path_with_word_step.hyps(1) by auto
-      then show "P (s # s' # ss) (l # w)"
-        by (simp add: \<open>ss = [s'']\<close> \<open>w = [l']\<close>) 
-    next
-      assume "2 \<le> length ss"
-      then show "P (s # s' # ss) (l # w)"
-        sorry
-    qed
+    case False
+    define ss' where "ss' = butlast (butlast ss)"
+    define s where "s = last (butlast ss)"
+    define s' where "s' = last ss"
+    define w' where "w' = butlast w"
+    define l where "l = last w"
+
+    have "length ss \<ge> 2"
+      using False Suc.hyps(2) by linarith
+
+    then have s_split: "ss' @ [s, s'] = ss"
+      by (metis One_nat_def Suc_1 Suc_le_mono Zero_not_Suc append.assoc append.simps(1) append_Cons append_butlast_last_id le_less length_append_singleton list.size(3) s'_def s_def ss'_def zero_order(3))
+
+    have w_split: "w' @ [l] = w"
+      by (metis LTS.path_with_word_length Suc.prems(1) add.commute butlast.simps(2) butlast_append l_def length_0_conv length_Suc_conv list.simps(3) plus_1_eq_Suc s_split snoc_eq_iff_butlast w'_def)
+
+    have ss'w'_path: "(ss' @ [s], w') \<in> path_with_word"
+      using Suc(3) path_with_word_butlast
+      by (metis (no_types, lifting) \<open>2 \<le> length ss\<close> butlast.simps(2) butlast_append list.simps(3) s_split w'_def)
+
+    have tr: "(s, l, s') \<in> transition_relation"
+      using Suc(3) s'_def s_def l_def transition_butlast \<open>2 \<le> length ss\<close> by presburger 
+
+    have nl: "n = length (ss' @ [s])"
+      by (metis LTS.path_with_word_length Suc.hyps(2) Suc.prems(1) Suc_eq_plus1 length_append_singleton nat.inject ss'w'_path w_split)
+
+    have "P (ss' @ [s]) w'"
+      using Suc(1)[of "ss' @ [s]" w', OF nl ss'w'_path Suc(4)] Suc(5) by metis
+
+    then have "P (ss' @ [s, s']) (w' @ [l])"
+      using Suc(5)[of ss' s w' l s'] ss'w'_path tr by auto
+    then show ?thesis
+      using s_split w_split by auto
   qed
 qed
-
 
 inductive transition_of :: "('state, 'label) transition \<Rightarrow> 'state list * 'label list \<Rightarrow> bool" where
   "transition_of (s1,\<gamma>,s2) (s1#s2#ss, \<gamma>#w)"
@@ -252,6 +279,7 @@ next
   then show ?case
     by (metis LTS.transition_star.transition_star_step LTS.transition_star_cons append_Cons)
 qed
+
 
 end
 
@@ -457,6 +485,7 @@ next
   show ?case
     by (metis "2.IH" "2.hyps"(1) "2.hyps"(2) LTS.transition_star_states.cases assms(2) assms(3) count_transitions_of'_tails transitions_of'.simps)
 qed
+
 
 section\<open>LTS init\<close>
 
