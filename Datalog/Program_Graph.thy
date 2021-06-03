@@ -154,6 +154,8 @@ type_synonym ('x,'e) var_val = "'x \<Rightarrow> 'e"
 
 type_synonym ('p,'e) pred_val = "'p \<Rightarrow> 'e list set"
 
+type_synonym ('p,'x,'e) lefthand = "'p * ('x,'e) identifier list"
+
 fun eval_id :: "('x,'e) var_val \<Rightarrow> ('x,'e) identifier \<Rightarrow> 'e" where
   "eval_id \<sigma> (DLVar x) = \<sigma> x"
 | "eval_id \<sigma> (DLElement e) = e"
@@ -164,8 +166,11 @@ fun meaning_rh :: "('p,'x,'e) righthand \<Rightarrow> ('p,'e) pred_val \<Rightar
 | "meaning_rh (PosRh p ids) \<rho> \<sigma> \<longleftrightarrow> map (eval_id \<sigma>) ids \<in> \<rho> p"
 | "meaning_rh (NegRh p ids) \<rho> \<sigma> \<longleftrightarrow> \<not> map (eval_id \<sigma>) ids \<in> \<rho> p"
 
+fun meaning_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" where
+  "meaning_lh (p,ids) \<rho> \<sigma> \<longleftrightarrow> map (eval_id \<sigma>) ids \<in> \<rho> p"
+
 fun meaning_cls :: "('p,'x,'e) clause \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" where
-  "meaning_cls (Cls p ids rhs) \<rho> \<sigma> \<longleftrightarrow> ((\<forall>rh\<in>set rhs. meaning_rh rh \<rho> \<sigma>) \<longrightarrow> map (eval_id \<sigma>) ids \<in> \<rho> p)"
+  "meaning_cls (Cls p ids rhs) \<rho> \<sigma> \<longleftrightarrow> ((\<forall>rh\<in>set rhs. meaning_rh rh \<rho> \<sigma>) \<longrightarrow> meaning_lh (p,ids) \<rho> \<sigma>)"
 
 definition solves_cls :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) clause \<Rightarrow> bool" where
   "solves_cls \<rho> c \<longleftrightarrow> (\<forall>\<sigma>. meaning_cls c \<rho> \<sigma>)"
@@ -178,8 +183,11 @@ section \<open>Queries (not in the book?)\<close>
 
 type_synonym ('p,'x,'e) query = "'p * ('x,'e) identifier list"
 
+fun meaning_query :: "('p,'x,'e) query \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" where
+  "meaning_query (p,ids) \<rho> \<sigma> \<longleftrightarrow> map (eval_id \<sigma>) ids \<in> \<rho> p"
+
 definition solves_query :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) query \<Rightarrow> bool" where
-  "solves_query \<rho> = (\<lambda>(p,ids). (\<forall>\<sigma>. map (eval_id \<sigma>) ids \<in> \<rho> p))" (* Is this correct?!?!?!?! *)
+  "solves_query \<rho> = (\<lambda>(p,ids). (\<forall>\<sigma>. meaning_query (p,ids) \<rho> \<sigma>))" (* Is this correct?!?!?!?! *)
 
 
 section \<open>Reaching Definitions in Datalog\<close>
@@ -303,6 +311,132 @@ lemma def_var_x: "fst (def_var ts x) = x"
   apply auto
   by (simp add: case_prod_beta triple_of_def)
 
+lemma transition_list_reversed_simp:
+  assumes "length ss = length w"
+  shows "transition_list (ss @ [s, s'], w @ [l]) = (transition_list (ss@[s],w)) @ [(s,l,s')]"
+  using assms
+proof (induction ss arbitrary: w)
+  case Nil
+  then show ?case
+    by auto 
+next
+  case (Cons a ss)
+  define w' where "w' = tl w"
+  define l' where "l' = hd w"
+  have w_split: "l' # w' = w"
+    by (metis Cons.prems l'_def length_0_conv list.distinct(1) list.exhaust_sel w'_def)
+  then have "length ss = length w'"
+    using Cons.prems by force
+  then have "transition_list (ss @ [s, s'], w' @ [l]) = transition_list (ss @ [s], w') @ [(s, l, s')]"
+    using  Cons(1)[of w'] by auto
+  then have "transition_list (a # ss @ [s, s'], l' # w' @ [l]) = transition_list (a # ss @ [s], l' # w') @ [(s, l, s')]"
+    by (cases ss) auto 
+  then show ?case
+    using w_split by auto
+qed
+
+lemma last_def_transition:
+  assumes "length ss = length w"
+  assumes "x \<in> def_action l"
+  assumes "(x, q1, q2) \<in> def_path (ss @ [s, s'], w @ [l])"
+  shows "Some s = q1 \<and> s' = q2"
+  using assms
+  apply auto
+  subgoal
+    unfolding def_path_def
+    apply (simp add: transition_list_reversed_simp[of ss w, OF assms(1)])
+    apply auto
+    subgoal for xa
+      apply (cases "xa=x")
+      subgoal
+        apply auto
+        unfolding def_var_def
+        apply auto
+        unfolding triple_of_def
+        apply auto
+        done
+      subgoal
+        apply (metis def_var_x fst_conv)
+        done
+      done
+    done
+  subgoal
+    unfolding def_path_def
+    apply (simp add: transition_list_reversed_simp[of ss w, OF assms(1)])
+    apply auto
+    subgoal for xa
+      apply (cases "xa=x")
+      subgoal
+        apply auto
+        unfolding def_var_def
+        apply auto
+        unfolding triple_of_def
+        apply auto
+        done
+      subgoal
+        apply (metis def_var_x fst_conv)
+        done
+      done
+    done
+  done
+ 
+lemma not_last_def_transition:
+  assumes "length ss = length w"
+  assumes "x \<notin> def_action l"
+  assumes "(x, q1, q2) \<in> def_path (ss @ [s, s'], w @ [l])"
+  shows "(x, q1, q2) \<in> def_path (ss @ [s], w)"
+  using assms
+  unfolding def_path_def
+  apply (simp add: transition_list_reversed_simp[of ss w, OF assms(1)])
+  apply auto
+  subgoal for xa
+    apply (cases "xa=x")
+    subgoal
+      apply auto
+      unfolding def_var_def
+      apply auto
+      done
+    subgoal
+      apply (metis def_var_x fst_conv)
+      done
+    done
+  done
+
+
+lemma a_simple_inference:
+  assumes "solves_cls \<rho> (Cls p args [])"
+  shows "solves_query_RD \<rho> (p, args)"
+  using assms unfolding solves_query_def solves_cls_def by auto
+
+lemma (* TODO: I think there is a better approach than this. *)
+  assumes "solves_cls \<rho> RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<uu>, \<v>, \<w>], \<uu> \<^bold>\<noteq> Encode_Var y] ."
+  assumes "x \<noteq> y"
+  assumes "solves_query_RD \<rho> RD1\<langle>[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+  shows "solves_query_RD \<rho> RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+proof -
+  {
+    fix \<sigma> :: "RD_var \<Rightarrow> ('a, 'b) RD_elem"
+    assume a1: "\<sigma> the_\<uu> = RD_Var x"
+    assume a2: "\<sigma> the_\<w> = RD_Node q2"
+    assume a3: "(q1 = None \<longrightarrow> \<sigma> the_\<uu> = Questionmark) \<and> ((\<exists>q1'. q1 = Some q1') \<longrightarrow> \<sigma> the_\<uu> = (RD_Node (the q1)))"
+    have "meaning_rh (RD1 [Encode_Node s, \<uu>, \<v>, \<w>]) \<rho> \<sigma>"
+      sorry
+    moreover
+    have "meaning_rh (\<uu> \<^bold>\<noteq> Encode_Var y) \<rho> \<sigma>"
+      sorry
+    ultimately
+    have "meaning_lh (the_RD1, [Encode_Node s', \<uu>, \<v>, \<w>]) \<rho> \<sigma>"
+      using assms(1)
+      unfolding solves_cls_def by auto
+    then have "meaning_lh (the_RD1,[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]) \<rho> \<sigma>"
+      apply auto
+      using a1 a2 a3 by auto 
+  }
+   
+ show ?thesis
+   unfolding solves_query_def sorry
+qed
+    
 
 (* Ville det ikke være bedre hvis paths var lister af transitions?????????? *)
 (* Det er nok godt med et bevis på papir først :-D *)
@@ -363,23 +497,28 @@ proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
     done
 next
   case (2 ss s w l s')
+  from 2(1) have len: "length ss = length w"
+    using LTS.path_with_word_length by force
   show ?case 
   proof(cases "x \<in> def_action l")
     case True
     then have sq: "Some s = q1 \<and> s' = q2" using 2(7)
       (* otherwise (x, q1, q2) would have been "overwritten" by (x, s, s') *)
-      sorry
+      using last_def_transition[of ss w x l q1 q2 s s'] len by auto
     from True have "\<exists>e. (s,x ::= e,s') \<in> pg"
       using "2.hyps"(2) by (cases l) auto
     then have "RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- []. \<in> ana_pg pg"
       using True ana_pg_def sq by fastforce
     then have "solves_cls \<rho> (RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [].)"
       using 2(5) unfolding solves_program_def by auto
-    then show ?thesis sorry
+    then have "solves_query \<rho> RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+      using a_simple_inference by force
+    then show ?thesis
+      by (simp add: get_end_def sq)
   next
     case False
     then have x_is_def: "(x, q1, q2) \<in> def_path (ss @ [s], w)" using 2(7)
-      sorry
+      using not_last_def_transition len by force
     then have "solves_query_RD \<rho> (RD1\<langle>[Encode_Node (get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
     proof -
       have "(ss @ [s], w) \<in> LTS.path_with_word pg"
@@ -405,12 +544,20 @@ next
       case (Asg y e)
       have xy: "x \<noteq> y"
         using False Asg by auto
+      have "(s, y ::= e, s') \<in> pg"
+        using "2.hyps"(2) Asg by auto
+      then have "RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
+          [
+            RD1[Encode_Node s, \<uu>, \<v>, \<w>],
+            \<uu> \<^bold>\<noteq> (Encode_Var y)
+          ]. \<in> ana_pg pg"
+        unfolding ana_pg_def by force
       from this False have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
           [
             RD1[Encode_Node s, \<uu>, \<v>, \<w>],
             \<uu> \<^bold>\<noteq> (Encode_Var y)
           ].)"
-        sorry
+        by (meson "2.prems"(2) UnCI solves_program_def)
       from this xy ind have "solves_query_RD \<rho> (RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
         sorry
       then show ?thesis
@@ -425,7 +572,7 @@ next
          ]. \<in> ana_pg pg"
         unfolding ana_pg_def by force
       then have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :- [RD1[Encode_Node s, \<uu>, \<v>, \<w>]].)"
-        sorry
+        by (meson "2.prems"(2) UnCI solves_program_def)
       then have "solves_query_RD \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
         using ind sorry
       then show ?thesis
@@ -440,7 +587,7 @@ next
          ]. \<in> ana_pg pg"
         unfolding ana_pg_def by force
       then have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<uu>, \<v>, \<w>]] .)"
-        sorry
+        by (meson "2.prems"(2) UnCI solves_program_def)
       then have "solves_query_RD \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
         using ind sorry
       then show ?thesis
