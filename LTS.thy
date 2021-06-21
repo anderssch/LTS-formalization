@@ -38,6 +38,7 @@ fun append_transition_star_states :: "('a \<times> 'b list \<times> 'a list \<ti
 fun append_transition_star_states_\<gamma> :: "(('a \<times> 'b list \<times> 'a list \<times> 'a) * 'b) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@\<^sup>\<gamma>" 65) where (* TODO: rename *)
   "((p1,w1,ss1,q1),\<gamma>) @@\<^sup>\<gamma> (p2,w2,ss2,q2) = (p1, w1 @ [\<gamma>] @ w2, ss1@ss2, q2)"
 
+
 locale LTS =
   fixes transition_relation :: "('state, 'label) transition set"
 begin
@@ -78,6 +79,7 @@ inductive_set transition_star :: "('state * 'label list * 'state) set" where
 
 inductive_cases transition_star_empty [elim]: "(p, [], q) \<in> transition_star"
 inductive_cases transition_star_cons: "(p, \<gamma>#w, q) \<in> transition_star"
+
 
 inductive_set transition_star_states :: "('state * 'label list * 'state list * 'state) set" where
   transition_star_states_refl[iff]: "(p,[],[p],p) \<in> transition_star_states"
@@ -279,6 +281,8 @@ next
   then show ?case
     by (metis LTS.transition_star.transition_star_step LTS.transition_star_cons append_Cons)
 qed
+
+
 
 
 end
@@ -487,7 +491,7 @@ next
 qed
 
 
-section\<open>LTS init\<close>
+section \<open>LTS init\<close>
 
 locale LTS_init = LTS transition_relation for transition_relation :: "('state, 'label) transition set" +
   fixes r :: 'state
@@ -498,6 +502,48 @@ abbreviation initial :: "'state \<Rightarrow> bool" where
 
 end
 
-find_theorems "(@@\<acute>)"
+section \<open>LTS with epsilon\<close>
+
+locale LTS_\<epsilon> =  LTS transition_relation for transition_relation :: "('state, 'label) transition set" +
+  fixes \<epsilon> :: 'label
+begin
+
+inductive_set transition_star_\<epsilon> :: "('state * 'label list * 'state) set" where
+  transition_star_\<epsilon>_refl[iff]: "(p, [], p) \<in> transition_star_\<epsilon>"
+| transition_star_\<epsilon>_step_\<gamma>: "\<gamma> \<noteq> \<epsilon> \<Longrightarrow> (p,\<gamma>,q') \<in> transition_relation \<Longrightarrow> (q',w,q) \<in> transition_star_\<epsilon>
+                           \<Longrightarrow> (p, \<gamma>#w, q) \<in> transition_star_\<epsilon>"
+| transition_star_\<epsilon>_step_\<epsilon>: "(p, \<epsilon>,q') \<in> transition_relation \<Longrightarrow> (q',w,q) \<in> transition_star_\<epsilon>
+                           \<Longrightarrow> (p, w, q) \<in> transition_star_\<epsilon>"
+
+inductive_cases transition_star_\<epsilon>_empty [elim]: "(p, [], q) \<in> transition_star_\<epsilon>"
+inductive_cases transition_star_cons_\<epsilon>: "(p, \<gamma>#w, q) \<in> transition_star"
+
+lemma epsilon_lemma:
+  assumes "(p, w, q) \<in> transition_star"
+  shows "(p, removeAll \<epsilon> w, q) \<in> transition_star_\<epsilon>"
+using assms proof (induction rule: transition_star.induct)
+  case (transition_star_refl p)
+  then show ?case
+    by simp
+next
+  case (transition_star_step p \<gamma> q' w q)
+  then show ?case
+    using removeAll.simps(2)
+    by (metis (no_types, lifting) LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<gamma> transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<epsilon>) 
+qed
+
+(* I doubt a bit that this definition is useful *)
+inductive_set transition_star_states_\<epsilon> :: "('state * 'label list * 'state list * 'state) set" where
+  transition_star_states_\<epsilon>_refl[iff]: "(p,[],[p],p) \<in> transition_star_states_\<epsilon>"
+| transition_star_states_\<epsilon>_step_\<gamma>: "\<gamma> \<noteq> \<epsilon> \<Longrightarrow> (p,\<gamma>,q') \<in> transition_relation \<Longrightarrow> (q',w,ss,q) \<in> transition_star_states_\<epsilon>
+                           \<Longrightarrow> (p, \<gamma>#w, p#ss, q) \<in> transition_star_states_\<epsilon>"
+| transition_star_states_\<epsilon>_step_\<epsilon>: "(p,\<epsilon>,q') \<in> transition_relation \<Longrightarrow> (q',w,ss,q) \<in> transition_star_states_\<epsilon>
+                           \<Longrightarrow> (p, w, p#ss, q) \<in> transition_star_states_\<epsilon>"
+
+(* I doubt a bit that this definition is useful *)
+inductive_set path_with_word_\<epsilon> :: "('state list * 'label list) set" where
+  path_with_word_\<epsilon>_refl[iff]: "([s],[]) \<in> path_with_word_\<epsilon>"
+| path_with_word_\<epsilon>_step_\<gamma>: "l \<noteq> \<epsilon> \<Longrightarrow> (s'#ss, w) \<in> path_with_word_\<epsilon> \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,l#w) \<in> path_with_word_\<epsilon>"
+| path_with_word_\<epsilon>_step_\<epsilon>: "l \<noteq> \<epsilon> \<Longrightarrow> (s'#ss, w) \<in> path_with_word_\<epsilon> \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,w) \<in> path_with_word_\<epsilon>"
 
 end
