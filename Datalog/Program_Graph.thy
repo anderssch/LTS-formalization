@@ -141,8 +141,8 @@ section \<open>Datalog programs and their solutions\<close>
 datatype ('x,'e) identifier = DLVar 'x | DLElement 'e
 
 datatype ('p,'x,'e) righthand = 
-  Eql "('x,'e) identifier" "('x,'e) identifier" ("_ \<^bold>= _" [1000, 61] 61)
-  | Neql "('x,'e) identifier" "('x,'e) identifier" ("_ \<^bold>\<noteq> _" [1000, 61] 61)
+  Eql "('x,'e) identifier" "('x,'e) identifier" ("_ \<^bold>= _" [61, 61] 61)
+  | Neql "('x,'e) identifier" "('x,'e) identifier" ("_ \<^bold>\<noteq> _" [61, 61] 61)
   | PosRh 'p "('x,'e) identifier list"
   | NegRh 'p "('x,'e) identifier list"
 
@@ -172,6 +172,9 @@ fun meaning_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('p,'e) pred_val \<Rightarr
 fun meaning_cls :: "('p,'x,'e) clause \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" where
   "meaning_cls (Cls p ids rhs) \<rho> \<sigma> \<longleftrightarrow> ((\<forall>rh\<in>set rhs. meaning_rh rh \<rho> \<sigma>) \<longrightarrow> meaning_lh (p,ids) \<rho> \<sigma>)"
 
+fun solves_rh :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) righthand \<Rightarrow> bool" where (* Not in the book *)
+  "solves_rh \<rho> rh \<longleftrightarrow> (\<forall>\<sigma>. meaning_rh rh \<rho> \<sigma>)"
+
 definition solves_cls :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) clause \<Rightarrow> bool" where
   "solves_cls \<rho> c \<longleftrightarrow> (\<forall>\<sigma>. meaning_cls c \<rho> \<sigma>)"
 
@@ -186,9 +189,30 @@ type_synonym ('p,'x,'e) query = "'p * ('x,'e) identifier list"
 fun meaning_query :: "('p,'x,'e) query \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" where
   "meaning_query (p,ids) \<rho> \<sigma> \<longleftrightarrow> map (eval_id \<sigma>) ids \<in> \<rho> p"
 
-definition solves_query :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) query \<Rightarrow> bool" where
-  "solves_query \<rho> = (\<lambda>(p,ids). (\<forall>\<sigma>. meaning_query (p,ids) \<rho> \<sigma>))" (* Is this correct?!?!?!?! *)
+fun solves_query :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) query \<Rightarrow> bool" where
+  "solves_query \<rho> (p,ids) \<longleftrightarrow> (\<forall>\<sigma>. meaning_query (p,ids) \<rho> \<sigma>)" (* Is this correct?!?!?!?! *)
 
+
+section \<open>Substitutions (not in the book?)\<close>
+
+type_synonym ('x,'e) subst = "'x \<Rightarrow> ('x,'e) identifier"
+
+fun subst_id :: "('x,'e) subst \<Rightarrow> ('x,'e) identifier \<Rightarrow> ('x,'e) identifier" where
+  "subst_id \<sigma> (DLVar x) = \<sigma> x"
+| "subst_id \<sigma> (DLElement e) = (DLElement e)"
+
+fun subst_rh :: "('x,'e) subst \<Rightarrow> ('p,'x,'e) righthand \<Rightarrow>  ('p,'x,'e) righthand" where
+  "subst_rh \<sigma> (a \<^bold>= a') = (subst_id \<sigma> a \<^bold>= subst_id \<sigma> a')"
+| "subst_rh \<sigma> (a \<^bold>\<noteq> a') = (subst_id \<sigma> a \<^bold>\<noteq> subst_id \<sigma> a')"
+| "subst_rh \<sigma> (PosRh p ids) = (PosRh p (map (subst_id \<sigma>) ids))"
+| "subst_rh \<sigma> (NegRh p ids) = (NegRh p (map (subst_id \<sigma>) ids))"
+
+(*
+Lav en subst cls ud fra "meaning_cls":
+
+fun meaning_cls :: "('p,'x,'e) clause \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" where
+  "meaning_cls (Cls p ids rhs) \<rho> \<sigma> \<longleftrightarrow> ((\<forall>rh\<in>set rhs. meaning_rh rh \<rho> \<sigma>) \<longrightarrow> meaning_lh (p,ids) \<rho> \<sigma>)"
+*)
 
 section \<open>Reaching Definitions in Datalog\<close>
 
@@ -246,7 +270,7 @@ fun ana_edge :: "('n, 'v) edge \<Rightarrow> (RD_pred, RD_var, ('n,'v) RD_elem) 
      {
         RD1\<langle>[Encode_Node q\<^sub>s, \<uu>, \<v>, \<w>]\<rangle> :-
           [
-            RD1[Encode_Node q\<^sub>o, \<uu>, \<v>, \<w>],
+            RD1[Encode_Node q\<^sub>o, \<uu>, \<v>, \<w>],                                                     
             \<uu> \<^bold>\<noteq> (Encode_Var x)
           ].
         ,
@@ -299,7 +323,7 @@ abbreviation solves_query_RD :: "('p,'e) pred_val \<Rightarrow> ('p, RD_var,'e) 
 
 definition summarizes_dl :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
   "summarizes_dl \<rho> pg \<longleftrightarrow> (\<forall>\<pi> x q1 q2. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> get_start \<pi> = Start \<longrightarrow> (x,q1,q2) \<in> def_path \<pi> \<longrightarrow> 
-     solves_query_RD \<rho> (the_RD1,[Encode_Node (get_end \<pi>), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]))"
+     solves_query_RD \<rho> (RD1\<langle>[Encode_Node (get_end \<pi>), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.))"
 (* The warning is because summarizes_dl does not fix the type of datalog variables...
    It can be done by adding a type annotation to solves_query.
  *)
@@ -379,7 +403,7 @@ lemma last_def_transition:
       done
     done
   done
- 
+
 lemma not_last_def_transition:
   assumes "length ss = length w"
   assumes "x \<notin> def_action l"
@@ -406,7 +430,27 @@ lemma not_last_def_transition:
 lemma a_simple_inference:
   assumes "solves_cls \<rho> (Cls p args [])"
   shows "solves_query_RD \<rho> (p, args)"
-  using assms unfolding solves_query_def solves_cls_def by auto
+  using assms unfolding solves_cls_def by auto
+
+lemma another_simple_inference:
+  assumes "solves_cls \<rho> (Cls p args (rhs@[PosRh p ids]))"
+  assumes "solves_query_RD \<rho> (p, ids)"
+  shows "solves_cls \<rho> (Cls p args (rhs))"
+  using assms apply auto
+  unfolding solves_cls_def apply auto
+  subgoal for x
+    unfolding meaning_cls.simps
+    unfolding meaning_query.simps
+    apply auto
+    done
+  done
+
+lemma yet_another_simple_inference:
+  assumes "solves_cls \<rho> (Cls p args (rhs@[rh]))"
+  assumes "solves_rh \<rho> rh"
+  shows "solves_cls \<rho> (Cls p args (rhs))"
+  using assms apply auto
+  unfolding solves_cls_def by auto
 
 lemma (* TODO: I think there is a better approach than this. *)
   assumes "solves_cls \<rho> RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<uu>, \<v>, \<w>], \<uu> \<^bold>\<noteq> Encode_Var y] ."
@@ -434,7 +478,7 @@ proof -
   }
    
  show ?thesis
-   unfolding solves_query_def sorry
+   sorry
 qed
     
 
@@ -484,7 +528,6 @@ proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
      using x_sat by auto
 
    from this 1 show ?case
-     unfolding solves_query_def
     apply auto
     unfolding solves_cls_def
     unfolding get_end_def
@@ -544,6 +587,8 @@ next
       case (Asg y e)
       have xy: "x \<noteq> y"
         using False Asg by auto
+      then have xy': "solves_rh \<rho> (Encode_Var x \<^bold>\<noteq> Encode_Var y)"
+        by auto
       have "(s, y ::= e, s') \<in> pg"
         using "2.hyps"(2) Asg by auto
       then have "RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
@@ -552,14 +597,21 @@ next
             \<uu> \<^bold>\<noteq> (Encode_Var y)
           ]. \<in> ana_pg pg"
         unfolding ana_pg_def by force
-      from this False have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
+      from this False have gug: "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
           [
             RD1[Encode_Node s, \<uu>, \<v>, \<w>],
             \<uu> \<^bold>\<noteq> (Encode_Var y)
           ].)"
         by (meson "2.prems"(2) UnCI solves_program_def)
-      from this xy ind have "solves_query_RD \<rho> (RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
+      then have "solves_cls \<rho> RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1 [Encode_Node s,  Encode_Var x, Encode_Node_Q q1, Encode_Node q2], Encode_Var x \<^bold>\<noteq> Encode_Var y] ."
+        unfolding solves_cls_def
         sorry
+      then have "solves_cls \<rho> RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1 [Encode_Node s,  Encode_Var x, Encode_Node_Q q1, Encode_Node q2]] ."
+        using xy' yet_another_simple_inference by (metis (no_types, lifting) Cons_eq_append_conv) 
+      then have "solves_cls \<rho> RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- []."
+        using ind using another_simple_inference[of \<rho> the_RD1 ] by auto
+      then have "solves_query_RD \<rho> (RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
+        by (meson a_simple_inference)
       then show ?thesis
         by (simp add: get_end_def)
     next
@@ -600,10 +652,3 @@ lemma RD_sound:
   assumes "solves_program \<rho> (var_contraints \<union> ana_pg pg)"
   shows "summarizes_dl \<rho> pg"
   using assms RD_sound' unfolding summarizes_dl_def by fastforce 
-
-
-(* 
-TODO:
-We need to define least solutions.
-We need a lemma that exploits that we are looking at least solutions. 
-*)
