@@ -724,10 +724,8 @@ inductive_set transition_star_\<epsilon> :: "('state * 'label list * 'state) set
                            \<Longrightarrow> (p, w, q) \<in> transition_star_\<epsilon>"
 
 
-
 inductive_cases transition_star_\<epsilon>_empty [elim]: "(p, [], q) \<in> transition_star_\<epsilon>"
 inductive_cases transition_star_cons_\<epsilon>: "(p, \<gamma>#w, q) \<in> transition_star"
-
 
 
 lemma epsilon_lemma:
