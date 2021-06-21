@@ -82,15 +82,35 @@ datatype ('ctr_loc, 'label) ctr_loc =
 find_theorems "finite UNIV"
 find_theorems class.finite
 
-instantiation  ctr_loc :: (finite, finite) finite begin
+lemma finite_ctr_locs:
+  assumes "finite (UNIV :: 'ctr_loc set)"
+  assumes "finite (UNIV :: 'label set)"
+  shows "finite (UNIV :: ('ctr_loc, 'label) ctr_loc set)"
+proof -
+  define Ctr_Loc_Ext' where "Ctr_Loc_Ext' == \<lambda>(c :: 'ctr_loc, l:: 'label). Ctr_Loc_Ext c l"
+
+  have a: "finite (Ctr_Loc ` (UNIV:: 'ctr_loc set))"
+    using assms by auto
+  moreover
+  have "finite (UNIV :: (('ctr_loc * 'label) set))"
+    using assms by (simp add: finite_Prod_UNIV)
+  then have b: "finite (Ctr_Loc_Ext' ` (UNIV :: (('ctr_loc * 'label) set)))"
+    by auto
+  moreover
+  have c: "UNIV = (Ctr_Loc ` UNIV) \<union> (Ctr_Loc_Ext' ` (UNIV :: (('ctr_loc * 'label) set)))"
+    unfolding Ctr_Loc_Ext'_def using UNIV_I UnCI ctr_loc.exhaust equalityI image_eqI split_conv subsetI by smt
+  ultimately
+  show ?thesis
+    unfolding c by auto
+qed
+
+instantiation ctr_loc :: (finite, finite) finite begin
 
 (* Man kunne vise at der ikke er en injection
    fra nat til vores type. *)
 
-instance 
-  apply standard
-  apply (rule Finite_Set.finite.finite_UNIV)
-  sorry
+instance by standard (simp add: finite_ctr_locs)
+
 end
 
 locale PDS_with_P_automaton = PDS P_locs \<Delta>
@@ -578,8 +598,6 @@ next
       by metis
   qed
 qed 
-
-find_theorems transition_star transition_star_states
 
 lemma lemma_3_2_a'':
   assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs"
