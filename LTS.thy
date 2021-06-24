@@ -723,10 +723,11 @@ inductive_set transition_star_\<epsilon> :: "('state * 'label list * 'state) set
 | transition_star_\<epsilon>_step_\<epsilon>: "(p, \<epsilon>, q') \<in> transition_relation \<Longrightarrow> (q',w,q) \<in> transition_star_\<epsilon>
                            \<Longrightarrow> (p, w, q) \<in> transition_star_\<epsilon>"
 
-
 inductive_cases transition_star_\<epsilon>_empty [elim]: "(p, [], q) \<in> transition_star_\<epsilon>"
 inductive_cases transition_star_cons_\<epsilon>: "(p, \<gamma>#w, q) \<in> transition_star"
 
+definition \<epsilon>_exp :: "'label option list \<Rightarrow> 'label list \<Rightarrow> bool" where
+  "\<epsilon>_exp w' w \<longleftrightarrow> map the (removeAll \<epsilon> w') = w"
 
 lemma epsilon_lemma:
   assumes "(p, w, q) \<in> transition_star"
@@ -749,6 +750,70 @@ next
   qed
 qed
 
+lemma epsilon_lemma2:
+  assumes "(p, w, q) \<in> transition_star_\<epsilon>"
+  shows "\<exists>w'. \<epsilon>_exp w' w \<and> (p, w', q) \<in> transition_star"
+  using assms 
+proof (induction rule: transition_star_\<epsilon>.induct)
+  case (transition_star_\<epsilon>_refl p)
+  then show ?case
+    by (metis LTS.transition_star.transition_star_refl \<epsilon>_exp_def list.simps(8) removeAll.simps(1))
+next
+  case (transition_star_\<epsilon>_step_\<gamma> p \<gamma> q' w q)
+  then show ?case
+    by (smt (verit, best) LTS.transition_starp.intros(2) LTS.transition_starp_transition_star_eq \<epsilon>_exp_def list.map(2) option.sel option.simps(3) removeAll.simps(2))
+next
+  case (transition_star_\<epsilon>_step_\<epsilon> p q' w q)
+  then show ?case
+    by (metis transition_starp.transition_star_step transition_starp_transition_star_eq \<epsilon>_exp_def removeAll.simps(2))
+qed
+
+lemma epsilon_lemma3:
+  "(p, w, q) \<in> transition_star_\<epsilon> \<longleftrightarrow> (\<exists>w'. \<epsilon>_exp w' w \<and> (p, w', q) \<in> transition_star)"
+  apply auto
+  subgoal
+    using epsilon_lemma2 apply auto
+    done
+  subgoal
+    using epsilon_lemma unfolding \<epsilon>_exp_def apply auto
+    done
+  done
+
+lemma \<epsilon>_exp_split':
+  assumes "\<epsilon>_exp u_\<epsilon> (\<gamma>1 # u1)"
+  shows "\<exists>\<gamma>1_\<epsilon> u1_\<epsilon>. \<epsilon>_exp \<gamma>1_\<epsilon> [\<gamma>1] \<and> \<epsilon>_exp u1_\<epsilon> u1 \<and> u_\<epsilon> = \<gamma>1_\<epsilon> @ u1_\<epsilon>"
+  using assms 
+proof (induction u_\<epsilon> arbitrary: u1 \<gamma>1)
+  case Nil
+  then show ?case
+    by (metis LTS_\<epsilon>.\<epsilon>_exp_def list.distinct(1) list.simps(8) removeAll.simps(1))
+next
+  case (Cons a u_\<epsilon>)
+  then show ?case
+  proof (induction a)
+    case None
+    then show ?case
+      by (smt (verit, ccfv_SIG) LTS_\<epsilon>.\<epsilon>_exp_def append_Cons removeAll.simps(2))
+  next
+    case (Some \<gamma>1')
+    have "\<gamma>1' = \<gamma>1"
+      using Some.prems(2) \<epsilon>_exp_def by auto
+    have "\<epsilon>_exp u_\<epsilon> u1"
+      using Some.prems(2) \<epsilon>_exp_def by force
+    show ?case
+    proof (cases u1)
+      case Nil
+      then show ?thesis
+        by (metis Some.prems(2) \<epsilon>_exp_def append_Nil2 list.simps(8) removeAll.simps(1))
+    next
+      case (Cons a list)
+      then show ?thesis
+        using LTS_\<epsilon>.\<epsilon>_exp_def \<open>\<epsilon>_exp u_\<epsilon> u1\<close> \<open>\<gamma>1' = \<gamma>1\<close> by force
+    qed
+
+  qed
+qed
+
 (* I doubt a bit that this definition is useful *)
 inductive_set transition_star_states_\<epsilon> :: "('state * 'label list * 'state list * 'state) set" where
   transition_star_states_\<epsilon>_refl[iff]: "(p,[],[p],p) \<in> transition_star_states_\<epsilon>"
@@ -764,5 +829,27 @@ inductive_set path_with_word_\<epsilon> :: "('state list * 'label list) set" whe
 | path_with_word_\<epsilon>_step_\<epsilon>: "(s'#ss, w) \<in> path_with_word_\<epsilon> \<Longrightarrow> (s,\<epsilon>,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,w) \<in> path_with_word_\<epsilon>"
 
 end
+
+lemma LTS_\<epsilon>_transition_star_\<epsilon>_mono:
+  "mono LTS_\<epsilon>.transition_star_\<epsilon>"
+proof (rule, rule)
+  fix pwq :: "'a \<times> 'b list \<times> 'a"
+  fix ts ts' :: "('a, 'b option) transition set"
+  assume sub: "ts \<subseteq> ts'"
+  assume awb_ts: "pwq \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts"
+  then obtain p w q where pwq_p: "pwq = (p, w, q)"
+    using prod_cases3 by blast
+  then have x: "(p, w, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts"
+    using awb_ts by auto
+  then have "(\<exists>w'. LTS_\<epsilon>.\<epsilon>_exp w' w \<and> (p, w', q) \<in> LTS.transition_star ts)"
+    using LTS_\<epsilon>.epsilon_lemma3[of p w q ts] by auto
+  then have "(\<exists>w'. LTS_\<epsilon>.\<epsilon>_exp w' w \<and> (p, w', q) \<in> LTS.transition_star ts')"
+    using LTS_transition_star_mono sub
+    using monoD by blast
+  then have "(p, w, q) \<in>  LTS_\<epsilon>.transition_star_\<epsilon> ts'"
+    using LTS_\<epsilon>.epsilon_lemma3[of p w q ts'] by auto
+  then show "pwq \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts'"
+    unfolding pwq_p .
+qed
 
 end

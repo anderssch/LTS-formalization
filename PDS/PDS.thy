@@ -89,7 +89,7 @@ lemma finite_ctr_locs:
 proof -
   define Ctr_Loc_Ext' where "Ctr_Loc_Ext' == \<lambda>(c :: 'ctr_loc, l:: 'label). Ctr_Loc_Ext c l"
 
-  have a: "finite (Ctr_Loc ` (UNIV:: 'ctr_loc set))"
+  have "finite (Ctr_Loc ` (UNIV:: 'ctr_loc set))"
     using assms by auto
   moreover
   have "finite (UNIV :: (('ctr_loc * 'label) set))"
@@ -116,7 +116,7 @@ end
 locale PDS_with_P_automaton = PDS P_locs \<Delta>
   for P_locs :: "'ctr_loc::finite set" and \<Delta> :: "('ctr_loc, 'label::finite) rule set"
     +
-  fixes Q_locs :: "'ctr_loc set" 
+  fixes Q_locs :: "'ctr_loc set" (* I think we should just see Q as the whole type. So this can be deleted *)
 (*    and trans :: "('ctr_loc, 'label) transition set" *)
     and F_locs :: "'ctr_loc set"
   assumes "P_locs \<subseteq> Q_locs"
@@ -132,8 +132,11 @@ definition accepts :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc
   "accepts ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,q) \<in> LTS.transition_star ts)"
   (* Here acceptance is defined for any p, but in the paper p has to be in P_locs *)
 
-definition accepts_\<epsilon> :: "('ctr_loc, 'label option) transition set \<Rightarrow> ('ctr_loc , 'label) conf \<Rightarrow> bool" where
-  "accepts_\<epsilon> ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts)"
+definition accepts_\<epsilon> :: "(_, 'label option) transition set \<Rightarrow> (_, 'label) conf \<Rightarrow> bool" where
+  "accepts_\<epsilon> ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,Ctr_Loc q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts)"
+
+abbreviation \<epsilon> :: "'label option" where
+  "\<epsilon> == None"
 
 lemma accepts_mono[mono]: "mono accepts" (* Hmm.. what does this actually mean? *)
 proof (rule, rule)
@@ -182,35 +185,77 @@ qed
 definition language :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf set" where
   "language ts = {c. accepts ts c}"
 
+definition language_\<epsilon> :: "(_, 'label option) transition set \<Rightarrow> (_, 'label) conf set" where
+  "language_\<epsilon> ts = {c. accepts_\<epsilon> ts c}"
+
 
 subsection \<open>Saturations\<close>
 
-definition saturated :: "('ctr_loc, 'label) sat_rule \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where
+(* We use 'l for supporting both 'label and 'label option. We use 'c for supporting both 'ctr_loc and ('ctr_loc, 'label) ctr_loc *)
+definition saturated :: "('c, 'l) sat_rule \<Rightarrow> ('c, 'l) transition set \<Rightarrow> bool" where
   "saturated rule ts \<longleftrightarrow> (\<nexists>ts'. rule ts ts')"
 
-definition saturation :: "('ctr_loc, 'label) sat_rule \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where
+definition saturation :: "('c, 'l) sat_rule \<Rightarrow> ('c, 'l) transition set \<Rightarrow> ('c, 'l) transition set \<Rightarrow> bool" where
   "saturation rule ts ts' \<longleftrightarrow> rule\<^sup>*\<^sup>* ts ts' \<and> saturated rule ts'"
 
-subsection \<open>Pre*\<close>
+subsection \<open>Saturation rules\<close>
 
 inductive pre_star_rule :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool" where (* TODO: p' should also be in P_locs I guess... *)
   add_trans: "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> p \<in> P_locs \<Longrightarrow> (p', op_labels w, q) \<in> LTS.transition_star ts \<Longrightarrow> (p, \<gamma>, q) \<notin> ts \<Longrightarrow> pre_star_rule ts (ts \<union> {(p, \<gamma>, q)})"
+
+inductive post_star_rules :: "(('ctr_loc, 'label) ctr_loc, 'label option) transition set \<Rightarrow> (('ctr_loc, 'label) ctr_loc, 'label option) transition set \<Rightarrow> bool" where
+  add_trans_pop: "(p, \<gamma>) \<hookrightarrow> (p', pop) \<Longrightarrow> (Ctr_Loc p, [\<gamma>], q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts \<Longrightarrow> (Ctr_Loc p', \<epsilon>, q) \<notin> ts \<Longrightarrow> post_star_rules ts (ts \<union> {(Ctr_Loc p', \<epsilon>, q)})"
+| add_trans_swap: "(p, \<gamma>) \<hookrightarrow> (p', swap \<gamma>') \<Longrightarrow> (Ctr_Loc p, [\<gamma>], q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts \<Longrightarrow> (Ctr_Loc p', Some \<gamma>', q) \<notin> ts \<Longrightarrow> post_star_rules ts (ts \<union> {(Ctr_Loc p', Some \<gamma>', q)})"
+| add_trans_push_1: "(p, \<gamma>) \<hookrightarrow> (p', push \<gamma>' \<gamma>'') \<Longrightarrow> (Ctr_Loc p, [\<gamma>], q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts \<Longrightarrow> (Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<notin> ts \<Longrightarrow> post_star_rules ts (ts \<union> {(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>')})"
+| add_trans_push_2: "(p, \<gamma>) \<hookrightarrow> (p', push \<gamma>' \<gamma>'') \<Longrightarrow> (Ctr_Loc p, [\<gamma>], q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts \<Longrightarrow> (Ctr_Loc_Ext p' \<gamma>', Some \<gamma>'', q) \<notin> ts \<Longrightarrow> post_star_rules ts (ts \<union> {(Ctr_Loc_Ext p' \<gamma>', Some \<gamma>'', q)})"
 
 lemma pre_star_rule_mono:
   "pre_star_rule ts ts' \<Longrightarrow> ts \<subset> ts'"
   unfolding pre_star_rule.simps by auto
 
+lemma post_star_rules_mono:
+  "post_star_rules ts ts' \<Longrightarrow> ts \<subset> ts'"
+proof(induction rule: post_star_rules.induct)
+  case (add_trans_pop p \<gamma> p' q ts)
+  then show ?case by auto
+next
+  case (add_trans_swap p \<gamma> p' \<gamma>' q ts)
+  then show ?case by auto
+next
+  case (add_trans_push_1 p \<gamma> p' \<gamma>' \<gamma>'' q ts)
+  then show ?case by auto
+next
+  case (add_trans_push_2 p \<gamma> p' \<gamma>' \<gamma>'' q ts)
+  then show ?case by auto
+qed
+
 lemma pre_star_rule_card_Suc: "pre_star_rule ts ts' \<Longrightarrow> card ts' = Suc (card ts)"
   unfolding pre_star_rule.simps by auto
 
+lemma post_star_rules_card_Suc: "post_star_rules ts ts' \<Longrightarrow> card ts' = Suc (card ts)"
+proof(induction rule: post_star_rules.induct)
+  case (add_trans_pop p \<gamma> p' q ts)
+  then show ?case by auto
+next
+  case (add_trans_swap p \<gamma> p' \<gamma>' q ts)
+  then show ?case by auto
+next
+  case (add_trans_push_1 p \<gamma> p' \<gamma>' \<gamma>'' q ts)
+  then show ?case by auto
+next
+  case (add_trans_push_2 p \<gamma> p' \<gamma>' \<gamma>'' q ts)
+  then show ?case by auto
+qed
+
 lemma no_infinite: 
 (* Maybe lazy lists are better? *)
-  assumes "\<forall>i :: nat. pre_star_rule (tts i) (tts (Suc i))"
+  assumes "\<And>ts ts' :: ('c ::finite, 'l::finite) transition set. rule ts ts' \<Longrightarrow> card ts' = Suc (card ts)"
+  assumes "\<forall>i :: nat. rule (tts i) (tts (Suc i))"
   shows "False"
 proof -
   define f where "f i = card (tts i)" for i
   have f_Suc: "\<forall>i. f i < f (Suc i)"
-    by (metis pre_star_rule_card_Suc assms f_def lessI)
+    using assms f_def lessI by metis
   have "\<forall>i. \<exists>j. f j > i"
   proof 
     fix i
@@ -225,50 +270,70 @@ proof -
         by (metis Suc_lessI f_Suc)
     qed
   qed
-  then have "\<exists>j. f j > card (UNIV :: ('ctr_loc \<times> 'label \<times> 'ctr_loc) set)"
+  then have "\<exists>j. f j > card (UNIV :: ('c, 'l) transition set)"
     by auto
   then show False
     by (metis card_seteq f_def finite_UNIV le_eq_less_or_eq nat_neq_iff subset_UNIV)
 qed
 
-lemma saturation_termination: 
+lemma saturation_termination:
+  assumes "\<And>ts ts' :: ('c ::finite, 'l::finite) transition set. rule ts ts' \<Longrightarrow> card ts' = Suc (card ts)"
+  shows "\<not>(\<exists>tts. (\<forall>i :: nat. rule (tts i) (tts (Suc i))))"
+  using assms no_infinite by blast 
+
+lemma pre_star_saturation_termination: 
 (* Maybe lazy lists are better? *)
   "\<not>(\<exists>tts. (\<forall>i :: nat. pre_star_rule (tts i) (tts (Suc i))))"
-  using no_infinite by presburger
+  using no_infinite pre_star_rule_card_Suc by blast 
 
-lemma saturation_exi: "\<exists>ts'. saturation pre_star_rule ts ts'"
+lemma post_star_saturation_termination: 
+(* Maybe lazy lists are better? *)
+  "\<not>(\<exists>tts. (\<forall>i :: nat. post_star_rules (tts i) (tts (Suc i))))"
+  using no_infinite post_star_rules_card_Suc by blast
+
+lemma saturation_exi: 
+  assumes "\<And>ts ts' :: ('c ::finite, 'l::finite) transition set. rule ts ts' \<Longrightarrow> card ts' = Suc (card ts)"
+  shows "\<exists>ts'. saturation rule ts ts'"
 proof (rule ccontr) (* TODO: it would be nice to avoid ccontr *)
-  assume a: "\<nexists>ts'. saturation pre_star_rule ts ts'"
-  define g where "g ts = (SOME ts'. pre_star_rule ts ts')" for ts
+  assume a: "\<nexists>ts'. saturation rule ts ts'"
+  define g where "g ts = (SOME ts'. rule ts ts')" for ts
   define tts where "tts i = (g ^^ i) ts" for i
-  have "\<forall>i :: nat. pre_star_rule\<^sup>*\<^sup>* ts (tts i) \<and> pre_star_rule (tts i) (tts (Suc i))"
+  have "\<forall>i :: nat. rule\<^sup>*\<^sup>* ts (tts i) \<and> rule (tts i) (tts (Suc i))"
   proof 
     fix i
-    show "pre_star_rule\<^sup>*\<^sup>* ts (tts i) \<and> pre_star_rule (tts i) (tts (Suc i))"
+    show "rule\<^sup>*\<^sup>* ts (tts i) \<and> rule (tts i) (tts (Suc i))"
     proof (induction i)
       case 0
-      have "pre_star_rule ts (g ts)"
+      have "rule ts (g ts)"
         by (metis g_def a rtranclp.rtrancl_refl saturation_def saturated_def someI)
       then show ?case
         using tts_def a saturation_def by auto 
     next
       case (Suc i)
-      then have sat_Suc: "pre_star_rule\<^sup>*\<^sup>* ts (tts (Suc i))"
+      then have sat_Suc: "rule\<^sup>*\<^sup>* ts (tts (Suc i))"
         by fastforce
-      then have "pre_star_rule (g ((g ^^ i) ts)) (g (g ((g ^^ i) ts)))"
+      then have "rule (g ((g ^^ i) ts)) (g (g ((g ^^ i) ts)))"
         by (metis Suc.IH tts_def g_def a r_into_rtranclp rtranclp_trans saturation_def saturated_def someI)
-      then have "pre_star_rule (tts (Suc i)) (tts (Suc (Suc i)))"
+      then have "rule (tts (Suc i)) (tts (Suc (Suc i)))"
         unfolding tts_def by simp
       then show ?case
         using sat_Suc by auto
     qed
   qed
-  then have "\<forall>i. pre_star_rule (tts i) (tts (Suc i))"
+  then have "\<forall>i. rule (tts i) (tts (Suc i))"
     by auto
   then show False
-    using no_infinite by auto
+    using no_infinite assms by auto
 qed
 
+lemma pre_star_saturation_exi: 
+  shows "\<exists>ts'. saturation pre_star_rule ts ts'"
+  using pre_star_rule_card_Suc saturation_exi by blast
+
+lemma post_star_saturation_exi: 
+  shows "\<exists>ts'. saturation post_star_rules ts ts'"
+  using post_star_rules_card_Suc saturation_exi by blast
+  
 (*
 
 TODO: Prove that saturations are unique?
@@ -282,7 +347,26 @@ proof(induction rule: pre_star_rule.inducts)
     by auto
 qed
 
-lemma saturation_rtranclp_rule_incr: "pre_star_rule\<^sup>*\<^sup>* A B \<Longrightarrow> A \<subseteq> B"
+lemma post_star_rules_incr: "post_star_rules A B \<Longrightarrow> A \<subseteq> B"
+proof(induction rule: post_star_rules.inducts)
+  case (add_trans_pop p \<gamma> p' q ts)
+  then show ?case
+    by auto
+next
+  case (add_trans_swap p \<gamma> p' \<gamma>' q ts)
+  then show ?case 
+    by auto
+next
+  case (add_trans_push_1 p \<gamma> p' \<gamma>' \<gamma>'' q ts)
+  then show ?case 
+    by auto
+next
+  case (add_trans_push_2 p \<gamma> p' \<gamma>' \<gamma>'' q ts)
+  then show ?case 
+    by auto
+qed
+
+lemma saturation_rtranclp_pre_star_rule_incr: "pre_star_rule\<^sup>*\<^sup>* A B \<Longrightarrow> A \<subseteq> B"
 proof (induction rule: rtranclp_induct)
   case base
   then show ?case by auto
@@ -292,15 +376,50 @@ next
     using pre_star_rule_incr by auto
 qed
 
+
+lemma saturation_rtranclp_post_star_rule_incr: "post_star_rules\<^sup>*\<^sup>* A B \<Longrightarrow> A \<subseteq> B"
+proof (induction rule: rtranclp_induct)
+  case base
+  then show ?case by auto
+next
+  case (step y z)
+  then show ?case
+    using post_star_rules_incr by auto
+qed
+
 lemma pre_star'_incr_transition_star:
   "pre_star_rule\<^sup>*\<^sup>* A A' \<Longrightarrow> LTS.transition_star A \<subseteq> LTS.transition_star A'"
-  using mono_def LTS_transition_star_mono saturation_rtranclp_rule_incr by metis
+  using mono_def LTS_transition_star_mono saturation_rtranclp_pre_star_rule_incr by metis
+
+lemma post_star'_incr_transition_star:
+  "post_star_rules\<^sup>*\<^sup>* A A' \<Longrightarrow> LTS.transition_star A \<subseteq> LTS.transition_star A'"
+  using mono_def LTS_transition_star_mono saturation_rtranclp_post_star_rule_incr by metis
+
+lemma post_star'_incr_transition_star_\<epsilon>:
+  "post_star_rules\<^sup>*\<^sup>* A A' \<Longrightarrow> LTS_\<epsilon>.transition_star_\<epsilon> A \<subseteq> LTS_\<epsilon>.transition_star_\<epsilon> A'"
+  using mono_def LTS_\<epsilon>_transition_star_\<epsilon>_mono saturation_rtranclp_post_star_rule_incr by metis
 
 lemma pre_star_lim'_incr_transition_star:
   "saturation pre_star_rule A A' \<Longrightarrow> LTS.transition_star A \<subseteq> LTS.transition_star A'"
   by (simp add: pre_star'_incr_transition_star saturation_def)
 
-lemma lemma_3_1:
+lemma post_star_lim'_incr_transition_star:
+  "saturation post_star_rules A A' \<Longrightarrow> LTS.transition_star A \<subseteq> LTS.transition_star A'"
+  by (simp add: post_star'_incr_transition_star saturation_def)
+
+lemma post_star_lim'_incr_transition_star_\<epsilon>:
+  "saturation post_star_rules A A' \<Longrightarrow> LTS_\<epsilon>.transition_star_\<epsilon> A \<subseteq> LTS_\<epsilon>.transition_star_\<epsilon> A'"
+  by (simp add: post_star'_incr_transition_star_\<epsilon> saturation_def)
+
+
+  
+
+(* Do I need to do these for \<epsilon> also? *)
+  
+
+subsection \<open>Pre* lemmas\<close>
+
+lemma  lemma_3_1:
   assumes "p'w \<Rightarrow>\<^sup>* pv"
     and "pv \<in> language A"
     and "saturation pre_star_rule A A'"
@@ -327,17 +446,8 @@ next
     using step unfolding p''u_def by auto
   then obtain q where q_p: "q \<in> F_locs \<and> (p'', u, q) \<in> LTS.transition_star A'"
     unfolding accepts_def using p''_def u_def by auto
-  then have "(p'', u, q) \<in> LTS.transition_star A'"
-    by auto
   have "\<exists>\<gamma> w1 u1. w=\<gamma>#w1 \<and> u=op_labels u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)"
-  proof -
-    from step(1) obtain \<gamma> w1 where w_exp: "w=\<gamma>#w1"
-      unfolding p''u_def p'w_def using list.exhaust by (meson LTS.step_relp_def transition_rel.cases) 
-    from step(1) have "\<exists>u1. u=op_labels u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)" 
-      unfolding step_relp_def p''u_def p'w_def w_exp using transition_rel.cases by force 
-    then show "\<exists>\<gamma> w1 u1. w=\<gamma>#w1 \<and> u=op_labels u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)"
-      using w_exp by auto
-  qed
+    using p''u_def p'w_def step.hyps(1) step_relp_def2 by auto
   then obtain \<gamma> w1 u1 where \<gamma>_w1_u1_p: "w=\<gamma>#w1 \<and> u=op_labels u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)"
     by blast
 
@@ -358,8 +468,7 @@ next
     using saturation_def[of ]
     using step.prems
     using p'_P_locs
-    by force
-
+    by metis
 
   then have "(p', \<gamma>#w1, q) \<in> LTS.transition_star A'"
     using in_A' transition_star_step q1_p
@@ -612,9 +721,8 @@ lemma lemma_3_2_a:
   assumes "saturation pre_star_rule A A'"
   assumes "(p, w, q) \<in> LTS.transition_star A'"
   shows "\<exists>p' w'. (p', w', q) \<in> LTS.transition_star A \<and> (p, w) \<Rightarrow>\<^sup>* (p', w')"
-  using assms lemma_3_2_a'' saturation_def by auto 
+  using assms lemma_3_2_a'' saturation_def by metis 
   
-
 lemmas lemma_3_2 = lemma_3_2_a lemma_3_2_b
 
 theorem theorem_3_2:
@@ -660,6 +768,124 @@ next
   then show "c \<in> pre_star (language A)"
     unfolding p_def w_def by auto
 qed
+
+
+subsection \<open>Post* lemmas\<close>
+
+thm lemma_3_1
+
+lemma lemma_3_3:
+  assumes "pv \<Rightarrow>\<^sup>* p'w"
+    and "(Ctr_Loc (fst pv), snd pv) \<in> language_\<epsilon> A"
+    and "saturation post_star_rules A A'"
+  shows "accepts_\<epsilon> A' (Ctr_Loc (fst p'w), snd p'w)"
+  using assms
+proof (induct arbitrary: pv rule: rtranclp_induct)
+  case base
+  show ?case
+    unfolding accepts_\<epsilon>_def
+    by (smt (verit, del_insts) Collect_case_prodD accepts_\<epsilon>_def assms(2) assms(3) language_\<epsilon>_def post_star_lim'_incr_transition_star_\<epsilon> prod.case_eq_if subsetD) 
+next
+  case (step p''u p'w)
+  define p' where "p' = fst p'w"
+  define w  where "w = snd p'w"
+  define p'' where "p'' = fst p''u"
+  define u  where "u = snd p''u"
+  have p'w_def: "p'w = (p', w)"
+    using p'_def w_def by auto
+  have p''u_def: "p''u = (p'', u)"
+    using p''_def u_def by auto
+
+  then have "accepts_\<epsilon> A' (Ctr_Loc p'', u)"
+    using assms(2) p''_def step.hyps(3) step.prems(2) u_def by metis
+  then obtain q where q_p: "q \<in> F_locs \<and> (Ctr_Loc p'', u, Ctr_Loc q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
+    by (smt (verit, ccfv_threshold) accepts_\<epsilon>_def case_prod_conv)
+  then obtain u_\<epsilon> where II: "q \<in> F_locs" "LTS_\<epsilon>.\<epsilon>_exp u_\<epsilon> u" "(Ctr_Loc p'', u_\<epsilon>, Ctr_Loc q) \<in> LTS.transition_star A'"
+    using LTS_\<epsilon>.epsilon_lemma3[of "Ctr_Loc p''" u "Ctr_Loc q" A'] by auto
+  have "\<exists>\<gamma> u1 w1. u=\<gamma>#u1 \<and> w=op_labels w1@u1 \<and> (p'', \<gamma>) \<hookrightarrow> (p', w1)"
+    using p''u_def p'w_def step.hyps(2) step_relp_def2 by auto
+  then obtain \<gamma> u1 w1 where III: "u=\<gamma>#u1" " w=op_labels w1@u1" "(p'', \<gamma>) \<hookrightarrow> (p', w1)"
+    by blast
+
+  have p'_P_locs: "p' \<in> P_locs"
+    using p''u_def p'w_def step.hyps(2) step_relp'_P_locs2 by blast
+  have p''_P_locs: "p'' \<in> P_locs"
+    using p''u_def p'w_def step.hyps(2) step_relp'_P_locs1 by blast
+
+  have "\<exists>\<gamma>_\<epsilon> u1_\<epsilon>. LTS_\<epsilon>.\<epsilon>_exp \<gamma>_\<epsilon> [\<gamma>] \<and> LTS_\<epsilon>.\<epsilon>_exp u1_\<epsilon> u1 \<and> (Ctr_Loc p'', \<gamma>_\<epsilon>@u1_\<epsilon>, Ctr_Loc q) \<in> LTS.transition_star A'"
+  proof -
+    have "\<exists>\<gamma>_\<epsilon> u1_\<epsilon>. LTS_\<epsilon>.\<epsilon>_exp \<gamma>_\<epsilon> [\<gamma>] \<and> LTS_\<epsilon>.\<epsilon>_exp u1_\<epsilon> u1 \<and> u_\<epsilon> = \<gamma>_\<epsilon> @ u1_\<epsilon>" 
+      using LTS_\<epsilon>.\<epsilon>_exp_split'[of u_\<epsilon> \<gamma> u1] II(2) III(1) by auto
+    then obtain \<gamma>_\<epsilon> u1_\<epsilon> where "LTS_\<epsilon>.\<epsilon>_exp \<gamma>_\<epsilon> [\<gamma>] \<and> LTS_\<epsilon>.\<epsilon>_exp u1_\<epsilon> u1 \<and> u_\<epsilon> = \<gamma>_\<epsilon> @ u1_\<epsilon>" 
+      by auto
+    then have "(Ctr_Loc p'', \<gamma>_\<epsilon>@u1_\<epsilon> , Ctr_Loc q) \<in> LTS.transition_star A'"
+      using II(3) by auto
+    then show ?thesis
+      using \<open>LTS_\<epsilon>.\<epsilon>_exp \<gamma>_\<epsilon> [\<gamma>] \<and> LTS_\<epsilon>.\<epsilon>_exp u1_\<epsilon> u1 \<and> u_\<epsilon> = \<gamma>_\<epsilon> @ u1_\<epsilon>\<close> by blast
+  qed
+  then obtain \<gamma>_\<epsilon> u1_\<epsilon> where iii: "LTS_\<epsilon>.\<epsilon>_exp \<gamma>_\<epsilon> [\<gamma>]" and iv: "LTS_\<epsilon>.\<epsilon>_exp u1_\<epsilon> u1" "(Ctr_Loc p'', \<gamma>_\<epsilon>@u1_\<epsilon>, Ctr_Loc q) \<in> LTS.transition_star A'"
+    by blast
+  then have VI: "\<exists>q1. (Ctr_Loc p'', \<gamma>_\<epsilon>, q1) \<in> LTS.transition_star A' \<and> (q1, u1_\<epsilon>, Ctr_Loc q) \<in> LTS.transition_star A'"
+    by (simp add: LTS.transition_star_split)
+  then obtain q1 where VI: "(Ctr_Loc p'', \<gamma>_\<epsilon>, q1) \<in> LTS.transition_star A'" "(q1, u1_\<epsilon>, Ctr_Loc q) \<in> LTS.transition_star A'"
+    by blast
+
+  then have VI_2: "(Ctr_Loc p'', [\<gamma>], q1) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'" "(q1, u1, Ctr_Loc q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
+    apply (meson LTS_\<epsilon>.epsilon_lemma3 iii)
+    apply (meson LTS_\<epsilon>.epsilon_lemma3 VI(2) iv(1))
+    done
+    
+  show ?case
+  proof (cases w1)
+    case pop
+    then have r: "(p'', \<gamma>) \<hookrightarrow> (p', pop)"
+      using III(3) by blast
+    then have "(Ctr_Loc p', \<epsilon>, q1) \<in> A'"
+      by (metis VI_2(1) add_trans_pop assms(3) saturated_def saturation_def)
+    then have "(Ctr_Loc p', w, Ctr_Loc q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
+      using III(2)  VI_2(2) pop LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<epsilon> by fastforce 
+    then have "accepts_\<epsilon> A' (Ctr_Loc p', w)"
+      unfolding accepts_\<epsilon>_def
+      using II(1) by blast
+    then show ?thesis
+      using p'_def w_def by force
+  next
+    case (swap \<gamma>')
+    then have r: "(p'', \<gamma>) \<hookrightarrow> (p', swap \<gamma>')"
+      using III(3) by blast
+    then have "(Ctr_Loc p', Some \<gamma>', q1) \<in> A'"
+      by (metis VI_2(1) add_trans_swap assms(3) saturated_def saturation_def)
+    have "(Ctr_Loc p', w, Ctr_Loc q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
+      using III(2) LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<gamma> VI_2(2) append_Cons append_self_conv2 op_labels.simps(3) swap
+      using \<open>(Ctr_Loc p', Some \<gamma>', q1) \<in> A'\<close> by fastforce
+    then have "accepts_\<epsilon> A' (Ctr_Loc p', w)"
+      unfolding accepts_\<epsilon>_def
+      using II(1) by blast
+    then show ?thesis
+      using p'_def w_def by force
+  next
+    case (push \<gamma>' \<gamma>'')
+    then have r: "(p'', \<gamma>) \<hookrightarrow> (p', push \<gamma>' \<gamma>'')"
+      using III(3) by blast
+    from this VI_2 iii post_star_rules.intros(3)[OF this, of q1 A', OF VI_2(1)] have "(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<in> A'"
+      using assms(3) by (meson saturated_def saturation_def) 
+    from r VI_2 iii post_star_rules.intros(4)[OF r, of q1 A', OF VI_2(1)] have "(Ctr_Loc_Ext p' \<gamma>', Some \<gamma>'', q1) \<in> A'"
+      using assms(3) by (meson saturated_def saturation_def)
+    have "(Ctr_Loc p', [\<gamma>'], Ctr_Loc_Ext p' \<gamma>') \<in> LTS_\<epsilon>.transition_star_\<epsilon> A' \<and> (Ctr_Loc_Ext p' \<gamma>', [\<gamma>''], q1) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A' \<and> (q1, u1, Ctr_Loc q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
+      by (metis LTS_\<epsilon>.transition_star_\<epsilon>.simps VI_2(2) \<open>(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<in> A'\<close> \<open>(Ctr_Loc_Ext p' \<gamma>', Some \<gamma>'', q1) \<in> A'\<close>)
+    have "(Ctr_Loc p', w, Ctr_Loc q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
+      by (smt (z3) III(2) LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<gamma> VI_2(2) \<open>(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<in> A'\<close> \<open>(Ctr_Loc_Ext p' \<gamma>', Some \<gamma>'', q1) \<in> A'\<close> append_Cons append_self_conv2 op_labels.simps(3) push)
+    then have "accepts_\<epsilon> A' (Ctr_Loc p', w)"
+      unfolding accepts_\<epsilon>_def
+      using II(1) by blast
+    then show ?thesis
+      using p'_def w_def by force
+
+  qed
+qed
+
+
+
 
 end
 
