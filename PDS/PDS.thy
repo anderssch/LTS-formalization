@@ -132,7 +132,7 @@ definition accepts :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc
   "accepts ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,q) \<in> LTS.transition_star ts)"
   (* Here acceptance is defined for any p, but in the paper p has to be in P_locs *)
 
-definition accepts_\<epsilon> :: "(_, 'label option) transition set \<Rightarrow> (_, 'label) conf \<Rightarrow> bool" where
+definition accepts_\<epsilon> :: "(('ctr_loc, 'label) ctr_loc, 'label option) transition set \<Rightarrow> (('ctr_loc, 'label) ctr_loc, 'label) conf \<Rightarrow> bool" where
   "accepts_\<epsilon> ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,Ctr_Loc q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts)"
 
 abbreviation \<epsilon> :: "'label option" where

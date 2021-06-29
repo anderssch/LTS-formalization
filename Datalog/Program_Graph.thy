@@ -103,7 +103,6 @@ type_synonym ('n,'v) triple = "'v * 'n node option * 'n node"
 type_synonym ('n,'v) analysis_assignment = "'n node \<Rightarrow> ('n,'v) triple set"
 
 
-
 subsection \<open>What is defined on a path\<close>
 
 fun def_action :: "'v action \<Rightarrow> 'v set" where
@@ -207,12 +206,129 @@ fun subst_rh :: "('x,'e) subst \<Rightarrow> ('p,'x,'e) righthand \<Rightarrow> 
 | "subst_rh \<sigma> (PosRh p ids) = (PosRh p (map (subst_id \<sigma>) ids))"
 | "subst_rh \<sigma> (NegRh p ids) = (NegRh p (map (subst_id \<sigma>) ids))"
 
-(*
-Lav en subst cls ud fra "meaning_cls":
+fun subst_cls :: "('x,'e) subst \<Rightarrow> ('p,'x,'e) clause \<Rightarrow> ('p,'x,'e) clause" where
+  "subst_cls \<sigma> (Cls p ids rhs) = Cls p (map (subst_id \<sigma>) ids) (map (subst_rh \<sigma>) rhs)"
 
-fun meaning_cls :: "('p,'x,'e) clause \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" where
-  "meaning_cls (Cls p ids rhs) \<rho> \<sigma> \<longleftrightarrow> ((\<forall>rh\<in>set rhs. meaning_rh rh \<rho> \<sigma>) \<longrightarrow> meaning_lh (p,ids) \<rho> \<sigma>)"
-*)
+definition compose :: "('x,'e) subst \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('x,'e) var_val" where
+  "compose \<mu> \<sigma> x = eval_id \<sigma> (\<mu> x)"
+
+
+section \<open>Datalog lemmas\<close>
+
+
+lemma solves_fact_query:
+  assumes "solves_cls \<rho> (Cls p args [])"
+  shows "solves_query \<rho> (p, args)"
+  using assms unfolding solves_cls_def by auto
+
+lemma resolution_last_rh:
+  assumes "solves_cls \<rho> (Cls p args (rhs@[rh]))"
+  assumes "solves_rh \<rho> rh"
+  shows "solves_cls \<rho> (Cls p args (rhs))"
+  using assms unfolding solves_cls_def by auto
+
+lemma resolution_last_rh_query:
+  assumes "solves_cls \<rho> (Cls p args (rhs@[PosRh p ids]))"
+  assumes "solves_query \<rho> (p, ids)"
+  shows "solves_cls \<rho> (Cls p args (rhs))"
+  using assms by (force simp add: solves_cls_def)
+
+lemma resolution_only_rh_query:
+  assumes "solves_cls \<rho> (Cls p ids [PosRh p' ids'])"
+  assumes "solves_query \<rho> (p', ids')"
+  shows "solves_query \<rho> (p, ids)"
+proof -
+  from assms(2) have "\<forall>\<sigma>. meaning_rh (PosRh p' ids') \<rho> \<sigma>"
+    by fastforce
+  then have "solves_cls \<rho> (Cls p ids [])"
+    using assms(1)
+    by (metis self_append_conv2 solves_rh.elims(3) resolution_last_rh)
+  then show "solves_query \<rho> (p, ids)"
+    by (meson solves_fact_query)
+qed
+
+lemma substitution_lemma_lh: "meaning_lh (p, ids) \<rho> (compose \<mu> \<sigma>) \<longleftrightarrow> (meaning_lh (p, map (subst_id \<mu>) ids) \<rho> \<sigma>)"
+proof
+  assume "meaning_lh (p, ids) \<rho> (compose \<mu> \<sigma>)"
+  then have "map (eval_id (compose \<mu> \<sigma>)) ids \<in> \<rho> p"
+    by auto
+  then have "map (eval_id \<sigma> \<circ> subst_id \<mu>) ids \<in> \<rho> p"
+    by (smt (verit, ccfv_SIG) compose_def comp_apply eval_id.elims eval_id.simps(2) map_eq_conv subst_id.simps(1) subst_id.simps(2))
+  then show "meaning_lh (p, map (subst_id \<mu>) ids) \<rho> \<sigma>"
+    by auto
+next
+  assume "meaning_lh (p, map (subst_id \<mu>) ids) \<rho> \<sigma>"
+  then have "map (eval_id \<sigma> \<circ> subst_id \<mu>) ids \<in> \<rho> p"
+    by auto
+  then have "map (eval_id (compose \<mu> \<sigma>)) ids \<in> \<rho> p"
+    by (smt (verit, ccfv_threshold) compose_def comp_apply eval_id.elims eval_id.simps(2) map_eq_conv subst_id.simps(1) subst_id.simps(2))
+  then show "meaning_lh (p, ids) \<rho> (compose \<mu> \<sigma>)"
+    by auto
+qed
+
+lemma substitution_lemma_rh:"meaning_rh rh \<rho> (compose \<mu> \<sigma>) = meaning_rh (subst_rh \<mu> rh) \<rho> \<sigma>"
+proof (induction rh)
+  case (Eql x1 x2)
+  then show ?case
+    by (smt (verit) compose_def eval_id.elims eval_id.simps(2) meaning_rh.simps(1) subst_id.simps(1) subst_id.simps(2) subst_rh.simps(1)) 
+next
+  case (Neql x1 x2)
+  then show ?case
+    by (smt (verit, ccfv_threshold) compose_def eval_id.elims eval_id.simps(2) meaning_rh.simps(2) subst_id.simps(1) subst_id.simps(2) subst_rh.simps(2)) 
+next
+  case (PosRh x1 x2)
+  have "map (eval_id (compose \<mu> \<sigma>)) x2 \<in> \<rho> x1 \<Longrightarrow> map (eval_id \<sigma> \<circ> subst_id \<mu>) x2 \<in> \<rho> x1"
+    by (smt (verit) compose_def comp_apply eval_id.elims eval_id.simps(2) map_eq_conv subst_id.simps(1) subst_id.simps(2))
+  moreover
+  have "map (eval_id \<sigma> \<circ> subst_id \<mu>) x2 \<in> \<rho> x1 \<Longrightarrow> map (eval_id (compose \<mu> \<sigma>)) x2 \<in> \<rho> x1"
+    by (smt (verit) compose_def comp_apply eval_id.elims eval_id.simps(2) map_eq_conv subst_id.simps(1) subst_id.simps(2))
+  ultimately
+  show ?case
+    by auto
+next
+  case (NegRh x1 x2)
+  have "map (eval_id (compose \<mu> \<sigma>)) x2 \<in> \<rho> x1 \<Longrightarrow> map (eval_id \<sigma> \<circ> subst_id \<mu>) x2 \<in> \<rho> x1"
+    by (smt (verit, best) compose_def comp_apply eval_id.elims eval_id.simps(2) map_eq_conv subst_id.simps(1) subst_id.simps(2))
+  moreover
+  have "map (eval_id \<sigma> \<circ> subst_id \<mu>) x2 \<in> \<rho> x1 \<Longrightarrow> map (eval_id (compose \<mu> \<sigma>)) x2 \<in> \<rho> x1"
+    by (smt (verit) compose_def comp_apply eval_id.elims eval_id.simps(2) map_eq_conv subst_id.simps(1) subst_id.simps(2))
+  ultimately
+  show ?case
+    by auto
+qed
+
+lemma substitution_lemma_rhs: "(\<forall>rh\<in>set rhs. meaning_rh rh \<rho> (compose \<mu> \<sigma>)) \<longleftrightarrow> (\<forall>rh\<in>set (map (subst_rh \<mu>) rhs). meaning_rh rh \<rho> \<sigma>)"
+  by (simp add: substitution_lemma_rh) 
+
+lemma substitution_lemma_cls:
+  "meaning_cls c \<rho> (compose \<mu> \<sigma>) \<longleftrightarrow> meaning_cls (subst_cls \<mu> c) \<rho> \<sigma>"
+proof (induction c)
+  case (Cls p ids rhs)
+  have a: "(\<forall>rh\<in>set rhs. meaning_rh rh \<rho> (compose \<mu> \<sigma>)) \<longleftrightarrow> (\<forall>rh\<in>set (map (subst_rh \<mu>) rhs). meaning_rh rh \<rho> \<sigma>)"
+    using substitution_lemma_rhs by blast
+  have b: "meaning_lh (p, ids) \<rho> (compose \<mu> \<sigma>) \<longleftrightarrow> (meaning_lh (p, map (subst_id \<mu>) ids) \<rho> \<sigma>)"
+    using substitution_lemma_lh by metis
+  show ?case
+    unfolding meaning_cls.simps
+    using a b by auto
+qed
+
+lemma substitution_rule:
+  assumes "solves_cls \<rho> c"
+  shows "solves_cls \<rho> (subst_cls (\<mu>::('x,'e) subst) c)"
+proof -
+  show ?thesis
+    unfolding solves_cls_def
+  proof
+    fix \<sigma> :: "'x \<Rightarrow> 'e"
+    term "\<mu> :: 'x \<Rightarrow> ('x, 'e) identifier"
+    from assms have "meaning_cls c \<rho> (compose \<mu> \<sigma>)"
+      using solves_cls_def by auto
+    then show "meaning_cls (subst_cls \<mu> c) \<rho> \<sigma>"
+      using substitution_lemma_cls by blast
+  qed
+qed
+
 
 section \<open>Reaching Definitions in Datalog\<close>
 
@@ -325,15 +441,14 @@ definition summarizes_dl :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('
   "summarizes_dl \<rho> pg \<longleftrightarrow> (\<forall>\<pi> x q1 q2. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> get_start \<pi> = Start \<longrightarrow> (x,q1,q2) \<in> def_path \<pi> \<longrightarrow> 
      solves_query_RD \<rho> (RD1\<langle>[Encode_Node (get_end \<pi>), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.))"
 (* The warning is because summarizes_dl does not fix the type of datalog variables...
+   The reason is that the query does not contain variables, so the system cannot infer the type of datalog variables.
    It can be done by adding a type annotation to solves_query.
  *)
 
 thm LTS.path_with_word.induct
 
 lemma def_var_x: "fst (def_var ts x) = x"
-  unfolding def_var_def
-  apply auto
-  by (simp add: case_prod_beta triple_of_def)
+  unfolding def_var_def by (simp add: case_prod_beta triple_of_def)
 
 lemma transition_list_reversed_simp:
   assumes "length ss = length w"
@@ -364,132 +479,51 @@ lemma last_def_transition:
   assumes "x \<in> def_action l"
   assumes "(x, q1, q2) \<in> def_path (ss @ [s, s'], w @ [l])"
   shows "Some s = q1 \<and> s' = q2"
-  using assms
-  apply auto
-  subgoal
-    unfolding def_path_def
-    apply (simp add: transition_list_reversed_simp[of ss w, OF assms(1)])
-    apply auto
-    subgoal for xa
-      apply (cases "xa=x")
-      subgoal
-        apply auto
-        unfolding def_var_def
-        apply auto
-        unfolding triple_of_def
-        apply auto
-        done
-      subgoal
-        apply (metis def_var_x fst_conv)
-        done
-      done
-    done
-  subgoal
-    unfolding def_path_def
-    apply (simp add: transition_list_reversed_simp[of ss w, OF assms(1)])
-    apply auto
-    subgoal for xa
-      apply (cases "xa=x")
-      subgoal
-        apply auto
-        unfolding def_var_def
-        apply auto
-        unfolding triple_of_def
-        apply auto
-        done
-      subgoal
-        apply (metis def_var_x fst_conv)
-        done
-      done
-    done
-  done
+proof -
+  obtain xa where xa_p: "(x, q1, q2) = def_var (transition_list (ss @ [s], w) @ [(s, l, s')]) xa"
+    by (metis (no_types, lifting) assms(1) assms(3) def_path_def imageE transition_list_reversed_simp)
+  show ?thesis
+  proof (cases "xa = x")
+    case True
+    then show ?thesis 
+      using assms xa_p unfolding def_var_def triple_of_def by auto
+  next
+    case False
+    then show ?thesis
+      by (metis xa_p def_var_x fst_conv)
+  qed
+qed
 
 lemma not_last_def_transition:
   assumes "length ss = length w"
   assumes "x \<notin> def_action l"
   assumes "(x, q1, q2) \<in> def_path (ss @ [s, s'], w @ [l])"
   shows "(x, q1, q2) \<in> def_path (ss @ [s], w)"
-  using assms
-  unfolding def_path_def
-  apply (simp add: transition_list_reversed_simp[of ss w, OF assms(1)])
-  apply auto
-  subgoal for xa
-    apply (cases "xa=x")
-    subgoal
-      apply auto
-      unfolding def_var_def
-      apply auto
-      done
-    subgoal
-      apply (metis def_var_x fst_conv)
-      done
-    done
-  done
-
-
-lemma a_simple_inference:
-  assumes "solves_cls \<rho> (Cls p args [])"
-  shows "solves_query_RD \<rho> (p, args)"
-  using assms unfolding solves_cls_def by auto
-
-lemma another_simple_inference:
-  assumes "solves_cls \<rho> (Cls p args (rhs@[PosRh p ids]))"
-  assumes "solves_query_RD \<rho> (p, ids)"
-  shows "solves_cls \<rho> (Cls p args (rhs))"
-  using assms apply auto
-  unfolding solves_cls_def apply auto
-  subgoal for x
-    unfolding meaning_cls.simps
-    unfolding meaning_query.simps
-    apply auto
-    done
-  done
-
-lemma yet_another_simple_inference:
-  assumes "solves_cls \<rho> (Cls p args (rhs@[rh]))"
-  assumes "solves_rh \<rho> rh"
-  shows "solves_cls \<rho> (Cls p args (rhs))"
-  using assms apply auto
-  unfolding solves_cls_def by auto
-
-lemma (* TODO: I think there is a better approach than this. *)
-  assumes "solves_cls \<rho> RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<uu>, \<v>, \<w>], \<uu> \<^bold>\<noteq> Encode_Var y] ."
-  assumes "x \<noteq> y"
-  assumes "solves_query_RD \<rho> RD1\<langle>[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
-  shows "solves_query_RD \<rho> RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
 proof -
-  {
-    fix \<sigma> :: "RD_var \<Rightarrow> ('a, 'b) RD_elem"
-    assume a1: "\<sigma> the_\<uu> = RD_Var x"
-    assume a2: "\<sigma> the_\<w> = RD_Node q2"
-    assume a3: "(q1 = None \<longrightarrow> \<sigma> the_\<uu> = Questionmark) \<and> ((\<exists>q1'. q1 = Some q1') \<longrightarrow> \<sigma> the_\<uu> = (RD_Node (the q1)))"
-    have "meaning_rh (RD1 [Encode_Node s, \<uu>, \<v>, \<w>]) \<rho> \<sigma>"
-      sorry
-    moreover
-    have "meaning_rh (\<uu> \<^bold>\<noteq> Encode_Var y) \<rho> \<sigma>"
-      sorry
-    ultimately
-    have "meaning_lh (the_RD1, [Encode_Node s', \<uu>, \<v>, \<w>]) \<rho> \<sigma>"
-      using assms(1)
-      unfolding solves_cls_def by auto
-    then have "meaning_lh (the_RD1,[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]) \<rho> \<sigma>"
-      apply auto
-      using a1 a2 a3 by auto 
-  }
-   
- show ?thesis
-   sorry
+  obtain xa where xa_p: "(x, q1, q2) = def_var (transition_list (ss @ [s], w) @ [(s, l, s')]) xa"
+    by (metis (no_types, lifting) assms(1) assms(3) def_path_def imageE transition_list_reversed_simp)
+  have " (x, q1, q2) \<in> range (def_var (transition_list (ss @ [s], w)))"
+  proof (cases "xa = x")
+    case True
+    then show ?thesis 
+      using assms xa_p unfolding def_var_def triple_of_def by auto
+  next
+    case False
+    then show ?thesis
+      by (metis xa_p def_var_x fst_conv)
+  qed
+  then show ?thesis
+    by (simp add: def_path_def)
 qed
-    
 
 (* Ville det ikke være bedre hvis paths var lister af transitions?????????? *)
 (* Det er nok godt med et bevis på papir først :-D *)
 lemma RD_sound': 
   assumes "(ss,w) \<in> LTS.path_with_word pg"
-  assumes "(solves_program :: (RD_pred,('n, 'v) RD_elem) pred_val \<Rightarrow> (RD_pred,RD_var,('n, 'v) RD_elem) dl_program \<Rightarrow> bool) \<rho> (var_contraints \<union> ana_pg pg)"
+  assumes "solves_program \<rho> (var_contraints \<union> ana_pg pg)"
   assumes "get_start (ss,w) = Start"
   assumes "(x,q1,q2) \<in> def_path (ss,w)"
-  shows "solves_query_RD \<rho> (the_RD1,[Encode_Node (get_end (ss,w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
+  shows "solves_query_RD \<rho> RD1\<langle>[Encode_Node (get_end (ss,w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
   using assms 
 proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   case (1 s)
@@ -528,16 +562,7 @@ proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
      using x_sat by auto
 
    from this 1 show ?case
-    apply auto
-    unfolding solves_cls_def
-    unfolding get_end_def
-    unfolding def_path_def
-    apply auto
-    unfolding def_var_def
-    apply auto
-    unfolding get_start_def
-    apply auto
-    done
+    unfolding get_end_def def_path_def def_var_def get_start_def by auto
 next
   case (2 ss s w l s')
   from 2(1) have len: "length ss = length w"
@@ -555,7 +580,7 @@ next
     then have "solves_cls \<rho> (RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [].)"
       using 2(5) unfolding solves_program_def by auto
     then have "solves_query \<rho> RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
-      using a_simple_inference by force
+      using solves_fact_query by metis 
     then show ?thesis
       by (simp add: get_end_def sq)
   next
@@ -582,6 +607,7 @@ next
     qed
     then have ind: "solves_query_RD \<rho> (RD1\<langle>[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
       by (simp add: get_end_def)
+    define \<sigma> where "\<sigma> = undefined(the_\<uu> := Encode_Var x, the_\<v> := Encode_Node_Q q1, the_\<w> := Encode_Node q2)"
     show ?thesis
     proof (cases l)
       case (Asg y e)
@@ -603,15 +629,21 @@ next
             \<uu> \<^bold>\<noteq> (Encode_Var y)
           ].)"
         by (meson "2.prems"(2) UnCI solves_program_def)
-      then have "solves_cls \<rho> RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1 [Encode_Node s,  Encode_Var x, Encode_Node_Q q1, Encode_Node q2], Encode_Var x \<^bold>\<noteq> Encode_Var y] ."
-        unfolding solves_cls_def
-        sorry
+      moreover have "subst_cls \<sigma> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
+          [
+            RD1[Encode_Node s, \<uu>, \<v>, \<w>],
+            \<uu> \<^bold>\<noteq> (Encode_Var y)
+          ].) = RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1 [Encode_Node s,  Encode_Var x, Encode_Node_Q q1, Encode_Node q2], Encode_Var x \<^bold>\<noteq> Encode_Var y] ."
+        unfolding \<sigma>_def by auto
+      ultimately
+      have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1 [Encode_Node s,  Encode_Var x, Encode_Node_Q q1, Encode_Node q2], Encode_Var x \<^bold>\<noteq> Encode_Var y] .)"
+        unfolding solves_cls_def by (metis substitution_lemma_cls)
       then have "solves_cls \<rho> RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1 [Encode_Node s,  Encode_Var x, Encode_Node_Q q1, Encode_Node q2]] ."
-        using xy' yet_another_simple_inference by (metis (no_types, lifting) Cons_eq_append_conv) 
+        using xy' resolution_last_rh by (metis (no_types, lifting) Cons_eq_append_conv) 
       then have "solves_cls \<rho> RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- []."
-        using ind using another_simple_inference[of \<rho> the_RD1 ] by auto
+        using ind using resolution_last_rh_query[of \<rho> the_RD1 ] by (metis append.left_neutral) 
       then have "solves_query_RD \<rho> (RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
-        by (meson a_simple_inference)
+        using solves_fact_query by metis
       then show ?thesis
         by (simp add: get_end_def)
     next
@@ -625,8 +657,14 @@ next
         unfolding ana_pg_def by force
       then have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :- [RD1[Encode_Node s, \<uu>, \<v>, \<w>]].)"
         by (meson "2.prems"(2) UnCI solves_program_def)
+      moreover have "subst_cls \<sigma> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :- [RD1[Encode_Node s, \<uu>, \<v>, \<w>]].) =
+                     RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]]."
+        unfolding \<sigma>_def by auto
+      ultimately have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]].)"
+        by (metis substitution_rule)
       then have "solves_query_RD \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
-        using ind sorry
+        using ind
+        by (meson resolution_only_rh_query)
       then show ?thesis
         by (simp add: get_end_def)
     next
@@ -640,8 +678,15 @@ next
         unfolding ana_pg_def by force
       then have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<uu>, \<v>, \<w>]] .)"
         by (meson "2.prems"(2) UnCI solves_program_def)
-      then have "solves_query_RD \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
-        using ind sorry
+      moreover
+      have "subst_cls \<sigma> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<uu>, \<v>, \<w>]] .) =
+            RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>  :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]]."
+        unfolding \<sigma>_def by auto
+      ultimately 
+      have "solves_cls \<rho> RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>  :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]]."
+        by (metis substitution_rule)
+      from resolution_only_rh_query[OF this ind] have "solves_query_RD \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
+        .
       then show ?thesis
         by (simp add: get_end_def)
     qed
