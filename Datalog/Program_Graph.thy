@@ -445,34 +445,8 @@ definition summarizes_dl :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('
    It can be done by adding a type annotation to solves_query.
  *)
 
-thm LTS.path_with_word.induct
-
 lemma def_var_x: "fst (def_var ts x) = x"
   unfolding def_var_def by (simp add: case_prod_beta triple_of_def)
-
-lemma transition_list_reversed_simp:
-  assumes "length ss = length w"
-  shows "transition_list (ss @ [s, s'], w @ [l]) = (transition_list (ss@[s],w)) @ [(s,l,s')]"
-  using assms
-proof (induction ss arbitrary: w)
-  case Nil
-  then show ?case
-    by auto 
-next
-  case (Cons a ss)
-  define w' where "w' = tl w"
-  define l' where "l' = hd w"
-  have w_split: "l' # w' = w"
-    by (metis Cons.prems l'_def length_0_conv list.distinct(1) list.exhaust_sel w'_def)
-  then have "length ss = length w'"
-    using Cons.prems by force
-  then have "transition_list (ss @ [s, s'], w' @ [l]) = transition_list (ss @ [s], w') @ [(s, l, s')]"
-    using  Cons(1)[of w'] by auto
-  then have "transition_list (a # ss @ [s, s'], l' # w' @ [l]) = transition_list (a # ss @ [s], l' # w') @ [(s, l, s')]"
-    by (cases ss) auto 
-  then show ?case
-    using w_split by auto
-qed
 
 lemma last_def_transition:
   assumes "length ss = length w"
@@ -500,17 +474,17 @@ lemma not_last_def_transition:
   assumes "(x, q1, q2) \<in> def_path (ss @ [s, s'], w @ [l])"
   shows "(x, q1, q2) \<in> def_path (ss @ [s], w)"
 proof -
-  obtain xa where xa_p: "(x, q1, q2) = def_var (transition_list (ss @ [s], w) @ [(s, l, s')]) xa"
+  obtain y where y_p: "(x, q1, q2) = def_var (transition_list (ss @ [s], w) @ [(s, l, s')]) y"
     by (metis (no_types, lifting) assms(1) assms(3) def_path_def imageE transition_list_reversed_simp)
   have " (x, q1, q2) \<in> range (def_var (transition_list (ss @ [s], w)))"
-  proof (cases "xa = x")
+  proof (cases "y = x")
     case True
     then show ?thesis 
-      using assms xa_p unfolding def_var_def triple_of_def by auto
+      using assms y_p unfolding def_var_def triple_of_def by auto
   next
     case False
     then show ?thesis
-      by (metis xa_p def_var_x fst_conv)
+      by (metis y_p def_var_x fst_conv)
   qed
   then show ?thesis
     by (simp add: def_path_def)
@@ -623,7 +597,7 @@ next
             \<uu> \<^bold>\<noteq> (Encode_Var y)
           ]. \<in> ana_pg pg"
         unfolding ana_pg_def by force
-      from this False have gug: "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
+      from this False have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
           [
             RD1[Encode_Node s, \<uu>, \<v>, \<w>],
             \<uu> \<^bold>\<noteq> (Encode_Var y)
