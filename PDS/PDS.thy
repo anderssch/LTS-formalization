@@ -770,7 +770,6 @@ qed
 
 subsection \<open>Post* lemmas\<close>
 
-thm lemma_3_1
 
 lemma lemma_3_3:
   assumes "pv \<Rightarrow>\<^sup>* p'w"
@@ -867,8 +866,8 @@ next
       using III(3) by blast
     from this VI_2 iii post_star_rules.intros(3)[OF this, of q1 A', OF VI_2(1)] have "(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<in> A'"
       using assms(3) by (meson saturated_def saturation_def) 
-    from r VI_2 iii post_star_rules.intros(4)[OF r, of q1 A', OF VI_2(1)] have "(Ctr_Loc_Ext p' \<gamma>', Some \<gamma>'', q1) \<in> A'"
-      using assms(3) by (meson saturated_def saturation_def)
+    from this r VI_2 iii post_star_rules.intros(4)[OF r, of q1 A', OF VI_2(1)] have "(Ctr_Loc_Ext p' \<gamma>', Some \<gamma>'', q1) \<in> A'"
+      using assms(3) using saturated_def saturation_def by metis 
     have "(Ctr_Loc p', [\<gamma>'], Ctr_Loc_Ext p' \<gamma>') \<in> LTS_\<epsilon>.transition_star_\<epsilon> A' \<and> (Ctr_Loc_Ext p' \<gamma>', [\<gamma>''], q1) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A' \<and> (q1, u1, Ctr_Loc q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
       by (metis LTS_\<epsilon>.transition_star_\<epsilon>.simps VI_2(2) \<open>(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<in> A'\<close> \<open>(Ctr_Loc_Ext p' \<gamma>', Some \<gamma>'', q1) \<in> A'\<close>)
     have "(Ctr_Loc p', w, Ctr_Loc q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
@@ -1120,8 +1119,151 @@ next
   qed
 qed
 
+lemma lemma_3_4'_Aux_Aux:
+  assumes "(p''', w, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> Aiminus1"
+  assumes "p''' \<noteq> q"
+  assumes "\<nexists>p \<gamma>. (p, \<gamma>, q') \<in> Aiminus1"
+  shows "q' \<noteq> q"
+  using assms 
+proof (induction rule: LTS_\<epsilon>.transition_star_\<epsilon>.induct[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by blast 
+next
+  case (2 p \<gamma> q' w q)
+  then show ?case
+    by blast 
+next
+  case (3 p q' w q)
+  then show ?case
+    by blast
+qed
 
 
+lemma lemma_3_4'_Aux:
+  assumes "post_star_rules\<^sup>*\<^sup>* A A'"
+  assumes "\<forall>a b c. (a, b, c) \<in> A \<longrightarrow> is_Ctr_Loc a \<and> is_Ctr_Loc c"
+  assumes "(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<notin> A'"
+  shows "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') \<in> A'"
+  using assms 
+proof (induction rule: rtranclp_induct)
+  case base
+  then show ?case 
+    by force
+next
+  case (step Aiminus1 Ai)
+  from step(2) show ?case
+  proof (cases rule: post_star_rules.cases)
+    case (add_trans_pop p''' \<gamma>'' p'' q)
+    then have "(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<notin> Ai"
+      using step.prems(2) by blast
+    then have nin: "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') \<in> Aiminus1"
+      using local.add_trans_pop(1) step.IH step.prems(1) by fastforce
+    then have "Ctr_Loc_Ext p' \<gamma>' \<noteq> q"
+      using add_trans_pop(4) lemma_3_4'_Aux_Aux
+      by (metis ctr_loc.distinct(1))
+    then have "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') = (Ctr_Loc p'', \<epsilon>, q)"
+      by auto
+    then show ?thesis
+      using nin add_trans_pop(1) by auto
+  next
+    case (add_trans_swap p'''' \<gamma>'' p'' \<gamma>''' q)
+    then have "(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<notin> Ai"
+      using step.prems(2) by blast
+    then have nin: "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') \<in> Aiminus1"
+      using local.add_trans_swap(1) step.IH step.prems(1) by fastforce
+    then have "Ctr_Loc_Ext p' \<gamma>' \<noteq> q"
+      by (metis ctr_loc.distinct(1) lemma_3_4'_Aux_Aux local.add_trans_swap(3)) 
+    then have "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') = (Ctr_Loc p'', Some \<gamma>''', q)"
+      by auto
+    then show ?thesis
+      using nin add_trans_swap(1) by auto
+  next
+    case (add_trans_push_1 p'''' \<gamma>'' p'' \<gamma>''' \<gamma>''''' q)
+    then have "(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<notin> Ai"
+      using step.prems(2) by blast
+    then show ?thesis
+      using add_trans_push_1(1)
+      using Un_iff ctr_loc.inject(2) prod.inject singleton_iff step.IH step.prems(1) by blast 
+  next
+    case (add_trans_push_2 p'''' \<gamma>'' p'' \<gamma>''' \<gamma>'''' q)
+    then have "(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<notin> Ai"
+      using step.prems(2) by blast
+    then have nin: "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') \<in> Aiminus1"
+      using local.add_trans_push_2(1) step.IH step.prems(1) by fastforce
+    then have "Ctr_Loc_Ext p' \<gamma>' \<noteq> q"
+      by (metis ctr_loc.disc(3) ctr_loc.discI(2) lemma_3_4'_Aux_Aux local.add_trans_push_2(3))
+    then have "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') = (Ctr_Loc p'', \<epsilon>, q)"
+      by auto
+    then show ?thesis
+      using nin add_trans_push_2(1) by auto
+  qed
+qed
+
+(*
+lemma lemma_3_4'_Aux_Aux2:
+  assumes "post_star_rules\<^sup>*\<^sup>* A A'"
+  assumes "\<forall>a b c. (a, b, c) \<in> A \<longrightarrow> is_Ctr_Loc a \<and> is_Ctr_Loc c"
+  assumes "(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<notin> A'"
+  shows "\<nexists>p \<gamma>. (Ctr_Loc_Ext p' \<gamma>', \<gamma>, p) \<in> A'"
+  using assms 
+proof (induction rule: rtranclp_induct) (* I copy-pasted this prove from above and blindly adjusted it. So it may be a mess. *)
+  case base
+  then show ?case 
+    by force
+next
+  case (step Aiminus1 Ai)
+  from step(2) show ?case
+  proof (cases rule: post_star_rules.cases)
+    case (add_trans_pop p''' \<gamma>'' p'' q)
+    then have "(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<notin> Ai"
+      using step.prems(2) by blast
+    then have nin: "\<nexists>p \<gamma>. (Ctr_Loc_Ext p' \<gamma>', \<gamma>, p) \<in> Aiminus1"
+      using local.add_trans_pop(1) step.IH step.prems(1) by fastforce
+    then have "Ctr_Loc_Ext p' \<gamma>' \<noteq> q"
+      using add_trans_pop(4) lemma_3_4'_Aux_Aux[of "Ctr_Loc p'''" "[\<gamma>'']" q Aiminus1 "Ctr_Loc_Ext p' \<gamma>'"]
+      using PDS_with_P_automaton.lemma_3_4'_Aux PDS_with_P_automaton_axioms local.add_trans_pop(1) step.hyps(1) step.prems(1) step.prems(2) by blast
+    then have "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') = (Ctr_Loc p'', \<epsilon>, q)"
+      by auto
+    then show ?thesis
+      using nin add_trans_pop(1) by auto
+  next
+    case (add_trans_swap p'''' \<gamma>'' p'' \<gamma>''' q)
+    then have "(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<notin> Ai"
+      using step.prems(2) by blast
+    then have nin: "\<nexists>p \<gamma>. (Ctr_Loc_Ext p' \<gamma>', \<gamma>, p) \<in> Aiminus1"
+      using local.add_trans_swap(1) step.IH step.prems(1) by fastforce
+    then have "Ctr_Loc_Ext p' \<gamma>' \<noteq> q"
+      using ctr_loc.distinct(1) lemma_3_4'_Aux_Aux local.add_trans_swap(3)
+      by (metis PDS_with_P_automaton.lemma_3_4'_Aux PDS_with_P_automaton_axioms UnCI local.add_trans_swap(1) step.hyps(1) step.prems(1) step.prems(2)) 
+    then have "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') = (Ctr_Loc p'', Some \<gamma>''', q)"
+      by auto
+    then show ?thesis
+      using nin add_trans_swap(1) by auto
+  next
+    case (add_trans_push_1 p'''' \<gamma>'' p'' \<gamma>''' \<gamma>''''' q)
+    then have "(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<notin> Ai"
+      using step.prems(2) by blast
+    then show ?thesis
+      using add_trans_push_1(1)
+      using Un_iff ctr_loc.inject(2) prod.inject singleton_iff step.IH step.prems(1) by blast 
+  next
+    case (add_trans_push_2 p'''' \<gamma>'' p'' \<gamma>''' \<gamma>'''' q)
+    then have "(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<notin> Ai"
+      using step.prems(2) by blast
+    then have nin: "\<nexists>p \<gamma>. (Ctr_Loc_Ext p' \<gamma>', \<gamma>, p) \<in> Aiminus1"
+      using local.add_trans_push_2(1) step.IH step.prems(1) by fastforce
+    then have "Ctr_Loc_Ext p' \<gamma>' \<noteq> q"
+      using ctr_loc.disc(3) ctr_loc.discI(2) lemma_3_4'_Aux_Aux local.add_trans_push_2(3)
+      by (metis PDS_with_P_automaton.lemma_3_4'_Aux PDS_with_P_automaton_axioms UnCI local.add_trans_push_2(1) step.hyps(1) step.prems(1) step.prems(2)) 
+    then have "\<nexists>p \<gamma>. (Ctr_Loc_Ext p' \<gamma>', \<gamma>, p) = (Ctr_Loc p'', \<epsilon>, q)"
+      by auto
+    then show ?thesis
+      using nin add_trans_push_2(1)
+      using local.add_trans_push_2 step.prems(2) by auto 
+  qed
+qed
+*)
 
 lemma lemma_3_4':
   (* assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, q') \<in> A \<and> q' \<in> P_locs" *)
@@ -1541,8 +1683,10 @@ next
           by (metis LTS_\<epsilon>.ffffffff ctr_loc.distinct_disc(1) w_tl_\<epsilon>)
       qed
     next
-      case (add_trans_push_1 p2 \<gamma>2 p1 \<gamma>' \<gamma>'' q1)
-      then show ?thesis sorry
+      case (add_trans_push_1 p2 \<gamma>2 p1 \<gamma>1 \<gamma>'' q1')
+
+      show ?thesis
+        sorry
     next
       case (add_trans_push_2 p2 \<gamma>2 p1 \<gamma>1 \<gamma>'' q') (* Copied and adjusted from previous case *)
       note IX = add_trans_push_2(3)
@@ -1708,11 +1852,9 @@ next
           
         show ?thesis
           using False \<open>(p, LTS_\<epsilon>.remove_\<epsilon> u @ \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v) = (p, LTS_\<epsilon>.remove_\<epsilon> w)\<close> \<open>(p1, \<gamma>1 # \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u @ \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v)\<close> \<open>(p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v)) \<Rightarrow>\<^sup>* (p1, \<gamma>1 # \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v)\<close> \<open>(the_Ext_Ctr_Loc q, [the_Ext_Label q]) \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v))\<close> by fastforce
-
       qed
     qed
   qed
-
 qed
 
 
