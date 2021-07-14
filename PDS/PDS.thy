@@ -129,7 +129,7 @@ notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 
 definition accepts :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc , 'label) conf \<Rightarrow> bool" where
   "accepts ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,q) \<in> LTS.transition_star ts)"
-  (* Here acceptance is defined for any p, but in the paper p has to be in P_locs *)
+  (* Here acceptance is defined for any p, but in the paper p has to be in P_locs. FIX this!!!!!!!! *)
 
 definition accepts_\<epsilon> :: "(('ctr_loc, 'label) ctr_loc, 'label option) transition set \<Rightarrow> (('ctr_loc, 'label) ctr_loc, 'label) conf \<Rightarrow> bool" where
   "accepts_\<epsilon> ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,Ctr_Loc q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts)"
@@ -1291,7 +1291,7 @@ lemma lemma_3_4':
   assumes "(Ctr_Loc p, w, ss, q) \<in> LTS.transition_star_states A'"
   shows "(is_Ctr_Loc q \<longrightarrow> (\<exists>p' w'. (Ctr_Loc p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p',w') \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))) \<and>
          (is_Ctr_Ext q \<longrightarrow> (the_Ext_Ctr_Loc q, [the_Ext_Label q]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))"
-  using assms 
+  using assms
 proof (induction arbitrary: p q w ss rule: rtranclp_induct)
   case base
   have "is_Ctr_Loc q \<or> is_Ctr_Ext q"
@@ -1938,6 +1938,46 @@ next
     qed
   qed
 qed
+
+term accepts_\<epsilon>
+term language_\<epsilon>
+thm theorem_3_2
+
+
+
+fun make_normal where
+  "make_normal (p, w) = (the_Ctr_Loc p, w)"
+
+lemma lemma_3_4:
+  assumes "post_star_rules\<^sup>*\<^sup>* A A'"
+  assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, Ctr_Loc q') \<in> A \<and> q' \<in> P_locs"
+  assumes "\<forall>a b c. (a, b, c) \<in> A \<longrightarrow> is_Ctr_Loc a \<and> is_Ctr_Loc c"
+  shows "make_normal ` {c. accepts_\<epsilon> A' c} = post_star (make_normal `(language_\<epsilon> A))"
+proof (rule; rule)
+  fix c :: "'ctr_loc \<times> 'label list"
+  define p where "p = fst c"
+  define w where "w = snd c"
+  assume "c \<in> make_normal ` {c. accepts_\<epsilon> A' c}"
+  show "c \<in> post_star (make_normal ` language_\<epsilon> A)"
+    sorry
+next
+  fix c :: "'ctr_loc \<times> 'label list"
+  define p where "p = fst c"
+  define w where "w = snd c"
+  assume "c \<in> post_star (make_normal ` language_\<epsilon> A)"
+  then obtain p' w' where "(p', w') \<Rightarrow>\<^sup>* (p, w) \<and> (p', w') \<in> make_normal ` language_\<epsilon> A"
+    by (smt (verit, ccfv_SIG) LTS.post_star_def mem_Collect_eq p_def prod.collapse w_def)
+  then have "(Ctr_Loc p', w') \<in> language_\<epsilon> A"
+  
+  show "c \<in> make_normal ` {c. accepts_\<epsilon> A' c}"
+    sorry
+qed
+
+(*   (('ctr_loc, 'label) ctr_loc \<times> 'label list) set   *)
+  term post_star
+
+theorem theorem_3_3:
+  assumes "post_star_rules\<^sup>*\<^sup>* A A'"
 
 
 
