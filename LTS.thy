@@ -388,6 +388,8 @@ lemma append_path_with_word_path_with_word:
   shows "(\<gamma>2ss, \<gamma>2\<epsilon>) @\<acute> (v_ss, v) \<in> path_with_word"
   by (metis LTS.askdjfklasjflksa append_path_with_word.simps askdjfklasjflksa2 assms(1) assms(2) assms(3) transition_star_states_append)
 
+definition sources :: "'state set" where
+  "sources = {p. \<nexists>q \<gamma>. (q, \<gamma>, p) \<in> transition_relation}"
 
 end
 
@@ -478,6 +480,22 @@ lemma count_append_transition_star_states_\<gamma>:
          count (transitions_of' (hdss1,ww1,ss1,lastss1)) (s1, \<gamma>, s2) + (if s1 = last ss1 \<and> s2 = hd ss2 \<and> \<gamma> = \<gamma>' then 1 else 0) + count (transitions_of' (hdss2,ww2,ss2,lastss2)) (s1, \<gamma>, s2)"
   using assms count_append_path_with_word_\<gamma> by force
 
+lemma count_append_transition_star_states_\<gamma>_BETTER:
+  assumes "(hdss1,ww1,ss1,lastss1) \<in> LTS.transition_star_states A"
+  assumes "(hdss2,ww2,ss2,lastss2) \<in> LTS.transition_star_states A"
+  shows "count (transitions_of' (((hdss1,ww1,ss1,lastss1),\<gamma>') @@\<^sup>\<gamma> (hdss2,ww2,ss2,lastss2))) (s1, \<gamma>, s2) =
+         count (transitions_of' (hdss1,ww1,ss1,lastss1)) (s1, \<gamma>, s2) + (if s1 = last ss1 \<and> s2 = hd ss2 \<and> \<gamma> = \<gamma>' then 1 else 0) + count (transitions_of' (hdss2,ww2,ss2,lastss2)) (s1, \<gamma>, s2)"
+proof -
+  have "length (ss1) = Suc (length (ww1))"
+    by (meson LTS.transition_star_states_length assms(1))
+  moreover
+  have "ss2 \<noteq> []"
+    by (metis LTS.transition_star_states.simps assms(2) list.discI)
+  ultimately 
+  show ?thesis
+    using count_append_transition_star_states_\<gamma> by metis
+qed
+
 lemma count_append_transition_star_states:
   assumes "length (ss1) = Suc (length (ww1))"
   assumes "ss2 \<noteq> []"
@@ -485,6 +503,25 @@ lemma count_append_transition_star_states:
   shows "count (transitions_of' (((hdss1,ww1,ss1,lastss1)) @@\<acute> (hdss2,ww2,ss2,lastss2))) (s1, \<gamma>, s2) =
          count (transitions_of' (hdss1,ww1,ss1,lastss1)) (s1, \<gamma>, s2) + count (transitions_of' (hdss2,ww2,ss2,lastss2)) (s1, \<gamma>, s2)"
   using count_append_path_with_word[OF assms(1) assms(2) assms(3), of ww2 s1 \<gamma> s2] by auto
+
+lemma count_append_transition_star_statesBETTER:
+  assumes "(hdss1,ww1,ss1,lastss1) \<in> LTS.transition_star_states A"
+  assumes "(lastss1,ww2,ss2,lastss2) \<in> LTS.transition_star_states A"
+  shows "count (transitions_of' (((hdss1,ww1,ss1,lastss1)) @@\<acute> (lastss1,ww2,ss2,lastss2))) (s1, \<gamma>, s2) =
+         count (transitions_of' (hdss1,ww1,ss1,lastss1)) (s1, \<gamma>, s2) + count (transitions_of' (lastss1,ww2,ss2,lastss2)) (s1, \<gamma>, s2)"
+proof -
+  have "length (ss1) = Suc (length (ww1))"
+    by (meson LTS.transition_star_states_length assms(1))
+  moreover
+  have "last ss1 = hd ss2"
+    by (metis LTS.transition_star_states_hd LTS.transition_star_states_last assms(1) assms(2))
+  moreover
+  have "ss2 \<noteq> []"
+    by (metis LTS.transition_star_states_length Zero_not_Suc assms(2) list.size(3))
+  ultimately
+  show ?thesis
+    using count_append_transition_star_states assms by auto
+qed
 
 
 lemma LTS_transition_star_mono:
@@ -616,12 +653,26 @@ next
     by auto
 qed
 
+lemma lemma_3_2_a'_Aux_4:
+ (* This proof is a bit messy. *)
+  assumes "(p, w, ss ,q) \<in> LTS.transition_star_states Ai"
+  assumes "0 = count (transitions_of' (p, w, ss, q)) (p1, \<gamma>, q')"
+  assumes "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}"
+  shows "(p, w, q) \<in> LTS.transition_star Aiminus1"
+  using assms lemma_3_2_a'_Aux_3 by (metis LTS.transition_star_states_transition_star) 
+
 lemma split_at_first_t:
   assumes "(p, w, ss, q) \<in> LTS.transition_star_states Ai"
   assumes "Suc j' = count (transitions_of' (p, w, ss, q)) (p1, \<gamma>, q')"
   assumes "(p1, \<gamma>, q') \<notin> Aiminus1"
   assumes "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}"
-  shows "\<exists>u v u_ss v_ss. ss = u_ss @ v_ss \<and> w = u @ [\<gamma>] @ v \<and> (p, u, u_ss, p1) \<in> LTS.transition_star_states Aiminus1 \<and> (p1, [\<gamma>], q') \<in> LTS.transition_star Ai \<and> (q', v, v_ss, q) \<in> LTS.transition_star_states Ai"
+  shows "\<exists>u v u_ss v_ss. 
+           ss = u_ss @ v_ss \<and> 
+           w = u @ [\<gamma>] @ v \<and> 
+           (p, u, u_ss, p1) \<in> LTS.transition_star_states Aiminus1 \<and> 
+           (p1, [\<gamma>], q') \<in> LTS.transition_star Ai \<and> 
+           (q', v, v_ss, q) \<in> LTS.transition_star_states Ai \<and>
+           (p, w, ss, q) = ((p, u, u_ss, p1),\<gamma>) @@\<^sup>\<gamma> (q', v, v_ss,q)"
   using assms
 proof(induction arbitrary: p rule: LTS.transition_star_states.induct[OF assms(1)])
   case (1 p_add p)
@@ -654,7 +705,8 @@ next
     have "(q', v, v_ss, q) \<in> LTS.transition_star_states Ai"
       using 2(2) True v_def v_ss_def by blast
     show ?thesis
-      by (metis (no_types, lifting) Pair_inject True \<open>(p, u, u_ss, p1) \<in> LTS.transition_star_states Aiminus1\<close> \<open>(p1, [\<gamma>], q') \<in> LTS.transition_star Ai\<close> \<open>(q', v, v_ss, q) \<in> LTS.transition_star_states Ai\<close> append_Cons p_add_p self_append_conv2 u_def u_ss_def v_def v_ss_def)
+      using Pair_inject True \<open>(p, u, u_ss, p1) \<in> LTS.transition_star_states Aiminus1\<close> \<open>(p1, [\<gamma>], q') \<in> LTS.transition_star Ai\<close> \<open>(q', v, v_ss, q) \<in> LTS.transition_star_states Ai\<close> append_Cons p_add_p self_append_conv2 u_def u_ss_def v_def v_ss_def
+      by (metis (no_types, hide_lams) append_transition_star_states_\<gamma>.simps)
   next
     case False
     have "hd ss = q'_add"
@@ -662,7 +714,7 @@ next
     from this False have g: "Suc j' = count (transitions_of' (q'_add, w, ss, q)) (p1, \<gamma>, q')"
       using count_p_\<gamma>'_w_ss by (cases ss) auto
     have "\<exists>u_ih v_ih u_ss_ih v_ss_ih. ss = u_ss_ih @ v_ss_ih \<and> w = u_ih @ [\<gamma>] @ v_ih \<and> (q'_add, u_ih, u_ss_ih, p1) \<in> LTS.transition_star_states Aiminus1 \<and> (p1, [\<gamma>], q') \<in> LTS.transition_star Ai \<and> (q', v_ih, v_ss_ih, q) \<in> LTS.transition_star_states Ai"
-      using 2(3)[of q'_add, OF 2(2) g 2(6) 2(7)] .
+      using 2(3)[of q'_add, OF 2(2) g 2(6) 2(7)] by auto
     then obtain u_ih v_ih u_ss_ih v_ss_ih where splitting_p:
       "ss = u_ss_ih @ v_ss_ih" 
       "w = u_ih @ [\<gamma>] @ v_ih"
@@ -685,7 +737,8 @@ next
     have "(q', v, v_ss, q) \<in> LTS.transition_star_states Ai"
       by (simp add: splitting_p(5) v_def v_ss_def)
     show ?thesis
-      using \<open>(p, u, u_ss, p1) \<in> LTS.transition_star_states Aiminus1\<close> \<open>(q', v, v_ss, q) \<in> LTS.transition_star_states Ai\<close> \<open>\<gamma>' # w = u @ [\<gamma>] @ v\<close> \<open>p_add # ss = u_ss @ v_ss\<close> splitting_p(4) by blast
+      using \<open>(p, u, u_ss, p1) \<in> LTS.transition_star_states Aiminus1\<close> \<open>(q', v, v_ss, q) \<in> LTS.transition_star_states Ai\<close> \<open>\<gamma>' # w = u @ [\<gamma>] @ v\<close> \<open>p_add # ss = u_ss @ v_ss\<close> splitting_p(4)
+      by auto
   qed
 qed
 
@@ -729,6 +782,15 @@ proof -
   from count_append_transition_star_states_\<gamma>[of u_ss u v_ss p q \<gamma> q' v q p1 ] show ?thesis
     using assms(1) assms(2) assms(3) by (auto simp add: assms(3) one u_ss_l v_ss_non_empt)
 qed
+
+lemma count_combine_transition_star_states_BETTER:
+  assumes "t = (p1, \<gamma>, q')"
+  assumes "(p, u, u_ss, p1) \<in> LTS.transition_star_states A"
+  assumes "(q', v, v_ss, q) \<in> LTS.transition_star_states B"
+  shows "count (transitions_of' (((p, u, u_ss, p1),\<gamma>) @@\<^sup>\<gamma> (q', v, v_ss, q))) t = 
+        count (transitions_of' (p, u, u_ss, p1)) t + 1 + count (transitions_of' (q', v, v_ss, q)) t"
+  by (metis append_transition_star_states_\<gamma>.simps assms count_combine_transition_star_states)
+
 
 lemma transition_list_reversed_simp:
   assumes "length ss = length w"
