@@ -127,6 +127,10 @@ interpretation LTS transition_rel .
 notation step_relp (infix "\<Rightarrow>" 80)
 notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 
+
+term "(q,w) :: ('ctr_loc , 'label) conf"
+
+
 definition accepts :: "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc , 'label) conf \<Rightarrow> bool" where
   "accepts ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_locs. (p,w,q) \<in> LTS.transition_star ts)"
   (* Here acceptance is defined for any p, but in the paper p has to be in P_locs. FIX this!!!!!!!! *)
