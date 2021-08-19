@@ -3,7 +3,11 @@ theory LTS imports Main "HOL-Library.Multiset_Order" begin
 
 section \<open>LTS\<close>
 
+subsection \<open>Transitions\<close>
+
 type_synonym ('state, 'label) transition = "'state * 'label * 'state"
+
+subsection \<open>LTS functions\<close>
 
 fun transitions_of :: "'state list * 'label list \<Rightarrow> ('state, 'label) transition multiset" where
   "transitions_of (s1#s2#ss, \<gamma>#w) = {# (s1, \<gamma>, s2) #} + transitions_of (s2#ss, w)"
@@ -41,6 +45,7 @@ fun append_transition_star_states :: "('a \<times> 'b list \<times> 'a list \<ti
 fun append_transition_star_states_\<gamma> :: "(('a \<times> 'b list \<times> 'a list \<times> 'a) * 'b) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@\<^sup>\<gamma>" 65) where (* TODO: rename *)
   "((p1,w1,ss1,q1),\<gamma>) @@\<^sup>\<gamma> (p2,w2,ss2,q2) = (p1, w1 @ [\<gamma>] @ w2, ss1@ss2, q2)"
 
+subsection \<open>LTS locale\<close>
 
 locale LTS =
   fixes transition_relation :: "('state, 'label) transition set"
@@ -388,10 +393,28 @@ lemma append_path_with_word_path_with_word:
   shows "(\<gamma>2ss, \<gamma>2\<epsilon>) @\<acute> (v_ss, v) \<in> path_with_word"
   by (metis LTS.askdjfklasjflksa append_path_with_word.simps askdjfklasjflksa2 assms(1) assms(2) assms(3) transition_star_states_append)
 
+lemma hd_is_hd: (* Can this be phrased better? *)
+  assumes "(p, w, ss, q) \<in> transition_star_states"
+  assumes "(p1, \<gamma>, q1) = hd (transition_list' (p, w, ss, q))"
+  assumes "transition_list' (p, w, ss, q) \<noteq> []"
+  shows "p = p1"
+  using assms 
+proof (induction rule: LTS.transition_star_states.inducts[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by auto 
+next
+  case (2 p \<gamma> q' w ss q)
+  then show ?case
+    by (metis LTS.transition_star_states.simps Pair_inject list.sel(1) transition_list'.simps transition_list.simps(1))
+qed
+
 definition sources :: "'state set" where
   "sources = {p. \<nexists>q \<gamma>. (q, \<gamma>, p) \<in> transition_relation}"
 
 end
+
+subsection \<open>More LTS lemmas\<close>
 
 
 lemma counting:
@@ -832,6 +855,40 @@ lemma LTS_path_with_word_mono'':
   "mono LTS.path_with_word"
   by (smt (verit, ccfv_SIG) LTS.path_with_word_def case_prodE mem_Collect_eq monoI subsetI path_with_word_mono')
 
+lemma transition_list_Cons':
+  assumes "length ss = Suc (length w)"
+  assumes "hd (transition_list (ss, w)) = (p, \<gamma>, q)"
+  assumes "transition_list (ss, w) \<noteq> []"
+  shows "\<exists>w' ss'. w = \<gamma> # w' \<and> ss = p # q # ss'"
+proof (cases ss)
+  case Nil
+  note Nil_outer = Nil
+  show ?thesis
+  proof (cases w)
+    case Nil
+    then show ?thesis
+      using assms Nil_outer by auto
+  next
+    case (Cons a list)
+    then show ?thesis
+      using assms Nil_outer by auto
+  qed
+next
+  case (Cons a list)
+  note Cons_outer = Cons
+  then show ?thesis
+  proof (cases w)
+    case Nil
+    then show ?thesis
+      using assms Cons_outer by auto
+  next
+    case (Cons aa llist)
+    note Cons_outer' = Cons
+    show ?thesis
+      by (smt (z3) Cons_outer' Suc_length_conv assms(1) assms(2) fst_conv list.sel(1) snd_conv transition_list.simps(1)) 
+  qed
+qed
+
 section \<open>LTS init\<close>
 
 locale LTS_init = LTS transition_relation for transition_relation :: "('state, 'label) transition set" +
@@ -844,6 +901,8 @@ abbreviation initial :: "'state \<Rightarrow> bool" where
 end
 
 section \<open>LTS with epsilon\<close>
+
+subsection \<open>LTS with epsilon locale\<close>
 
 locale LTS_\<epsilon> =  LTS transition_relation for transition_relation :: "('state, 'label option) transition set"
 begin
@@ -990,6 +1049,9 @@ inductive_set path_with_word_\<epsilon> :: "('state list * 'label list) set" whe
 | path_with_word_\<epsilon>_step_\<epsilon>: "(s'#ss, w) \<in> path_with_word_\<epsilon> \<Longrightarrow> (s,\<epsilon>,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,w) \<in> path_with_word_\<epsilon>"
 
 end
+
+
+subsection \<open>More LTS lemmas\<close>
 
 lemma LTS_\<epsilon>_transition_star_\<epsilon>_mono:
   "mono LTS_\<epsilon>.transition_star_\<epsilon>"
