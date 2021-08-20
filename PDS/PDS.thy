@@ -1179,6 +1179,13 @@ next
     by (metis)
 qed
 
+lemma transition_list_Cons:
+  assumes "(p, w, ss, q) \<in> LTS.transition_star_states Ai"
+  assumes "hd (transition_list (ss, w)) = (p, \<gamma>, q1)"
+  assumes "transition_list (ss, w) \<noteq> []"
+  shows "\<exists>w' ss'. w = \<gamma> # w' \<and> ss = p # q1 # ss'"
+  using assms transition_list_Cons' by (metis LTS.transition_star_states_length) 
+
 lemma lemma_3_4':
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
   assumes "\<nexists>q \<gamma> q'. (q, \<gamma>, Ctr_Loc q') \<in> A"
