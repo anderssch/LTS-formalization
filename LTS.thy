@@ -412,10 +412,179 @@ qed
 definition sources :: "'state set" where
   "sources = {p. \<nexists>q \<gamma>. (q, \<gamma>, p) \<in> transition_relation}"
 
+definition zinks :: "'state set" where
+  "zinks = {p. \<nexists>q \<gamma>. (p, \<gamma>, q) \<in> transition_relation}"
+
+lemma USEFUL2:
+  "q \<in> LTS.sources A \<longleftrightarrow> (\<nexists>q' \<gamma>. (q', \<gamma>, q) \<in> A)"
+  by (simp add: LTS.sources_def)
+
+lemma USEFUL3:
+  "q \<in> LTS.zinks A \<longleftrightarrow> (\<nexists>q' \<gamma>. (q, \<gamma>, q') \<in> A)"
+  by (simp add: LTS.zinks_def)
+
+lemma init_never_or_hd':
+  assumes "(ss, w) \<in> path_with_word"
+  assumes "p1 \<in> sources"
+  assumes "t = (p1, \<gamma>, q1)"
+  shows "count (transitions_of (ss, w)) t = 0 \<or> ((hd (transition_list (ss, w)) = t \<and> count (transitions_of (ss, w)) t = 1))"
+  using assms
+proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
+  case (1 s)
+  then show ?case
+    by simp
+next
+  case (2 s' ss w s l)
+  then have "count (transitions_of (s' # ss, w)) t = 0 \<or>
+    (hd (transition_list (s' # ss, w)) = t \<and> count (transitions_of (s' # ss, w)) t = 1)"
+    by auto
+  then show ?case
+  proof
+    assume a: "count (transitions_of (s' # ss, w)) t = 0"
+    show ?case
+    proof (cases "s = p1 \<and> l = \<gamma> \<and> q1 = s'")
+      case True
+      then have "hd (transition_list (s # s' # ss, l # w)) = t \<and> count (transitions_of (s # s' # ss, l # w)) t = 1"
+        using 2 a by simp
+      then show ?thesis
+        by auto
+    next
+      case False
+      then have "count (transitions_of (s # s' # ss, l # w)) t = 0"
+        using 2 a by auto
+      then show ?thesis
+        by auto
+    qed
+  next 
+    assume "hd (transition_list (s' # ss, w)) = t \<and> count (transitions_of (s' # ss, w)) t = 1"
+    moreover
+    have "(\<nexists>q \<gamma>. (q, \<gamma>, p1) \<in> transition_relation)"
+      by (meson LTS.USEFUL2 assms(2))
+    ultimately
+    have False
+      using 2 path_with_word.simps Pair_inject list.sel(1) transition_list.simps(1) transitions_of.simps(2) zero_multiset.rep_eq zero_neq_one
+      by (smt (verit, ccfv_threshold) list.sel(3))
+    then show ?case
+      by auto
+  qed
+qed
+
+lemma init_only_hd':
+  assumes "(ss, w) \<in> path_with_word"
+  assumes "p1 \<in> sources"
+  assumes "count (transitions_of (ss, w)) t > 0"
+  assumes "t = (p1, \<gamma>, q1)"
+  shows "hd (transition_list (ss, w)) = t \<and> count (transitions_of (ss, w)) t = 1"
+  using init_never_or_hd' assms not_gr_zero
+  by metis 
+
+lemma no_edge_to_Ctr_Loc_avoid_Ctr_Loc':
+  assumes "(p, w, qq) \<in> transition_star"
+  assumes "w \<noteq> []"
+  shows "qq \<notin> sources"
+  using assms
+proof (induction rule: LTS.transition_star.induct[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by blast
+next
+  case (2 p \<gamma> q' w q)
+  then show ?case
+    by (metis LTS.USEFUL2 LTS.transition_star_empty)
+qed
+
+lemma transition_list_Cons':
+  assumes "length ss = Suc (length w)"
+  assumes "hd (transition_list (ss, w)) = (p, \<gamma>, q)"
+  assumes "transition_list (ss, w) \<noteq> []"
+  shows "\<exists>w' ss'. w = \<gamma> # w' \<and> ss = p # q # ss'"
+proof (cases ss)
+  case Nil
+  note Nil_outer = Nil
+  show ?thesis
+  proof (cases w)
+    case Nil
+    then show ?thesis
+      using assms Nil_outer by auto
+  next
+    case (Cons a list)
+    then show ?thesis
+      using assms Nil_outer by auto
+  qed
+next
+  case (Cons a list)
+  note Cons_outer = Cons
+  then show ?thesis
+  proof (cases w)
+    case Nil
+    then show ?thesis
+      using assms Cons_outer by auto
+  next
+    case (Cons aa llist)
+    note Cons_outer' = Cons
+    show ?thesis
+      by (smt (z3) Cons_outer' Suc_length_conv assms(1) assms(2) fst_conv list.sel(1) snd_conv transition_list.simps(1)) 
+  qed
+qed
+
+lemma transition_list_Cons:
+  assumes "(p, w, ss, q) \<in> transition_star_states"
+  assumes "hd (transition_list (ss, w)) = (p, \<gamma>, q1)"
+  assumes "transition_list (ss, w) \<noteq> []"
+  shows "\<exists>w' ss'. w = \<gamma> # w' \<and> ss = p # q1 # ss'"
+  using assms transition_list_Cons' by (metis LTS.transition_star_states_length) 
+
 end
 
 subsection \<open>More LTS lemmas\<close>
 
+lemma hd_transition_list_append_path_with_word:
+  assumes "hd (transition_list (ss, w)) = (p1, \<gamma>, q1)"
+  assumes "transition_list (ss, w) \<noteq> []"
+  shows  "([p1, q1], [\<gamma>]) @\<acute> (tl ss, tl w) = (ss, w)"
+proof -
+  have "p1 # q1 # tl (tl ss) = ss \<and> \<gamma> # tl w = w"
+  proof (cases ss)
+    case Nil
+    note Nil_outer = Nil
+    show ?thesis
+    proof (cases w)
+      case Nil
+      then show ?thesis
+        using assms Nil_outer by auto
+    next
+      case (Cons a list)
+      then show ?thesis 
+        using assms Nil_outer by auto
+    qed
+  next
+    case (Cons a list)
+    note Cons_outer = Cons
+    show ?thesis
+    proof (cases w)
+      case Nil
+      then show ?thesis
+        using assms Cons_outer using list.collapse by (metis transition_list.simps(2,4)) 
+    next
+      case (Cons aa llist)
+      have "p1 = a"
+        using assms Cons Cons_outer
+        by (smt (z3) Pair_inject list.exhaust list.sel(1) transition_list.simps(1) transition_list.simps(2))
+      moreover
+      have "q1 # tl list = list"
+        using assms Cons Cons_outer
+        by (smt (verit, ccfv_SIG) Pair_inject list.exhaust_sel list.sel(1) transition_list.simps(1) transition_list.simps(2))
+      moreover
+      have "\<gamma> = aa"
+        by (metis Cons_outer Pair_inject assms(1) calculation(2) list.sel(1) local.Cons transition_list.simps(1))
+      ultimately
+      show ?thesis
+        using assms Cons_outer Cons by auto
+    qed
+  qed
+  then show ?thesis 
+    by auto
+qed
 
 lemma counting:
   "count (transitions_of' ((hdss1,ww1,ss1,lastss1))) (s1, \<gamma>, s2) = count (transitions_of ((ss1,ww1))) (s1, \<gamma>, s2)"
@@ -855,39 +1024,7 @@ lemma LTS_path_with_word_mono'':
   "mono LTS.path_with_word"
   by (smt (verit, ccfv_SIG) LTS.path_with_word_def case_prodE mem_Collect_eq monoI subsetI path_with_word_mono')
 
-lemma transition_list_Cons':
-  assumes "length ss = Suc (length w)"
-  assumes "hd (transition_list (ss, w)) = (p, \<gamma>, q)"
-  assumes "transition_list (ss, w) \<noteq> []"
-  shows "\<exists>w' ss'. w = \<gamma> # w' \<and> ss = p # q # ss'"
-proof (cases ss)
-  case Nil
-  note Nil_outer = Nil
-  show ?thesis
-  proof (cases w)
-    case Nil
-    then show ?thesis
-      using assms Nil_outer by auto
-  next
-    case (Cons a list)
-    then show ?thesis
-      using assms Nil_outer by auto
-  qed
-next
-  case (Cons a list)
-  note Cons_outer = Cons
-  then show ?thesis
-  proof (cases w)
-    case Nil
-    then show ?thesis
-      using assms Cons_outer by auto
-  next
-    case (Cons aa llist)
-    note Cons_outer' = Cons
-    show ?thesis
-      by (smt (z3) Cons_outer' Suc_length_conv assms(1) assms(2) fst_conv list.sel(1) snd_conv transition_list.simps(1)) 
-  qed
-qed
+
 
 section \<open>LTS init\<close>
 
@@ -1033,6 +1170,38 @@ lemma transition_star_states_transition_star_\<epsilon>:
   assumes "(p, w, ss, q) \<in> transition_star_states"
   shows "(p, LTS_\<epsilon>.remove_\<epsilon> w, q) \<in> transition_star_\<epsilon>"
   by (metis LTS_\<epsilon>.epsilon_lemma assms remove_\<epsilon>_def transition_star_states_transition_star)
+
+lemma no_edge_to_Ctr_Loc_avoid_Ctr_Loc_\<epsilon>':
+  assumes "(p, [\<gamma>], qq) \<in> transition_star_\<epsilon>"
+  shows "qq \<notin> sources"
+proof -
+  have "\<exists>w. LTS_\<epsilon>.\<epsilon>_exp w [\<gamma>] \<and> (p, w, qq) \<in> transition_star \<and> w \<noteq> []"
+    by (metis (no_types, hide_lams) LTS_\<epsilon>.\<epsilon>_exp_def LTS_\<epsilon>.\<epsilon>_exp_split' LTS_\<epsilon>.epsilon_lemma3 append_Cons append_Nil assms(1) list.distinct(1) list.exhaust)
+  then obtain w where "LTS_\<epsilon>.\<epsilon>_exp w [\<gamma>] \<and> (p, w, qq) \<in> transition_star \<and> w \<noteq> []"
+    by blast
+  then show ?thesis
+    using LTS.no_edge_to_Ctr_Loc_avoid_Ctr_Loc'[of p w qq] assms by auto
+qed
+
+lemma lemma_3_4'_Aux_Aux:
+  assumes "(p''', w, q) \<in> transition_star_\<epsilon>"
+  assumes "p''' \<noteq> q"
+  assumes "q' \<in> sources"
+  shows "q' \<noteq> q"
+  using assms 
+proof (induction rule: LTS_\<epsilon>.transition_star_\<epsilon>.induct[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by blast 
+next
+  case (2 p \<gamma> q' w q)
+  then show ?case
+    using USEFUL2 by metis 
+next
+  case (3 p q' w q)
+  then show ?case
+    using USEFUL2 by metis 
+qed
 
 (* I doubt a bit that this definition is useful *)
 inductive_set transition_star_states_\<epsilon> :: "('state * 'label list * 'state list * 'state) set" where
