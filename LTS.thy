@@ -346,7 +346,7 @@ next
     by force
 qed
 
-lemma xxxxxxx: 
+lemma transition_star_states_transition_relation: 
   assumes "(p, \<gamma>#w_rest, ss, q) \<in> transition_star_states"
   shows "\<exists>s \<gamma>'. (s, \<gamma>', q) \<in> transition_relation"
 using assms proof (induction w_rest arbitrary: ss p \<gamma>)
@@ -359,7 +359,7 @@ next
     by (meson LTS.transition_star_cons LTS.transition_star_states_transition_star transition_star_transition_star_states)
 qed
 
-lemma askdjfklasjflksa:
+lemma transition_star_states_path_with_word:
   assumes "(p, w, ss, q) \<in> transition_star_states"
   shows "(ss,w) \<in> path_with_word"
 using assms proof (induction rule: transition_star_states.induct)
@@ -371,7 +371,7 @@ next
     by (metis LTS.transition_star_states.simps path_with_word.path_with_word_step) 
 qed
 
-lemma askdjfklasjflksa2:
+lemma path_with_word_transition_star_states:
   assumes "(ss,w) \<in> path_with_word"
   assumes "p = hd ss"
   assumes "q = last ss"
@@ -391,7 +391,7 @@ lemma append_path_with_word_path_with_word:
   assumes "(\<gamma>2ss, \<gamma>2\<epsilon>) \<in> path_with_word"
   assumes "(v_ss, v) \<in> path_with_word"
   shows "(\<gamma>2ss, \<gamma>2\<epsilon>) @\<acute> (v_ss, v) \<in> path_with_word"
-  by (metis LTS.askdjfklasjflksa append_path_with_word.simps askdjfklasjflksa2 assms(1) assms(2) assms(3) transition_star_states_append)
+  by (metis LTS.transition_star_states_path_with_word append_path_with_word.simps path_with_word_transition_star_states assms(1) assms(2) assms(3) transition_star_states_append)
 
 lemma hd_is_hd: (* Can this be phrased better? *)
   assumes "(p, w, ss, q) \<in> transition_star_states"
@@ -415,15 +415,15 @@ definition sources :: "'state set" where
 definition zinks :: "'state set" where
   "zinks = {p. \<nexists>q \<gamma>. (p, \<gamma>, q) \<in> transition_relation}"
 
-lemma USEFUL2:
+lemma sources_def2:
   "q \<in> LTS.sources A \<longleftrightarrow> (\<nexists>q' \<gamma>. (q', \<gamma>, q) \<in> A)"
   by (simp add: LTS.sources_def)
 
-lemma USEFUL3:
-  "q \<in> LTS.zinks A \<longleftrightarrow> (\<nexists>q' \<gamma>. (q, \<gamma>, q') \<in> A)"
+lemma zinks_def2:
+  "q \<in> zinks \<longleftrightarrow> (\<nexists>q' \<gamma>. (q, \<gamma>, q') \<in> transition_relation)"
   by (simp add: LTS.zinks_def)
 
-lemma init_never_or_hd':
+lemma source_never_or_hd:
   assumes "(ss, w) \<in> path_with_word"
   assumes "p1 \<in> sources"
   assumes "t = (p1, \<gamma>, q1)"
@@ -459,7 +459,7 @@ next
     assume "hd (transition_list (s' # ss, w)) = t \<and> count (transitions_of (s' # ss, w)) t = 1"
     moreover
     have "(\<nexists>q \<gamma>. (q, \<gamma>, p1) \<in> transition_relation)"
-      by (meson LTS.USEFUL2 assms(2))
+      by (meson LTS.sources_def2 assms(2))
     ultimately
     have False
       using 2 path_with_word.simps Pair_inject list.sel(1) transition_list.simps(1) transitions_of.simps(2) zero_multiset.rep_eq zero_neq_one
@@ -469,16 +469,16 @@ next
   qed
 qed
 
-lemma init_only_hd':
+lemma source_only_hd:
   assumes "(ss, w) \<in> path_with_word"
   assumes "p1 \<in> sources"
   assumes "count (transitions_of (ss, w)) t > 0"
   assumes "t = (p1, \<gamma>, q1)"
   shows "hd (transition_list (ss, w)) = t \<and> count (transitions_of (ss, w)) t = 1"
-  using init_never_or_hd' assms not_gr_zero
+  using source_never_or_hd assms not_gr_zero
   by metis 
 
-lemma no_edge_to_Ctr_Loc_avoid_Ctr_Loc':
+lemma no_end_in_source:
   assumes "(p, w, qq) \<in> transition_star"
   assumes "w \<noteq> []"
   shows "qq \<notin> sources"
@@ -490,10 +490,10 @@ proof (induction rule: LTS.transition_star.induct[OF assms(1)])
 next
   case (2 p \<gamma> q' w q)
   then show ?case
-    by (metis LTS.USEFUL2 LTS.transition_star_empty)
+    by (metis LTS.sources_def2 LTS.transition_star_empty)
 qed
 
-lemma transition_list_Cons':
+lemma transition_list_length_Cons:
   assumes "length ss = Suc (length w)"
   assumes "hd (transition_list (ss, w)) = (p, \<gamma>, q)"
   assumes "transition_list (ss, w) \<noteq> []"
@@ -532,7 +532,49 @@ lemma transition_list_Cons:
   assumes "hd (transition_list (ss, w)) = (p, \<gamma>, q1)"
   assumes "transition_list (ss, w) \<noteq> []"
   shows "\<exists>w' ss'. w = \<gamma> # w' \<and> ss = p # q1 # ss'"
-  using assms transition_list_Cons' by (metis LTS.transition_star_states_length) 
+  using assms transition_list_length_Cons by (metis LTS.transition_star_states_length) 
+
+lemma nothing_after_zink:
+  assumes "([q, q']@ss, \<gamma>1#w) \<in> path_with_word"
+  assumes "q' \<in> zinks"
+  shows "ss = [] \<and> w = []"
+  using assms 
+proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
+  case (1 s)
+  moreover
+  from 1 have "\<nexists>q'' \<gamma>. (q', \<gamma>, q'') \<in> transition_relation"
+    using zinks_def2[of "q'"]
+    by auto
+  ultimately
+   show ?case
+    by (smt (verit, ccfv_SIG) LTS.path_with_word.simps append_Cons assms(1) list.distinct(1) list.inject self_append_conv2)
+next
+  case (2 s' ss w s l)
+  then show ?case
+    by (metis)
+qed
+
+lemma count_transitions_of'_tails:
+  assumes "(p, \<gamma>', q'_add) \<noteq> (p1, \<gamma>, q')"
+  shows "count (transitions_of' (p, \<gamma>' # w, p # q'_add # ss_rest, q)) (p1, \<gamma>, q') = count (transitions_of' (q'_add, w, q'_add # ss_rest, q)) (p1, \<gamma>, q')"
+  using assms by (cases w) auto
+  
+lemma avoid_count_zero:
+  assumes "(p, w, ss, q) \<in> transition_star_states"
+  assumes "(p1, \<gamma>, q') \<notin> transition_relation"
+  shows "count (transitions_of' (p, w, ss, q)) (p1, \<gamma>, q') = 0"
+  using assms
+proof(induction arbitrary: p rule: LTS.transition_star_states.induct[OF assms(1)])
+  case (1 p_add p)
+  then show ?case
+    by auto
+next
+  case (2 p_add \<gamma>' q'_add w ss q p)
+  then have p_add_p: "p_add = p"
+    by (meson transition_star_states.cases list.inject)
+  show ?case
+    by (metis "2.IH" "2.hyps"(1) "2.hyps"(2) transition_star_states.cases assms(2) count_transitions_of'_tails transitions_of'.simps)
+qed
 
 end
 
@@ -665,14 +707,14 @@ next
     using Cons Suc_length_conv add.assoc append_Cons  last_ConsR  list.simps(3) plus_multiset.rep_eq transitions_of.simps(1) by (smt (z3) append_path_with_word.simps)
 qed
 
-lemma count_append_transition_star_states_\<gamma>:
+lemma count_append_transition_star_states_\<gamma>_length:
   assumes "length (ss1) = Suc (length (ww1))"
   assumes "ss2 \<noteq> []"
   shows "count (transitions_of' (((hdss1,ww1,ss1,lastss1),\<gamma>') @@\<^sup>\<gamma> (hdss2,ww2,ss2,lastss2))) (s1, \<gamma>, s2) =
          count (transitions_of' (hdss1,ww1,ss1,lastss1)) (s1, \<gamma>, s2) + (if s1 = last ss1 \<and> s2 = hd ss2 \<and> \<gamma> = \<gamma>' then 1 else 0) + count (transitions_of' (hdss2,ww2,ss2,lastss2)) (s1, \<gamma>, s2)"
   using assms count_append_path_with_word_\<gamma> by force
 
-lemma count_append_transition_star_states_\<gamma>_BETTER:
+lemma count_append_transition_star_states_\<gamma>:
   assumes "(hdss1,ww1,ss1,lastss1) \<in> LTS.transition_star_states A"
   assumes "(hdss2,ww2,ss2,lastss2) \<in> LTS.transition_star_states A"
   shows "count (transitions_of' (((hdss1,ww1,ss1,lastss1),\<gamma>') @@\<^sup>\<gamma> (hdss2,ww2,ss2,lastss2))) (s1, \<gamma>, s2) =
@@ -685,10 +727,10 @@ proof -
     by (metis LTS.transition_star_states.simps assms(2) list.discI)
   ultimately 
   show ?thesis
-    using count_append_transition_star_states_\<gamma> by metis
+    using count_append_transition_star_states_\<gamma>_length by metis
 qed
 
-lemma count_append_transition_star_states:
+lemma count_append_transition_star_states_length:
   assumes "length (ss1) = Suc (length (ww1))"
   assumes "ss2 \<noteq> []"
   assumes "last ss1 = hd ss2"
@@ -696,7 +738,7 @@ lemma count_append_transition_star_states:
          count (transitions_of' (hdss1,ww1,ss1,lastss1)) (s1, \<gamma>, s2) + count (transitions_of' (hdss2,ww2,ss2,lastss2)) (s1, \<gamma>, s2)"
   using count_append_path_with_word[OF assms(1) assms(2) assms(3), of ww2 s1 \<gamma> s2] by auto
 
-lemma count_append_transition_star_statesBETTER:
+lemma count_append_transition_star_states:
   assumes "(hdss1,ww1,ss1,lastss1) \<in> LTS.transition_star_states A"
   assumes "(lastss1,ww2,ss2,lastss2) \<in> LTS.transition_star_states A"
   shows "count (transitions_of' (((hdss1,ww1,ss1,lastss1)) @@\<acute> (lastss1,ww2,ss2,lastss2))) (s1, \<gamma>, s2) =
@@ -712,7 +754,7 @@ proof -
     by (metis LTS.transition_star_states_length Zero_not_Suc assms(2) list.size(3))
   ultimately
   show ?thesis
-    using count_append_transition_star_states assms by auto
+    using count_append_transition_star_states_length assms by auto
 qed
 
 
@@ -754,29 +796,7 @@ lemma count_next_hd:
 lemma count_empty_zero: "count (transitions_of' (p, [], [p_add], p_add)) (p1, \<gamma>, q') = 0"
   by simp
 
-lemma count_transitions_of'_tails:
-  assumes "(p, \<gamma>', q'_add) \<noteq> (p1, \<gamma>, q')"
-  shows "count (transitions_of' (p, \<gamma>' # w, p # q'_add # ss_rest, q)) (p1, \<gamma>, q') = count (transitions_of' (q'_add, w, q'_add # ss_rest, q)) (p1, \<gamma>, q')"
-  using assms by (cases w) auto
-  
-lemma avoid_count_zero:
-  assumes "(p, w, ss, q) \<in> LTS.transition_star_states Aiminus1"
-  assumes "(p1, \<gamma>, q') \<notin> Aiminus1"
-  shows "count (transitions_of' (p, w, ss, q)) (p1, \<gamma>, q') = 0"
-  using assms
-proof(induction arbitrary: p rule: LTS.transition_star_states.induct[OF assms(1)])
-  case (1 p_add p)
-  then show ?case
-    by auto
-next
-  case (2 p_add \<gamma>' q'_add w ss q p)
-  then have p_add_p: "p_add = p"
-    by (meson LTS.transition_star_states.cases list.inject)
-  show ?case
-    by (metis "2.IH" "2.hyps"(1) "2.hyps"(2) LTS.transition_star_states.cases assms(2) count_transitions_of'_tails transitions_of'.simps)
-qed
-
-lemma lemma_3_2_a'_Aux:
+lemma count_zero_remove_path_with_word:
   assumes "(ss, w) \<in> LTS.path_with_word Ai"
   assumes "0 = count (transitions_of (ss, w)) (p1, \<gamma>, q')"
   assumes "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}"
@@ -798,7 +818,7 @@ next
     using s'_ss_w_Aiminus1 by (simp add: LTS.path_with_word.path_with_word_step) 
 qed
 
-lemma lemma_3_2_a'_Aux_3:
+lemma count_zero_remove_path_with_word_transition_star_states:
  (* This proof is a bit messy. *)
   assumes "(p, w, ss ,q) \<in> LTS.transition_star_states Ai"
   assumes "0 = count (transitions_of' (p, w, ss, q)) (p1, \<gamma>, q')"
@@ -831,7 +851,7 @@ next
       using ss_hd_tl "2.hyps"(2) using LTS.transition_star_states.cases
       by (metis list.sel(1))
     ultimately have "(hd ss, w, ss, q) \<in> LTS.transition_star_states Aiminus1"
-      using ss_hd_tl using "2.IH" "2.prems"(2) not_found assms(3) p_is_p' count_transitions_of'_tails by (metis) 
+      using ss_hd_tl using "2.IH" "2.prems"(2) not_found assms(3) p_is_p' LTS.count_transitions_of'_tails by (metis) 
     from this t_Aiminus1 have ?case
       using LTS.transition_star_states.intros(2)[of p \<gamma>' "hd ss" Aiminus1 w ss q] using p_is_p' by auto
   }
@@ -845,13 +865,13 @@ next
     by auto
 qed
 
-lemma lemma_3_2_a'_Aux_4:
+lemma count_zero_remove_transition_star_states_transition_star:
  (* This proof is a bit messy. *)
   assumes "(p, w, ss ,q) \<in> LTS.transition_star_states Ai"
   assumes "0 = count (transitions_of' (p, w, ss, q)) (p1, \<gamma>, q')"
   assumes "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}"
   shows "(p, w, q) \<in> LTS.transition_star Aiminus1"
-  using assms lemma_3_2_a'_Aux_3 by (metis LTS.transition_star_states_transition_star) 
+  using assms count_zero_remove_path_with_word_transition_star_states by (metis LTS.transition_star_states_transition_star)
 
 lemma split_at_first_t:
   assumes "(p, w, ss, q) \<in> LTS.transition_star_states Ai"
@@ -949,7 +969,7 @@ next
     by (meson LTS.transition_star_states.transition_star_states_step in_mono)
 qed
 
-lemma count_combine_transition_star_states:
+lemma count_combine_transition_star_states_append:
   assumes "ss = u_ss @ v_ss \<and> w = u @ [\<gamma>] @ v"
   assumes "t = (p1, \<gamma>, q')"
   assumes "(p, u, u_ss, p1) \<in> LTS.transition_star_states A"
@@ -971,17 +991,17 @@ proof -
   have one: "(if p1 = last u_ss \<and> q' = hd v_ss then 1 else 0) = 1"
     using p1_u_ss q'_v_ss by auto
 
-  from count_append_transition_star_states_\<gamma>[of u_ss u v_ss p q \<gamma> q' v q p1 ] show ?thesis
+  from count_append_transition_star_states_\<gamma>_length[of u_ss u v_ss p q \<gamma> q' v q p1 ] show ?thesis
     using assms(1) assms(2) assms(3) by (auto simp add: assms(3) one u_ss_l v_ss_non_empt)
 qed
 
-lemma count_combine_transition_star_states_BETTER:
+lemma count_combine_transition_star_states:
   assumes "t = (p1, \<gamma>, q')"
   assumes "(p, u, u_ss, p1) \<in> LTS.transition_star_states A"
   assumes "(q', v, v_ss, q) \<in> LTS.transition_star_states B"
   shows "count (transitions_of' (((p, u, u_ss, p1),\<gamma>) @@\<^sup>\<gamma> (q', v, v_ss, q))) t = 
         count (transitions_of' (p, u, u_ss, p1)) t + 1 + count (transitions_of' (q', v, v_ss, q)) t"
-  by (metis append_transition_star_states_\<gamma>.simps assms count_combine_transition_star_states)
+  by (metis append_transition_star_states_\<gamma>.simps assms count_combine_transition_star_states_append)
 
 
 lemma transition_list_reversed_simp:
@@ -1017,10 +1037,9 @@ lemma path_with_word_mono':
   assumes "(ss, w) \<in> LTS.path_with_word A1"
   assumes "A1 \<subseteq> A2"
   shows "(ss, w) \<in> LTS.path_with_word A2"
-  by (meson LTS.askdjfklasjflksa LTS.askdjfklasjflksa2 assms(1) assms(2) transition_star_states_mono)
+  by (meson LTS.transition_star_states_path_with_word LTS.path_with_word_transition_star_states assms(1) assms(2) transition_star_states_mono)
 
-
-lemma LTS_path_with_word_mono'':
+lemma LTS_path_with_word_mono:
   "mono LTS.path_with_word"
   by (smt (verit, ccfv_SIG) LTS.path_with_word_def case_prodE mem_Collect_eq monoI subsetI path_with_word_mono')
 
@@ -1063,7 +1082,7 @@ definition remove_\<epsilon> :: "'label option list \<Rightarrow> 'label list" w
 definition \<epsilon>_exp :: "'label option list \<Rightarrow> 'label list \<Rightarrow> bool" where
   "\<epsilon>_exp w' w \<longleftrightarrow> map the (removeAll \<epsilon> w') = w"
 
-lemma epsilon_lemma:
+lemma transition_star_transition_star_\<epsilon>:
   assumes "(p, w, q) \<in> transition_star"
   shows "(p, map the (removeAll \<epsilon> w), q) \<in> transition_star_\<epsilon>"
 using assms proof (induction rule: transition_star.induct)
@@ -1107,11 +1126,11 @@ lemma epsilon_lemma3:
 proof
   assume "(p, w, q) \<in> transition_star_\<epsilon>"
   then show "\<exists>w'. \<epsilon>_exp w' w \<and> (p, w', q) \<in> transition_star"
-    using epsilon_lemma2 epsilon_lemma2 epsilon_lemma by auto
+    using epsilon_lemma2 epsilon_lemma2 transition_star_transition_star_\<epsilon> by auto
 next
   assume "\<exists>w'. \<epsilon>_exp w' w \<and> (p, w', q) \<in> transition_star"
   then show "(p, w, q) \<in> transition_star_\<epsilon>"
-    using epsilon_lemma2 epsilon_lemma2 epsilon_lemma \<epsilon>_exp_def by auto
+    using epsilon_lemma2 epsilon_lemma2 transition_star_transition_star_\<epsilon> \<epsilon>_exp_def by auto
 qed
 
 lemma \<epsilon>_exp_split':
@@ -1160,7 +1179,7 @@ next
     by (simp add: LTS_\<epsilon>.remove_\<epsilon>_def)
 qed
 
-lemma ffffffff:
+lemma remove_\<epsilon>_Cons_tl:
   assumes "remove_\<epsilon> w = remove_\<epsilon> (Some \<gamma>' # tl w)"
   shows "\<gamma>' # remove_\<epsilon> (tl w) = remove_\<epsilon> w"
   using assms unfolding remove_\<epsilon>_def by auto
@@ -1169,9 +1188,9 @@ lemma ffffffff:
 lemma transition_star_states_transition_star_\<epsilon>:
   assumes "(p, w, ss, q) \<in> transition_star_states"
   shows "(p, LTS_\<epsilon>.remove_\<epsilon> w, q) \<in> transition_star_\<epsilon>"
-  by (metis LTS_\<epsilon>.epsilon_lemma assms remove_\<epsilon>_def transition_star_states_transition_star)
+  by (metis LTS_\<epsilon>.transition_star_transition_star_\<epsilon> assms remove_\<epsilon>_def transition_star_states_transition_star)
 
-lemma no_edge_to_Ctr_Loc_avoid_Ctr_Loc_\<epsilon>':
+lemma no_edge_to_source_\<epsilon>:
   assumes "(p, [\<gamma>], qq) \<in> transition_star_\<epsilon>"
   shows "qq \<notin> sources"
 proof -
@@ -1180,10 +1199,10 @@ proof -
   then obtain w where "LTS_\<epsilon>.\<epsilon>_exp w [\<gamma>] \<and> (p, w, qq) \<in> transition_star \<and> w \<noteq> []"
     by blast
   then show ?thesis
-    using LTS.no_edge_to_Ctr_Loc_avoid_Ctr_Loc'[of p w qq] assms by auto
+    using LTS.no_end_in_source[of p w qq] assms by auto
 qed
 
-lemma lemma_3_4'_Aux_Aux:
+lemma transition_star_not_to_source_\<epsilon>:
   assumes "(p''', w, q) \<in> transition_star_\<epsilon>"
   assumes "p''' \<noteq> q"
   assumes "q' \<in> sources"
@@ -1196,11 +1215,11 @@ proof (induction rule: LTS_\<epsilon>.transition_star_\<epsilon>.induct[OF assms
 next
   case (2 p \<gamma> q' w q)
   then show ?case
-    using USEFUL2 by metis 
+    using sources_def2 by metis 
 next
   case (3 p q' w q)
   then show ?case
-    using USEFUL2 by metis 
+    using sources_def2 by metis 
 qed
 
 (* I doubt a bit that this definition is useful *)
