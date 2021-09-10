@@ -143,7 +143,7 @@ datatype ('p,'x,'e) righthand =
   Eql "('x,'e) identifier" "('x,'e) identifier" ("_ \<^bold>= _" [61, 61] 61)
   | Neql "('x,'e) identifier" "('x,'e) identifier" ("_ \<^bold>\<noteq> _" [61, 61] 61)
   | PosRh 'p "('x,'e) identifier list"
-  | NegRh 'p "('x,'e) identifier list"
+  | NegRh 'p "('x,'e) identifier list" ("\<^bold>\<not> _ _" [61, 61] 61)
 
 datatype ('p,'x,'e) clause = Cls 'p "('x,'e) identifier list" "('p,'x,'e) righthand list" (* Why not righthand set? *)
 
@@ -163,7 +163,7 @@ fun meaning_rh :: "('p,'x,'e) righthand \<Rightarrow> ('p,'e) pred_val \<Rightar
   "meaning_rh (a \<^bold>= a') \<rho> \<sigma> \<longleftrightarrow> eval_id \<sigma> a = eval_id  \<sigma> a'"
 | "meaning_rh (a \<^bold>\<noteq> a') \<rho> \<sigma> \<longleftrightarrow> eval_id \<sigma> a \<noteq> eval_id \<sigma> a'"
 | "meaning_rh (PosRh p ids) \<rho> \<sigma> \<longleftrightarrow> map (eval_id \<sigma>) ids \<in> \<rho> p"
-| "meaning_rh (NegRh p ids) \<rho> \<sigma> \<longleftrightarrow> \<not> map (eval_id \<sigma>) ids \<in> \<rho> p"
+| "meaning_rh (\<^bold>\<not> p ids) \<rho> \<sigma> \<longleftrightarrow> \<not> map (eval_id \<sigma>) ids \<in> \<rho> p"
 
 fun meaning_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" where
   "meaning_lh (p,ids) \<rho> \<sigma> \<longleftrightarrow> map (eval_id \<sigma>) ids \<in> \<rho> p"
@@ -189,7 +189,7 @@ fun meaning_query :: "('p,'x,'e) query \<Rightarrow> ('p,'e) pred_val \<Rightarr
   "meaning_query (p,ids) \<rho> \<sigma> \<longleftrightarrow> map (eval_id \<sigma>) ids \<in> \<rho> p"
 
 fun solves_query :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) query \<Rightarrow> bool" where
-  "solves_query \<rho> (p,ids) \<longleftrightarrow> (\<forall>\<sigma>. meaning_query (p,ids) \<rho> \<sigma>)" (* Is this correct?!?!?!?! *)
+  "solves_query \<rho> (p,ids) \<longleftrightarrow> (\<forall>\<sigma>. meaning_query (p,ids) \<rho> \<sigma>)"
 
 
 section \<open>Substitutions (not in the book?)\<close>
@@ -204,7 +204,7 @@ fun subst_rh :: "('x,'e) subst \<Rightarrow> ('p,'x,'e) righthand \<Rightarrow> 
   "subst_rh \<sigma> (a \<^bold>= a') = (subst_id \<sigma> a \<^bold>= subst_id \<sigma> a')"
 | "subst_rh \<sigma> (a \<^bold>\<noteq> a') = (subst_id \<sigma> a \<^bold>\<noteq> subst_id \<sigma> a')"
 | "subst_rh \<sigma> (PosRh p ids) = (PosRh p (map (subst_id \<sigma>) ids))"
-| "subst_rh \<sigma> (NegRh p ids) = (NegRh p (map (subst_id \<sigma>) ids))"
+| "subst_rh \<sigma> (\<^bold>\<not> p ids) = (\<^bold>\<not> p (map (subst_id \<sigma>) ids))"
 
 fun subst_cls :: "('x,'e) subst \<Rightarrow> ('p,'x,'e) clause \<Rightarrow> ('p,'x,'e) clause" where
   "subst_cls \<sigma> (Cls p ids rhs) = Cls p (map (subst_id \<sigma>) ids) (map (subst_rh \<sigma>) rhs)"
@@ -338,7 +338,7 @@ datatype ('n,'v) RD_elem =
   | Questionmark
 
 datatype RD_var =
-   the_\<uu>
+   the_\<u>
    | the_\<v>
    | the_\<w>
 
@@ -372,8 +372,8 @@ abbreviation VAR_Query :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) 
 abbreviation "RD1 == PosRh the_RD1"
 abbreviation "VAR == PosRh the_VAR"
 
-abbreviation \<uu> :: "(RD_var, 'a) identifier" where
-  "\<uu> == DLVar the_\<uu>"
+abbreviation \<u> :: "(RD_var, 'a) identifier" where
+  "\<u> == DLVar the_\<u>"
 
 abbreviation \<v> :: "(RD_var, 'a) identifier" where
   "\<v> == DLVar the_\<v>"
@@ -384,35 +384,35 @@ abbreviation \<w> :: "(RD_var, 'a) identifier" where
 fun ana_edge :: "('n, 'v) edge \<Rightarrow> (RD_pred, RD_var, ('n,'v) RD_elem) clause set" where
   "ana_edge (q\<^sub>o, x ::= a, q\<^sub>s) =
      {
-        RD1\<langle>[Encode_Node q\<^sub>s, \<uu>, \<v>, \<w>]\<rangle> :-
+        RD1\<langle>[Encode_Node q\<^sub>s, \<u>, \<v>, \<w>]\<rangle> :-
           [
-            RD1[Encode_Node q\<^sub>o, \<uu>, \<v>, \<w>],                                                     
-            \<uu> \<^bold>\<noteq> (Encode_Var x)
+            RD1[Encode_Node q\<^sub>o, \<u>, \<v>, \<w>],
+            \<u> \<^bold>\<noteq> (Encode_Var x)
           ].
         ,
         RD1\<langle>[Encode_Node q\<^sub>s, Encode_Var x, Encode_Node q\<^sub>o, Encode_Node q\<^sub>s]\<rangle> :- [].
      }"
 | "ana_edge (q\<^sub>o, Bool b, q\<^sub>s) =
      {
-       RD1\<langle>[Encode_Node q\<^sub>s, \<uu>, \<v>, \<w>]\<rangle> :-
+       RD1\<langle>[Encode_Node q\<^sub>s, \<u>, \<v>, \<w>]\<rangle> :-
          [
-           RD1[Encode_Node q\<^sub>o, \<uu>, \<v>, \<w>]
+           RD1[Encode_Node q\<^sub>o, \<u>, \<v>, \<w>]
          ].
      }"
 | "ana_edge (q\<^sub>o, Skip, q\<^sub>s) =
      {
-       RD1\<langle>[Encode_Node q\<^sub>s, \<uu>, \<v>, \<w>]\<rangle> :-
+       RD1\<langle>[Encode_Node q\<^sub>s, \<u>, \<v>, \<w>]\<rangle> :-
          [
-           RD1[Encode_Node q\<^sub>o, \<uu>, \<v>, \<w>]
+           RD1[Encode_Node q\<^sub>o, \<u>, \<v>, \<w>]
          ].
      }"
 
 definition ana_entry_node :: "(RD_pred, RD_var, ('n,'v) RD_elem) clause set" where
   "ana_entry_node = 
      {
-       RD1\<langle>[Encode_Node Start, \<uu>, DLElement Questionmark, Encode_Node Start]\<rangle> :-
+       RD1\<langle>[Encode_Node Start, \<u>, DLElement Questionmark, Encode_Node Start]\<rangle> :-
          [
-           VAR[\<uu>]
+           VAR[\<u>]
          ].
      }"
 
@@ -510,24 +510,24 @@ proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   then have x_sat: "[RD_Var x] \<in> \<rho> the_VAR"
     by auto
 
-  have "RD1\<langle>[Encode_Node Start, \<uu>, DLElement Questionmark, Encode_Node Start]\<rangle> :-
+  have "RD1\<langle>[Encode_Node Start, \<u>, DLElement Questionmark, Encode_Node Start]\<rangle> :-
          [
-           VAR[\<uu>]
+           VAR[\<u>]
          ]. \<in> ana_pg pg"
     unfolding ana_pg_def ana_entry_node_def by auto
-  then have "(solves_cls \<rho> (RD1\<langle>[Encode_Node Start, \<uu>, DLElement Questionmark, Encode_Node Start]\<rangle> :-
+  then have "(solves_cls \<rho> (RD1\<langle>[Encode_Node Start, \<u>, DLElement Questionmark, Encode_Node Start]\<rangle> :-
          [
-           VAR[\<uu>]
+           VAR[\<u>]
          ].))"
     using assms(2) unfolding solves_program_def by auto 
-   then have "\<forall>y. meaning_cls (RD1\<langle>[Encode_Node Start, \<uu>, DLElement Questionmark, Encode_Node Start]\<rangle> :-
+   then have "\<forall>y. meaning_cls (RD1\<langle>[Encode_Node Start, \<u>, DLElement Questionmark, Encode_Node Start]\<rangle> :-
          [
-           VAR[\<uu>]
+           VAR[\<u>]
          ].) \<rho> y"
      unfolding solves_cls_def by metis
-   then have "meaning_cls (RD1\<langle>[Encode_Node Start, \<uu>, DLElement Questionmark, Encode_Node Start]\<rangle> :-
+   then have "meaning_cls (RD1\<langle>[Encode_Node Start, \<u>, DLElement Questionmark, Encode_Node Start]\<rangle> :-
          [
-           VAR[\<uu>]
+           VAR[\<u>]
          ].) \<rho> (\<lambda>v. RD_Var x)"
      by presburger
    then have "[RD_Var x] \<in> \<rho> the_VAR \<longrightarrow> [RD_Node Start, RD_Var x, Questionmark, RD_Node Start] \<in> \<rho> the_RD1"
@@ -581,7 +581,7 @@ next
     qed
     then have ind: "solves_query_RD \<rho> (RD1\<langle>[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
       by (simp add: get_end_def)
-    define \<sigma> where "\<sigma> = undefined(the_\<uu> := Encode_Var x, the_\<v> := Encode_Node_Q q1, the_\<w> := Encode_Node q2)"
+    define \<sigma> where "\<sigma> = undefined(the_\<u> := Encode_Var x, the_\<v> := Encode_Node_Q q1, the_\<w> := Encode_Node q2)"
     show ?thesis
     proof (cases l)
       case (Asg y e)
@@ -591,22 +591,22 @@ next
         by auto
       have "(s, y ::= e, s') \<in> pg"
         using "2.hyps"(2) Asg by auto
-      then have "RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
+      then have "RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :-
           [
-            RD1[Encode_Node s, \<uu>, \<v>, \<w>],
-            \<uu> \<^bold>\<noteq> (Encode_Var y)
+            RD1[Encode_Node s, \<u>, \<v>, \<w>],
+            \<u> \<^bold>\<noteq> (Encode_Var y)
           ]. \<in> ana_pg pg"
         unfolding ana_pg_def by force
-      from this False have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
+      from this False have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :-
           [
-            RD1[Encode_Node s, \<uu>, \<v>, \<w>],
-            \<uu> \<^bold>\<noteq> (Encode_Var y)
+            RD1[Encode_Node s, \<u>, \<v>, \<w>],
+            \<u> \<^bold>\<noteq> (Encode_Var y)
           ].)"
         by (meson "2.prems"(2) UnCI solves_program_def)
-      moreover have "subst_cls \<sigma> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
+      moreover have "subst_cls \<sigma> (RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :-
           [
-            RD1[Encode_Node s, \<uu>, \<v>, \<w>],
-            \<uu> \<^bold>\<noteq> (Encode_Var y)
+            RD1[Encode_Node s, \<u>, \<v>, \<w>],
+            \<u> \<^bold>\<noteq> (Encode_Var y)
           ].) = RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1 [Encode_Node s,  Encode_Var x, Encode_Node_Q q1, Encode_Node q2], Encode_Var x \<^bold>\<noteq> Encode_Var y] ."
         unfolding \<sigma>_def by auto
       ultimately
@@ -624,14 +624,14 @@ next
       case (Bool b)
       have "(s, Bool b, s') \<in> pg"
         using "2.hyps"(2) Bool by auto
-      then have "RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
+      then have "RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :-
          [
-           RD1[Encode_Node s, \<uu>, \<v>, \<w>]
+           RD1[Encode_Node s, \<u>, \<v>, \<w>]
          ]. \<in> ana_pg pg"
         unfolding ana_pg_def by force
-      then have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :- [RD1[Encode_Node s, \<uu>, \<v>, \<w>]].)"
+      then have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1[Encode_Node s, \<u>, \<v>, \<w>]].)"
         by (meson "2.prems"(2) UnCI solves_program_def)
-      moreover have "subst_cls \<sigma> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :- [RD1[Encode_Node s, \<uu>, \<v>, \<w>]].) =
+      moreover have "subst_cls \<sigma> (RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1[Encode_Node s, \<u>, \<v>, \<w>]].) =
                      RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]]."
         unfolding \<sigma>_def by auto
       ultimately have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]].)"
@@ -645,15 +645,15 @@ next
       case Skip
       have "(s, Skip, s') \<in> pg"
         using "2.hyps"(2) Skip by auto
-      then have "RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :-
+      then have "RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :-
          [
-           RD1[Encode_Node s, \<uu>, \<v>, \<w>]
+           RD1[Encode_Node s, \<u>, \<v>, \<w>]
          ]. \<in> ana_pg pg"
         unfolding ana_pg_def by force
-      then have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<uu>, \<v>, \<w>]] .)"
+      then have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>]] .)"
         by (meson "2.prems"(2) UnCI solves_program_def)
       moreover
-      have "subst_cls \<sigma> (RD1\<langle>[Encode_Node s', \<uu>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<uu>, \<v>, \<w>]] .) =
+      have "subst_cls \<sigma> (RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>]] .) =
             RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>  :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]]."
         unfolding \<sigma>_def by auto
       ultimately 
@@ -671,3 +671,172 @@ lemma RD_sound:
   assumes "solves_program \<rho> (var_contraints \<union> ana_pg pg)"
   shows "summarizes_dl \<rho> pg"
   using assms RD_sound' unfolding summarizes_dl_def by fastforce 
+
+
+section \<open>Bitvector framework\<close>
+
+datatype BV_pred =
+   the_BV
+   | the_kill
+   | the_gen
+
+datatype BV_var =
+   the_\<uu>
+
+abbreviation "BV == PosRh the_BV"
+abbreviation "kill == PosRh the_kill"
+abbreviation "gen == PosRh the_gen"
+
+abbreviation "negkill" ("\<^bold>\<not>kill _" [61] 61) where
+  "\<^bold>\<not>kill ts \<equiv> NegRh the_kill ts"
+
+abbreviation BV_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("BV\<langle>_\<rangle> :- _ .") where 
+   "BV\<langle>args\<rangle> :- ls. \<equiv> Cls the_BV args ls"
+
+abbreviation kill_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("kill\<langle>_\<rangle> :- _ .") where 
+   "kill\<langle>args\<rangle> :- ls. \<equiv> Cls the_kill args ls"
+
+abbreviation genn_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("gen\<langle>_\<rangle> :- _ .") where 
+   "gen\<langle>args\<rangle> :- ls. \<equiv> Cls the_gen args ls"
+
+abbreviation BV_Query :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) query" ("BV\<langle>_\<rangle>.") where 
+   "BV\<langle>args\<rangle>. \<equiv> (the_BV, args)"
+
+datatype ('n,'v,'elem) BV_elem =
+  BV_Node "'n node"
+  | BV_Elem 'elem
+  | BV_Action "'v action"
+
+
+abbreviation \<uu> :: "(BV_var, 'a) identifier" where
+  "\<uu> == DLVar the_\<uu>"
+
+abbreviation Encode_Node_BV :: "'n node \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) identifier" where
+  "Encode_Node_BV n == DLElement (BV_Node n)"
+
+abbreviation Encode_Elem_BV :: "'elem \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) identifier" where
+  "Encode_Elem_BV e == DLElement (BV_Elem e)"
+
+abbreviation Encode_Action_BV :: "'v action \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) identifier" where
+  "Encode_Action_BV \<alpha> == DLElement (BV_Action \<alpha>)"
+
+abbreviation solves_query_BV :: "('p,'e) pred_val \<Rightarrow> ('p, BV_var,'e) query \<Rightarrow> bool" where
+  "solves_query_BV == solves_query"
+
+locale analysis_BV =
+  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes d_init :: "'d set"
+begin
+
+definition "S_hat" :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" where
+  "S_hat e R = (R - kill_set e) \<union> gen_set e"
+
+lemma S_hat_mono:
+  assumes "d1 \<subseteq> d2"
+  shows "S_hat e d1 \<subseteq> S_hat e d2"
+  using assms unfolding S_hat_def by auto
+
+fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" where
+  "S_hat_edge_list [] R = R" |
+  "S_hat_edge_list (e # \<pi>) R = S_hat_edge_list \<pi> (S_hat e R)"
+
+lemma S_hat_edge_list_def2:
+  "S_hat_edge_list \<pi> R = foldl (\<lambda>a b. S_hat b a) R \<pi>"
+proof (induction \<pi> arbitrary: R)
+  case Nil
+  then show ?case
+    by simp
+next
+  case (Cons a \<pi>)
+  then show ?case
+    by simp
+qed
+
+lemma S_hat_edge_list_append[simp]:
+  "S_hat_edge_list (xs @ ys) R = S_hat_edge_list ys (S_hat_edge_list xs R)"
+  unfolding S_hat_edge_list_def2 foldl_append by auto
+
+lemma S_hat_edge_list_mono:
+  assumes "d1 \<subseteq> d2"
+  shows "S_hat_edge_list \<pi> d1 \<subseteq> S_hat_edge_list \<pi> d2"
+proof(induction \<pi> rule: List.rev_induct)
+  case Nil
+  then show ?case
+    using assms by auto
+next
+  case (snoc x xs)
+  then show ?case
+    using assms by (simp add: S_hat_mono)
+qed
+
+definition S_hat_path :: "('n node list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" where
+  "S_hat_path \<pi> = S_hat_edge_list (LTS.transition_list \<pi>)"
+
+lemma S_hat_path_mono:
+  assumes "d1 \<subseteq> d2"
+  shows "S_hat_path \<pi> d1 \<subseteq> S_hat_path \<pi> d2"
+  unfolding S_hat_path_def using assms S_hat_edge_list_mono by auto
+
+fun ana_kill_BV :: "(('n, 'v) edge * 'd) \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
+  "ana_kill_BV ((q\<^sub>o, \<alpha>, q\<^sub>s), d) =
+   (
+   if d \<in> kill_set (q\<^sub>o, \<alpha>, q\<^sub>s) then
+     {kill\<langle>[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]\<rangle> :- [].}
+   else
+     {}
+   )"
+
+fun ana_gen_BV :: "(('n, 'v) edge \<times> 'd) \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
+  "ana_gen_BV ((q\<^sub>o, \<alpha>, q\<^sub>s), d) =
+   (
+   if d \<in> gen_set (q\<^sub>o, \<alpha>, q\<^sub>s) then
+     {gen\<langle>[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]\<rangle> :- [].}
+   else
+     {}
+   )"
+
+definition ana_init_BV :: "'d \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
+  "ana_init_BV d = 
+     {
+       BV\<langle>[Encode_Node_BV Start, Encode_Elem_BV d]\<rangle> :- [].
+     }"
+
+fun ana_edge_BV :: "('n, 'v) edge \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
+  "ana_edge_BV (q\<^sub>o, \<alpha>, q\<^sub>s) =
+     {
+        BV\<langle>[Encode_Node_BV q\<^sub>s, \<uu>]\<rangle> :-
+          [
+            BV[Encode_Node_BV q\<^sub>o, \<uu>],
+            \<^bold>\<not>kill[Encode_Node_BV q\<^sub>s, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>o, \<uu>]
+          ].
+        ,
+        BV\<langle>[Encode_Node_BV q\<^sub>s, \<uu>]\<rangle> :- [gen[Encode_Node_BV q\<^sub>s, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>o, \<uu>]].
+     }"
+
+definition ana_pg_BV :: "('n, 'v) program_graph \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
+  "ana_pg_BV pg = \<Union>(ana_edge_BV ` pg) 
+                  \<union> \<Union>(ana_init_BV ` d_init) 
+                  \<union> \<Union>(ana_kill_BV ` (pg \<times> d_init))
+                  \<union> \<Union>(ana_gen_BV ` (pg \<times> d_init))"
+
+definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> ('n, 'v) program_graph \<Rightarrow> bool" where
+  "summarizes_dl_BV \<rho> pg \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> get_start \<pi> = Start \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
+     solves_query_BV \<rho> (BV\<langle>[Encode_Node_BV (get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
+
+lemma sound_BV': 
+  assumes "(ss,w) \<in> LTS.path_with_word pg"
+  assumes "solves_program \<rho> (ana_pg_BV pg)"
+  assumes "get_start (ss,w) = Start"
+  assumes "d \<in> S_hat_path (ss,w) d_init"
+  shows "solves_query_BV \<rho> BV\<langle>[Encode_Node_BV (get_end \<pi>), Encode_Elem_BV d]\<rangle>."
+  sorry (* Similar to  *)
+
+lemma sound_BV:
+  assumes "solves_program \<rho> (ana_pg_BV pg)"
+  shows "summarizes_dl_BV \<rho> pg"
+  using sound_BV' assms unfolding summarizes_dl_BV_def by fastforce
+
+end
+
+end
