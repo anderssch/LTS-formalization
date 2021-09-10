@@ -816,7 +816,7 @@ fun ana_edge_BV :: "('n, 'v) edge \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) B
 
 definition ana_pg_BV :: "('n, 'v) program_graph \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
   "ana_pg_BV pg = \<Union>(ana_edge_BV ` pg) 
-                  \<union> \<Union>(ana_init_BV ` d_init) 
+                  \<union> \<Union>(ana_init_BV ` d_init)
                   \<union> \<Union>(ana_kill_BV ` (pg \<times> d_init))
                   \<union> \<Union>(ana_gen_BV ` (pg \<times> d_init))"
 
@@ -830,7 +830,23 @@ lemma sound_BV':
   assumes "get_start (ss,w) = Start"
   assumes "d \<in> S_hat_path (ss,w) d_init"
   shows "solves_query_BV \<rho> BV\<langle>[Encode_Node_BV (get_end \<pi>), Encode_Elem_BV d]\<rangle>."
-  sorry (* Similar to  *)
+  using assms 
+proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
+  case (1 s)
+  then have "S_hat_path ([s], []) d_init = d_init"
+    unfolding S_hat_path_def by auto
+  then have "d \<in> d_init"
+    using 1(4) by auto
+  moreover
+  from 1(2) have "\<forall>d \<in> d_init. solves_cls \<rho> (BV\<langle>[Encode_Node_BV Start, Encode_Elem_BV d]\<rangle> :- [].)"
+    sorry
+  ultimately have "solves_cls \<rho> (BV\<langle>[Encode_Node_BV Start, Encode_Elem_BV d]\<rangle> :- [].)"
+    by auto
+  then show ?case sorry
+next
+  case (2 ss s w l s')
+  then show ?case sorry
+qed
 
 lemma sound_BV:
   assumes "solves_program \<rho> (ana_pg_BV pg)"
