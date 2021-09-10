@@ -434,12 +434,14 @@ definition var_contraints :: "(RD_pred, RD_var, ('n,'v) RD_elem) clause set" whe
 
 type_synonym ('n,'v) quadruple = "'n node *'v * 'n node option * 'n node"
 
-abbreviation solves_query_RD :: "('p,'e) pred_val \<Rightarrow> ('p, RD_var,'e) query \<Rightarrow> bool" where
-  "solves_query_RD == solves_query"
+(*
+abbreviation solves_query :: "('p,'e) pred_val \<Rightarrow> ('p, RD_var,'e) query \<Rightarrow> bool" where
+  "solves_query == solves_query"
+*)
 
 definition summarizes_dl :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
   "summarizes_dl \<rho> pg \<longleftrightarrow> (\<forall>\<pi> x q1 q2. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> get_start \<pi> = Start \<longrightarrow> (x,q1,q2) \<in> def_path \<pi> \<longrightarrow> 
-     solves_query_RD \<rho> (RD1\<langle>[Encode_Node (get_end \<pi>), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.))"
+     solves_query \<rho> (RD1\<langle>[Encode_Node (get_end \<pi>), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.))"
 (* The warning is because summarizes_dl does not fix the type of datalog variables...
    The reason is that the query does not contain variables, so the system cannot infer the type of datalog variables.
    It can be done by adding a type annotation to solves_query.
@@ -497,7 +499,7 @@ lemma RD_sound':
   assumes "solves_program \<rho> (var_contraints \<union> ana_pg pg)"
   assumes "get_start (ss,w) = Start"
   assumes "(x,q1,q2) \<in> def_path (ss,w)"
-  shows "solves_query_RD \<rho> RD1\<langle>[Encode_Node (get_end (ss,w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+  shows "solves_query \<rho> RD1\<langle>[Encode_Node (get_end (ss,w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
   using assms 
 proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   case (1 s)
@@ -561,7 +563,7 @@ next
     case False
     then have x_is_def: "(x, q1, q2) \<in> def_path (ss @ [s], w)" using 2(7)
       using not_last_def_transition len by force
-    then have "solves_query_RD \<rho> (RD1\<langle>[Encode_Node (get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
+    then have "solves_query \<rho> (RD1\<langle>[Encode_Node (get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
     proof -
       have "(ss @ [s], w) \<in> LTS.path_with_word pg"
         using 2(1) by auto
@@ -576,10 +578,10 @@ next
       have "(x, q1, q2) \<in> def_path (ss @ [s], w)"
         using x_is_def by auto
       ultimately
-      show "solves_query_RD \<rho> (the_RD1, [Encode_Node (get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
+      show "solves_query \<rho> (the_RD1, [Encode_Node (get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
         using 2(3) by auto
     qed
-    then have ind: "solves_query_RD \<rho> (RD1\<langle>[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
+    then have ind: "solves_query \<rho> (RD1\<langle>[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
       by (simp add: get_end_def)
     define \<sigma> where "\<sigma> = undefined(the_\<u> := Encode_Var x, the_\<v> := Encode_Node_Q q1, the_\<w> := Encode_Node q2)"
     show ?thesis
@@ -616,7 +618,7 @@ next
         using xy' resolution_last_rh by (metis (no_types, lifting) Cons_eq_append_conv) 
       then have "solves_cls \<rho> RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- []."
         using ind using resolution_last_rh_query[of \<rho> the_RD1 ] by (metis append.left_neutral) 
-      then have "solves_query_RD \<rho> (RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
+      then have "solves_query \<rho> (RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
         using solves_fact_query by metis
       then show ?thesis
         by (simp add: get_end_def)
@@ -636,7 +638,7 @@ next
         unfolding \<sigma>_def by auto
       ultimately have "solves_cls \<rho> (RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]].)"
         by (metis substitution_rule)
-      then have "solves_query_RD \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
+      then have "solves_query \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
         using ind
         by (meson resolution_only_rh_query)
       then show ?thesis
@@ -659,7 +661,7 @@ next
       ultimately 
       have "solves_cls \<rho> RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>  :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]]."
         by (metis substitution_rule)
-      from resolution_only_rh_query[OF this ind] have "solves_query_RD \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
+      from resolution_only_rh_query[OF this ind] have "solves_query \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
         .
       then show ?thesis
         by (simp add: get_end_def)
@@ -719,9 +721,6 @@ abbreviation Encode_Elem_BV :: "'elem \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_
 
 abbreviation Encode_Action_BV :: "'v action \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) identifier" where
   "Encode_Action_BV \<alpha> == DLElement (BV_Action \<alpha>)"
-
-abbreviation solves_query_BV :: "('p,'e) pred_val \<Rightarrow> ('p, BV_var,'e) query \<Rightarrow> bool" where
-  "solves_query_BV == solves_query"
 
 locale analysis_BV =
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
@@ -822,14 +821,14 @@ definition ana_pg_BV :: "('n, 'v) program_graph \<Rightarrow> (BV_pred, BV_var, 
 
 definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> ('n, 'v) program_graph \<Rightarrow> bool" where
   "summarizes_dl_BV \<rho> pg \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> get_start \<pi> = Start \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
-     solves_query_BV \<rho> (BV\<langle>[Encode_Node_BV (get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
+     solves_query \<rho> (BV\<langle>[Encode_Node_BV (get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
 lemma sound_BV': 
   assumes "(ss,w) \<in> LTS.path_with_word pg"
   assumes "solves_program \<rho> (ana_pg_BV pg)"
   assumes "get_start (ss,w) = Start"
   assumes "d \<in> S_hat_path (ss,w) d_init"
-  shows "solves_query_BV \<rho> BV\<langle>[Encode_Node_BV (get_end \<pi>), Encode_Elem_BV d]\<rangle>."
+  shows "solves_query \<rho> BV\<langle>[Encode_Node_BV (get_end \<pi>), Encode_Elem_BV d]\<rangle>."
   using assms 
 proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   case (1 s)
