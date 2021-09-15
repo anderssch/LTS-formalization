@@ -215,6 +215,8 @@ definition compose :: "('x,'e) subst \<Rightarrow> ('x,'e) var_val \<Rightarrow>
 
 section \<open>Datalog lemmas\<close>
 
+lemma fff: "solves_cls \<rho> (Cls p ids []) \<longleftrightarrow> solves_rh \<rho> (PosRh p ids)"
+  using solves_cls_def by force
 
 lemma solves_fact_query:
   assumes "solves_cls \<rho> (Cls p args [])"
@@ -246,6 +248,13 @@ proof -
   then show "solves_query \<rho> (p, ids)"
     by (meson solves_fact_query)
 qed
+
+lemma resolution_xxx:
+  assumes "solves_cls \<rho> (Cls p ids rhs)"
+  assumes "\<forall>rh \<in> set rhs. solves_rh \<rho> rh"
+  shows "solves_query \<rho> (p, ids)"
+  using assms
+  by (metis (full_types) meaning_cls.simps meaning_lh.simps meaning_query.simps solves_cls_def solves_query.elims(1) solves_rh.elims(2))
 
 lemma substitution_lemma_lh: "meaning_lh (p, ids) \<rho> (compose \<mu> \<sigma>) \<longleftrightarrow> (meaning_lh (p, map (subst_id \<mu>) ids) \<rho> \<sigma>)"
 proof
@@ -679,24 +688,26 @@ section \<open>Bitvector framework\<close>
 
 datatype BV_pred =
    the_BV
-   | the_kill
+   | the_notkill
    | the_gen
 
 datatype BV_var =
    the_\<uu>
 
 abbreviation "BV == PosRh the_BV"
-abbreviation "kill == PosRh the_kill"
+abbreviation "notkill == PosRh the_notkill"
 abbreviation "gen == PosRh the_gen"
 
+(*
 abbreviation "negkill" ("\<^bold>\<not>kill _" [61] 61) where
   "\<^bold>\<not>kill ts \<equiv> NegRh the_kill ts"
+*)
 
 abbreviation BV_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("BV\<langle>_\<rangle> :- _ .") where 
    "BV\<langle>args\<rangle> :- ls. \<equiv> Cls the_BV args ls"
 
-abbreviation kill_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("kill\<langle>_\<rangle> :- _ .") where 
-   "kill\<langle>args\<rangle> :- ls. \<equiv> Cls the_kill args ls"
+abbreviation not_kill_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("notkill\<langle>_\<rangle> :- _ .") where 
+   "notkill\<langle>args\<rangle> :- ls. \<equiv> Cls the_notkill args ls"
 
 abbreviation genn_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("gen\<langle>_\<rangle> :- _ .") where 
    "gen\<langle>args\<rangle> :- ls. \<equiv> Cls the_gen args ls"
@@ -780,8 +791,8 @@ lemma S_hat_path_mono:
 fun ana_kill_BV :: "(('n, 'v) edge * 'd) \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
   "ana_kill_BV ((q\<^sub>o, \<alpha>, q\<^sub>s), d) =
    (
-   if d \<in> kill_set (q\<^sub>o, \<alpha>, q\<^sub>s) then
-     {kill\<langle>[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]\<rangle> :- [].}
+   if d \<notin> kill_set (q\<^sub>o, \<alpha>, q\<^sub>s) then
+     {notkill\<langle>[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]\<rangle> :- [].}
    else
      {}
    )"
@@ -807,44 +818,187 @@ fun ana_edge_BV :: "('n, 'v) edge \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) B
         BV\<langle>[Encode_Node_BV q\<^sub>s, \<uu>]\<rangle> :-
           [
             BV[Encode_Node_BV q\<^sub>o, \<uu>],
-            \<^bold>\<not>kill[Encode_Node_BV q\<^sub>s, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>o, \<uu>]
+            notkill[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, \<uu>]
           ].
         ,
-        BV\<langle>[Encode_Node_BV q\<^sub>s, \<uu>]\<rangle> :- [gen[Encode_Node_BV q\<^sub>s, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>o, \<uu>]].
+        BV\<langle>[Encode_Node_BV q\<^sub>s, \<uu>]\<rangle> :- [gen[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, \<uu>]].
      }"
 
 definition ana_pg_BV :: "('n, 'v) program_graph \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
   "ana_pg_BV pg = \<Union>(ana_edge_BV ` pg) 
                   \<union> \<Union>(ana_init_BV ` d_init)
-                  \<union> \<Union>(ana_kill_BV ` (pg \<times> d_init))
-                  \<union> \<Union>(ana_gen_BV ` (pg \<times> d_init))"
+                  \<union> \<Union>(ana_kill_BV ` (pg \<times> UNIV))
+                  \<union> \<Union>(ana_gen_BV ` (pg \<times> UNIV))"
 
 definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> ('n, 'v) program_graph \<Rightarrow> bool" where
   "summarizes_dl_BV \<rho> pg \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> get_start \<pi> = Start \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
      solves_query \<rho> (BV\<langle>[Encode_Node_BV (get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
+
+lemma singleton_path_start_end:
+  assumes "([s], []) \<in> LTS.path_with_word pg"
+  shows "get_start ([s], []) = get_end ([s], [])"
+  using assms
+  by (simp add: get_end_def get_start_def) 
+
+lemma ugugugugug:
+  assumes "length qs = length w"                               
+  shows "S_hat_path (qs @ [qnminus1, qn], w @ [l]) d_init =
+    S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
+proof -
+  have "S_hat_path (qs @ [qnminus1, qn], w @ [l]) d_init = S_hat_edge_list (transition_list (qs @ [qnminus1, qn], w @ [l])) d_init"
+    unfolding S_hat_path_def by auto
+  moreover
+  have "S_hat_edge_list (transition_list (qs @ [qnminus1, qn], w @ [l])) d_init =
+        S_hat_edge_list (transition_list (qs @ [qnminus1], w) @ [(qnminus1, l, qn)]) d_init"
+    using transition_list_reversed_simp[of qs w] assms
+    by auto
+  moreover
+  have "... = S_hat_edge_list [(qnminus1, l, qn)] (S_hat_edge_list (transition_list (qs @ [qnminus1], w)) d_init)"
+    using S_hat_edge_list_append[of "transition_list (qs @ [qnminus1], w)" " [(qnminus1, l, qn)]" d_init]
+    by auto
+  moreover
+  have "... = S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
+    unfolding S_hat_path_def by auto
+  ultimately show ?thesis
+    by blast
+qed
+
+lemma asdjfklsajdfla:
+  assumes "(qs @ [qnminus1], w) \<in> LTS.path_with_word pg"
+  shows "length qs = length w"
+  using assms
+  by (metis LTS.path_with_word_length Suc_eq_plus1 Suc_inject length_Cons length_append list.size(3) list.size(4))
+
 
 lemma sound_BV': 
   assumes "(ss,w) \<in> LTS.path_with_word pg"
   assumes "solves_program \<rho> (ana_pg_BV pg)"
   assumes "get_start (ss,w) = Start"
   assumes "d \<in> S_hat_path (ss,w) d_init"
-  shows "solves_query \<rho> BV\<langle>[Encode_Node_BV (get_end \<pi>), Encode_Elem_BV d]\<rangle>."
+  shows "solves_query \<rho> BV\<langle>[Encode_Node_BV (get_end (ss,w)), Encode_Elem_BV d]\<rangle>."
   using assms 
-proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
+proof (induction arbitrary: d rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   case (1 s)
-  then have "S_hat_path ([s], []) d_init = d_init"
+  from 1(1,3) have start_end: "get_end ([s], []) = Start"
+    using singleton_path_start_end by metis
+
+  from 1 have "S_hat_path ([s], []) d_init = d_init"
     unfolding S_hat_path_def by auto
   then have "d \<in> d_init"
     using 1(4) by auto
   moreover
   from 1(2) have "\<forall>d \<in> d_init. solves_cls \<rho> (BV\<langle>[Encode_Node_BV Start, Encode_Elem_BV d]\<rangle> :- [].)"
-    sorry
+    unfolding ana_pg_BV_def ana_init_BV_def solves_program_def by auto
   ultimately have "solves_cls \<rho> (BV\<langle>[Encode_Node_BV Start, Encode_Elem_BV d]\<rangle> :- [].)"
     by auto
-  then show ?case sorry
+  then show ?case
+    using start_end solves_fact_query by metis
 next
-  case (2 ss s w l s')
-  then show ?case sorry
+  case (2 qs qnminus1 w l qn)
+  have "S_hat_path (qs @ [qnminus1], w) d_init \<subseteq>
+        {d. solves_query \<rho> BV\<langle>[Encode_Node_BV (get_end (qs @ [qnminus1], w)), Encode_Elem_BV d]\<rangle>.}"
+    using 2
+    by (metis (no_types, lifting) get_start_def hd_append2 list.sel(1) mem_Collect_eq prod.sel(1) self_append_conv2 subsetI) 
+  then have f: "S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init) \<subseteq>
+             S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV (get_end (qs @ [qnminus1], w)), Encode_Elem_BV d]\<rangle>.}"
+    by (simp add: S_hat_mono)
+
+  have "length qs = length w"
+    using 2(1) asdjfklsajdfla by metis
+  then have "S_hat_path (qs @ [qnminus1, qn], w @ [l]) d_init = S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
+    using ugugugugug[of qs w] by auto
+  moreover have "... = S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
+    by simp
+  moreover have "... \<subseteq> S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
+    by (metis f get_end_def last_snoc prod.sel(1))
+  ultimately have "S_hat_path (qs @ [qnminus1, qn], w @ [l]) d_init \<subseteq> S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
+    by auto
+  then have "d \<in> S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
+    using 2(7) by auto
+  then have "  d \<in> 
+                 ({d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.} -
+                  kill_set (qnminus1, l, qn))
+             \<or> d \<in> 
+                 gen_set (qnminus1, l, qn)"
+    unfolding S_hat_def by auto
+  then have "solves_query \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
+  proof
+    assume a: "d \<in> {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.} -
+         kill_set (qnminus1, l, qn)"
+    from a have a_1: "solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>."
+      by auto
+    moreover
+    have e_in_pg: "(qnminus1, l, qn) \<in> pg"
+      using "2.hyps"(2) by blast
+
+    have "\<forall>c \<in> ana_edge_BV (qnminus1, l, qn). solves_cls \<rho> c"
+      using 2(5) e_in_pg unfolding ana_pg_BV_def solves_program_def by blast
+    then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, \<uu>]\<rangle> :- [BV[Encode_Node_BV qnminus1,  \<uu>], notkill[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, \<uu>]]."
+      by auto
+    then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- [BV[Encode_Node_BV qnminus1, Encode_Elem_BV d], notkill[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]]."
+      using substitution_rule[of \<rho> _ "\<lambda>u. Encode_Elem_BV d"]
+      by force
+    moreover
+    from a have a_2:  "d \<notin> kill_set (qnminus1, l, qn)"
+      by auto
+    have "\<forall>c\<in>\<Union>(ana_kill_BV ` (pg \<times> UNIV)). solves_cls \<rho> c"
+      using 2(5) unfolding ana_pg_BV_def solves_program_def by auto
+    then have "\<forall>c\<in>ana_kill_BV ((qnminus1, l, qn),d). solves_cls \<rho> c"
+      using e_in_pg by blast
+    then have "solves_cls \<rho> notkill\<langle>[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- []."
+      apply auto
+      using a_2
+      by auto
+    moreover
+    show "solves_query \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
+      apply (subst resolution_xxx[of \<rho> the_BV "[Encode_Node_BV qn, Encode_Elem_BV d]" "[BV[Encode_Node_BV qnminus1, Encode_Elem_BV d], notkill[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]]"])
+      subgoal
+        using calculation(2) apply blast
+        done
+      subgoal
+        apply auto
+        subgoal
+          using a_1
+          apply auto
+          done
+        subgoal
+          using calculation(3)
+          using fff
+          apply auto
+          unfolding solves_cls_def
+          apply auto
+          done
+        done
+      subgoal
+        apply auto
+        done
+      done
+  next
+    assume a: "d \<in> gen_set (qnminus1, l, qn)"
+    have e_in_pg: "(qnminus1, l, qn) \<in> pg"
+      using "2.hyps"(2) by blast
+
+    have "\<forall>c \<in> ana_edge_BV (qnminus1, l, qn). solves_cls \<rho> c"
+      using 2(5) e_in_pg unfolding ana_pg_BV_def solves_program_def by blast
+    then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, \<uu>]\<rangle> :- [gen[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, \<uu>]]."
+      by auto
+    then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- [gen[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]]."
+      using substitution_rule[of \<rho> _ "\<lambda>u. Encode_Elem_BV d" ]
+      by force
+    moreover
+    have "\<forall>c\<in>\<Union>(ana_gen_BV ` (pg \<times> UNIV)). solves_cls \<rho> c"
+      using 2(5) unfolding ana_pg_BV_def solves_program_def by auto
+    then have "\<forall>c\<in>ana_gen_BV ((qnminus1, l, qn),d). solves_cls \<rho> c"
+      using e_in_pg by blast
+    then have "solves_cls \<rho> gen\<langle>[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- []."
+      using a
+      by auto
+    ultimately
+    show "solves_query \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
+      by (meson resolution_only_rh_query solves_fact_query)
+  qed
+  then show ?case
+    by (simp add: get_end_def) 
 qed
 
 lemma sound_BV:
