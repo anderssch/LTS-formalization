@@ -121,7 +121,7 @@ interpretation LTS transition_rel .
 notation step_relp (infix "\<Rightarrow>" 80)
 notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 
-definition accepts :: "(('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> ('ctr_loc , 'label) conf \<Rightarrow> bool" where
+definition accepts :: "(('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
   "accepts ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_states. (Ctr_Loc p,w,q) \<in> LTS.transition_star ts)"
 
 definition accepts_\<epsilon> :: "(('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
@@ -1764,5 +1764,396 @@ next
   then show "c \<in> post_star (language_\<epsilon> A)"
     unfolding p_def w_def by auto
 qed
+
+definition accepts_\<epsilon>_inter :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
+  "accepts_\<epsilon>_inter ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_states. ((Ctr_Loc p, Ctr_Loc p),w,(q,q)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts)"
+
+lemma \<epsilon>_exp_Some_length:
+  assumes "LTS_\<epsilon>.\<epsilon>_exp (Some \<alpha> # w1') w"
+  shows "0 < length w"
+  using assms
+  by (metis LTS_\<epsilon>.\<epsilon>_exp_def length_greater_0_conv list.map(2) neq_Nil_conv option.simps(3) removeAll.simps(2))
+
+lemma \<epsilon>_exp_Some_hd:
+  assumes "LTS_\<epsilon>.\<epsilon>_exp (Some \<alpha> # w1') w"
+  shows "hd w = \<alpha>"
+  using assms
+  by (metis LTS_\<epsilon>.\<epsilon>_exp_def list.sel(1) list.simps(9) option.sel option.simps(3) removeAll.simps(2)) 
+
+lemma exp_empty_empty:
+  assumes "LTS_\<epsilon>.\<epsilon>_exp [] w"
+  shows "w = []"
+  using assms
+  by (metis LTS_\<epsilon>.\<epsilon>_exp_def list.simps(8) removeAll.simps(1))
+
+lemma transition_star_transition_star_\<epsilon>_inter:
+  assumes "LTS_\<epsilon>.\<epsilon>_exp w1 w"
+  assumes  "LTS_\<epsilon>.\<epsilon>_exp w2 w"
+  assumes "(p1, w1, p2) \<in> LTS.transition_star ts1"
+  assumes "(q1, w2, q2) \<in> LTS.transition_star ts2"
+  shows "((p1,q1), w :: 'label list, (p2,q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+  using assms
+proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_induct )
+  case less
+  then show ?case
+  proof (cases "\<exists>\<alpha> w1' w2' \<beta>. w1=Some \<alpha>#w1' \<and> w2=Some \<beta>#w2'")
+    case True
+    from True obtain \<alpha> \<beta> w1' w2' where True'':
+      "w1=Some \<alpha>#w1'"
+      "w2=Some \<beta>#w2'"
+      by auto
+    have "\<alpha> = \<beta>"
+      by (metis True''(1) True''(2) \<epsilon>_exp_Some_hd less.prems(1) less.prems(2))
+    then have True':   
+      "w1=Some \<alpha>#w1'"
+      "w2=Some \<alpha>#w2'"
+      using True'' by auto
+    define w' where "w' = tl w"
+    obtain p' where p'_p: "(p1, Some \<alpha>, p') \<in> ts1 \<and> (p', w1', p2) \<in> LTS.transition_star ts1"
+      using less True'(1) by (metis LTS_\<epsilon>.transition_star_cons_\<epsilon>)
+    obtain q' where q'_p: "(q1, Some \<alpha>, q') \<in> ts2 \<and>(q', w2', q2) \<in> LTS.transition_star ts2"
+      using less True'(2) by (metis LTS_\<epsilon>.transition_star_cons_\<epsilon>) 
+    have ind: "((p', q'), w', p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+    proof -
+      have "length w1' + length w2' < length w1 + length w2"
+        using True'(1) True'(2) by simp
+      moreover
+      have "LTS_\<epsilon>.\<epsilon>_exp w1' w'"
+        by (metis (no_types, hide_lams) LTS_\<epsilon>.\<epsilon>_exp_def less(2) True'(1) list.map(2) list.sel(3) option.simps(3) removeAll.simps(2) w'_def)
+      moreover
+      have "LTS_\<epsilon>.\<epsilon>_exp w2' w'"
+        by (metis (no_types, hide_lams) LTS_\<epsilon>.\<epsilon>_exp_def less(3) True'(2) list.map(2) list.sel(3) option.simps(3) removeAll.simps(2) w'_def)
+      moreover
+      have "(p', w1', p2) \<in> LTS.transition_star ts1"
+        using p'_p by simp
+      moreover
+      have "(q', w2', q2) \<in> LTS.transition_star ts2"
+        using q'_p by simp
+      ultimately
+      show "((p', q'), w', p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+        using less(1)[of w1' w2' w' p' q'] by auto
+    qed
+    moreover
+    have "((p1, q1), Some \<alpha>, (p', q')) \<in> (LTS_\<epsilon>.inter ts1 ts2)"
+      by (simp add: LTS_\<epsilon>.inter_def p'_p q'_p)
+    ultimately
+    have "((p1, q1), \<alpha>#w', p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+      by (meson LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<gamma>)
+    moreover
+    have "length w > 0"
+      using less(3) True' \<epsilon>_exp_Some_length by metis
+    moreover
+    have "hd w = \<alpha>"
+      using less(3) True' \<epsilon>_exp_Some_hd by metis
+    ultimately
+    show ?thesis
+      using w'_def by force
+  next
+    case False
+    note False_outer_outer_outer_outer = False
+    show ?thesis 
+    proof (cases "w1 = [] \<and> w2 = []")
+      term replicate
+      case True
+      then have same: "p1 = p2 \<and> q1 = q2"
+        by (metis LTS.transition_star_empty less.prems(3) less.prems(4))
+      have "w = []"
+        using True less(2) exp_empty_empty by auto
+      then show ?thesis
+        using less True
+        by (simp add: LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_refl same)
+    next
+      case False
+      note False_outer_outer_outer = False
+      show ?thesis
+      proof (cases "\<exists>w1'. w1=\<epsilon>#w1'")
+        case True (* Adapted from above... maybe they can be merged....... *)
+        then obtain w1' where True':
+          "w1=\<epsilon>#w1'"
+          by auto
+        obtain p' where p'_p: "(p1, \<epsilon>, p') \<in> ts1 \<and> (p', w1', p2) \<in> LTS.transition_star ts1"
+          using less True'(1) by (metis LTS_\<epsilon>.transition_star_cons_\<epsilon>)
+        have q'_p: " (q1, w2, q2) \<in> LTS.transition_star ts2"
+          using less by (metis) 
+        have ind: "((p', q1), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+        proof -
+          have "length w1' + length w2 < length w1 + length w2"
+            using True'(1) by simp
+          moreover
+          have "LTS_\<epsilon>.\<epsilon>_exp w1' w"
+            by (metis (no_types, hide_lams) LTS_\<epsilon>.\<epsilon>_exp_def less(2) True'(1) removeAll.simps(2))
+          moreover
+          have "LTS_\<epsilon>.\<epsilon>_exp w2 w"
+            by (metis (no_types, hide_lams) less(3))
+          moreover
+          have "(p', w1', p2) \<in> LTS.transition_star ts1"
+            using p'_p by simp
+          moreover
+          have "(q1, w2, q2) \<in> LTS.transition_star ts2"
+            using q'_p by simp
+          ultimately
+          show "((p', q1), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+            using less(1)[of w1' w2 w p' q1] by auto
+        qed
+        moreover
+        have "((p1, q1), \<epsilon>, (p', q1)) \<in> (LTS_\<epsilon>.inter ts1 ts2)"
+          by (simp add: LTS_\<epsilon>.inter_def p'_p q'_p)
+        ultimately
+        have "((p1, q1), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+          using LTS_\<epsilon>.transition_star_\<epsilon>.simps by fastforce
+        then
+        show ?thesis
+           by force
+      next
+        case False
+        note False_outer_outer = False
+        then show ?thesis
+        proof (cases "\<exists>w2'. w2 = \<epsilon> # w2'")
+          case True (* Adapted from above... maybe they can be merged....... *)
+          then obtain w2' where True':
+            "w2=\<epsilon>#w2'"
+            by auto
+          have p'_p: "(p1, w1, p2) \<in> LTS.transition_star ts1"
+            using less by (metis)
+          obtain q' where q'_p: "(q1, \<epsilon>, q') \<in> ts2 \<and>(q', w2', q2) \<in> LTS.transition_star ts2"
+            using less True'(1) by (metis LTS_\<epsilon>.transition_star_cons_\<epsilon>) 
+          have ind: "((p1, q'), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+          proof -
+            have "length w1 + length w2' < length w1 + length w2"
+              using True'(1) True'(1) by simp
+            moreover
+            have "LTS_\<epsilon>.\<epsilon>_exp w1 w"
+              by (metis (no_types, hide_lams) less(2))
+            moreover
+            have "LTS_\<epsilon>.\<epsilon>_exp w2' w"
+              by (metis (no_types, hide_lams) LTS_\<epsilon>.\<epsilon>_exp_def less(3) True'(1) removeAll.simps(2))
+            moreover
+            have "(p1, w1, p2) \<in> LTS.transition_star ts1"
+              using p'_p by simp
+            moreover
+            have "(q', w2', q2) \<in> LTS.transition_star ts2"
+              using q'_p by simp
+            ultimately
+            show "((p1, q'), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+              using less(1)[of w1 w2' w p1 q'] by auto
+          qed
+          moreover
+          have "((p1, q1), \<epsilon>, (p1, q')) \<in> (LTS_\<epsilon>.inter ts1 ts2)"
+            by (simp add: LTS_\<epsilon>.inter_def p'_p q'_p)
+          ultimately
+          have "((p1, q1), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+            using LTS_\<epsilon>.transition_star_\<epsilon>.simps by fastforce
+          then
+          show ?thesis
+            by force
+        next
+          case False
+          then have "(w1 = [] \<and> (\<exists>\<alpha> w2'. w2 = Some \<alpha> # w2')) \<or> ((\<exists>\<alpha> w1'. w1 = Some \<alpha> # w1') \<and> w2 = [])"
+            using False_outer_outer False_outer_outer_outer False_outer_outer_outer_outer
+            by (metis neq_Nil_conv option.exhaust_sel)
+          then show ?thesis
+            by (metis LTS_\<epsilon>.\<epsilon>_exp_def \<epsilon>_exp_Some_length less.prems(1) less.prems(2) less_numeral_extra(3) list.simps(8) list.size(3) removeAll.simps(1))
+        qed
+      qed
+    qed
+  qed
+qed
+
+lemma transition_star_\<epsilon>_inter:
+  assumes "(p1, w :: 'label list, p2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts1"
+  assumes "(q1, w, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts2"
+  shows "((p1, q1), w, (p2, q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+proof -
+  have "\<exists>w1'. LTS_\<epsilon>.\<epsilon>_exp w1' w \<and> (p1, w1', p2) \<in> LTS.transition_star ts1"
+    using assms by (simp add: LTS_\<epsilon>.epsilon_lemma2) 
+  then obtain w1' where "LTS_\<epsilon>.\<epsilon>_exp w1' w \<and> (p1, w1', p2) \<in> LTS.transition_star ts1"
+    by auto
+  moreover
+  have "\<exists>w2'. LTS_\<epsilon>.\<epsilon>_exp w2' w \<and> (q1, w2', q2) \<in> LTS.transition_star ts2"
+    using assms by (simp add: LTS_\<epsilon>.epsilon_lemma2) 
+  then obtain w2' where "LTS_\<epsilon>.\<epsilon>_exp w2' w \<and> (q1, w2', q2) \<in> LTS.transition_star ts2"
+    by auto
+  ultimately
+  show ?thesis
+    using transition_star_transition_star_\<epsilon>_inter by metis
+qed
+
+lemma inter_transition_star_\<epsilon>1:
+  assumes "(p1q2, w :: 'label list, p2q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+  shows "(fst p1q2, w, fst p2q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts1"
+  using assms 
+proof (induction rule: LTS_\<epsilon>.transition_star_\<epsilon>.induct[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by (simp add: LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_refl) 
+next
+  case (2 p \<gamma> q' w q)
+  then have ind: "(fst q', w, fst q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts1"
+    by auto
+  from 2(1) have "(p, Some \<gamma>, q') \<in> 
+                     {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2} \<union> 
+                     {((p1, q1), \<epsilon>, p2, q1) |p1 p2 q1. (p1, \<epsilon>, p2) \<in> ts1} \<union>
+                     {((p1, q1), \<epsilon>, p1, q2) |p1 q1 q2. (q1, \<epsilon>, q2) \<in> ts1}"
+    unfolding LTS_\<epsilon>.inter_def by auto
+  moreover                
+  {
+    assume "(p, Some \<gamma>, q') \<in> {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
+    then have "\<exists>p1 q1. p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, Some \<gamma>, p2) \<in> ts1 \<and> (q1, Some \<gamma>, q2) \<in> ts2)"
+      by simp
+    then obtain p1 q1 where "p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, Some \<gamma>, p2) \<in> ts1 \<and> (q1, Some \<gamma>, q2) \<in> ts2)"
+      by auto
+    then have ?case
+      using LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<gamma> ind by fastforce
+  }
+  moreover
+  {
+    assume "(p, Some \<gamma>, q') \<in> {((p1, q1), \<epsilon>, p2, q1) |p1 p2 q1. (p1, \<epsilon>, p2) \<in> ts1}"
+    then have ?case
+      by auto
+  }
+  moreover
+  {
+    assume "(p, Some \<gamma>, q') \<in> {((p1, q1), \<epsilon>, p1, q2) |p1 q1 q2. (q1, \<epsilon>, q2) \<in> ts1}"
+    then have ?case
+      by auto
+  }  
+  ultimately 
+  show ?case 
+    by auto
+next
+  case (3 p q' w q)
+  then have ind: "(fst q', w, fst q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts1"
+    by auto
+  from 3(1) have "(p, \<epsilon>, q') \<in>
+                     {((p1, q1), \<alpha>, (p2, q2)) | p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2} \<union>
+                     {((p1, q1), \<epsilon>, (p2, q1)) | p1 p2 q1. (p1, \<epsilon>, p2) \<in> ts1} \<union>
+                     {((p1, q1), \<epsilon>, (p1, q2)) | p1 q1 q2. (q1, \<epsilon>, q2) \<in> ts2}"
+    unfolding LTS_\<epsilon>.inter_def by auto
+  moreover                
+  {
+    assume "(p, \<epsilon>, q') \<in> {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
+    then have "\<exists>p1 q1. p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<epsilon>, p2) \<in> ts1 \<and> (q1, \<epsilon>, q2) \<in> ts2)"
+      by simp
+    then obtain p1 q1 where "p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<epsilon>, p2) \<in> ts1 \<and> (q1, \<epsilon>, q2) \<in> ts2)"
+      by auto
+    then have ?case
+      using LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<epsilon> ind by fastforce
+  }
+  moreover
+  {
+    assume "(p, \<epsilon>, q') \<in> {((p1, q1), \<epsilon>, p2, q1) |p1 p2 q1. (p1, \<epsilon>, p2) \<in> ts1}"
+    then have "\<exists>p1 p2 q1. p = (p1, q1) \<and> q' = (p2, q1) \<and> (p1, \<epsilon>, p2) \<in> ts1"
+      by auto
+    then obtain p1 p2 q1 where "p = (p1, q1) \<and> q' = (p2, q1) \<and> (p1, \<epsilon>, p2) \<in> ts1"
+      by auto
+    then have ?case
+      using LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<epsilon> ind by fastforce
+  }
+  moreover
+  {
+    assume "(p, \<epsilon>, q') \<in> {((p1, q1), \<epsilon>, p1, q2) |p1 q1 q2. (q1, \<epsilon>, q2) \<in> ts2}"
+    then have "\<exists>p1 q1 q2. p = (p1, q1) \<and> q' = (p1, q2) \<and> (q1, \<epsilon>, q2) \<in> ts2"
+      by auto
+    then obtain p1 q1 q2 where "p = (p1, q1) \<and> q' = (p1, q2) \<and> (q1, \<epsilon>, q2) \<in> ts2"
+      by auto
+    then have ?case
+      using LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<epsilon> ind by fastforce
+  }  
+  ultimately 
+  show ?case 
+    by auto
+qed
+
+lemma inter_transition_star_\<epsilon>:
+  assumes "(p1q2, w :: 'label list, p2q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+  shows "(snd p1q2, w, snd p2q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts2"
+  using assms 
+proof (induction rule: LTS_\<epsilon>.transition_star_\<epsilon>.induct[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by (simp add: LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_refl) 
+next
+  case (2 p \<gamma> q' w q)
+  then have ind: "(snd q', w, snd q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts2"
+    by auto
+  from 2(1) have "(p, Some \<gamma>, q') \<in> 
+                     {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2} \<union> 
+                     {((p1, q1), \<epsilon>, p2, q1) |p1 p2 q1. (p1, \<epsilon>, p2) \<in> ts1} \<union>
+                     {((p1, q1), \<epsilon>, p1, q2) |p1 q1 q2. (q1, \<epsilon>, q2) \<in> ts2}"
+    unfolding LTS_\<epsilon>.inter_def by auto
+  moreover                
+  {
+    assume "(p, Some \<gamma>, q') \<in> {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
+    then have "\<exists>p1 q1. p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, Some \<gamma>, p2) \<in> ts1 \<and> (q1, Some \<gamma>, q2) \<in> ts2)"
+      by simp
+    then obtain p1 q1 where "p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, Some \<gamma>, p2) \<in> ts1 \<and> (q1, Some \<gamma>, q2) \<in> ts2)"
+      by auto
+    then have ?case
+      using LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<gamma> ind by fastforce
+  }
+  moreover
+  {
+    assume "(p, Some \<gamma>, q') \<in> {((p1, q1), \<epsilon>, p2, q1) |p1 p2 q1. (p1, \<epsilon>, p2) \<in> ts1}"
+    then have ?case
+      by auto
+  }
+  moreover
+  {
+    assume "(p, Some \<gamma>, q') \<in> {((p1, q1), \<epsilon>, p1, q2) |p1 q1 q2. (q1, \<epsilon>, q2) \<in> ts2}"
+    then have ?case
+      by auto
+  }  
+  ultimately 
+  show ?case 
+    by auto
+next
+  case (3 p q' w q)
+  then have ind: "(snd q', w, snd q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts2"
+    by auto
+  from 3(1) have "(p, \<epsilon>, q') \<in>
+                     {((p1, q1), \<alpha>, (p2, q2)) | p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2} \<union>
+                     {((p1, q1), \<epsilon>, (p2, q1)) | p1 p2 q1. (p1, \<epsilon>, p2) \<in> ts1} \<union>
+                     {((p1, q1), \<epsilon>, (p1, q2)) | p1 q1 q2. (q1, \<epsilon>, q2) \<in> ts2}"
+    unfolding LTS_\<epsilon>.inter_def by auto
+  moreover                
+  {
+    assume "(p, \<epsilon>, q') \<in> {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
+    then have "\<exists>p1 q1. p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<epsilon>, p2) \<in> ts1 \<and> (q1, \<epsilon>, q2) \<in> ts2)"
+      by simp
+    then obtain p1 q1 where "p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<epsilon>, p2) \<in> ts1 \<and> (q1, \<epsilon>, q2) \<in> ts2)"
+      by auto
+    then have ?case
+      using LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<epsilon> ind by fastforce
+  }
+  moreover
+  {
+    assume "(p, \<epsilon>, q') \<in> {((p1, q1), \<epsilon>, p2, q1) |p1 p2 q1. (p1, \<epsilon>, p2) \<in> ts1}"
+    then have "\<exists>p1 p2 q1. p = (p1, q1) \<and> q' = (p2, q1) \<and> (p1, \<epsilon>, p2) \<in> ts1"
+      by auto
+    then obtain p1 p2 q1 where "p = (p1, q1) \<and> q' = (p2, q1) \<and> (p1, \<epsilon>, p2) \<in> ts1"
+      by auto
+    then have ?case
+      using LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<epsilon> ind by fastforce
+  }
+  moreover
+  {
+    assume "(p, \<epsilon>, q') \<in> {((p1, q1), \<epsilon>, p1, q2) |p1 q1 q2. (q1, \<epsilon>, q2) \<in> ts2}"
+    then have "\<exists>p1 q1 q2. p = (p1, q1) \<and> q' = (p1, q2) \<and> (q1, \<epsilon>, q2) \<in> ts2"
+      by auto
+    then obtain p1 q1 q2 where "p = (p1, q1) \<and> q' = (p1, q2) \<and> (q1, \<epsilon>, q2) \<in> ts2"
+      by auto
+    then have ?case
+      using LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<epsilon> ind by fastforce
+  }  
+  ultimately 
+  show ?case 
+    by auto
+qed
+
+lemma inter_transition_star_\<epsilon>_iff: "((p1,q2), w :: 'label list, (p2,q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2) \<longleftrightarrow> (p1, w, p2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts1 \<and> (q2, w, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts2"
+  by (metis fst_conv inter_transition_star_\<epsilon> inter_transition_star_\<epsilon>1 snd_conv transition_star_\<epsilon>_inter)
+
+
+end
 
 end

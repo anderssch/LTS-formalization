@@ -1236,6 +1236,12 @@ inductive_set path_with_word_\<epsilon> :: "('state list * 'label list) set" whe
 | path_with_word_\<epsilon>_step_\<gamma>: "(s'#ss, w) \<in> path_with_word_\<epsilon> \<Longrightarrow> (s,Some l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,l#w) \<in> path_with_word_\<epsilon>"
 | path_with_word_\<epsilon>_step_\<epsilon>: "(s'#ss, w) \<in> path_with_word_\<epsilon> \<Longrightarrow> (s,\<epsilon>,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,w) \<in> path_with_word_\<epsilon>"
 
+
+definition inter :: "('state, 'label option) transition set \<Rightarrow> ('state, 'label option) transition set \<Rightarrow> (('state * 'state), 'label option) transition set" where
+  "inter ts1 ts2 = {((p1, q1), \<alpha>, (p2, q2)) | p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2} \<union>
+                   {((p1, q1), \<epsilon>, (p2, q1)) | p1 p2 q1. (p1, \<epsilon>, p2) \<in> ts1} \<union>
+                   {((p1, q1), \<epsilon>, (p1, q2)) | p1 q1 q2. (q1, \<epsilon>, q2) \<in> ts2}"
+
 end
 
 
@@ -1262,5 +1268,8 @@ proof (rule, rule)
   then show "pwq \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts'"
     unfolding pwq_p .
 qed
+
+
+
 
 end
