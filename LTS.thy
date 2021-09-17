@@ -393,7 +393,7 @@ lemma append_path_with_word_path_with_word:
   shows "(\<gamma>2ss, \<gamma>2\<epsilon>) @\<acute> (v_ss, v) \<in> path_with_word"
   by (metis LTS.transition_star_states_path_with_word append_path_with_word.simps path_with_word_transition_star_states assms(1) assms(2) assms(3) transition_star_states_append)
 
-lemma hd_is_hd: (* Can this be phrased better? *)
+lemma hd_is_hd:
   assumes "(p, w, ss, q) \<in> transition_star_states"
   assumes "(p1, \<gamma>, q1) = hd (transition_list' (p, w, ss, q))"
   assumes "transition_list' (p, w, ss, q) \<noteq> []"
@@ -1103,7 +1103,7 @@ next
   qed
 qed
 
-lemma epsilon_lemma2:
+lemma transition_star_\<epsilon>_\<epsilon>_exp_transition_star:
   assumes "(p, w, q) \<in> transition_star_\<epsilon>"
   shows "\<exists>w'. \<epsilon>_exp w' w \<and> (p, w', q) \<in> transition_star"
   using assms 
@@ -1121,16 +1121,16 @@ next
     by (metis transition_starp.transition_star_step transition_starp_transition_star_eq \<epsilon>_exp_def removeAll.simps(2))
 qed
 
-lemma epsilon_lemma3:
+lemma transition_star_\<epsilon>_iff_\<epsilon>_exp_transition_star:
   "(p, w, q) \<in> transition_star_\<epsilon> \<longleftrightarrow> (\<exists>w'. \<epsilon>_exp w' w \<and> (p, w', q) \<in> transition_star)"
 proof
   assume "(p, w, q) \<in> transition_star_\<epsilon>"
   then show "\<exists>w'. \<epsilon>_exp w' w \<and> (p, w', q) \<in> transition_star"
-    using epsilon_lemma2 epsilon_lemma2 transition_star_transition_star_\<epsilon> by auto
+    using transition_star_\<epsilon>_\<epsilon>_exp_transition_star transition_star_transition_star_\<epsilon> by auto
 next
   assume "\<exists>w'. \<epsilon>_exp w' w \<and> (p, w', q) \<in> transition_star"
   then show "(p, w, q) \<in> transition_star_\<epsilon>"
-    using epsilon_lemma2 epsilon_lemma2 transition_star_transition_star_\<epsilon> \<epsilon>_exp_def by auto
+    using transition_star_\<epsilon>_\<epsilon>_exp_transition_star transition_star_transition_star_\<epsilon> \<epsilon>_exp_def by auto
 qed
 
 lemma \<epsilon>_exp_split':
@@ -1195,7 +1195,7 @@ lemma no_edge_to_source_\<epsilon>:
   shows "qq \<notin> sources"
 proof -
   have "\<exists>w. LTS_\<epsilon>.\<epsilon>_exp w [\<gamma>] \<and> (p, w, qq) \<in> transition_star \<and> w \<noteq> []"
-    by (metis (no_types, hide_lams) LTS_\<epsilon>.\<epsilon>_exp_def LTS_\<epsilon>.\<epsilon>_exp_split' LTS_\<epsilon>.epsilon_lemma3 append_Cons append_Nil assms(1) list.distinct(1) list.exhaust)
+    by (metis (no_types, hide_lams) LTS_\<epsilon>.\<epsilon>_exp_def LTS_\<epsilon>.\<epsilon>_exp_split' LTS_\<epsilon>.transition_star_\<epsilon>_iff_\<epsilon>_exp_transition_star append_Cons append_Nil assms(1) list.distinct(1) list.exhaust)
   then obtain w where "LTS_\<epsilon>.\<epsilon>_exp w [\<gamma>] \<and> (p, w, qq) \<in> transition_star \<and> w \<noteq> []"
     by blast
   then show ?thesis
@@ -1222,6 +1222,13 @@ next
     using sources_def2 by metis 
 qed
 
+lemma append_edge_edge_transition_star_\<epsilon>:
+  assumes "(p1, Some \<gamma>', p2) \<in> transition_relation"
+  assumes "(p2, Some \<gamma>'', q1) \<in> transition_relation"
+  assumes "(q1, u1, q) \<in> transition_star_\<epsilon>"
+  shows "(p1, [\<gamma>', \<gamma>''] @ u1, q) \<in> transition_star_\<epsilon>"
+  using assms by (metis transition_star_\<epsilon>_step_\<gamma> append_Cons append_Nil)
+
 (* I doubt a bit that this definition is useful *)
 inductive_set transition_star_states_\<epsilon> :: "('state * 'label list * 'state list * 'state) set" where
   transition_star_states_\<epsilon>_refl[iff]: "(p,[],[p],p) \<in> transition_star_states_\<epsilon>"
@@ -1236,6 +1243,20 @@ inductive_set path_with_word_\<epsilon> :: "('state list * 'label list) set" whe
 | path_with_word_\<epsilon>_step_\<gamma>: "(s'#ss, w) \<in> path_with_word_\<epsilon> \<Longrightarrow> (s,Some l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,l#w) \<in> path_with_word_\<epsilon>"
 | path_with_word_\<epsilon>_step_\<epsilon>: "(s'#ss, w) \<in> path_with_word_\<epsilon> \<Longrightarrow> (s,\<epsilon>,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,w) \<in> path_with_word_\<epsilon>"
 
+lemma \<epsilon>_exp_Some_length:
+  assumes "\<epsilon>_exp (Some \<alpha> # w1') w"
+  shows "0 < length w"
+  using assms by (metis LTS_\<epsilon>.\<epsilon>_exp_def length_greater_0_conv list.map(2) neq_Nil_conv option.simps(3) removeAll.simps(2))
+
+lemma \<epsilon>_exp_Some_hd:
+  assumes "\<epsilon>_exp (Some \<alpha> # w1') w"
+  shows "hd w = \<alpha>"
+  using assms by (metis LTS_\<epsilon>.\<epsilon>_exp_def list.sel(1) list.simps(9) option.sel option.simps(3) removeAll.simps(2)) 
+
+lemma exp_empty_empty:
+  assumes "\<epsilon>_exp [] w"
+  shows "w = []"
+  using assms by (metis LTS_\<epsilon>.\<epsilon>_exp_def list.simps(8) removeAll.simps(1))
 
 definition inter :: "('state, 'label option) transition set \<Rightarrow> ('state, 'label option) transition set \<Rightarrow> (('state * 'state), 'label option) transition set" where
   "inter ts1 ts2 = {((p1, q1), \<alpha>, (p2, q2)) | p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2} \<union>
@@ -1259,12 +1280,12 @@ proof (rule, rule)
   then have x: "(p, w, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts"
     using pwq_ts by auto
   then have "(\<exists>w'. LTS_\<epsilon>.\<epsilon>_exp w' w \<and> (p, w', q) \<in> LTS.transition_star ts)"
-    using LTS_\<epsilon>.epsilon_lemma3[of p w q ts] by auto
+    using LTS_\<epsilon>.transition_star_\<epsilon>_iff_\<epsilon>_exp_transition_star[of p w q ts] by auto
   then have "(\<exists>w'. LTS_\<epsilon>.\<epsilon>_exp w' w \<and> (p, w', q) \<in> LTS.transition_star ts')"
     using LTS_transition_star_mono sub
     using monoD by blast
   then have "(p, w, q) \<in>  LTS_\<epsilon>.transition_star_\<epsilon> ts'"
-    using LTS_\<epsilon>.epsilon_lemma3[of p w q ts'] by auto
+    using LTS_\<epsilon>.transition_star_\<epsilon>_iff_\<epsilon>_exp_transition_star[of p w q ts'] by auto
   then show "pwq \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts'"
     unfolding pwq_p .
 qed

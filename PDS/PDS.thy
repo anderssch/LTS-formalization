@@ -48,10 +48,6 @@ datatype ('ctr_loc, 'state, 'label) state =
   | is_State: Ctr_Loc_St (the_St: 'state) (* q \<in> Q \<and> q \<notin> P *)
   | is_Ctr_Ext: Ctr_Loc_Ext (the_Ext_Ctr_Loc: 'ctr_loc) (the_Ext_Label: 'label) (* q\<^sub>p\<^sub>\<gamma> *)
 
-
-find_theorems "finite UNIV"
-find_theorems class.finite
-
 lemma finite_ctr_locs:
   assumes "finite (UNIV :: 'ctr_loc set)"
   assumes "finite (UNIV :: 'state set)"
@@ -384,9 +380,17 @@ lemma post_star_lim'_incr_transition_star_\<epsilon>:
 
 subsection \<open>Pre* lemmas\<close>
 
-lemma USEFUL:
+lemma P_states_sources_iff_Ctr_Loc_sources:
   "P_states \<subseteq> LTS.sources A \<longleftrightarrow> (\<nexists>q \<gamma> q'. (q, \<gamma>, Ctr_Loc q') \<in> A)"
-  by (smt (z3) Collect_mono_iff LTS.sources_def P_states_def state.collapse(1) state.disc(1))
+proof 
+  assume "P_states \<subseteq> LTS.sources A"
+  then show "\<nexists>q \<gamma> q'. (q, \<gamma>, Ctr_Loc q') \<in> A"
+    by (simp add: Collect_mono_iff LTS.sources_def P_states_def)
+next
+  assume "\<nexists>q \<gamma> q'. (q, \<gamma>, Ctr_Loc q') \<in> A"
+  show "P_states \<subseteq> LTS.sources A"
+    by (metis LTS.sources_def2 P_states_def \<open>\<nexists>q \<gamma> q'. (q, \<gamma>, Ctr_Loc q') \<in> A\<close> mem_Collect_eq state.collapse(1) subsetI)
+qed
 
 lemma lemma_3_1:
   assumes "p'w \<Rightarrow>\<^sup>* pv"
@@ -721,6 +725,8 @@ qed
 
 subsection \<open>Post* lemmas\<close>
 
+
+
 lemma lemma_3_3':
   assumes "pv \<Rightarrow>\<^sup>* p'w"
     and "(fst pv, snd pv) \<in> language_\<epsilon> A"
@@ -750,7 +756,7 @@ next
   then obtain q where q_p: "q \<in> F_states \<and> (Ctr_Loc p'', u, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
     by metis
   then have "\<exists>u_\<epsilon>. q \<in> F_states \<and> LTS_\<epsilon>.\<epsilon>_exp u_\<epsilon> u \<and> (Ctr_Loc p'', u_\<epsilon>, q) \<in> LTS.transition_star A'"
-    using LTS_\<epsilon>.epsilon_lemma3[of "Ctr_Loc p''" u q A'] by auto
+    using LTS_\<epsilon>.transition_star_\<epsilon>_iff_\<epsilon>_exp_transition_star[of "Ctr_Loc p''" u q A'] by auto
   then obtain u_\<epsilon> where II: "q \<in> F_states" "LTS_\<epsilon>.\<epsilon>_exp u_\<epsilon> u" "(Ctr_Loc p'', u_\<epsilon>, q) \<in> LTS.transition_star A'"
     by blast
   have "\<exists>\<gamma> u1 w1. u=\<gamma>#u1 \<and> w=op_labels w1@u1 \<and> (p'', \<gamma>) \<hookrightarrow> (p', w1)"
@@ -782,8 +788,8 @@ next
     by blast
 
   then have VI_2: "(Ctr_Loc p'', [\<gamma>], q1) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'" "(q1, u1, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
-     apply (meson LTS_\<epsilon>.epsilon_lemma3 iii)
-    apply (meson LTS_\<epsilon>.epsilon_lemma3 VI(2) iv(1))
+     apply (meson LTS_\<epsilon>.transition_star_\<epsilon>_iff_\<epsilon>_exp_transition_star iii)
+    apply (meson LTS_\<epsilon>.transition_star_\<epsilon>_iff_\<epsilon>_exp_transition_star VI(2) iv(1))
     done
 
   show ?case
@@ -826,7 +832,7 @@ next
     have "(Ctr_Loc p', [\<gamma>'], Ctr_Loc_Ext p' \<gamma>') \<in> LTS_\<epsilon>.transition_star_\<epsilon> A' \<and> (Ctr_Loc_Ext p' \<gamma>', [\<gamma>''], q1) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A' \<and> (q1, u1, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
       by (metis LTS_\<epsilon>.transition_star_\<epsilon>.simps VI_2(2) \<open>(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<in> A'\<close> \<open>(Ctr_Loc_Ext p' \<gamma>', Some \<gamma>'', q1) \<in> A'\<close>)
     have "(Ctr_Loc p', w, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
-      by (smt (z3) III(2) LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<gamma> VI_2(2) \<open>(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<in> A'\<close> \<open>(Ctr_Loc_Ext p' \<gamma>', Some \<gamma>'', q1) \<in> A'\<close> append_Cons append_self_conv2 op_labels.simps(3) push)
+       using III(2) VI_2(2) \<open>(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<in> A'\<close> \<open>(Ctr_Loc_Ext p' \<gamma>', Some \<gamma>'', q1) \<in> A'\<close> push LTS_\<epsilon>.append_edge_edge_transition_star_\<epsilon> by auto
     then have "accepts_\<epsilon> A' (p', w)"
       unfolding accepts_\<epsilon>_def
       using II(1) by blast
@@ -849,7 +855,7 @@ lemma init_only_hd:
   assumes "count (transitions_of (ss, w)) t > 0"
   assumes "t = (Ctr_Loc p1, \<gamma>, q1)"
   shows "hd (transition_list (ss, w)) = t \<and> count (transitions_of (ss, w)) t = 1"
-  using assms LTS.source_only_hd by (metis LTS.sources_def2 USEFUL)
+  using assms LTS.source_only_hd by (metis LTS.sources_def2 P_states_sources_iff_Ctr_Loc_sources)
 
 lemma no_edge_to_Ctr_Loc_avoid_Ctr_Loc:
   assumes "(p, w, qq) \<in> LTS.transition_star Aiminus1"
@@ -880,7 +886,7 @@ next
   proof (cases rule: post_star_rules.cases)
     case (add_trans_pop p \<gamma> p' q)
     have "q \<notin> P_states"
-      using ind no_edge_to_Ctr_Loc_avoid_Ctr_Loc_\<epsilon> USEFUL by (metis local.add_trans_pop(3))
+      using ind no_edge_to_Ctr_Loc_avoid_Ctr_Loc_\<epsilon> P_states_sources_iff_Ctr_Loc_sources by (metis local.add_trans_pop(3))
     then have "\<nexists>qq. q = Ctr_Loc qq"
       by (simp add: P_states_def is_Ctr_Loc_def)
     then show ?thesis
@@ -888,7 +894,7 @@ next
   next
     case (add_trans_swap p \<gamma> p' \<gamma>' q)
     have "q \<notin> P_states"
-      using add_trans_swap ind no_edge_to_Ctr_Loc_avoid_Ctr_Loc_\<epsilon> USEFUL by metis
+      using add_trans_swap ind no_edge_to_Ctr_Loc_avoid_Ctr_Loc_\<epsilon> P_states_sources_iff_Ctr_Loc_sources by metis
     then have "\<nexists>qq. q = Ctr_Loc qq"
       by (simp add: P_states_def is_Ctr_Loc_def)
     then show ?thesis
@@ -896,7 +902,7 @@ next
   next
     case (add_trans_push_1 p \<gamma> p' \<gamma>' \<gamma>'' q)
     have "q \<notin> P_states"
-      using add_trans_push_1 ind no_edge_to_Ctr_Loc_avoid_Ctr_Loc_\<epsilon> USEFUL by metis
+      using add_trans_push_1 ind no_edge_to_Ctr_Loc_avoid_Ctr_Loc_\<epsilon> P_states_sources_iff_Ctr_Loc_sources by metis
     then have "\<nexists>qq. q = Ctr_Loc qq"
       by (simp add: P_states_def is_Ctr_Loc_def)
     then show ?thesis
@@ -904,7 +910,7 @@ next
   next
     case (add_trans_push_2 p \<gamma> p' \<gamma>' \<gamma>'' q)
     have "q \<notin> P_states"
-      using add_trans_push_2 ind no_edge_to_Ctr_Loc_avoid_Ctr_Loc_\<epsilon> USEFUL by metis
+      using add_trans_push_2 ind no_edge_to_Ctr_Loc_avoid_Ctr_Loc_\<epsilon> P_states_sources_iff_Ctr_Loc_sources by metis
     then have "\<nexists>qq. q = Ctr_Loc qq"
       by (simp add: P_states_def is_Ctr_Loc_def)
     then show ?thesis
@@ -916,7 +922,7 @@ lemma no_edge_to_Ctr_Loc_post_star_rules:
   assumes "post_star_rules\<^sup>*\<^sup>* A Ai"
   assumes "P_states \<subseteq> LTS.sources A"
   shows "P_states \<subseteq> LTS.sources Ai"
-  using assms no_edge_to_Ctr_Loc_post_star_rules' USEFUL by metis
+  using assms no_edge_to_Ctr_Loc_post_star_rules' P_states_sources_iff_Ctr_Loc_sources by metis
 
 lemma lemma_3_4'_Aux:
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
@@ -1218,7 +1224,7 @@ next
 
       have "\<exists>\<gamma>2'. LTS_\<epsilon>.\<epsilon>_exp \<gamma>2' [\<gamma>2] \<and> (Ctr_Loc p2, \<gamma>2', q1) \<in> LTS.transition_star Aiminus1"
         using add_trans_pop
-        by (simp add: LTS_\<epsilon>.epsilon_lemma2) 
+        by (simp add: LTS_\<epsilon>.transition_star_\<epsilon>_\<epsilon>_exp_transition_star) 
       then obtain \<gamma>2' where "LTS_\<epsilon>.\<epsilon>_exp \<gamma>2' [\<gamma>2] \<and> (Ctr_Loc p2, \<gamma>2', q1) \<in> LTS.transition_star Aiminus1"
         by blast
       then have "\<exists>ss2. (Ctr_Loc p2, \<gamma>2', ss2, q1) \<in> LTS.transition_star_states Aiminus1"
@@ -1389,7 +1395,7 @@ next
         using LTS_\<epsilon>.remove_\<epsilon>_def removeAll.simps(2)
         by presburger 
       have "\<exists>\<gamma>2'. LTS_\<epsilon>.\<epsilon>_exp \<gamma>2' [\<gamma>2] \<and> (Ctr_Loc p2, \<gamma>2', q1) \<in> LTS.transition_star Aiminus1"
-        using add_trans_swap by (simp add: LTS_\<epsilon>.epsilon_lemma2) 
+        using add_trans_swap by (simp add: LTS_\<epsilon>.transition_star_\<epsilon>_\<epsilon>_exp_transition_star) 
       then obtain \<gamma>2' where "LTS_\<epsilon>.\<epsilon>_exp \<gamma>2' [\<gamma>2] \<and> (Ctr_Loc p2, \<gamma>2', q1) \<in> LTS.transition_star Aiminus1"
         by blast
       then have "\<exists>ss2. (Ctr_Loc p2, \<gamma>2', ss2, q1) \<in> LTS.transition_star_states Aiminus1"
@@ -1569,7 +1575,7 @@ next
         by auto
       term \<gamma>2
       from IX have "\<exists>\<gamma>2\<epsilon> \<gamma>2ss. LTS_\<epsilon>.\<epsilon>_exp \<gamma>2\<epsilon> [\<gamma>2] \<and> (Ctr_Loc p2, \<gamma>2\<epsilon>, \<gamma>2ss, q') \<in> LTS.transition_star_states Aiminus1"
-        by (meson LTS.transition_star_transition_star_states LTS_\<epsilon>.epsilon_lemma2)
+        by (meson LTS.transition_star_transition_star_states LTS_\<epsilon>.transition_star_\<epsilon>_\<epsilon>_exp_transition_star)
       then obtain \<gamma>2\<epsilon> \<gamma>2ss where XI_1: "LTS_\<epsilon>.\<epsilon>_exp \<gamma>2\<epsilon> [\<gamma>2] \<and> (Ctr_Loc p2, \<gamma>2\<epsilon>, \<gamma>2ss, q') \<in> LTS.transition_star_states Aiminus1"
         by blast
       have "(q', v, v_ss, q) \<in> LTS.transition_star_states Ai"
@@ -1750,7 +1756,7 @@ next
   then obtain q where q_p: "q \<in> F_states" "(Ctr_Loc p, w, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'" 
     unfolding accepts_\<epsilon>_def by auto
   then obtain w' where w'_def: "LTS_\<epsilon>.\<epsilon>_exp w' w \<and> (Ctr_Loc p, w', q) \<in> LTS.transition_star A'"
-    by (meson LTS_\<epsilon>.epsilon_lemma3)
+    by (meson LTS_\<epsilon>.transition_star_\<epsilon>_iff_\<epsilon>_exp_transition_star)
   then have ttt: "(Ctr_Loc p, w', q) \<in> LTS.transition_star A'"
     by auto
   have "\<not> is_Ctr_Ext q"
@@ -1765,26 +1771,10 @@ next
     unfolding p_def w_def by auto
 qed
 
+subsection \<open>Intersection Automata\<close>
+
 definition accepts_\<epsilon>_inter :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
   "accepts_\<epsilon>_inter ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_states. ((Ctr_Loc p, Ctr_Loc p),w,(q,q)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts)"
-
-lemma \<epsilon>_exp_Some_length:
-  assumes "LTS_\<epsilon>.\<epsilon>_exp (Some \<alpha> # w1') w"
-  shows "0 < length w"
-  using assms
-  by (metis LTS_\<epsilon>.\<epsilon>_exp_def length_greater_0_conv list.map(2) neq_Nil_conv option.simps(3) removeAll.simps(2))
-
-lemma \<epsilon>_exp_Some_hd:
-  assumes "LTS_\<epsilon>.\<epsilon>_exp (Some \<alpha> # w1') w"
-  shows "hd w = \<alpha>"
-  using assms
-  by (metis LTS_\<epsilon>.\<epsilon>_exp_def list.sel(1) list.simps(9) option.sel option.simps(3) removeAll.simps(2)) 
-
-lemma exp_empty_empty:
-  assumes "LTS_\<epsilon>.\<epsilon>_exp [] w"
-  shows "w = []"
-  using assms
-  by (metis LTS_\<epsilon>.\<epsilon>_exp_def list.simps(8) removeAll.simps(1))
 
 lemma transition_star_transition_star_\<epsilon>_inter:
   assumes "LTS_\<epsilon>.\<epsilon>_exp w1 w"
@@ -1793,7 +1783,7 @@ lemma transition_star_transition_star_\<epsilon>_inter:
   assumes "(q1, w2, q2) \<in> LTS.transition_star ts2"
   shows "((p1,q1), w :: 'label list, (p2,q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
   using assms
-proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_induct )
+proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_induct)
   case less
   then show ?case
   proof (cases "\<exists>\<alpha> w1' w2' \<beta>. w1=Some \<alpha>#w1' \<and> w2=Some \<beta>#w2'")
@@ -1803,7 +1793,7 @@ proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_ind
       "w2=Some \<beta>#w2'"
       by auto
     have "\<alpha> = \<beta>"
-      by (metis True''(1) True''(2) \<epsilon>_exp_Some_hd less.prems(1) less.prems(2))
+      by (metis True''(1) True''(2) LTS_\<epsilon>.\<epsilon>_exp_Some_hd less.prems(1) less.prems(2))
     then have True':   
       "w1=Some \<alpha>#w1'"
       "w2=Some \<alpha>#w2'"
@@ -1841,10 +1831,10 @@ proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_ind
       by (meson LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<gamma>)
     moreover
     have "length w > 0"
-      using less(3) True' \<epsilon>_exp_Some_length by metis
+      using less(3) True' LTS_\<epsilon>.\<epsilon>_exp_Some_length by metis
     moreover
     have "hd w = \<alpha>"
-      using less(3) True' \<epsilon>_exp_Some_hd by metis
+      using less(3) True' LTS_\<epsilon>.\<epsilon>_exp_Some_hd by metis
     ultimately
     show ?thesis
       using w'_def by force
@@ -1858,7 +1848,7 @@ proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_ind
       then have same: "p1 = p2 \<and> q1 = q2"
         by (metis LTS.transition_star_empty less.prems(3) less.prems(4))
       have "w = []"
-        using True less(2) exp_empty_empty by auto
+        using True less(2) LTS_\<epsilon>.exp_empty_empty by auto
       then show ?thesis
         using less True
         by (simp add: LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_refl same)
@@ -1952,7 +1942,7 @@ proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_ind
             using False_outer_outer False_outer_outer_outer False_outer_outer_outer_outer
             by (metis neq_Nil_conv option.exhaust_sel)
           then show ?thesis
-            by (metis LTS_\<epsilon>.\<epsilon>_exp_def \<epsilon>_exp_Some_length less.prems(1) less.prems(2) less_numeral_extra(3) list.simps(8) list.size(3) removeAll.simps(1))
+            by (metis LTS_\<epsilon>.\<epsilon>_exp_def LTS_\<epsilon>.\<epsilon>_exp_Some_length less.prems(1) less.prems(2) less_numeral_extra(3) list.simps(8) list.size(3) removeAll.simps(1))
         qed
       qed
     qed
@@ -1965,12 +1955,12 @@ lemma transition_star_\<epsilon>_inter:
   shows "((p1, q1), w, (p2, q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
 proof -
   have "\<exists>w1'. LTS_\<epsilon>.\<epsilon>_exp w1' w \<and> (p1, w1', p2) \<in> LTS.transition_star ts1"
-    using assms by (simp add: LTS_\<epsilon>.epsilon_lemma2) 
+    using assms by (simp add: LTS_\<epsilon>.transition_star_\<epsilon>_\<epsilon>_exp_transition_star)
   then obtain w1' where "LTS_\<epsilon>.\<epsilon>_exp w1' w \<and> (p1, w1', p2) \<in> LTS.transition_star ts1"
     by auto
   moreover
   have "\<exists>w2'. LTS_\<epsilon>.\<epsilon>_exp w2' w \<and> (q1, w2', q2) \<in> LTS.transition_star ts2"
-    using assms by (simp add: LTS_\<epsilon>.epsilon_lemma2) 
+    using assms by (simp add: LTS_\<epsilon>.transition_star_\<epsilon>_\<epsilon>_exp_transition_star)
   then obtain w2' where "LTS_\<epsilon>.\<epsilon>_exp w2' w \<and> (q1, w2', q2) \<in> LTS.transition_star ts2"
     by auto
   ultimately
@@ -2144,15 +2134,15 @@ next
       by auto
     then have ?case
       using LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<epsilon> ind by fastforce
-  }  
-  ultimately 
+  }
+  ultimately
   show ?case 
     by auto
 qed
 
-lemma inter_transition_star_\<epsilon>_iff: "((p1,q2), w :: 'label list, (p2,q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2) \<longleftrightarrow> (p1, w, p2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts1 \<and> (q2, w, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts2"
+lemma inter_transition_star_\<epsilon>_iff:
+  "((p1,q2), w :: 'label list, (p2,q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2) \<longleftrightarrow> (p1, w, p2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts1 \<and> (q2, w, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts2"
   by (metis fst_conv inter_transition_star_\<epsilon> inter_transition_star_\<epsilon>1 snd_conv transition_star_\<epsilon>_inter)
-
 
 end
 
