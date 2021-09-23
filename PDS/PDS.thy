@@ -1774,7 +1774,10 @@ qed
 subsection \<open>Intersection Automata\<close>
 
 definition accepts_\<epsilon>_inter :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
-  "accepts_\<epsilon>_inter ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_states. ((Ctr_Loc p, Ctr_Loc p),w,(q,q)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts)"
+  "accepts_\<epsilon>_inter ts \<equiv> \<lambda>(p,w). (\<exists>q1 \<in> F_states. \<exists>q2 \<in> F_states. ((Ctr_Loc p, Ctr_Loc p),w,(q1,q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts)"
+
+definition language_\<epsilon>_inter :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf set" where
+  "language_\<epsilon>_inter ts = {c. accepts_\<epsilon>_inter ts c}"
 
 lemma transition_star_transition_star_\<epsilon>_inter:
   assumes "LTS_\<epsilon>.\<epsilon>_exp w1 w"
@@ -2136,13 +2139,175 @@ next
       using LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<epsilon> ind by fastforce
   }
   ultimately
-  show ?case 
+  show ?case
     by auto
 qed
 
 lemma inter_transition_star_\<epsilon>_iff:
   "((p1,q2), w :: 'label list, (p2,q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2) \<longleftrightarrow> (p1, w, p2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts1 \<and> (q2, w, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts2"
   by (metis fst_conv inter_transition_star_\<epsilon> inter_transition_star_\<epsilon>1 snd_conv transition_star_\<epsilon>_inter)
+
+lemma inter_accept_iff: "accepts_\<epsilon>_inter (LTS_\<epsilon>.inter ts1 ts2) c \<longleftrightarrow> accepts_\<epsilon> ts1 c \<and> accepts_\<epsilon> ts2 c"
+proof
+  assume "accepts_\<epsilon>_inter (LTS_\<epsilon>.inter ts1 ts2) c"
+  then show "accepts_\<epsilon> ts1 c \<and> accepts_\<epsilon> ts2 c"
+    using accepts_\<epsilon>_def accepts_\<epsilon>_inter_def inter_transition_star_\<epsilon> inter_transition_star_\<epsilon>1 by fastforce
+next
+  assume a: "accepts_\<epsilon> ts1 c \<and> accepts_\<epsilon> ts2 c"
+  define p where "p = fst c"
+  define w where "w = snd c"
+
+  from a have "accepts_\<epsilon> ts1 (p,w) \<and> accepts_\<epsilon> ts2 (p,w)"
+    using p_def w_def by auto
+
+
+  then have "(\<exists>q\<in>F_states. (Ctr_Loc p, w, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts1) \<and> (\<exists>q\<in>F_states. (Ctr_Loc p, w, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts2)" 
+    unfolding accepts_\<epsilon>_def by auto
+  then show "accepts_\<epsilon>_inter (LTS_\<epsilon>.inter ts1 ts2) c"
+    using accepts_\<epsilon>_inter_def p_def transition_star_\<epsilon>_inter w_def by fastforce
+qed
+
+lemma inter_language: "language_\<epsilon>_inter (LTS_\<epsilon>.inter ts1 ts2) = language_\<epsilon> ts1 \<inter> language_\<epsilon> ts2"
+  unfolding language_\<epsilon>_inter_def language_\<epsilon>_def using inter_accept_iff by auto
+
+
+subsection \<open>Dual search\<close>
+
+lemma dual1: "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2) = {c. \<exists>c1 \<in> language_\<epsilon> A1. \<exists>c2 \<in> language A2. c1 \<Rightarrow>\<^sup>* c \<and> c \<Rightarrow>\<^sup>* c2}"
+proof -
+  have "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2) = {c. c \<in> post_star (language_\<epsilon> A1) \<and> c \<in> pre_star (language A2)}"
+    by auto
+  moreover
+  have "... = {c. (\<exists>c1 \<in> language_\<epsilon> A1. c1 \<Rightarrow>\<^sup>* c) \<and> (\<exists>c2 \<in> language A2. c \<Rightarrow>\<^sup>* c2)}"
+    unfolding post_star_def pre_star_def by auto
+  moreover
+  have "... = {c. \<exists>c1 \<in> language_\<epsilon> A1. \<exists>c2 \<in> language A2. c1 \<Rightarrow>\<^sup>* c \<and> c \<Rightarrow>\<^sup>* c2}"
+    by auto
+  ultimately
+  show ?thesis by metis
+qed
+
+lemma dual2: "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2) \<noteq> {} \<longleftrightarrow> (\<exists>c1 \<in> language_\<epsilon> A1. \<exists>c2 \<in> language A2. c1 \<Rightarrow>\<^sup>* c2)"
+proof (rule)
+  assume "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2) \<noteq> {}"
+  then show "\<exists>c1\<in>language_\<epsilon> A1. \<exists>c2\<in>language A2. c1 \<Rightarrow>\<^sup>* c2"
+    by (smt (verit, best) disjoint_iff_not_equal mem_Collect_eq post_star_def pre_star_def rtranclp_trans)
+next
+  assume "\<exists>c1\<in>language_\<epsilon> A1. \<exists>c2\<in>language A2. c1 \<Rightarrow>\<^sup>* c2"
+  then show "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2) \<noteq> {}"
+    using dual1 by auto
+qed
+
+lemma LTS_\<epsilon>_of_LTS_Some: "(p, Some \<gamma>, q') \<in> LTS_\<epsilon>_of_LTS A2' \<longleftrightarrow> (p, \<gamma>, q') \<in> A2'"
+  unfolding LTS_\<epsilon>_of_LTS_def \<epsilon>_edge_of_edge_def by (auto simp add: rev_image_eqI)
+
+lemma LTS_\<epsilon>_of_LTS_None: "(p, None, q') \<notin> LTS_\<epsilon>_of_LTS A2'"
+  unfolding LTS_\<epsilon>_of_LTS_def \<epsilon>_edge_of_edge_def by (auto)
+
+lemma transition_star_\<epsilon>_LTS_\<epsilon>_of_LTS_transition_star:
+  assumes "(p,w,q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>_of_LTS A2')"
+  shows "(p,w,q) \<in> LTS.transition_star A2'"
+  using assms
+proof (induction rule: LTS_\<epsilon>.transition_star_\<epsilon>.induct[OF assms(1)] )
+  case (1 p)
+  then show ?case
+    by (simp add: LTS.transition_star.transition_star_refl)
+next
+  case (2 p \<gamma> q' w q)
+  moreover
+  have "(p, \<gamma>, q') \<in> A2'"
+    using 2(1) using LTS_\<epsilon>_of_LTS_Some by metis
+  moreover
+  have "(q', w, q) \<in> LTS.transition_star A2'"
+    using "2.IH" 2(2) by auto
+  ultimately show ?case
+    by (meson LTS.transition_star.transition_star_step)
+next
+  case (3 p q' w q)
+  then show ?case
+    using LTS_\<epsilon>_of_LTS_None by fastforce
+qed
+
+lemma transition_star_transition_star_\<epsilon>_LTS_\<epsilon>_of_LTS:
+  assumes "(p,w,q) \<in> LTS.transition_star A2'"
+  shows "(p,w,q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>_of_LTS A2')"
+  using assms
+proof (induction rule: LTS.transition_star.induct[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by (simp add: LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_refl)
+next
+  case (2 p \<gamma> q' w q)
+  then show ?case
+    by (meson LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<gamma> LTS_\<epsilon>_of_LTS_Some)
+qed
+
+
+lemma accepts_\<epsilon>_LTS_\<epsilon>_of_LTS_iff_accepts: "accepts_\<epsilon> (LTS_\<epsilon>_of_LTS A2') (p, w) \<longleftrightarrow> accepts A2' (p, w)"
+  using accepts_\<epsilon>_def accepts_def transition_star_\<epsilon>_LTS_\<epsilon>_of_LTS_transition_star transition_star_transition_star_\<epsilon>_LTS_\<epsilon>_of_LTS by fastforce
+  
+
+lemma language_\<epsilon>_LTS_\<epsilon>_of_LTS_is_language: "language_\<epsilon> (LTS_\<epsilon>_of_LTS A2') = language A2'"
+  unfolding language_\<epsilon>_def language_def using accepts_\<epsilon>_LTS_\<epsilon>_of_LTS_iff_accepts by auto
+
+theorem dual3:
+  assumes "P_states \<subseteq> LTS.sources A1"
+  assumes "P_states \<subseteq> LTS.sources A2"
+  assumes "\<forall>a b c. (a, b, c) \<in> A1 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "\<forall>a b c. (a, b, c) \<in> A2 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "saturation post_star_rules A1 A1'"
+  assumes "saturation pre_star_rule A2 A2'"
+  shows "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {} \<longleftrightarrow> (\<exists>c1 \<in> language_\<epsilon> A1. \<exists>c2 \<in> language A2. c1 \<Rightarrow>\<^sup>* c2)"
+proof -
+  have "{c. accepts_\<epsilon> A1' c} = post_star (language_\<epsilon> A1)"
+    using theorem_3_3[of A1 A1'] assms by auto
+  then have A1'_correct: "language_\<epsilon> A1' = post_star (language_\<epsilon> A1)"
+    unfolding language_\<epsilon>_def by auto
+
+  have "{c. accepts A2' c} = pre_star (language A2)" 
+    using theorem_3_2[of A2 A2'] assms by auto
+  then have A2'_correct: "language A2' = pre_star (language A2)" 
+    unfolding language_def by auto
+
+  have "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) = language_\<epsilon> A1' \<inter> language_\<epsilon> (LTS_\<epsilon>_of_LTS A2')"
+    using inter_language[of A1' "(LTS_\<epsilon>_of_LTS A2')"] by auto
+  moreover
+  have "... = language_\<epsilon> A1' \<inter> language A2'"
+    using language_\<epsilon>_LTS_\<epsilon>_of_LTS_is_language by auto
+  moreover
+  have "... = post_star (language_\<epsilon> A1) \<inter> pre_star (language A2)"
+    using A1'_correct A2'_correct by auto
+  ultimately
+  have inter_correct: "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) = post_star (language_\<epsilon> A1) \<inter> pre_star (language A2)"
+    by metis
+
+  show ?thesis
+  proof 
+    assume "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {}"
+    then have "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2) \<noteq> {}"
+      using inter_correct by auto
+    then show "\<exists>c1\<in>language_\<epsilon> A1. \<exists>c2\<in>language A2. c1 \<Rightarrow>\<^sup>* c2"
+      using dual2 by auto
+  next
+    assume "\<exists>c1\<in>language_\<epsilon> A1. \<exists>c2\<in>language A2. c1 \<Rightarrow>\<^sup>* c2"
+    then have "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2) \<noteq> {}"
+      using dual2 by auto
+    then show "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {}"
+      using inter_correct by auto
+  qed
+qed
+
+theorem dual4:
+  assumes "P_states \<subseteq> LTS.sources A1"
+  assumes "P_states \<subseteq> LTS.sources A2"
+  assumes "\<forall>a b c. (a, b, c) \<in> A1 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "\<forall>a b c. (a, b, c) \<in> A2 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "language_\<epsilon> A1 = {c1}"
+  assumes "language A2 = {c2}"
+  assumes "saturation post_star_rules A1 A1'"
+  assumes "saturation pre_star_rule A2 A2'"
+  shows "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {} \<longleftrightarrow> c1 \<Rightarrow>\<^sup>* c2"
+  using assms dual3 by auto
 
 end
 

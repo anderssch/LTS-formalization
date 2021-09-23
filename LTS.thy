@@ -1290,7 +1290,11 @@ proof (rule, rule)
     unfolding pwq_p .
 qed
 
+definition \<epsilon>_edge_of_edge where
+  "\<epsilon>_edge_of_edge = (\<lambda>(a, l, b). (a, Some l, b))"
 
+definition LTS_\<epsilon>_of_LTS where
+  "LTS_\<epsilon>_of_LTS transition_relation = \<epsilon>_edge_of_edge ` transition_relation"
 
 
 end
