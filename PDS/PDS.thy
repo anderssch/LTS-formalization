@@ -678,6 +678,33 @@ lemma lemma_3_2_a:
 
 lemmas lemma_3_2 = lemma_3_2_a lemma_3_2_b
 
+theorem theorem_3_2_on_the_fly:
+  assumes "P_states \<subseteq> LTS.sources A"
+  assumes "pre_star_rule\<^sup>*\<^sup>* A A'"
+  shows "{c. accepts A' c} \<subseteq> pre_star (language A)"
+proof
+  fix c :: "'ctr_loc \<times> 'label list"
+  assume c_a: "c \<in> {w. accepts A' w}"
+  define p where "p = fst c"
+  define w where "w = snd c"
+  from p_def w_def c_a have "accepts A' (p,w)"
+    by auto
+  then have "\<exists>q \<in> F_states. (Ctr_Loc p, w, q) \<in> LTS.transition_star A'"
+    unfolding accepts_def by auto
+  then obtain q where q_p: "q \<in> F_states" "(Ctr_Loc p, w, q) \<in> LTS.transition_star A'"
+    by auto
+  then have "\<exists>p' w'. (p,w) \<Rightarrow>\<^sup>* (p',w') \<and> (Ctr_Loc p', w', q) \<in> LTS.transition_star A"
+    using lemma_3_2_a' assms(1) assms(2) by metis
+  then obtain p' w' where p'_w'_p: "(p,w) \<Rightarrow>\<^sup>* (p',w')" "(Ctr_Loc p', w', q) \<in> LTS.transition_star A"
+    by auto
+  then have "(p', w') \<in> language A"
+    unfolding language_def unfolding accepts_def using q_p(1) by auto
+  then have "(p,w) \<in> pre_star (language A)"
+    unfolding pre_star_def using p'_w'_p(1) by auto
+  then show "c \<in> pre_star (language A)"
+    unfolding p_def w_def by auto
+qed
+
 theorem theorem_3_2:
   assumes "P_states \<subseteq> LTS.sources A"
   assumes "saturation pre_star_rule A A'"
@@ -1728,6 +1755,36 @@ lemma lemma_3_4:
          (is_Ctr_Ext q \<longrightarrow> (the_Ext_Ctr_Loc q, [the_Ext_Label q]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))"
   using lemma_3_4'' assms saturation_def by metis
 
+theorem theorem_3_3_on_the_fly:
+  assumes "post_star_rules\<^sup>*\<^sup>* A A'"
+  assumes  "P_states \<subseteq> LTS.sources A"
+  assumes "\<forall>a b c. (a, b, c) \<in> A \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  shows "{c. accepts_\<epsilon> A' c} \<subseteq> post_star (language_\<epsilon> A)"
+proof
+  fix c :: "('ctr_loc, 'label) conf"
+  define p where "p = fst c"
+  define w where "w = snd c"
+  assume "c \<in>  {c. accepts_\<epsilon> A' c}"
+  then have "accepts_\<epsilon> A' (p,w)"
+    unfolding p_def w_def by auto
+  then obtain q where q_p: "q \<in> F_states" "(Ctr_Loc p, w, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'" 
+    unfolding accepts_\<epsilon>_def by auto
+  then obtain w' where w'_def: "LTS_\<epsilon>.\<epsilon>_exp w' w \<and> (Ctr_Loc p, w', q) \<in> LTS.transition_star A'"
+    by (meson LTS_\<epsilon>.transition_star_\<epsilon>_iff_\<epsilon>_exp_transition_star)
+  then have ttt: "(Ctr_Loc p, w', q) \<in> LTS.transition_star A'"
+    by auto
+  have "\<not> is_Ctr_Ext q"
+    using F_not_Ext q_p(1) by blast
+  then obtain p' w'a where "(Ctr_Loc p', w'a, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w'a) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w')"
+    using lemma_3_4''[OF assms(1) assms(2) assms(3) ttt] by auto
+  then have "(Ctr_Loc p', w'a, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w'a) \<Rightarrow>\<^sup>* (p, w)"
+    using w'_def by (metis LTS_\<epsilon>.\<epsilon>_exp_def LTS_\<epsilon>.remove_\<epsilon>_def \<open>LTS_\<epsilon>.\<epsilon>_exp w' w \<and> (Ctr_Loc p, w', q) \<in> LTS.transition_star A'\<close>)
+  then have "(p,w) \<in> post_star (language_\<epsilon> A)"
+    using \<open>q \<in> F_states\<close> unfolding LTS.post_star_def accepts_\<epsilon>_def language_\<epsilon>_def by fastforce
+  then show "c \<in> post_star (language_\<epsilon> A)"
+    unfolding p_def w_def by auto
+qed
+
 theorem theorem_3_3:
   assumes "saturation post_star_rules A A'"
   assumes  "P_states \<subseteq> LTS.sources A"
@@ -1747,7 +1804,7 @@ proof (rule; rule)
   then show "c \<in> {c. accepts_\<epsilon> A' c}"
     by auto
 next
-  fix c :: "('ctr_loc, 'label) conf"
+  fix c :: "('ctr_loc, 'label) conf" (* This proof is the same as theorem_3_3_on_the_fly *)
   define p where "p = fst c"
   define w where "w = snd c"
   assume "c \<in>  {c. accepts_\<epsilon> A' c}"
@@ -2245,10 +2302,48 @@ qed
 
 lemma accepts_\<epsilon>_LTS_\<epsilon>_of_LTS_iff_accepts: "accepts_\<epsilon> (LTS_\<epsilon>_of_LTS A2') (p, w) \<longleftrightarrow> accepts A2' (p, w)"
   using accepts_\<epsilon>_def accepts_def transition_star_\<epsilon>_LTS_\<epsilon>_of_LTS_transition_star transition_star_transition_star_\<epsilon>_LTS_\<epsilon>_of_LTS by fastforce
-  
 
 lemma language_\<epsilon>_LTS_\<epsilon>_of_LTS_is_language: "language_\<epsilon> (LTS_\<epsilon>_of_LTS A2') = language A2'"
   unfolding language_\<epsilon>_def language_def using accepts_\<epsilon>_LTS_\<epsilon>_of_LTS_iff_accepts by auto
+
+theorem dual3_on_the_fly:
+  assumes "P_states \<subseteq> LTS.sources A1"
+  assumes "P_states \<subseteq> LTS.sources A2"
+  assumes "\<forall>a b c. (a, b, c) \<in> A1 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "\<forall>a b c. (a, b, c) \<in> A2 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "post_star_rules\<^sup>*\<^sup>* A1 A1'"
+  assumes "pre_star_rule\<^sup>*\<^sup>* A2 A2'"
+  assumes "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {}"
+  shows "\<exists>c1 \<in> language_\<epsilon> A1. \<exists>c2 \<in> language A2. c1 \<Rightarrow>\<^sup>* c2"
+proof -
+  have "{c. accepts_\<epsilon> A1' c} \<subseteq> post_star (language_\<epsilon> A1)"
+    using theorem_3_3_on_the_fly[of A1 A1'] assms by auto
+  then have A1'_correct: "language_\<epsilon> A1' \<subseteq> post_star (language_\<epsilon> A1)"
+    unfolding language_\<epsilon>_def by auto
+
+  have "{c. accepts A2' c} \<subseteq> pre_star (language A2)" 
+    using theorem_3_2_on_the_fly[of A2 A2'] assms by auto
+  then have A2'_correct: "language A2' \<subseteq> pre_star (language A2)" 
+    unfolding language_def by auto
+
+  have "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) = language_\<epsilon> A1' \<inter> language_\<epsilon> (LTS_\<epsilon>_of_LTS A2')"
+    using inter_language[of A1' "(LTS_\<epsilon>_of_LTS A2')"] by auto
+  moreover
+  have "... = language_\<epsilon> A1' \<inter> language A2'"
+    using language_\<epsilon>_LTS_\<epsilon>_of_LTS_is_language by auto
+  moreover
+  have "... \<subseteq> post_star (language_\<epsilon> A1) \<inter> pre_star (language A2)"
+    using A1'_correct A2'_correct by auto
+  ultimately
+  have inter_correct: "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) \<subseteq> post_star (language_\<epsilon> A1) \<inter> pre_star (language A2)"
+    by metis
+
+  from assms(7) have "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2) \<noteq> {}"
+    using inter_correct by auto
+  then show "\<exists>c1\<in>language_\<epsilon> A1. \<exists>c2\<in>language A2. c1 \<Rightarrow>\<^sup>* c2"
+    using dual2 by auto
+
+qed
 
 theorem dual3:
   assumes "P_states \<subseteq> LTS.sources A1"
@@ -2297,6 +2392,19 @@ proof -
   qed
 qed
 
+theorem dual4_on_the_fly:
+  assumes "P_states \<subseteq> LTS.sources A1"
+  assumes "P_states \<subseteq> LTS.sources A2"
+  assumes "\<forall>a b c. (a, b, c) \<in> A1 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "\<forall>a b c. (a, b, c) \<in> A2 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "language_\<epsilon> A1 = {c1}"
+  assumes "language A2 = {c2}"
+  assumes "post_star_rules\<^sup>*\<^sup>* A1 A1'"
+  assumes "pre_star_rule\<^sup>*\<^sup>* A2 A2'"
+  assumes "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {}"
+  shows "c1 \<Rightarrow>\<^sup>* c2"
+  using dual3_on_the_fly[OF assms(1,2,3,4) assms(7,8,9)] assms(5,6) by auto
+
 theorem dual4:
   assumes "P_states \<subseteq> LTS.sources A1"
   assumes "P_states \<subseteq> LTS.sources A2"
@@ -2308,6 +2416,8 @@ theorem dual4:
   assumes "saturation pre_star_rule A2 A2'"
   shows "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {} \<longleftrightarrow> c1 \<Rightarrow>\<^sup>* c2"
   using assms dual3 by auto
+
+
 
 end
 

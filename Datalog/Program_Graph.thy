@@ -215,7 +215,7 @@ definition compose :: "('x,'e) subst \<Rightarrow> ('x,'e) var_val \<Rightarrow>
 
 section \<open>Datalog lemmas\<close>
 
-lemma fff: "solves_cls \<rho> (Cls p ids []) \<longleftrightarrow> solves_rh \<rho> (PosRh p ids)"
+lemma solves_cls_iff_solves_rh: "solves_cls \<rho> (Cls p ids []) \<longleftrightarrow> solves_rh \<rho> (PosRh p ids)"
   using solves_cls_def by force
 
 lemma solves_fact_query:
@@ -451,10 +451,6 @@ abbreviation solves_query :: "('p,'e) pred_val \<Rightarrow> ('p, RD_var,'e) que
 definition summarizes_dl :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
   "summarizes_dl \<rho> pg \<longleftrightarrow> (\<forall>\<pi> x q1 q2. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> get_start \<pi> = Start \<longrightarrow> (x,q1,q2) \<in> def_path \<pi> \<longrightarrow> 
      solves_query \<rho> (RD1\<langle>[Encode_Node (get_end \<pi>), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.))"
-(* The warning is because summarizes_dl does not fix the type of datalog variables...
-   The reason is that the query does not contain variables, so the system cannot infer the type of datalog variables.
-   It can be done by adding a type annotation to solves_query.
- *)
 
 lemma def_var_x: "fst (def_var ts x) = x"
   unfolding def_var_def by (simp add: case_prod_beta triple_of_def)
@@ -501,8 +497,6 @@ proof -
     by (simp add: def_path_def)
 qed
 
-(* Ville det ikke være bedre hvis paths var lister af transitions?????????? *)
-(* Det er nok godt med et bevis på papir først :-D *)
 lemma RD_sound': 
   assumes "(ss,w) \<in> LTS.path_with_word pg"
   assumes "solves_program \<rho> (var_contraints \<union> ana_pg pg)"
@@ -698,11 +692,6 @@ abbreviation "BV == PosRh the_BV"
 abbreviation "notkill == PosRh the_notkill"
 abbreviation "gen == PosRh the_gen"
 
-(*
-abbreviation "negkill" ("\<^bold>\<not>kill _" [61] 61) where
-  "\<^bold>\<not>kill ts \<equiv> NegRh the_kill ts"
-*)
-
 abbreviation BV_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("BV\<langle>_\<rangle> :- _ .") where 
    "BV\<langle>args\<rangle> :- ls. \<equiv> Cls the_BV args ls"
 
@@ -840,7 +829,7 @@ lemma singleton_path_start_end:
   using assms
   by (simp add: get_end_def get_start_def) 
 
-lemma ugugugugug:
+lemma S_hat_path_append:
   assumes "length qs = length w"                               
   shows "S_hat_path (qs @ [qnminus1, qn], w @ [l]) d_init =
     S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
@@ -863,7 +852,7 @@ proof -
     by blast
 qed
 
-lemma asdjfklsajdfla:
+lemma path_with_word_lengths:
   assumes "(qs @ [qnminus1], w) \<in> LTS.path_with_word pg"
   shows "length qs = length w"
   using assms
@@ -906,7 +895,7 @@ next
   have "length qs = length w"
     using 2(1) asdjfklsajdfla by metis
   then have "S_hat_path (qs @ [qnminus1, qn], w @ [l]) d_init = S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
-    using ugugugugug[of qs w] by auto
+    using S_hat_path_append[of qs w] by auto
   moreover have "... = S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
     by simp
   moreover have "... \<subseteq> S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
@@ -946,33 +935,10 @@ next
     then have "\<forall>c\<in>ana_kill_BV ((qnminus1, l, qn),d). solves_cls \<rho> c"
       using e_in_pg by blast
     then have "solves_cls \<rho> notkill\<langle>[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- []."
-      apply auto
-      using a_2
-      by auto
-    moreover
+      using a_2 by auto
+    ultimately
     show "solves_query \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
-      apply (subst resolution_xxx[of \<rho> the_BV "[Encode_Node_BV qn, Encode_Elem_BV d]" "[BV[Encode_Node_BV qnminus1, Encode_Elem_BV d], notkill[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]]"])
-      subgoal
-        using calculation(2) apply blast
-        done
-      subgoal
-        apply auto
-        subgoal
-          using a_1
-          apply auto
-          done
-        subgoal
-          using calculation(3)
-          using fff
-          apply auto
-          unfolding solves_cls_def
-          apply auto
-          done
-        done
-      subgoal
-        apply auto
-        done
-      done
+      by (metis a_1 append.left_neutral append_Cons solves_cls_iff_solves_rh resolution_last_rh resolution_only_rh_query)
   next
     assume a: "d \<in> gen_set (qnminus1, l, qn)"
     have e_in_pg: "(qnminus1, l, qn) \<in> pg"
@@ -1008,4 +974,109 @@ lemma sound_BV:
 
 end
 
+
+section \<open>Reaching definitions revisited\<close>
+
+fun kill_set_RD :: "('n,'v) edge \<Rightarrow> ('n,'v) triple set" where
+  "kill_set_RD (q\<^sub>o, x ::= a, q\<^sub>s) = {x} \<times> UNIV \<times> UNIV"
+| "kill_set_RD (q\<^sub>o, Bool b, q\<^sub>s) = {}"
+| "kill_set_RD (v, Skip, vc) = {}"
+
+fun gen_set_RD :: "('n,'v) edge \<Rightarrow> ('n,'v) triple set" where
+  "gen_set_RD (q\<^sub>o, x ::= a, q\<^sub>s) = {x} \<times> {Some q\<^sub>o} \<times> {q\<^sub>s}"
+| "gen_set_RD (q\<^sub>o, Bool b, q\<^sub>s) = {}"
+| "gen_set_RD (v, Skip, vc) = {} "
+
+definition d_init_RD :: "('n,'v) triple set" where
+  "d_init_RD = (UNIV \<times> {None} \<times> {Start})"
+
+interpretation interp: analysis_BV kill_set_RD gen_set_RD d_init_RD .
+
+lemma def_var_def_edge_S_hat:
+  assumes "def_var \<pi> x \<in> R"
+  assumes "x \<notin> def_edge t"
+  shows "def_var \<pi> x \<in> interp.S_hat t R"
+proof -
+  define q1 where "q1 = fst t"
+  define \<alpha> where "\<alpha> = fst (snd t)"
+  define q2 where "q2 = snd (snd t)"
+  have t_def: "t = (q1, \<alpha>, q2)"
+    by (simp add: \<alpha>_def q1_def q2_def)
+
+  from assms(2) have assms_2: "x \<notin> def_edge (q1, \<alpha>, q2)"
+    unfolding t_def by auto
+
+  have "def_var \<pi> x \<in> interp.S_hat (q1, \<alpha>, q2) R"
+  proof (cases \<alpha>)
+    case (Asg y exp)
+    then show ?thesis
+      by (metis (no_types, lifting) DiffI Un_iff assms(1) assms_2 def_action.simps(1) def_var_x interp.S_hat_def kill_set_RD.simps(1) mem_Sigma_iff old.prod.case prod.collapse)
+  next
+    case (Bool b)
+    then show ?thesis
+      by (simp add: analysis_BV.S_hat_def assms(1))
+  next
+    case Skip
+    then show ?thesis
+      by (simp add: analysis_BV.S_hat_def assms(1))
+  qed
+  then show ?thesis
+    unfolding t_def by auto
+qed
+
+lemma def_var_S_hat_edge_list: "(def_var \<pi>) x \<in> interp.S_hat_edge_list \<pi> d_init_RD"
+proof (induction \<pi> rule: rev_induct)
+  case Nil
+  then show ?case
+    unfolding def_var_def d_init_RD_def by auto
+next
+  case (snoc t \<pi>)
+  then show ?case
+  proof (cases "x \<in> def_edge t")
+    case True
+    then have "def_var (\<pi> @[t]) x = def_var [t] x"
+      by (simp add: def_var_def)
+    moreover
+    have "interp.S_hat_edge_list (\<pi> @ [t]) d_init_RD = interp.S_hat t (interp.S_hat_edge_list \<pi> d_init_RD)"
+      unfolding interp.S_hat_edge_list_def2 by simp
+    moreover
+    obtain q1 \<alpha> q2 where t_split: "t = (q1, \<alpha>, q2)"
+      using prod_cases3 by blast
+    moreover
+    have "def_var [t] x \<in> interp.S_hat t (interp.S_hat_edge_list \<pi> d_init_RD)"
+      unfolding interp.S_hat_def def_var_def triple_of_def using True t_split by (cases \<alpha>) auto
+    ultimately
+    show ?thesis by auto
+  next
+    case False
+    obtain q1 \<alpha> q2 where t_split: "t = (q1, \<alpha>, q2)"
+      using prod_cases3 by blast
+    from False have "def_var (\<pi> @ [t]) x = def_var \<pi> x"
+      by (simp add: def_var_def)
+    moreover
+    from snoc.IH have "def_var \<pi> x \<in> interp.S_hat t (interp.S_hat_edge_list \<pi> d_init_RD)"
+      by (simp add: False def_var_def_edge_S_hat)
+    then have "def_var \<pi> x \<in> interp.S_hat_edge_list (\<pi> @ [t]) d_init_RD"
+      unfolding interp.S_hat_edge_list_def2 by simp
+    ultimately
+    show ?thesis
+      using snoc by auto
+  qed
+qed
+
+lemma def_var_S_hat2: "(def_var \<pi>) ` UNIV \<subseteq> interp.S_hat_edge_list \<pi> d_init_RD"
+  using def_var_S_hat_edge_list by force
+
+lemma def_path_S_hat_path: "def_path \<pi> \<subseteq> interp.S_hat_path \<pi> d_init_RD"
+  by (simp add: analysis_BV.S_hat_path_def def_path_def def_var_S_hat2)
+
+definition summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
+  "summarizes_RD \<rho> pg \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> get_start \<pi> = Start \<longrightarrow> d \<in> def_path \<pi> \<longrightarrow> 
+     solves_query \<rho> (BV\<langle>[Encode_Node_BV (get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
+
+lemma RD_sound_again: 
+  assumes "solves_program \<rho> (interp.ana_pg_BV pg)"
+  shows "summarizes_RD \<rho> pg"
+  using assms def_path_S_hat_path interp.sound_BV unfolding interp.summarizes_dl_BV_def summarizes_RD_def by force
+  
 end

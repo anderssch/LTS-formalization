@@ -20,6 +20,11 @@ LTS formalizations:
 	afp-2021/thys/CAVA_LTL_Modelchecker/SM/Lib/LTS.thy
 	Similar to what we are doing, but very small.
 
+	There is a comprehensive overview of Graph and LTS libraries:
+	https://github.com/wimmers/archive-of-graph-formalizations
+
+	See also Anders's mail to Simon "Formalizing model checking"
+
 
 
 
