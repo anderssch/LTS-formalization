@@ -3,7 +3,6 @@ theory Program_Graph imports "../LTS" begin
 
 section \<open>Actions\<close>
 
-
 datatype 'v arith =
   Integer int
   | Var 'v
@@ -59,18 +58,8 @@ datatype 'n node =
 type_synonym ('n,'v) edge = "'n node * 'v action * 'n node"
 
 type_synonym ('n,'v) program_graph = "('n,'v) edge set"
-(* For program graphs there are some reachability requirements on Start and End, 
-   but we ignore them for now. *)
-
-definition get_start :: "('n node list \<times> 'v action list) \<Rightarrow> 'n node" where
-  "get_start \<pi> = hd (fst \<pi>)"
-(* TODO: Make a better path representation. *)
-
-definition get_end :: "('n node list \<times> 'v action list) \<Rightarrow> 'n node" where
-  "get_end \<pi> = last (fst \<pi>)"
 
 term "LTS.path_with_word :: ('n,'v) program_graph \<Rightarrow> ('n node list \<times> 'v action list) set"
-
 
 section \<open>Execution Sequences\<close>
 
@@ -85,20 +74,10 @@ fun final_config where
 inductive exe_step :: "('n,'v) program_graph \<Rightarrow> ('n,'v) config \<Rightarrow> 'v action \<Rightarrow> ('n,'v) config \<Rightarrow> bool" where
   "(q1, a, q2) \<in> pg \<Longrightarrow> sem_action a \<sigma> = Some \<sigma>' \<Longrightarrow> exe_step pg (q1,\<sigma>) a (q2,\<sigma>')"
 
-(* Define datalog syntax *)
-(* Construct the clauses as on page 162 *)
-
-(* Definition 2.5: 
-   What does it mean for an assignment to summarize a set of paths.
-   Well, what is an assignment even for datalog.
-
-*)
-
 
 section \<open>Reaching Definitions\<close>
 
 type_synonym ('n,'v) triple = "'v * 'n node option * 'n node"
-(* Kan dette modelleres smartere? *)
 
 type_synonym ('n,'v) analysis_assignment = "'n node \<Rightarrow> ('n,'v) triple set"
 
@@ -123,16 +102,12 @@ definition def_var :: "('n,'v) edge list \<Rightarrow> 'v \<Rightarrow> ('n,'v) 
 
 definition def_path :: "('n node list \<times> 'v action list) \<Rightarrow> ('n,'v) triple set" where
   "def_path \<pi> = (def_var (LTS.transition_list \<pi>) ` UNIV)"
-(* Giver vel kun mening med et fixed og endeligt univers af variable.
-   Eller hvad?
-*)
 
 definition summarizes :: "('n,'v) analysis_assignment \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
-  "summarizes RD pg \<longleftrightarrow> (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> get_start \<pi> = Start \<longrightarrow> def_path \<pi> \<subseteq> RD (get_end \<pi>))"
-(* Empty path? *)
+  "summarizes RD pg \<longleftrightarrow> (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> LTS.get_start \<pi> = Start \<longrightarrow> def_path \<pi> \<subseteq> RD (LTS.get_end \<pi>))"
 
 definition summarizes2 :: "('n,'v) analysis_assignment \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
-  "summarizes2 RD pg \<longleftrightarrow> (\<forall>\<pi> a b c. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> get_start \<pi> = Start \<longrightarrow> (a, b, c) \<in> def_path \<pi> \<longrightarrow> (a, b, c) \<in> RD (get_end \<pi>))"
+  "summarizes2 RD pg \<longleftrightarrow> (\<forall>\<pi> a b c. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> LTS.get_start \<pi> = Start \<longrightarrow> (a, b, c) \<in> def_path \<pi> \<longrightarrow> (a, b, c) \<in> RD (LTS.get_end \<pi>))"
   
 
 section \<open>Datalog programs and their solutions\<close>
@@ -147,7 +122,7 @@ datatype ('p,'x,'e) righthand =
 
 datatype ('p,'x,'e) clause = Cls 'p "('x,'e) identifier list" "('p,'x,'e) righthand list" (* Why not righthand set? *)
 
-type_synonym ('p,'x,'e) dl_program = "('p,'x,'e) clause set" (* Set or list? *)
+type_synonym ('p,'x,'e) dl_program = "('p,'x,'e) clause set"
 
 type_synonym ('x,'e) var_val = "'x \<Rightarrow> 'e"
 
@@ -249,7 +224,7 @@ proof -
     by (meson solves_fact_query)
 qed
 
-lemma resolution_xxx:
+lemma resolution_all_rhs:
   assumes "solves_cls \<rho> (Cls p ids rhs)"
   assumes "\<forall>rh \<in> set rhs. solves_rh \<rho> rh"
   shows "solves_query \<rho> (p, ids)"
@@ -355,7 +330,7 @@ datatype RD_pred =
    the_RD1
    | the_VAR
 
-abbreviation Encode_Node :: "'n node \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where (* 'x could also be RD_var... *)
+abbreviation Encode_Node :: "'n node \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where
   "Encode_Node n == DLElement (RD_Node n)"
 
 fun Encode_Node_Q :: "'n node option \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where
@@ -443,14 +418,9 @@ definition var_contraints :: "(RD_pred, RD_var, ('n,'v) RD_elem) clause set" whe
 
 type_synonym ('n,'v) quadruple = "'n node *'v * 'n node option * 'n node"
 
-(*
-abbreviation solves_query :: "('p,'e) pred_val \<Rightarrow> ('p, RD_var,'e) query \<Rightarrow> bool" where
-  "solves_query == solves_query"
-*)
-
 definition summarizes_dl :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
-  "summarizes_dl \<rho> pg \<longleftrightarrow> (\<forall>\<pi> x q1 q2. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> get_start \<pi> = Start \<longrightarrow> (x,q1,q2) \<in> def_path \<pi> \<longrightarrow> 
-     solves_query \<rho> (RD1\<langle>[Encode_Node (get_end \<pi>), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.))"
+  "summarizes_dl \<rho> pg \<longleftrightarrow> (\<forall>\<pi> x q1 q2. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> LTS.get_start \<pi> = Start \<longrightarrow> (x,q1,q2) \<in> def_path \<pi> \<longrightarrow> 
+     solves_query \<rho> (RD1\<langle>[Encode_Node (LTS.get_end \<pi>), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.))"
 
 lemma def_var_x: "fst (def_var ts x) = x"
   unfolding def_var_def by (simp add: case_prod_beta triple_of_def)
@@ -500,9 +470,9 @@ qed
 lemma RD_sound': 
   assumes "(ss,w) \<in> LTS.path_with_word pg"
   assumes "solves_program \<rho> (var_contraints \<union> ana_pg pg)"
-  assumes "get_start (ss,w) = Start"
+  assumes "LTS.get_start (ss,w) = Start"
   assumes "(x,q1,q2) \<in> def_path (ss,w)"
-  shows "solves_query \<rho> RD1\<langle>[Encode_Node (get_end (ss,w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+  shows "solves_query \<rho> RD1\<langle>[Encode_Node (LTS.get_end (ss,w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
   using assms 
 proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   case (1 s)
@@ -541,7 +511,7 @@ proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
      using x_sat by auto
 
    from this 1 show ?case
-    unfolding get_end_def def_path_def def_var_def get_start_def by auto
+    unfolding LTS.LTS.get_end_def def_path_def def_var_def LTS.get_start_def by auto
 next
   case (2 ss s w l s')
   from 2(1) have len: "length ss = length w"
@@ -561,12 +531,12 @@ next
     then have "solves_query \<rho> RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
       using solves_fact_query by metis 
     then show ?thesis
-      by (simp add: get_end_def sq)
+      by (simp add: LTS.get_end_def sq)
   next
     case False
     then have x_is_def: "(x, q1, q2) \<in> def_path (ss @ [s], w)" using 2(7)
       using not_last_def_transition len by force
-    then have "solves_query \<rho> (RD1\<langle>[Encode_Node (get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
+    then have "solves_query \<rho> (RD1\<langle>[Encode_Node (LTS.get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
     proof -
       have "(ss @ [s], w) \<in> LTS.path_with_word pg"
         using 2(1) by auto
@@ -574,18 +544,18 @@ next
       have "solves_program \<rho> (var_contraints \<union> ana_pg pg)"
         using 2(5) by auto
       moreover
-      have "get_start (ss @ [s], w) = Start"
+      have "LTS.get_start (ss @ [s], w) = Start"
         using 2(6)
-        by (metis append_self_conv2 fst_conv get_start_def hd_append2 list.sel(1)) 
+        by (metis append_self_conv2 fst_conv LTS.get_start_def hd_append2 list.sel(1)) 
       moreover
       have "(x, q1, q2) \<in> def_path (ss @ [s], w)"
         using x_is_def by auto
       ultimately
-      show "solves_query \<rho> (the_RD1, [Encode_Node (get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
+      show "solves_query \<rho> (the_RD1, [Encode_Node (LTS.get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
         using 2(3) by auto
     qed
     then have ind: "solves_query \<rho> (RD1\<langle>[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
-      by (simp add: get_end_def)
+      by (simp add: LTS.get_end_def)
     define \<sigma> where "\<sigma> = undefined(the_\<u> := Encode_Var x, the_\<v> := Encode_Node_Q q1, the_\<w> := Encode_Node q2)"
     show ?thesis
     proof (cases l)
@@ -624,7 +594,7 @@ next
       then have "solves_query \<rho> (RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
         using solves_fact_query by metis
       then show ?thesis
-        by (simp add: get_end_def)
+        by (simp add: LTS.get_end_def)
     next
       case (Bool b)
       have "(s, Bool b, s') \<in> pg"
@@ -645,7 +615,7 @@ next
         using ind
         by (meson resolution_only_rh_query)
       then show ?thesis
-        by (simp add: get_end_def)
+        by (simp add: LTS.get_end_def)
     next
       case Skip
       have "(s, Skip, s') \<in> pg"
@@ -667,7 +637,7 @@ next
       from resolution_only_rh_query[OF this ind] have "solves_query \<rho> (the_RD1, [Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2])"
         .
       then show ?thesis
-        by (simp add: get_end_def)
+        by (simp add: LTS.get_end_def)
     qed
   qed
 qed
@@ -708,7 +678,6 @@ datatype ('n,'v,'elem) BV_elem =
   BV_Node "'n node"
   | BV_Elem 'elem
   | BV_Action "'v action"
-
 
 abbreviation \<uu> :: "(BV_var, 'a) identifier" where
   "\<uu> == DLVar the_\<uu>"
@@ -820,14 +789,8 @@ definition ana_pg_BV :: "('n, 'v) program_graph \<Rightarrow> (BV_pred, BV_var, 
                   \<union> \<Union>(ana_gen_BV ` (pg \<times> UNIV))"
 
 definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> ('n, 'v) program_graph \<Rightarrow> bool" where
-  "summarizes_dl_BV \<rho> pg \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> get_start \<pi> = Start \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
-     solves_query \<rho> (BV\<langle>[Encode_Node_BV (get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
-
-lemma singleton_path_start_end:
-  assumes "([s], []) \<in> LTS.path_with_word pg"
-  shows "get_start ([s], []) = get_end ([s], [])"
-  using assms
-  by (simp add: get_end_def get_start_def) 
+  "summarizes_dl_BV \<rho> pg \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> LTS.get_start \<pi> = Start \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
+     solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
 lemma S_hat_path_append:
   assumes "length qs = length w"                               
@@ -852,24 +815,17 @@ proof -
     by blast
 qed
 
-lemma path_with_word_lengths:
-  assumes "(qs @ [qnminus1], w) \<in> LTS.path_with_word pg"
-  shows "length qs = length w"
-  using assms
-  by (metis LTS.path_with_word_length Suc_eq_plus1 Suc_inject length_Cons length_append list.size(3) list.size(4))
-
-
 lemma sound_BV': 
   assumes "(ss,w) \<in> LTS.path_with_word pg"
   assumes "solves_program \<rho> (ana_pg_BV pg)"
-  assumes "get_start (ss,w) = Start"
+  assumes "LTS.get_start (ss,w) = Start"
   assumes "d \<in> S_hat_path (ss,w) d_init"
-  shows "solves_query \<rho> BV\<langle>[Encode_Node_BV (get_end (ss,w)), Encode_Elem_BV d]\<rangle>."
+  shows "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end (ss,w)), Encode_Elem_BV d]\<rangle>."
   using assms 
 proof (induction arbitrary: d rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   case (1 s)
-  from 1(1,3) have start_end: "get_end ([s], []) = Start"
-    using singleton_path_start_end by metis
+  from 1(1,3) have start_end: "LTS.get_end ([s], []) = Start"
+    using LTS.singleton_path_start_end[of s pg, OF 1(1)] by (metis LTS.get_end_def prod.sel(1))
 
   from 1 have "S_hat_path ([s], []) d_init = d_init"
     unfolding S_hat_path_def by auto
@@ -885,21 +841,21 @@ proof (induction arbitrary: d rule: LTS.path_with_word_induct_reverse[OF assms(1
 next
   case (2 qs qnminus1 w l qn)
   have "S_hat_path (qs @ [qnminus1], w) d_init \<subseteq>
-        {d. solves_query \<rho> BV\<langle>[Encode_Node_BV (get_end (qs @ [qnminus1], w)), Encode_Elem_BV d]\<rangle>.}"
+        {d. solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end (qs @ [qnminus1], w)), Encode_Elem_BV d]\<rangle>.}"
     using 2
-    by (metis (no_types, lifting) get_start_def hd_append2 list.sel(1) mem_Collect_eq prod.sel(1) self_append_conv2 subsetI) 
+    by (metis (no_types, lifting) LTS.get_start_def hd_append2 list.sel(1) mem_Collect_eq prod.sel(1) self_append_conv2 subsetI) 
   then have f: "S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init) \<subseteq>
-             S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV (get_end (qs @ [qnminus1], w)), Encode_Elem_BV d]\<rangle>.}"
+             S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end (qs @ [qnminus1], w)), Encode_Elem_BV d]\<rangle>.}"
     by (simp add: S_hat_mono)
 
   have "length qs = length w"
-    using 2(1) asdjfklsajdfla by metis
+    using 2(1) LTS.path_with_word_lengths by metis
   then have "S_hat_path (qs @ [qnminus1, qn], w @ [l]) d_init = S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
     using S_hat_path_append[of qs w] by auto
   moreover have "... = S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
     by simp
   moreover have "... \<subseteq> S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
-    by (metis f get_end_def last_snoc prod.sel(1))
+    by (metis f LTS.get_end_def last_snoc prod.sel(1))
   ultimately have "S_hat_path (qs @ [qnminus1, qn], w @ [l]) d_init \<subseteq> S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
     by auto
   then have "d \<in> S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
@@ -964,7 +920,7 @@ next
       by (meson resolution_only_rh_query solves_fact_query)
   qed
   then show ?case
-    by (simp add: get_end_def) 
+    by (simp add: LTS.get_end_def) 
 qed
 
 lemma sound_BV:
@@ -1064,19 +1020,98 @@ next
   qed
 qed
 
-lemma def_var_S_hat2: "(def_var \<pi>) ` UNIV \<subseteq> interp.S_hat_edge_list \<pi> d_init_RD"
+lemma def_var_UNIV_S_hat_edge_list: "(def_var \<pi>) ` UNIV \<subseteq> interp.S_hat_edge_list \<pi> d_init_RD"
   using def_var_S_hat_edge_list by force
 
 lemma def_path_S_hat_path: "def_path \<pi> \<subseteq> interp.S_hat_path \<pi> d_init_RD"
-  by (simp add: analysis_BV.S_hat_path_def def_path_def def_var_S_hat2)
+  by (simp add: analysis_BV.S_hat_path_def def_path_def def_var_UNIV_S_hat_edge_list)
 
 definition summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
-  "summarizes_RD \<rho> pg \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> get_start \<pi> = Start \<longrightarrow> d \<in> def_path \<pi> \<longrightarrow> 
-     solves_query \<rho> (BV\<langle>[Encode_Node_BV (get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
+  "summarizes_RD \<rho> pg \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> LTS.get_start \<pi> = Start \<longrightarrow> d \<in> def_path \<pi> \<longrightarrow> 
+     solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
 lemma RD_sound_again: 
   assumes "solves_program \<rho> (interp.ana_pg_BV pg)"
   shows "summarizes_RD \<rho> pg"
   using assms def_path_S_hat_path interp.sound_BV unfolding interp.summarizes_dl_BV_def summarizes_RD_def by force
-  
+
+
+locale analysis_BV_backwards =
+  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes d_init :: "'d set"
+begin
+
+(* "URGENT TODO:" Define what summarizes means here. *)
+
+definition rev_edge :: "('n,'v) edge \<Rightarrow> ('n,'v) edge" where
+  "rev_edge = (\<lambda>(q\<^sub>s,\<alpha>,q\<^sub>o). (q\<^sub>o,\<alpha>,q\<^sub>s))"
+
+(* Potential bug: this rev_graph does not flip start and end *)
+definition rev_graph :: "('n,'v) program_graph \<Rightarrow> ('n,'v) program_graph" where
+  "rev_graph pg = (\<lambda>(q\<^sub>s,\<alpha>,q\<^sub>o). (q\<^sub>o,\<alpha>,q\<^sub>s)) ` pg"
+
+definition "S_hat" :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" where
+  "S_hat e R = (R - kill_set (rev_edge e)) \<union> gen_set (rev_edge e)"
+
+lemma S_hat_mono:
+  assumes "d1 \<subseteq> d2"
+  shows "S_hat e d1 \<subseteq> S_hat e d2"
+  using assms unfolding S_hat_def by auto
+
+fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" where
+  "S_hat_edge_list [] R = R" |
+  "S_hat_edge_list (e # \<pi>) R = S_hat_edge_list \<pi> (S_hat e R)"
+
+lemma S_hat_edge_list_def2:
+  "S_hat_edge_list \<pi> R = foldl (\<lambda>a b. S_hat b a) R \<pi>"
+proof (induction \<pi> arbitrary: R)
+  case Nil
+  then show ?case
+    by simp
+next
+  case (Cons a \<pi>)
+  then show ?case
+    by simp
+qed
+
+lemma S_hat_edge_list_append[simp]:
+  "S_hat_edge_list (xs @ ys) R = S_hat_edge_list ys (S_hat_edge_list xs R)"
+  unfolding S_hat_edge_list_def2 foldl_append by auto
+
+lemma S_hat_edge_list_mono:
+  assumes "d1 \<subseteq> d2"
+  shows "S_hat_edge_list \<pi> d1 \<subseteq> S_hat_edge_list \<pi> d2"
+proof(induction \<pi> rule: List.rev_induct)
+  case Nil
+  then show ?case
+    using assms by auto
+next
+  case (snoc x xs)
+  then show ?case
+    using assms by (simp add: S_hat_mono)
+qed
+
+definition S_hat_path :: "('n node list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" where
+  "S_hat_path \<pi> = S_hat_edge_list (LTS.transition_list \<pi>)"
+
+definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> ('n, 'v) program_graph \<Rightarrow> bool" where
+  "summarizes_dl_BV \<rho> pg \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> LTS.get_end \<pi> = End \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
+     solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
+
+interpretation fa: analysis_BV kill_set gen_set d_init .
+
+lemma 
+  assumes "fa.summarizes_dl_BV \<rho> (rev_graph pg)"
+  shows "summarizes_dl_BV \<rho> pg"
+  sorry
+
+lemma sound_rev_BV:
+  undefined
+  using fa.sound_BV[of _ "rev_graph _"]
+  oops
+
+
+end
+
 end

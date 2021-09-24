@@ -98,6 +98,18 @@ inductive_set path_with_word :: "('state list * 'label list) set" where
   path_with_word_refl[iff]: "([s],[]) \<in> path_with_word"
 | path_with_word_step: "(s'#ss, w) \<in> path_with_word \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,l#w) \<in> path_with_word"
 
+definition get_start :: "('state list \<times> 'label list) \<Rightarrow> 'state" where
+  "get_start \<pi> = hd (fst \<pi>)"
+
+definition get_end :: "('state list \<times> 'label list) \<Rightarrow> 'state" where
+  "get_end \<pi> = last (fst \<pi>)"
+
+lemma singleton_path_start_end:
+  assumes "([s], []) \<in> LTS.path_with_word pg"
+  shows "get_start ([s], []) = get_end ([s], [])"
+  using assms
+  by (simp add: get_end_def get_start_def) 
+
 lemma path_with_word_length:
   assumes "(ss, w) \<in> path_with_word"
   shows "length ss = length w + 1"
@@ -109,6 +121,11 @@ next
   case (2 ss s w l s')
   then show ?case by auto
 qed
+
+lemma path_with_word_lengths:
+  assumes "(qs @ [qnminus1], w) \<in> path_with_word"
+  shows "length qs = length w"
+  using assms by (metis LTS.path_with_word_length Suc_eq_plus1 Suc_inject length_Cons length_append list.size(3) list.size(4))
 
 lemma path_with_word_butlast:
   assumes "(ss, w) \<in> path_with_word"
