@@ -412,7 +412,7 @@ definition var_contraints :: "(RD_pred, RD_var, ('n,'v) RD_elem) clause set" whe
    Eller definere hvad det betyder at \<rho> er en analysis assignment.
  *)
 
-type_synonym ('n,'v) quadruple = "'n *'v * 'n option * 'n node"
+type_synonym ('n,'v) quadruple = "'n *'v * 'n option * 'n"
 
 fun summarizes_dl :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
   "summarizes_dl \<rho> (es,start,end) \<longleftrightarrow> (\<forall>\<pi> x q1 q2. \<pi> \<in> LTS.path_with_word es \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> (x,q1,q2) \<in> def_path \<pi> start \<longrightarrow> 
@@ -688,10 +688,21 @@ abbreviation Encode_Action_BV :: "'v action \<Rightarrow> (BV_var, ('n, 'v, 'ele
   "Encode_Action_BV \<alpha> == DLElement (BV_Action \<alpha>)"
 
 locale analysis_BV =
+  fixes pg :: "('n,'v) program_graph"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
 begin
+
+definition edge_set where 
+  "edge_set = fst pg"
+
+definition start where
+  "start = fst (snd pg)"
+
+definition "end" where
+  "end = snd (snd pg)"
+
 
 definition "S_hat" :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" where
   "S_hat e R = (R - kill_set e) \<union> gen_set e"
@@ -760,8 +771,8 @@ fun ana_gen_BV :: "(('n, 'v) edge \<times> 'd) \<Rightarrow> (BV_pred, BV_var, (
      {}
    )"
 
-definition ana_init_BV :: "'d \<Rightarrow> 'n \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
-  "ana_init_BV d start = 
+definition ana_init_BV :: "'d \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
+  "ana_init_BV d = 
      {
        BV\<langle>[Encode_Node_BV start, Encode_Elem_BV d]\<rangle> :- [].
      }"
@@ -778,14 +789,14 @@ fun ana_edge_BV :: "('n, 'v) edge \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) B
         BV\<langle>[Encode_Node_BV q\<^sub>s, \<uu>]\<rangle> :- [gen[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, \<uu>]].
      }"
 
-fun ana_pg_BV :: "('n, 'v) program_graph \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
-  "ana_pg_BV (es,start,end) = \<Union>(ana_edge_BV ` es) 
-                  \<union> \<Union>((\<lambda>x. ana_init_BV x start) ` d_init)
-                  \<union> \<Union>(ana_kill_BV ` (es \<times> UNIV))
-                  \<union> \<Union>(ana_gen_BV ` (es \<times> UNIV))"
+definition ana_pg_BV :: "(BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
+  "ana_pg_BV = \<Union>(ana_edge_BV ` edge_set) 
+               \<union> \<Union>(ana_init_BV ` d_init)
+               \<union> \<Union>(ana_kill_BV ` (edge_set \<times> UNIV))
+               \<union> \<Union>(ana_gen_BV ` (edge_set \<times> UNIV))"
 
-fun summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> ('n, 'v) program_graph \<Rightarrow> bool" where
-  "summarizes_dl_BV \<rho> (es,start,end) \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word es \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
+fun summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+  "summarizes_dl_BV \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
      solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
 lemma S_hat_path_append:
@@ -812,8 +823,8 @@ proof -
 qed
 
 lemma sound_BV': 
-  assumes "(ss,w) \<in> LTS.path_with_word es"
-  assumes "solves_program \<rho> (ana_pg_BV (es,start,end))"
+  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
+  assumes "solves_program \<rho> ana_pg_BV"
   assumes "LTS.get_start (ss,w) = start"
   assumes "d \<in> S_hat_path (ss,w) d_init"
   shows "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end (ss,w)), Encode_Elem_BV d]\<rangle>."
@@ -821,7 +832,7 @@ lemma sound_BV':
 proof (induction arbitrary: d rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   case (1 s)
   from 1(1,3) have start_end: "LTS.get_end ([s], []) = start"
-    using LTS.singleton_path_start_end[of s es, OF 1(1)] by (metis LTS.get_end_def prod.sel(1))
+    using LTS.singleton_path_start_end[of s edge_set, OF 1(1)] by (metis LTS.get_end_def prod.sel(1))
 
   from 1 have "S_hat_path ([s], []) d_init = d_init"
     unfolding S_hat_path_def by auto
@@ -829,7 +840,7 @@ proof (induction arbitrary: d rule: LTS.path_with_word_induct_reverse[OF assms(1
     using 1(4) by auto
   moreover
   from 1(2) have "\<forall>d \<in> d_init. solves_cls \<rho> (BV\<langle>[Encode_Node_BV start, Encode_Elem_BV d]\<rangle> :- [].)"
-    unfolding ana_pg_BV.simps ana_init_BV_def solves_program_def by auto
+    unfolding ana_pg_BV_def ana_init_BV_def solves_program_def by auto
   ultimately have "solves_cls \<rho> (BV\<langle>[Encode_Node_BV start, Encode_Elem_BV d]\<rangle> :- [].)"
     by auto
   then show ?case
@@ -869,11 +880,11 @@ next
     from a have a_1: "solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>."
       by auto
     moreover
-    have e_in_pg: "(qnminus1, l, qn) \<in> es"
+    have e_in_pg: "(qnminus1, l, qn) \<in> edge_set"
       using "2.hyps"(2) by blast
 
     have "\<forall>c \<in> ana_edge_BV (qnminus1, l, qn). solves_cls \<rho> c"
-      using 2(5) e_in_pg unfolding ana_pg_BV.simps solves_program_def by blast
+      using 2(5) e_in_pg unfolding ana_pg_BV_def solves_program_def by blast
     then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, \<uu>]\<rangle> :- [BV[Encode_Node_BV qnminus1,  \<uu>], notkill[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, \<uu>]]."
       by auto
     then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- [BV[Encode_Node_BV qnminus1, Encode_Elem_BV d], notkill[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]]."
@@ -882,8 +893,8 @@ next
     moreover
     from a have a_2:  "d \<notin> kill_set (qnminus1, l, qn)"
       by auto
-    have "\<forall>c\<in>\<Union>(ana_kill_BV ` (es \<times> UNIV)). solves_cls \<rho> c"
-      using 2(5) unfolding ana_pg_BV.simps solves_program_def by auto
+    have "\<forall>c\<in>\<Union>(ana_kill_BV ` (edge_set \<times> UNIV)). solves_cls \<rho> c"
+      using 2(5) unfolding ana_pg_BV_def solves_program_def by auto
     then have "\<forall>c\<in>ana_kill_BV ((qnminus1, l, qn),d). solves_cls \<rho> c"
       using e_in_pg by blast
     then have "solves_cls \<rho> notkill\<langle>[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- []."
@@ -893,19 +904,19 @@ next
       by (metis a_1 append.left_neutral append_Cons solves_cls_iff_solves_rh resolution_last_rh resolution_only_rh_query)
   next
     assume a: "d \<in> gen_set (qnminus1, l, qn)"
-    have e_in_pg: "(qnminus1, l, qn) \<in> es"
+    have e_in_pg: "(qnminus1, l, qn) \<in> edge_set"
       using "2.hyps"(2) by blast
 
     have "\<forall>c \<in> ana_edge_BV (qnminus1, l, qn). solves_cls \<rho> c"
-      using 2(5) e_in_pg unfolding ana_pg_BV.simps solves_program_def by blast
+      using 2(5) e_in_pg unfolding ana_pg_BV_def solves_program_def by blast
     then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, \<uu>]\<rangle> :- [gen[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, \<uu>]]."
       by auto
     then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- [gen[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]]."
       using substitution_rule[of \<rho> _ "\<lambda>u. Encode_Elem_BV d" ]
       by force
     moreover
-    have "\<forall>c\<in>\<Union>(ana_gen_BV ` (es \<times> UNIV)). solves_cls \<rho> c"
-      using 2(5) unfolding ana_pg_BV.simps solves_program_def by auto
+    have "\<forall>c\<in>\<Union>(ana_gen_BV ` (edge_set \<times> UNIV)). solves_cls \<rho> c"
+      using 2(5) unfolding ana_pg_BV_def solves_program_def by auto
     then have "\<forall>c\<in>ana_gen_BV ((qnminus1, l, qn),d). solves_cls \<rho> c"
       using e_in_pg by blast
     then have "solves_cls \<rho> gen\<langle>[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- []."
@@ -920,14 +931,27 @@ next
 qed
 
 lemma sound_BV:
-  assumes "solves_program \<rho> (ana_pg_BV pg)"
-  shows "summarizes_dl_BV \<rho> pg"
+  assumes "solves_program \<rho> ana_pg_BV"
+  shows "summarizes_dl_BV \<rho>"
   using sound_BV' assms unfolding summarizes_dl_BV.simps by (cases pg) fastforce
 
 end
 
 
 section \<open>Reaching definitions revisited\<close>
+
+locale analysis_RD =
+  fixes pg :: "('n,'v) program_graph"
+begin
+
+definition edge_set where 
+  "edge_set = fst pg"
+
+definition start where
+  "start = fst (snd pg)"
+
+definition "end" where
+  "end = snd (snd pg)"
 
 fun kill_set_RD :: "('n,'v) edge \<Rightarrow> ('n,'v) triple set" where
   "kill_set_RD (q\<^sub>o, x ::= a, q\<^sub>s) = {x} \<times> UNIV \<times> UNIV"
@@ -939,15 +963,17 @@ fun gen_set_RD :: "('n,'v) edge \<Rightarrow> ('n,'v) triple set" where
 | "gen_set_RD (q\<^sub>o, Bool b, q\<^sub>s) = {}"
 | "gen_set_RD (v, Skip, vc) = {} "
 
-definition d_init_RD :: "'n \<Rightarrow> ('n,'v) triple set" where
-  "d_init_RD start = (UNIV \<times> {None} \<times> {start})"
+definition d_init_RD :: " ('n,'v) triple set" where
+  "d_init_RD = (UNIV \<times> {None} \<times> {start})"
 
-interpretation interp: analysis_BV kill_set_RD gen_set_RD d_init_RD .
+interpretation interp: analysis_BV pg kill_set_RD gen_set_RD d_init_RD .
+
+term def_var
 
 lemma def_var_def_edge_S_hat:
-  assumes "def_var \<pi> x \<in> R"
+  assumes "def_var \<pi> x start \<in> R"
   assumes "x \<notin> def_edge t"
-  shows "def_var \<pi> x \<in> interp.S_hat t R"
+  shows "def_var \<pi> x start \<in> interp.S_hat t R"
 proof -
   define q1 where "q1 = fst t"
   define \<alpha> where "\<alpha> = fst (snd t)"
@@ -958,7 +984,7 @@ proof -
   from assms(2) have assms_2: "x \<notin> def_edge (q1, \<alpha>, q2)"
     unfolding t_def by auto
 
-  have "def_var \<pi> x \<in> interp.S_hat (q1, \<alpha>, q2) R"
+  have "def_var \<pi> x start \<in> interp.S_hat (q1, \<alpha>, q2) R"
   proof (cases \<alpha>)
     case (Asg y exp)
     then show ?thesis
@@ -976,7 +1002,7 @@ proof -
     unfolding t_def by auto
 qed
 
-lemma def_var_S_hat_edge_list: "(def_var \<pi>) x \<in> interp.S_hat_edge_list \<pi> d_init_RD"
+lemma def_var_S_hat_edge_list: "(def_var \<pi>) x start \<in> interp.S_hat_edge_list \<pi> d_init_RD"
 proof (induction \<pi> rule: rev_induct)
   case Nil
   then show ?case
@@ -986,7 +1012,7 @@ next
   then show ?case
   proof (cases "x \<in> def_edge t")
     case True
-    then have "def_var (\<pi> @[t]) x = def_var [t] x"
+    then have "def_var (\<pi> @[t]) x start = def_var [t] x start"
       by (simp add: def_var_def)
     moreover
     have "interp.S_hat_edge_list (\<pi> @ [t]) d_init_RD = interp.S_hat t (interp.S_hat_edge_list \<pi> d_init_RD)"
@@ -995,7 +1021,7 @@ next
     obtain q1 \<alpha> q2 where t_split: "t = (q1, \<alpha>, q2)"
       using prod_cases3 by blast
     moreover
-    have "def_var [t] x \<in> interp.S_hat t (interp.S_hat_edge_list \<pi> d_init_RD)"
+    have "def_var [t] x start \<in> interp.S_hat t (interp.S_hat_edge_list \<pi> d_init_RD)"
       unfolding interp.S_hat_def def_var_def triple_of_def using True t_split by (cases \<alpha>) auto
     ultimately
     show ?thesis by auto
@@ -1003,12 +1029,12 @@ next
     case False
     obtain q1 \<alpha> q2 where t_split: "t = (q1, \<alpha>, q2)"
       using prod_cases3 by blast
-    from False have "def_var (\<pi> @ [t]) x = def_var \<pi> x"
+    from False have "def_var (\<pi> @ [t]) x start = def_var \<pi> x start"
       by (simp add: def_var_def)
     moreover
-    from snoc.IH have "def_var \<pi> x \<in> interp.S_hat t (interp.S_hat_edge_list \<pi> d_init_RD)"
+    from snoc.IH have "def_var \<pi> x start \<in> interp.S_hat t (interp.S_hat_edge_list \<pi> d_init_RD)"
       by (simp add: False def_var_def_edge_S_hat)
-    then have "def_var \<pi> x \<in> interp.S_hat_edge_list (\<pi> @ [t]) d_init_RD"
+    then have "def_var \<pi> x start \<in> interp.S_hat_edge_list (\<pi> @ [t]) d_init_RD"
       unfolding interp.S_hat_edge_list_def2 by simp
     ultimately
     show ?thesis
@@ -1016,44 +1042,50 @@ next
   qed
 qed
 
-lemma def_var_UNIV_S_hat_edge_list: "(def_var \<pi>) ` UNIV \<subseteq> interp.S_hat_edge_list \<pi> d_init_RD"
+lemma def_var_UNIV_S_hat_edge_list: "(\<lambda>x. def_var \<pi> x start) ` UNIV \<subseteq> interp.S_hat_edge_list \<pi> d_init_RD"
   using def_var_S_hat_edge_list by force
 
-lemma def_path_S_hat_path: "def_path \<pi> \<subseteq> interp.S_hat_path \<pi> d_init_RD"
+lemma def_path_S_hat_path: "def_path \<pi> start \<subseteq> interp.S_hat_path \<pi> d_init_RD"
   by (simp add: analysis_BV.S_hat_path_def def_path_def def_var_UNIV_S_hat_edge_list)
 
-definition summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
-  "summarizes_RD \<rho> pg \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> LTS.get_start \<pi> = Start \<longrightarrow> d \<in> def_path \<pi> \<longrightarrow>
+fun summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Rightarrow> bool" where
+  "summarizes_RD \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> def_path \<pi> start \<longrightarrow>
      solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
 lemma RD_sound_again: 
-  assumes "solves_program \<rho> (interp.ana_pg_BV pg)"
-  shows "summarizes_RD \<rho> pg"
-  using assms def_path_S_hat_path interp.sound_BV unfolding interp.summarizes_dl_BV_def summarizes_RD_def by force
+  assumes "solves_program \<rho> (interp.ana_pg_BV)"
+  shows "summarizes_RD \<rho>"
+  using assms def_path_S_hat_path interp.sound_BV unfolding interp.summarizes_dl_BV.simps summarizes_RD.simps
+  using edge_set_def in_mono interp.edge_set_def interp.start_def start_def by fastforce 
 
+end
 
 locale analysis_BV_backwards =
+  fixes pg :: "('n,'v) program_graph"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
 begin
 
+definition edge_set where 
+  "edge_set = fst pg"
+
+definition start where
+  "start = fst (snd pg)"
+
+definition "end" where
+  "end = snd (snd pg)"
+
 (* "URGENT TODO:" Define what summarizes means here. *)
 
-
-fun swap_start_end :: "'n node \<Rightarrow> 'n node" where
-  "swap_start_end Start = End" |
-  "swap_start_end End = Start" |
-  "swap_start_end (Node n) = Node n"
-
 definition rev_edge :: "('n,'v) edge \<Rightarrow> ('n,'v) edge" where
-  "rev_edge = (\<lambda>(q\<^sub>s,\<alpha>,q\<^sub>o). (swap_start_end q\<^sub>o, \<alpha>, swap_start_end q\<^sub>s))"
+  "rev_edge = (\<lambda>(q\<^sub>s,\<alpha>,q\<^sub>o). (q\<^sub>o, \<alpha>, q\<^sub>s))"
 
-fun rev_path_with_word :: "'n node list * 'v action list \<Rightarrow> 'n node list * 'v action list" where
-  "rev_path_with_word (es,ls) = (map swap_start_end (rev es), rev ls)"
+fun rev_path_with_word :: "'n list * 'v action list \<Rightarrow> 'n list * 'v action list" where
+  "rev_path_with_word (es,ls) = (rev es, rev ls)"
 
-definition rev_graph :: "('n,'v) program_graph \<Rightarrow> ('n,'v) program_graph" where
-  "rev_graph pg = rev_edge ` pg"
+definition pg_rev :: "('n,'v) program_graph" where
+  "pg_rev = (rev_edge ` edge_set, end, start)"
 
 definition "S_hat" :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" where
   "S_hat e R = (R - kill_set (rev_edge e)) \<union> gen_set (rev_edge e)"
@@ -1096,14 +1128,16 @@ next
     using assms by (simp add: S_hat_mono)
 qed
 
-definition S_hat_path :: "('n node list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" where
+definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" where
   "S_hat_path \<pi> = S_hat_edge_list (LTS.transition_list \<pi>)"
 
-definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> ('n, 'v) program_graph \<Rightarrow> bool" where
-  "summarizes_dl_BV \<rho> pg \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> LTS.get_end \<pi> = End \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
+definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+  "summarizes_dl_BV \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
      solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
-interpretation fa: analysis_BV kill_set gen_set d_init .
+term pg_rev
+
+interpretation fa: analysis_BV pg_rev kill_set gen_set d_init .
 
 term LTS.path_with_word
 
