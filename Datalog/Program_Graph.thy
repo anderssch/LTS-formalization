@@ -1027,7 +1027,7 @@ lemma def_path_S_hat_path: "def_path \<pi> \<subseteq> interp.S_hat_path \<pi> d
   by (simp add: analysis_BV.S_hat_path_def def_path_def def_var_UNIV_S_hat_edge_list)
 
 definition summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
-  "summarizes_RD \<rho> pg \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> LTS.get_start \<pi> = Start \<longrightarrow> d \<in> def_path \<pi> \<longrightarrow> 
+  "summarizes_RD \<rho> pg \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> LTS.get_start \<pi> = Start \<longrightarrow> d \<in> def_path \<pi> \<longrightarrow>
      solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
 lemma RD_sound_again: 
@@ -1044,12 +1044,20 @@ begin
 
 (* "URGENT TODO:" Define what summarizes means here. *)
 
-definition rev_edge :: "('n,'v) edge \<Rightarrow> ('n,'v) edge" where
-  "rev_edge = (\<lambda>(q\<^sub>s,\<alpha>,q\<^sub>o). (q\<^sub>o,\<alpha>,q\<^sub>s))"
 
-(* Potential bug: this rev_graph does not flip start and end *)
+fun swap_start_end :: "'n node \<Rightarrow> 'n node" where
+  "swap_start_end Start = End" |
+  "swap_start_end End = Start" |
+  "swap_start_end (Node n) = Node n"
+
+definition rev_edge :: "('n,'v) edge \<Rightarrow> ('n,'v) edge" where
+  "rev_edge = (\<lambda>(q\<^sub>s,\<alpha>,q\<^sub>o). (swap_start_end q\<^sub>o, \<alpha>, swap_start_end q\<^sub>s))"
+
+fun rev_path_with_word :: "'n node list * 'v action list \<Rightarrow> 'n node list * 'v action list" where
+  "rev_path_with_word (es,ls) = (map swap_start_end (rev es), rev ls)"
+
 definition rev_graph :: "('n,'v) program_graph \<Rightarrow> ('n,'v) program_graph" where
-  "rev_graph pg = (\<lambda>(q\<^sub>s,\<alpha>,q\<^sub>o). (q\<^sub>o,\<alpha>,q\<^sub>s)) ` pg"
+  "rev_graph pg = rev_edge ` pg"
 
 definition "S_hat" :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" where
   "S_hat e R = (R - kill_set (rev_edge e)) \<union> gen_set (rev_edge e)"
@@ -1097,14 +1105,68 @@ definition S_hat_path :: "('n node list \<times> 'v action list) \<Rightarrow> '
 
 definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> ('n, 'v) program_graph \<Rightarrow> bool" where
   "summarizes_dl_BV \<rho> pg \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> LTS.get_end \<pi> = End \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
-     solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
+     solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
 interpretation fa: analysis_BV kill_set gen_set d_init .
+
+term LTS.path_with_word
+
+term rev
+
+(* Maybe I need a better way to swap Start and End *)
+(* And also there is a problem in my current graph reversal. I need to map rev_node
+   onto the graph. I think that that will solve the "better way to swap Start and End problem"
+ *)
+lemma xxx:
+  assumes "(ss,w) \<in> LTS.path_with_word pg"
+  assumes "LTS.get_end (ss,w) = End"
+  assumes "d \<in> S_hat_path (ss,w) d_init"
+  assumes "fa.summarizes_dl_BV \<rho> (rev_graph pg)"
+  shows "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_start (ss,w)), Encode_Elem_BV d]\<rangle>."
+  using assms
+proof (induction arbitrary: d rule: LTS.path_with_word_induct_reverse[OF assms(1)])
+  case (1 s)
+
+  have a: "rev_path_with_word ([End], []) \<in> LTS.path_with_word (rev_graph pg)"
+    apply auto
+    by (simp add: LTS.path_with_word.path_with_word_refl)
+  
+  have b: "LTS.get_start (rev_path_with_word ([End], [])) = Start"
+    (* Her går det vist galt!!!!! *)
+    sorry
+  
+  have c: "d \<in> fa.S_hat_path (rev_path_with_word ([End], [])) d_init"
+    sorry
+  
+  have d: "rev_path_with_word ([End], []) = ([Start], [])"
+    sorry
+  
+  have x: "\<And>\<pi> d. \<pi> \<in> LTS.path_with_word (rev_graph pg) \<Longrightarrow> LTS.get_start \<pi> = Start \<Longrightarrow> d \<in> fa.S_hat_path \<pi> d_init \<Longrightarrow> solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>."
+    using 1(4) unfolding fa.summarizes_dl_BV_def by auto
+  have t: "rev_path_with_word ([End], []) \<in> LTS.path_with_word (rev_graph pg) \<Longrightarrow>
+  LTS.get_start (rev_path_with_word ([End], [])) = Start \<Longrightarrow>
+  d \<in> fa.S_hat_path (rev_path_with_word ([End], [])) d_init \<Longrightarrow> solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end (rev_path_with_word ([End], []))), Encode_Elem_BV d]\<rangle>."
+    using x[of "rev_path_with_word ([End], [])" d] by auto
+  
+  have "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end ([Start], [])), Encode_Elem_BV d]\<rangle>."
+    using t[OF a b c] using d by (simp add: LTS.get_end_def) 
+  moreover
+  have "s = End"
+    by (metis "1"(2) LTS.get_end_def last_ConsL prod.sel(1))
+  ultimately
+  show ?case
+    by auto
+next
+  case (2 ss s w l s')
+  then show ?case sorry
+qed
 
 lemma 
   assumes "fa.summarizes_dl_BV \<rho> (rev_graph pg)"
   shows "summarizes_dl_BV \<rho> pg"
-  sorry
+  using assms unfolding summarizes_dl_BV_def
+  using xxx
+  by fastforce
 
 lemma sound_rev_BV:
   undefined
