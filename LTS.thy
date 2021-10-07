@@ -83,6 +83,7 @@ inductive_set transition_star :: "('state * 'label list * 'state) set" where
 | transition_star_step: "(p,\<gamma>,q') \<in> transition_relation \<Longrightarrow> (q',w,q) \<in> transition_star
                            \<Longrightarrow> (p, \<gamma>#w, q) \<in> transition_star"
 
+
 (* I could make a notation like p \<Midarrow>w\<Rightarrow>* q *)
 
 inductive_cases transition_star_empty [elim]: "(p, [], q) \<in> transition_star"
@@ -773,6 +774,22 @@ proof -
   show ?thesis
     using count_append_transition_star_states_length assms by auto
 qed
+
+
+context fixes \<Delta> :: "('state, 'label) transition set" begin
+fun transition_star_exec where
+  "transition_star_exec p [] = {p}"
+| "transition_star_exec p (\<gamma>#w) = 
+    (\<Union>q' \<in> (\<Union>(p',\<gamma>',q') \<in> \<Delta>. if p' = p \<and> \<gamma>' = \<gamma> then {q'} else {}).
+      transition_star_exec q' w)"
+end
+lemma transition_star_imp_exec: "(p,w,q) \<in> LTS.transition_star \<Delta> \<Longrightarrow> q \<in> transition_star_exec \<Delta> p w"
+  by (induct p w q rule: LTS.transition_star.induct[of _ _ _ \<Delta>, consumes 1]) force+
+lemma transition_star_exec_imp: "q \<in> transition_star_exec \<Delta> p w \<Longrightarrow> (p,w,q) \<in> LTS.transition_star \<Delta>"
+  by (induct p w rule: transition_star_exec.induct)
+    (auto intro!: LTS.transition_star_refl[of _ \<Delta>] LTS.transition_star_step[of _ _ _ \<Delta>] split: if_splits)
+lemma transition_star_code[code_unfold]: "(p,w,q) \<in> LTS.transition_star \<Delta> \<longleftrightarrow> q \<in> transition_star_exec \<Delta> p w"
+  by (meson transition_star_exec_imp transition_star_imp_exec)
 
 
 lemma LTS_transition_star_mono:
