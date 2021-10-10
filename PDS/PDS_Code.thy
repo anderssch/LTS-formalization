@@ -44,6 +44,9 @@ definition \<P> :: "((ctr_loc, state, label) PDS.state, label) transition set" w
 
 value "pre_star \<Delta> \<P>"
 
+value "(Ctr_Loc p0, [\<gamma>0, \<gamma>0], Ctr_Loc_St s2) \<in> LTS.transition_star (pre_star \<Delta> \<P>)" \<comment> \<open>True\<close>
+value "(Ctr_Loc p0, [\<gamma>0, \<gamma>1], Ctr_Loc_St s2) \<in> LTS.transition_star (pre_star \<Delta> \<P>)" \<comment> \<open>False\<close>
+
 (*
 datatype ctr_loc = q
 datatype label =
