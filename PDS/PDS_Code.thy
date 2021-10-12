@@ -4,10 +4,11 @@ begin
 
 (*derive linorder operation*)
 
-global_interpretation PDS_with_P_automaton \<Delta> "{f \<in> F_states. \<not> is_Ctr_Ext f}"
+global_interpretation pds: PDS_with_P_automaton \<Delta> "{f \<in> F_states. \<not> is_Ctr_Ext f}"
   for \<Delta> :: "('ctr_loc::{finite, linorder}, 'label::{finite, linorder}) rule set"
   and F_states :: "('ctr_loc, 'state::{finite, linorder}, 'label) state set"
   defines pre_star = "PDS_with_P_automaton.pre_star_exec \<Delta>"
+  and accepts = "PDS_with_P_automaton.accepts {f \<in> F_states. \<not> is_Ctr_Ext f}"
   by standard auto
 
 export_code pre_star in SML
@@ -46,6 +47,9 @@ value "pre_star \<Delta> \<P>"
 
 value "(Ctr_Loc p0, [\<gamma>0, \<gamma>0], Ctr_Loc_St s2) \<in> LTS.transition_star (pre_star \<Delta> \<P>)" \<comment> \<open>True\<close>
 value "(Ctr_Loc p0, [\<gamma>0, \<gamma>1], Ctr_Loc_St s2) \<in> LTS.transition_star (pre_star \<Delta> \<P>)" \<comment> \<open>False\<close>
+value "accepts {Ctr_Loc_St s2} (pre_star \<Delta> \<P>) (p0, [\<gamma>0, \<gamma>0])" \<comment> \<open>True\<close>
+value "accepts {Ctr_Loc_St s1} (pre_star \<Delta> \<P>) (p0, [\<gamma>0, \<gamma>0])" \<comment> \<open>False\<close>
+value "accepts {Ctr_Loc_St s2} (pre_star \<Delta> \<P>) (p0, [\<gamma>0, \<gamma>1])" \<comment> \<open>False\<close>
 
 (*
 datatype ctr_loc = q
