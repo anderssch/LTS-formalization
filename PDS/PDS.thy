@@ -101,9 +101,16 @@ end
 locale PDS_with_P_automaton = PDS \<Delta>
   for \<Delta> :: "('ctr_loc::finite, 'label::finite) rule set"
     +
-  fixes F_states :: "('ctr_loc, 'state::finite, 'label) state set"
-  assumes F_not_Ext: "\<not>(\<exists>f\<in>F_states. is_Ctr_Ext f)"
+  fixes F_ctr_loc :: "('ctr_loc::finite) set"
+  fixes F_ctr_loc_st :: "('state::finite) set"
 begin
+
+definition F_states :: "('ctr_loc, 'state::finite, 'label) state set" where
+  "F_states = Ctr_Loc ` F_ctr_loc \<union> Ctr_Loc_St ` F_ctr_loc_st"
+
+
+lemma F_not_Ext: "\<not>(\<exists>f\<in>F_states. is_Ctr_Ext f)"
+  using F_states_def by fastforce
 
 definition P_states :: "('ctr_loc, 'state, 'label) state set" where 
   "P_states = {q. is_Ctr_Loc q}"
@@ -277,6 +284,9 @@ lemma pre_star_rule_pre_star_steps: "pre_star_rule\<^sup>*\<^sup>* ts (((\<lambd
 
 definition "pre_star_loop = while_option (\<lambda>s. s \<union> pre_star_step s \<noteq> s) (\<lambda>s. s \<union> pre_star_step s)"
 definition "pre_star_exec = the o pre_star_loop"
+definition "pre_star_exec_check A = (if P_states \<subseteq> LTS.sources A then pre_star_loop A else None)"
+
+definition "accept_pre_star_exec_check A c = (if P_states \<subseteq> LTS.sources A then Some (accepts (pre_star_exec A) c) else None)"
 
 lemma while_option_finite_subset_Some: fixes C :: "'a set"
   assumes "mono f" and "!!X. X \<subseteq> C \<Longrightarrow> f X \<subseteq> C" and "finite C" and X: "X \<subseteq> C" "X \<subseteq> f X"
@@ -827,10 +837,92 @@ next
     unfolding p_def w_def by auto
 qed
 
+theorem theorem_3_2_language:
+  assumes "P_states \<subseteq> LTS.sources A"
+  assumes "saturation pre_star_rule A A'"
+  shows "language A' = pre_star (language A)"
+  using assms(1) assms(2) language_def theorem_3_2 by auto
+
+theorem theorem_3_2_exec:
+  assumes "P_states \<subseteq> LTS.sources A"
+  shows "{c. accepts (pre_star_exec A) c} = pre_star (language A)"
+  using theorem_3_2[of A "pre_star_exec A"] saturation_pre_star_exec[of A] using assms by auto
+
+theorem theorem_3_2_exec_check:
+  assumes "pre_star_exec_check A \<noteq> None"
+  shows "{c. accepts (the (pre_star_exec_check A)) c} = pre_star (language A)"
+  using theorem_3_2_exec assms unfolding pre_star_exec_check_def apply auto
+  using pre_star_exec_def apply fastforce
+  using pre_star_exec_def apply fastforce
+   apply (metis option.discI subsetD)
+  apply (metis option.discI subsetD)
+  done
+
+theorem theorem_3_2_exec_language:
+  assumes "P_states \<subseteq> LTS.sources A"
+  shows "language (pre_star_exec A) = pre_star (language A)"
+  using theorem_3_2_language[of A "pre_star_exec A"] saturation_pre_star_exec[of A] using assms by auto
+
+theorem theorem_3_2_exec_check_language:
+  assumes "pre_star_exec_check A \<noteq> None"
+  shows "language (the (pre_star_exec_check A)) = pre_star (language A)"
+  using theorem_3_2_exec_check assms unfolding language_def by auto
+
+theorem accept_pre_star_correct_True:
+  assumes "P_states \<subseteq> LTS.sources A"
+  assumes "accepts (pre_star_exec A) c"
+  shows "c \<in> pre_star (language A)"
+  using PDS_with_P_automaton.theorem_3_2_exec assms(1) assms(2) by blast
+
+theorem accept_pre_star_correct_False:
+  assumes "P_states \<subseteq> LTS.sources A"
+  assumes "\<not>accepts (pre_star_exec A) c"
+  shows "c \<notin> pre_star (language A)"
+  using PDS_with_P_automaton.theorem_3_2_exec assms(1) assms(2) by blast
+
+theorem accept_pre_star_correct_Some_True:
+  assumes "accept_pre_star_exec_check A c = Some True"
+  shows "c \<in> pre_star (language A)"
+proof -
+  have "P_states \<subseteq> LTS.sources A"
+    using assms unfolding accept_pre_star_exec_check_def
+    apply auto
+    by (meson in_mono option.distinct(1)) 
+  moreover
+  have "accepts (pre_star_exec A) c"
+    using assms
+    using accept_pre_star_exec_check_def calculation by auto
+  ultimately
+  show "c \<in> pre_star (language A)"
+    using accept_pre_star_correct_True by auto
+qed
+
+theorem accept_pre_star_correct_Some_False:
+  assumes "accept_pre_star_exec_check A c = Some False"
+  shows "c \<notin> pre_star (language A)"
+proof -
+  have "P_states \<subseteq> LTS.sources A"
+    using assms unfolding accept_pre_star_exec_check_def
+    apply auto
+    by (meson in_mono option.distinct(1)) 
+  moreover
+  have "\<not>accepts (pre_star_exec A) c"
+    using assms
+    using accept_pre_star_exec_check_def calculation by auto
+  ultimately
+  show "c \<notin> pre_star (language A)"
+    using accept_pre_star_correct_False by auto
+qed
+
+theorem accept_pre_star_correct_None:
+  assumes "accept_pre_star_exec_check A c = None"
+  shows "\<not>P_states \<subseteq> LTS.sources A"
+  using assms unfolding accept_pre_star_exec_check_def by auto
+
+
+
 
 subsection \<open>Post* lemmas\<close>
-
-
 
 lemma lemma_3_3':
   assumes "pv \<Rightarrow>\<^sup>* p'w"
@@ -1905,6 +1997,14 @@ next
   then show "c \<in> post_star (language_\<epsilon> A)"
     unfolding p_def w_def by auto
 qed
+
+theorem theorem_3_3_language:
+  assumes "saturation post_star_rules A A'"
+  assumes "P_states \<subseteq> LTS.sources A"
+  assumes "\<forall>a b c. (a, b, c) \<in> A \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  shows "language_\<epsilon> A' = post_star (language_\<epsilon> A)"
+  using assms(1) assms(2) assms(3) language_\<epsilon>_def theorem_3_3 by presburger
+
 
 subsection \<open>Intersection Automata\<close>
 
