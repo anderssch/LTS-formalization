@@ -1,4 +1,5 @@
-theory PDS imports "../LTS" begin
+theory PDS imports "../LTS" "HOL-Library.While_Combinator" begin
+
 
 
 section \<open>PDS\<close>
@@ -232,11 +233,88 @@ proof (rule ccontr) (* TODO: it would be nice to avoid ccontr *)
     using no_infinite assms by auto
 qed
 
-
 subsection \<open>Saturation rules\<close>
 
 inductive pre_star_rule :: "(('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> (('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> bool" where 
-  add_trans: "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> (Ctr_Loc p', op_labels w, q) \<in> LTS.transition_star ts \<Longrightarrow> (Ctr_Loc p, \<gamma>, q) \<notin> ts \<Longrightarrow> pre_star_rule ts (ts \<union> {(Ctr_Loc p, \<gamma>, q)})"
+  add_trans: "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> (Ctr_Loc p', op_labels w, q) \<in> LTS.transition_star ts \<Longrightarrow>
+    (Ctr_Loc p, \<gamma>, q) \<notin> ts \<Longrightarrow> pre_star_rule ts (ts \<union> {(Ctr_Loc p, \<gamma>, q)})"
+
+definition pre_star_step :: "(('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> (('ctr_loc, 'state, 'label) state, 'label) transition set" where
+  "pre_star_step ts =
+    (\<Union>((p, \<gamma>), (p', w)) \<in> \<Delta>. \<Union>q \<in> LTS.transition_star_exec ts (Ctr_Loc p') (op_labels w). {(Ctr_Loc p, \<gamma>, q)})"
+
+lemma pre_star_step_mono: "mono pre_star_step"
+  unfolding pre_star_step_def
+  by (auto simp: mono_def LTS.transition_star_code[symmetric] elim!: bexI[rotated]
+    LTS_transition_star_mono[THEN monoD, THEN subsetD])
+
+lemma pre_star_rule_pre_star_step:
+  assumes "X \<subseteq> pre_star_step ts"
+  shows "pre_star_rule\<^sup>*\<^sup>* ts (ts \<union> X)"
+proof -
+  have "finite X"
+    by simp
+  from this assms show ?thesis
+  proof (induct X arbitrary: ts rule: finite_induct)
+    case (insert x F)
+    then obtain p \<gamma> p' w q where *: "(p, \<gamma>) \<hookrightarrow> (p', w)" 
+      "(Ctr_Loc p', op_labels w, q) \<in> LTS.transition_star ts" and x:
+      "x = (Ctr_Loc p, \<gamma>, q)"
+      by (auto simp: pre_star_step_def is_rule_def LTS.transition_star_code)
+    with insert show ?case
+    proof (cases "(Ctr_Loc p, \<gamma>, q) \<in> ts")
+      case False
+      with insert(1,2,4) x show ?thesis
+        by (intro converse_rtranclp_into_rtranclp[of pre_star_rule, OF add_trans[OF * False]])
+          (auto intro!: insert(3)[of "insert x ts", simplified x Un_insert_left]
+            intro: pre_star_step_mono[THEN monoD, THEN set_mp, of ts])
+    qed (simp add: insert_absorb)
+  qed simp
+qed
+
+lemma pre_star_rule_pre_star_steps: "pre_star_rule\<^sup>*\<^sup>* ts (((\<lambda>s. s \<union> pre_star_step s) ^^ k) ts)"
+  by (induct k) (auto elim!: rtranclp_trans intro: pre_star_rule_pre_star_step)
+
+definition "pre_star_loop = while_option (\<lambda>s. s \<union> pre_star_step s \<noteq> s) (\<lambda>s. s \<union> pre_star_step s)"
+definition "pre_star_exec = the o pre_star_loop"
+
+lemma while_option_finite_subset_Some: fixes C :: "'a set"
+  assumes "mono f" and "!!X. X \<subseteq> C \<Longrightarrow> f X \<subseteq> C" and "finite C" and X: "X \<subseteq> C" "X \<subseteq> f X"
+  shows "\<exists>P. while_option (\<lambda>A. f A \<noteq> A) f X = Some P"
+proof(rule measure_while_option_Some[where
+    f= "%A::'a set. card C - card A" and P= "%A. A \<subseteq> C \<and> A \<subseteq> f A" and s= X])
+  fix A assume A: "A \<subseteq> C \<and> A \<subseteq> f A" "f A \<noteq> A"
+  show "(f A \<subseteq> C \<and> f A \<subseteq> f (f A)) \<and> card C - card (f A) < card C - card A"
+    (is "?L \<and> ?R")
+  proof
+    show ?L by(metis A(1) assms(2) monoD[OF \<open>mono f\<close>])
+    show ?R by (metis A assms(2,3) card_seteq diff_less_mono2 equalityI linorder_le_less_linear rev_finite_subset)
+  qed
+qed (simp add: X)
+
+lemma pre_star_exec_terminates: "\<exists>t. pre_star_loop s = Some t"
+  unfolding pre_star_loop_def
+  by (rule while_option_finite_subset_Some[where C=UNIV])
+    (auto simp: mono_def dest: pre_star_step_mono[THEN monoD])
+
+lemma pre_star_exec_code[code]:
+  "pre_star_exec s = (let s' = pre_star_step s in if s' \<subseteq> s then s else pre_star_exec (s \<union> s'))"
+  unfolding pre_star_exec_def pre_star_loop_def o_apply
+  by (subst while_option_unfold)(auto simp: Let_def)
+
+lemma saturation_pre_star_exec: "saturation pre_star_rule ts (pre_star_exec ts)"
+proof -
+  from pre_star_exec_terminates obtain t where t: "pre_star_loop ts = Some t"
+    by blast
+  obtain k where k: "t = ((\<lambda>s. s \<union> pre_star_step s) ^^ k) ts" and le: "pre_star_step t \<subseteq> t"
+    using while_option_stop2[OF t[unfolded pre_star_loop_def]] by auto
+  have "(\<Union>{us. pre_star_rule t us}) - t \<subseteq> pre_star_step t"
+    by (auto simp: pre_star_step_def LTS.transition_star_code[symmetric] prod.splits is_rule_def
+      pre_star_rule.simps)
+  from subset_trans[OF this le] show ?thesis
+    unfolding saturation_def saturated_def pre_star_exec_def o_apply k t
+    by (auto 9 0 simp: pre_star_rule_pre_star_steps subset_eq pre_star_rule.simps)
+qed
 
 inductive post_star_rules :: "(('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> (('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> bool" where
   add_trans_pop: "(p, \<gamma>) \<hookrightarrow> (p', pop) \<Longrightarrow> (Ctr_Loc p, [\<gamma>], q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts \<Longrightarrow> (Ctr_Loc p', \<epsilon>, q) \<notin> ts \<Longrightarrow> post_star_rules ts (ts \<union> {(Ctr_Loc p', \<epsilon>, q)})"
