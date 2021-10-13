@@ -920,8 +920,6 @@ theorem accept_pre_star_correct_None:
   using assms unfolding accept_pre_star_exec_check_def by auto
 
 
-
-
 subsection \<open>Post* lemmas\<close>
 
 lemma lemma_3_3':

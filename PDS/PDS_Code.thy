@@ -72,8 +72,6 @@ thm pds.accept_pre_star_correct_Some_True
 thm pds.accept_pre_star_correct_Some_False
 thm pds.accept_pre_star_correct_None
 
-find_theorems accepts
-
 (*
 datatype ctr_loc = q
 datatype label =
