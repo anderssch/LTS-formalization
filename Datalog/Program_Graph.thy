@@ -1148,55 +1148,77 @@ term rev
    onto the graph. I think that that will solve the "better way to swap Start and End problem"
  *)
 lemma xxx:
-  assumes "(ss,w) \<in> LTS.path_with_word pg"
-  assumes "LTS.get_end (ss,w) = End"
+  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
+  assumes "LTS.get_end (ss,w) = end"
   assumes "d \<in> S_hat_path (ss,w) d_init"
-  assumes "fa.summarizes_dl_BV \<rho> (rev_graph pg)"
+  assumes "fa.summarizes_dl_BV \<rho>"
   shows "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_start (ss,w)), Encode_Elem_BV d]\<rangle>."
   using assms
-proof (induction arbitrary: d rule: LTS.path_with_word_induct_reverse[OF assms(1)])
+proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   case (1 s)
 
-  have a: "rev_path_with_word ([End], []) \<in> LTS.path_with_word (rev_graph pg)"
-    apply auto
+  have a: "([end], []) \<in> LTS.path_with_word fa.edge_set"
     by (simp add: LTS.path_with_word.path_with_word_refl)
   
-  have b: "LTS.get_start (rev_path_with_word ([End], [])) = Start"
-    (* Her går det vist galt!!!!! *)
-    sorry
+  have b: "LTS.get_start ([end], []) = fa.start"
+    by (metis LTS.get_start_def fa.start_def fst_conv list.sel(1) pg_rev_def snd_conv)
   
-  have c: "d \<in> fa.S_hat_path (rev_path_with_word ([End], [])) d_init"
-    sorry
+  have c: "d \<in> fa.S_hat_path ([end], []) d_init"
+    using "1.prems"(3) S_hat_path_def fa.S_hat_path_def by auto
   
-  have d: "rev_path_with_word ([End], []) = ([Start], [])"
-    sorry
+  have x: "\<And>\<pi> d. \<pi> \<in> LTS.path_with_word fa.edge_set \<Longrightarrow> LTS.get_start \<pi> = fa.start \<Longrightarrow> d \<in> fa.S_hat_path \<pi> d_init \<Longrightarrow> solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>."
+    using 1(4) unfolding fa.summarizes_dl_BV.simps by auto
+  have t: "([end], []) \<in> LTS.path_with_word fa.edge_set \<Longrightarrow>
+  LTS.get_start (([end], [])) = fa.start \<Longrightarrow>
+  d \<in> fa.S_hat_path (([end], [])) d_init \<Longrightarrow> solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end (([end], []))), Encode_Elem_BV d]\<rangle>."
+    using x[of "([end], [])" d]
+    by (simp add: LTS.get_end_def LTS.get_start_def) 
   
-  have x: "\<And>\<pi> d. \<pi> \<in> LTS.path_with_word (rev_graph pg) \<Longrightarrow> LTS.get_start \<pi> = Start \<Longrightarrow> d \<in> fa.S_hat_path \<pi> d_init \<Longrightarrow> solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>."
-    using 1(4) unfolding fa.summarizes_dl_BV_def by auto
-  have t: "rev_path_with_word ([End], []) \<in> LTS.path_with_word (rev_graph pg) \<Longrightarrow>
-  LTS.get_start (rev_path_with_word ([End], [])) = Start \<Longrightarrow>
-  d \<in> fa.S_hat_path (rev_path_with_word ([End], [])) d_init \<Longrightarrow> solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end (rev_path_with_word ([End], []))), Encode_Elem_BV d]\<rangle>."
-    using x[of "rev_path_with_word ([End], [])" d] by auto
-  
-  have "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end ([Start], [])), Encode_Elem_BV d]\<rangle>."
-    using t[OF a b c] using d by (simp add: LTS.get_end_def) 
+  have "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end ([end], [])), Encode_Elem_BV d]\<rangle>."
+    using t[OF a b c] by (simp add: LTS.get_end_def) 
   moreover
-  have "s = End"
+  have "s = end"
     by (metis "1"(2) LTS.get_end_def last_ConsL prod.sel(1))
   ultimately
   show ?case
-    by auto
+    by (simp add: LTS.get_end_def LTS.get_start_def)
 next
   case (2 ss s w l s')
-  then show ?case sorry
+  have "(ss @ [s], w) \<in> LTS.path_with_word edge_set"
+    using "2.hyps"(1) by blast
+  moreover
+  have "LTS.get_end (ss @ [s], w) = end"
+    (* I don't believe this one *)
+    sorry
+  moreover
+  have "d \<in> S_hat_path (ss @ [s], w) d_init"
+    sorry
+  moreover
+  have "fa.summarizes_dl_BV \<rho>"
+    sorry
+  ultimately have "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_start (ss @ [s], w)), Encode_Elem_BV d]\<rangle>."
+    using 2(3) by auto
+  then show ?case
+    by (metis LTS.get_start_def append.left_neutral fst_conv hd_append2 list.sel(1))
 qed
 
 lemma 
-  assumes "fa.summarizes_dl_BV \<rho> (rev_graph pg)"
-  shows "summarizes_dl_BV \<rho> pg"
-  using assms unfolding summarizes_dl_BV_def
-  using xxx
-  by fastforce
+  assumes "fa.summarizes_dl_BV \<rho>"
+  shows "summarizes_dl_BV \<rho>"
+  unfolding summarizes_dl_BV_def
+proof(rule; rule ; rule ;rule ;rule)
+  fix \<pi> d
+  assume "\<pi> \<in> LTS.path_with_word edge_set"
+  moreover
+  assume "LTS.get_end \<pi> = end"
+  moreover
+  assume "d \<in> S_hat_path \<pi> d_init"
+  ultimately
+  show "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>."
+    using xxx[of "fst \<pi>" "snd \<pi>" d \<rho>] using assms by auto
+qed
+
+  
 
 lemma sound_rev_BV:
   undefined
