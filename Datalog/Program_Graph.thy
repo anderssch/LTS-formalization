@@ -3,13 +3,13 @@ theory Program_Graph imports "../LTS" begin
 
 section \<open>Actions\<close>
 
-datatype 'v arith =
+datatype (fv_arith: 'v) arith =
   Integer int
   | Var 'v
   | Arith_Op "'v arith" "int \<Rightarrow> int \<Rightarrow> int" "'v arith"
   | Minus "'v arith"
 
-datatype 'v boolean =
+datatype (fv_boolean: 'v) boolean =
   true
   | false
   | Rel_Op "'v arith" "int \<Rightarrow> int \<Rightarrow> bool" "'v arith"
@@ -947,7 +947,7 @@ locale analysis_RD =
   fixes pg :: "('n,'v) program_graph"
 begin
 
-definition edge_set where 
+definition edge_set where
   "edge_set = fst pg"
 
 definition start where
@@ -1066,6 +1066,8 @@ lemma RD_sound_again:
 end
 
 
+
+
 section \<open>Backwards analysis\<close>
 
 locale analysis_BV_backwards =
@@ -1136,6 +1138,9 @@ definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Right
      solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
 interpretation fa: analysis_BV pg_rev "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init .
+
+abbreviation ana_pg_BV where
+  "ana_pg_BV == fa.ana_pg_BV"
 
 lemma rev_end_is_start:
   assumes "ss \<noteq> []"
@@ -1232,5 +1237,113 @@ lemma sound_rev_BV:
   using assms fa.sound_BV[of \<rho>] summarizes_dl_BV_forwards_backwards by metis
 
 end
+
+
+section \<open>Live Variables Anaylsis\<close>
+
+
+
+definition Use_var where
+  "Use_var = undefined"
+
+definition Use_edge where
+  "Use_edge = undefined"
+
+definition Use_path where
+  "Use_path = undefined"
+
+locale analysis_LV =
+  fixes pg :: "('n,'v) program_graph"
+begin
+
+definition edge_set where 
+  "edge_set = fst pg"
+
+definition start where
+  "start = fst (snd pg)"
+
+definition "end" where
+  "end = snd (snd pg)"
+
+fun kill_set_LV :: "('n,'v) edge \<Rightarrow> 'v set" where
+  "kill_set_LV (q\<^sub>o, x ::= a, q\<^sub>s) = {x}"
+| "kill_set_LV (q\<^sub>o, Bool b, q\<^sub>s) = {}"
+| "kill_set_LV (v, Skip, vc) = {}"
+
+fun gen_set_LV :: "('n,'v) edge \<Rightarrow> 'v set" where
+  "gen_set_LV (q\<^sub>o, x ::= a, q\<^sub>s) = fv_arith a"
+| "gen_set_LV (q\<^sub>o, Bool b, q\<^sub>s) = fv_boolean b"
+| "gen_set_LV (v, Skip, vc) = {}"
+
+definition d_init_LV :: "'v set" where
+  "d_init_LV = {}"
+
+interpretation interpb: analysis_BV_backwards pg kill_set_LV gen_set_LV d_init_LV .
+
+
+lemma Use_var_Use_edge_S_hat:
+  assumes "Use_var \<pi> x end \<in> R"
+  assumes "x \<notin> Use_edge t"
+  shows "Use_var \<pi> x end \<in> interpb.S_hat t R"
+proof -
+  define q1 where "q1 = fst t"
+  define \<alpha> where "\<alpha> = fst (snd t)"
+  define q2 where "q2 = snd (snd t)"
+  have t_def: "t = (q1, \<alpha>, q2)"
+    by (simp add: \<alpha>_def q1_def q2_def)
+
+  from assms(2) have assms_2: "x \<notin> Use_edge (q1, \<alpha>, q2)"
+    unfolding t_def by auto
+
+  have "Use_var \<pi> x start \<in> interpb.S_hat (q1, \<alpha>, q2) R"
+  proof (cases \<alpha>)
+    case (Asg y exp)
+    then show ?thesis
+      by (metis (no_types, lifting) DiffI Un_iff assms(1) assms_2 Use_action.simps(1) Use_var_x interpb.S_hat_def kill_set_LV.simps(1) mem_Sigma_iff old.prod.case prod.collapse)
+  next
+    case (Bool b)
+    then show ?thesis
+      by (simp add: analysis_BV.S_hat_def assms(1))
+  next
+    case Skip
+    then show ?thesis
+      by (simp add: analysis_BV.S_hat_def assms(1))
+  qed
+  then show ?thesis
+    unfolding t_def by auto
+qed
+
+lemma Use_var_S_hat_edge_list: "(Use_var \<pi>) x end \<in> interpb.S_hat_edge_list \<pi> d_init_LV"
+  sorry
+
+lemma Use_var_UNIV_S_hat_edge_list: "(\<lambda>x. Use_var \<pi> x end) ` UNIV \<subseteq> interpb.S_hat_edge_list \<pi> d_init_LV"
+  sorry
+
+lemma Use_path_S_hat_path: "Use_path \<pi> end \<subseteq> interpb.S_hat_path \<pi> d_init_LV"
+  sorry
+
+definition summarizes_LV :: "(BV_pred, ('n,'v,'v) BV_elem) pred_val \<Rightarrow> bool" where
+  "summarizes_LV \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> Use_path \<pi> end \<longrightarrow>
+     solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.))"
+
+lemma LV_sound:
+  assumes "solves_program \<rho> (interpb.ana_pg_BV)"
+  shows "summarizes_LV \<rho>"
+proof -
+  from assms have "interpb.summarizes_dl_BV \<rho>"
+    using interpb.sound_rev_BV[of \<rho>] by auto
+  then show ?thesis
+    unfolding summarizes_LV_def
+      interpb.summarizes_dl_BV_def
+    unfolding interpb.edge_set_def
+      edge_set_def
+    unfolding interpb.end_def end_def
+    using Use_path_S_hat_path 
+    unfolding start_def 
+    unfolding end_def
+    by blast
+qed
+  
+
 
 end
