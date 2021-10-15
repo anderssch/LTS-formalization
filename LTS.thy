@@ -45,6 +45,7 @@ fun append_transition_star_states :: "('a \<times> 'b list \<times> 'a list \<ti
 fun append_transition_star_states_\<gamma> :: "(('a \<times> 'b list \<times> 'a list \<times> 'a) * 'b) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@\<^sup>\<gamma>" 65) where (* TODO: rename *)
   "((p1,w1,ss1,q1),\<gamma>) @@\<^sup>\<gamma> (p2,w2,ss2,q2) = (p1, w1 @ [\<gamma>] @ w2, ss1@ss2, q2)"
 
+
 subsection \<open>LTS locale\<close>
 
 locale LTS =
@@ -1329,6 +1330,5 @@ definition \<epsilon>_edge_of_edge where
 
 definition LTS_\<epsilon>_of_LTS where
   "LTS_\<epsilon>_of_LTS transition_relation = \<epsilon>_edge_of_edge ` transition_relation"
-
 
 end

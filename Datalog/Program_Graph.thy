@@ -859,19 +859,22 @@ next
     using 2(1) LTS.path_with_word_lengths by metis
   then have "S_hat_path (qs @ [qnminus1, qn], w @ [l]) d_init = S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
     using S_hat_path_append[of qs w] by auto
-  moreover have "... = S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
+  moreover 
+  have "... = S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
     by simp
-  moreover have "... \<subseteq> S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
+  moreover 
+  have "... \<subseteq> S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
     by (metis f LTS.get_end_def last_snoc prod.sel(1))
-  ultimately have "S_hat_path (qs @ [qnminus1, qn], w @ [l]) d_init \<subseteq> S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
+  ultimately 
+  have "S_hat_path (qs @ [qnminus1, qn], w @ [l]) d_init \<subseteq> S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
     by auto
   then have "d \<in> S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
     using 2(7) by auto
-  then have "  d \<in> 
+  then have "  d \<in>
                  ({d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.} -
                   kill_set (qnminus1, l, qn))
-             \<or> d \<in> 
-                 gen_set (qnminus1, l, qn)"
+             \<or> d \<in>
+                  gen_set (qnminus1, l, qn)"
     unfolding S_hat_def by auto
   then have "solves_query \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
   proof
@@ -891,7 +894,7 @@ next
       using substitution_rule[of \<rho> _ "\<lambda>u. Encode_Elem_BV d"]
       by force
     moreover
-    from a have a_2:  "d \<notin> kill_set (qnminus1, l, qn)"
+    from a have a_2: "d \<notin> kill_set (qnminus1, l, qn)"
       by auto
     have "\<forall>c\<in>\<Union>(ana_kill_BV ` (edge_set \<times> UNIV)). solves_cls \<rho> c"
       using 2(5) unfolding ana_pg_BV_def solves_program_def by auto
@@ -967,8 +970,6 @@ definition d_init_RD :: " ('n,'v) triple set" where
   "d_init_RD = (UNIV \<times> {None} \<times> {start})"
 
 interpretation interp: analysis_BV pg kill_set_RD gen_set_RD d_init_RD .
-
-term def_var
 
 lemma def_var_def_edge_S_hat:
   assumes "def_var \<pi> x start \<in> R"
@@ -1052,6 +1053,10 @@ fun summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Right
   "summarizes_RD \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> def_path \<pi> start \<longrightarrow>
      solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
+thm interp.summarizes_dl_BV.simps
+
+thm interp.sound_BV
+
 lemma RD_sound_again: 
   assumes "solves_program \<rho> (interp.ana_pg_BV)"
   shows "summarizes_RD \<rho>"
@@ -1059,6 +1064,8 @@ lemma RD_sound_again:
   using edge_set_def in_mono interp.edge_set_def interp.start_def start_def by fastforce 
 
 end
+
+section \<open>Backwards analysis\<close>
 
 locale analysis_BV_backwards =
   fixes pg :: "('n,'v) program_graph"
@@ -1076,19 +1083,20 @@ definition start where
 definition "end" where
   "end = snd (snd pg)"
 
-(* "URGENT TODO:" Define what summarizes means here. *)
-
-definition rev_edge :: "('n,'v) edge \<Rightarrow> ('n,'v) edge" where
-  "rev_edge = (\<lambda>(q\<^sub>s,\<alpha>,q\<^sub>o). (q\<^sub>o, \<alpha>, q\<^sub>s))"
+fun rev_edge :: "('n,'v) edge \<Rightarrow> ('n,'v) edge" where
+  "rev_edge (q\<^sub>s,\<alpha>,q\<^sub>o) = (q\<^sub>o, \<alpha>, q\<^sub>s)"
 
 fun rev_path_with_word :: "'n list * 'v action list \<Rightarrow> 'n list * 'v action list" where
   "rev_path_with_word (es,ls) = (rev es, rev ls)"
+
+definition rev_edge_list :: "('n,'v action) transition list \<Rightarrow> ('n,'v action) transition list" where
+  "rev_edge_list ts = rev (map rev_edge ts)"
 
 definition pg_rev :: "('n,'v) program_graph" where
   "pg_rev = (rev_edge ` edge_set, end, start)"
 
 definition "S_hat" :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" where
-  "S_hat e R = (R - kill_set (rev_edge e)) \<union> gen_set (rev_edge e)"
+  "S_hat e R = (R - kill_set e) \<union> gen_set e"
 
 lemma S_hat_mono:
   assumes "d1 \<subseteq> d2"
@@ -1097,10 +1105,10 @@ lemma S_hat_mono:
 
 fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" where
   "S_hat_edge_list [] R = R" |
-  "S_hat_edge_list (e # \<pi>) R = S_hat_edge_list \<pi> (S_hat e R)"
+  "S_hat_edge_list (e # \<pi>) R = S_hat e (S_hat_edge_list \<pi> R)"
 
 lemma S_hat_edge_list_def2:
-  "S_hat_edge_list \<pi> R = foldl (\<lambda>a b. S_hat b a) R \<pi>"
+  "S_hat_edge_list \<pi> R = foldr S_hat \<pi> R"
 proof (induction \<pi> arbitrary: R)
   case Nil
   then show ?case
@@ -1112,18 +1120,18 @@ next
 qed
 
 lemma S_hat_edge_list_append[simp]:
-  "S_hat_edge_list (xs @ ys) R = S_hat_edge_list ys (S_hat_edge_list xs R)"
+  "S_hat_edge_list (xs @ ys) R = S_hat_edge_list xs (S_hat_edge_list ys R)"
   unfolding S_hat_edge_list_def2 foldl_append by auto
 
 lemma S_hat_edge_list_mono:
   assumes "d1 \<subseteq> d2"
   shows "S_hat_edge_list \<pi> d1 \<subseteq> S_hat_edge_list \<pi> d2"
-proof(induction \<pi> rule: List.rev_induct)
+proof(induction \<pi>)
   case Nil
   then show ?case
     using assms by auto
 next
-  case (snoc x xs)
+  case (Cons x xs)
   then show ?case
     using assms by (simp add: S_hat_mono)
 qed
@@ -1135,17 +1143,295 @@ definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Right
   "summarizes_dl_BV \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
      solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
-term pg_rev
+interpretation fa: analysis_BV pg_rev "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e.  gen_set (rev_edge e))" d_init .
 
-interpretation fa: analysis_BV pg_rev kill_set gen_set d_init .
+lemma rev_path_in_rev_pg:
+  assumes "(ss, w) \<in> LTS.path_with_word edge_set"
+  shows "(rev ss, rev w) \<in> LTS.path_with_word fa.edge_set"
+using assms proof (induction rule: LTS.path_with_word_induct_reverse[OF assms])
+  case (1 s)
+  show ?case
+    by (simp add: LTS.path_with_word.path_with_word_refl)
+next
+  case (2 ss s w l s')
+  have "(s', l, s) \<in> fa.edge_set"
+    using 2
+    unfolding fa.edge_set_def pg_rev_def analysis_BV.edge_set_def
+    by (simp add: rev_image_eqI)
+  moreover 
+  have "(rev (ss @ [s]), rev w) \<in> LTS.path_with_word fa.edge_set"
+    using "2.IH" "2.hyps"(1) by blast
+  then have "(s # rev ss, rev w) \<in> LTS.path_with_word fa.edge_set"
+    by auto
+  ultimately
+  have "(s' # s # rev ss, l # rev w) \<in> LTS.path_with_word fa.edge_set"
+    by (simp add: LTS.path_with_word.path_with_word_step)
+  then show ?case
+    by auto
+qed
 
-term LTS.path_with_word
+lemma yyy:
+  assumes "ss \<noteq> []"
+  assumes "LTS.get_end (ss, w) = end"
+  shows "LTS.get_start (rev ss, rev w) = fa.start"
+  using assms
+  unfolding LTS.get_end_def
+  apply auto
+  unfolding LTS.get_start_def
+  apply auto
+  unfolding fa.start_def pg_rev_def analysis_BV.start_def
+  apply auto
+  by (simp add: hd_rev)
 
-term rev
+lemma ajsdflkjaskfd_simpliciation[simp]: "rev_edge (rev_edge x) = x"
+  by (cases x) auto
+
+lemma guguuggu: "S_hat_edge_list ss d_init = fa.S_hat_edge_list (rev_edge_list ss) d_init"
+proof (induction ss)
+  case Nil
+  then show ?case
+    unfolding rev_edge_list_def by auto
+next
+  case (Cons a ss)
+  show ?case
+    apply simp
+    unfolding rev_edge_list_def
+    apply simp
+    unfolding fa.S_hat_edge_list_def2
+    unfolding foldl_conv_foldr
+    apply simp
+    unfolding foldr_conv_foldl
+    unfolding fa.S_hat_edge_list_def2[symmetric]
+    unfolding rev_edge_list_def[symmetric]
+    unfolding fa.S_hat_def
+    apply (simp only: ajsdflkjaskfd_simpliciation)
+    unfolding S_hat_def
+    using Cons
+    apply metis
+    done
+qed
+
+lemma hhhhhxxx:
+  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
+  assumes "(ss',w') \<in> LTS.path_with_word edge_set"
+  assumes "last ss = hd ss'"
+  shows "transition_list ((ss,w) @\<acute> (ss',w')) = transition_list (ss,w) @ transition_list (ss',w')"
+  using assms 
+proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
+  case (1 s)
+  then show ?case
+    apply auto
+    by (metis LTS.path_with_word_not_empty list.exhaust_sel)
+next
+  case (2 s' ss w s l)
+  then show ?case
+    by auto
+qed
+
+lemma asjdfklsdjflksadf:
+  assumes "(SS,WW) \<in> LTS.path_with_word edge_set"
+  assumes "SS = (ss @ ss')"
+  assumes "length ss = Suc (length w)"
+  assumes "WW = w @ w'"
+  shows "(ss,w) \<in> LTS.path_with_word edge_set"
+  using assms
+proof (induction arbitrary: ss ss' w w' rule: LTS.path_with_word.induct[OF assms(1)])
+  case (1 s)
+  then show ?case
+    by (metis (full_types) Suc_length_conv append_is_Nil_conv hd_append2 length_0_conv list.sel(1))
+next
+  case (2 s'a ssa wa s l)
+  then show ?case
+  proof (cases "w")
+    case Nil
+    then show ?thesis
+      using 2
+      by (metis LTS.path_with_word.simps length_0_conv length_Suc_conv)
+  next
+    case (Cons)
+    have "(s'a # ssa, wa) \<in> LTS.path_with_word edge_set"
+      by (simp add: "2.hyps"(1))
+    moreover
+    have "s'a # ssa = tl ss @ ss'"
+      by (metis "2.prems"(2) "2.prems"(3) Zero_not_Suc length_0_conv list.sel(3) tl_append2)
+    moreover
+    have "length (tl ss) = Suc (length (tl w))"
+      using "2.prems"(3) Cons by auto
+    moreover
+    have "wa = tl w @ w'"
+      by (metis "2.prems"(3) "2.prems"(4) calculation(3) length_Suc_conv list.sel(3) list.size(3) nat.simps(3) tl_append2)
+    ultimately
+    have "(tl ss, tl w) \<in> LTS.path_with_word edge_set"
+      using 2(3)[of "tl ss" ss' "tl w" w'] by auto
+    then show ?thesis
+      using 2(2)
+      by (smt (z3) "2.prems"(2) "2.prems"(3) "2.prems"(4) LTS.path_with_word.simps Suc_length_conv Zero_not_Suc hd_append2 length_0_conv list.collapse list.sel(1) list.sel(3) tl_append2)
+  qed
+qed
+
+lemma asjdfklsdjflksadf2:
+  assumes "(SS,WW) \<in> LTS.path_with_word edge_set"
+  assumes "SS = (ss @ ss')"
+  assumes "length ss' = Suc (length w')"
+  assumes "WW = w @ w'"
+  shows "(ss',w') \<in> LTS.path_with_word edge_set"
+  using assms
+proof (induction arbitrary: ss ss' w w' rule: LTS.path_with_word.induct[OF assms(1)])
+  case (1 s)
+  then show ?case
+    by (metis Nil_is_append_conv Zero_not_Suc append_Nil list.sel(3) list.size(3) tl_append2)
+next
+  case (2 s' ssa wa s l)
+  show ?case
+  proof (cases "ss")
+    case Nil
+    then show ?thesis
+      by (smt (verit) "2.prems"(1) "2.prems"(2) "2.prems"(3) "2.prems"(4) LTS.path_with_word_lengths append_Nil append_eq_append_conv length_append_singleton list.distinct(1) nat.inject rev_exhaust)
+  next
+    case (Cons)
+    have "(s' # ssa, wa) \<in> LTS.path_with_word edge_set"
+      using "2.hyps"(1) by blast
+    moreover
+    have "s' # ssa = tl ss @ ss'"
+      using 2(5) using local.Cons by auto
+    moreover
+    have "length ss' = Suc (length w')"
+      using "2.prems"(3) by blast
+    moreover
+    have "wa = tl w @ w'"
+    proof (cases "wa = []")
+      assume "wa \<noteq>[]"
+      then show ?thesis
+        using 2 Cons
+        by (metis LTS.path_with_word_lengths append.left_neutral append_eq_append_conv length_append_singleton list.distinct(1) list.sel(3) rev_exhaust tl_append2)
+    next
+      assume a1: "wa = []"
+      have "tl ss @ ss' \<noteq> []"
+        using calculation(2) by force
+      then have "(butlast (tl ss @ ss') @ [last (s' # ssa)], []) = (s' # ssa, wa)"
+        using a1 by (simp add: calculation(2))
+      then have "(butlast (tl ss @ ss') @ [last (s' # ssa)], []) \<in> LTS.path_with_word edge_set"
+        using "2"(1) by metis
+      then have "length (butlast (tl ss @ ss')) = length ([]::'v action list)"
+        by (meson LTS.path_with_word_lengths)
+      then have "w' = []"
+        by (simp add: calculation(3))
+      then show ?thesis
+        using "2.prems"(4) by force
+    qed
+    ultimately
+    show ?thesis
+      using 2(3)[of "tl ss" ss' w' "tl w"] by auto
+  qed
+qed
+
+lemma asjdfklsdjflksadf21:
+  assumes "(ss @ ss',w @ w') \<in> LTS.path_with_word edge_set"
+  assumes "length ss' = Suc (length w')"
+  shows "(ss',w') \<in> LTS.path_with_word edge_set"
+  using asjdfklsdjflksadf2 assms by auto
+
+lemma asjdfklsdjflksadfaaaaa:
+  assumes "(ss @ ss',w @ w') \<in> LTS.path_with_word edge_set"
+  assumes "length ss = Suc (length w)"
+  shows "(ss,w) \<in> LTS.path_with_word edge_set"
+  using assms asjdfklsdjflksadf by auto
+
+lemma asjdfklsdjflksadfaaaaaaaaa:
+  assumes "(ss, w) @\<acute> (ss', w') \<in> LTS.path_with_word edge_set"
+  assumes "length ss = Suc (length w)"
+  shows "(ss,w) \<in> LTS.path_with_word edge_set"
+  using assms asjdfklsdjflksadf by auto
+
+lemma hhhhh:
+  assumes "(ss @ [s, s'], w @ [l]) \<in> LTS.path_with_word edge_set"
+  shows "transition_list (ss @ [s, s'], w @ [l]) = transition_list (ss @ [s], w) @ [(s, l, s')]"
+proof -
+  have "(ss @ [s], w) \<in> LTS.path_with_word edge_set"
+    using assms
+    by (smt (verit, ccfv_SIG) LTS.path_with_word_lengths append.assoc append_butlast_last_id asjdfklsdjflksadfaaaaa butlast.simps(2) length_append_singleton list.distinct(1))
+  moreover
+  have "([s, s'], [l]) \<in> LTS.path_with_word edge_set"
+    by (metis asjdfklsdjflksadf2 assms length_Cons list.size(3))
+  moreover
+  have "last (ss @ [s]) = hd [s, s']"
+    by auto
+  ultimately
+  show ?thesis
+    using hhhhhxxx[of "ss @ [s]" w "[s, s']" "[l]"]
+    by auto
+qed
+
+
+(*
+lemma hhhhhhhhhh:
+  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
+  shows "rev (transition_list (ss @ [s], w) @ [(s, l, s')]) = (s', l, s) # rev (transition_list (ss @ [s], w))"
+  sorry
+*)
+
+(*
+lemma uuuuuuuuu:
+  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
+  shows "(s', l, s) # rev (transition_list (ss @ [s], w)) = rev (transition_list (ss @ [s, s'], w @ [l]))"
+proof -
+  have "transition_list (ss @ [s, s'], w @ [l]) = transition_list (ss @ [s], w) @ [(s, l, s')]"
+    using hhhhhhhhhh sorry
+  then have "rev (transition_list (ss @ [s, s'], w @ [l])) = rev (transition_list (ss @ [s], w) @ [(s, l, s')])"
+     by auto
+  moreover
+  have "... = (s', l, s) # rev (transition_list (ss @ [s], w))"
+    using assms hhhhhhhhhh by auto
+  ultimately
+  show ?thesis
+    by metis
+qed
+*)
+
+
+find_theorems transition_list "(@)"
+
+lemma ffffff:
+  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
+  shows "transition_list (rev ss, rev w) = rev_edge_list (transition_list (ss, w))"
+  using assms 
+proof (induction rule: LTS.path_with_word.induct[OF assms])
+  case (1 s)
+  then show ?case
+    by (simp add: analysis_BV_backwards.rev_edge_list_def)
+next
+  case (2 s' ss w s l)
+  have "transition_list (rev (s # s' # ss), rev (l # w)) = transition_list (rev ss @ [s', s], rev w @ [l])"
+    by auto
+  moreover
+  have "... = transition_list (rev ss @ [s'], rev w) @ [(s', l, s)]"
+    using transition_list_reversed_simp[of "rev ss" "rev w" s' s l]
+    using "2.hyps"(1) LTS.path_with_word_lengths rev_path_in_rev_pg by fastforce
+  moreover
+  have "... = rev_edge_list (transition_list (s' # ss, w)) @ [(s', l, s)]"
+    using 2 by auto
+  moreover
+  have "... = rev_edge_list ((s, l, s') # transition_list (s' # ss, w))"
+    unfolding rev_edge_list_def by auto
+  moreover
+  have "... = rev_edge_list (transition_list (s # s' # ss, l # w))"
+    by auto
+  ultimately
+  show ?case
+    by metis
+qed
+
+
+lemma zzz:
+  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
+  shows "S_hat_path (ss, w) d_init = fa.S_hat_path (rev ss, rev w) d_init"
+  using guguuggu unfolding S_hat_path_def fa.S_hat_path_def
+  by (metis analysis_BV_backwards.ffffff assms)
 
 (* Maybe I need a better way to swap Start and End *)
 (* And also there is a problem in my current graph reversal. I need to map rev_node
    onto the graph. I think that that will solve the "better way to swap Start and End problem"
+   I did that :-D
  *)
 lemma xxx:
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
@@ -1153,56 +1439,29 @@ lemma xxx:
   assumes "d \<in> S_hat_path (ss,w) d_init"
   assumes "fa.summarizes_dl_BV \<rho>"
   shows "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_start (ss,w)), Encode_Elem_BV d]\<rangle>."
-  using assms
-proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
-  case (1 s)
+proof -
 
-  have a: "([end], []) \<in> LTS.path_with_word fa.edge_set"
-    by (simp add: LTS.path_with_word.path_with_word_refl)
-  
-  have b: "LTS.get_start ([end], []) = fa.start"
-    by (metis LTS.get_start_def fa.start_def fst_conv list.sel(1) pg_rev_def snd_conv)
-  
-  have c: "d \<in> fa.S_hat_path ([end], []) d_init"
-    using "1.prems"(3) S_hat_path_def fa.S_hat_path_def by auto
-  
-  have x: "\<And>\<pi> d. \<pi> \<in> LTS.path_with_word fa.edge_set \<Longrightarrow> LTS.get_start \<pi> = fa.start \<Longrightarrow> d \<in> fa.S_hat_path \<pi> d_init \<Longrightarrow> solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>."
-    using 1(4) unfolding fa.summarizes_dl_BV.simps by auto
-  have t: "([end], []) \<in> LTS.path_with_word fa.edge_set \<Longrightarrow>
-  LTS.get_start (([end], [])) = fa.start \<Longrightarrow>
-  d \<in> fa.S_hat_path (([end], [])) d_init \<Longrightarrow> solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end (([end], []))), Encode_Elem_BV d]\<rangle>."
-    using x[of "([end], [])" d]
-    by (simp add: LTS.get_end_def LTS.get_start_def) 
-  
-  have "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end ([end], [])), Encode_Elem_BV d]\<rangle>."
-    using t[OF a b c] by (simp add: LTS.get_end_def) 
-  moreover
-  have "s = end"
-    by (metis "1"(2) LTS.get_end_def last_ConsL prod.sel(1))
-  ultimately
-  show ?case
-    by (simp add: LTS.get_end_def LTS.get_start_def)
-next
-  case (2 ss s w l s')
-  have "(ss @ [s], w) \<in> LTS.path_with_word edge_set"
-    using "2.hyps"(1) by blast
-  moreover
-  have "LTS.get_end (ss @ [s], w) = end"
-    (* I don't believe this one *)
-    sorry
-  moreover
-  have "d \<in> S_hat_path (ss @ [s], w) d_init"
-    sorry
-  moreover
-  have "fa.summarizes_dl_BV \<rho>"
-    sorry
-  ultimately have "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_start (ss @ [s], w)), Encode_Elem_BV d]\<rangle>."
-    using 2(3) by auto
-  then show ?case
-    by (metis LTS.get_start_def append.left_neutral fst_conv hd_append2 list.sel(1))
+  have a: "(rev (ss), rev (w)) \<in> LTS.path_with_word fa.edge_set"
+    using assms(1) rev_path_in_rev_pg[of ss w] by auto
+
+  have b: "LTS.get_start (rev (ss), rev (w)) = fa.start"
+    using assms(1,2) yyy by (metis LTS.path_with_word_not_empty)
+
+  have c: "d \<in> fa.S_hat_path (rev (ss), rev (w)) d_init"
+    using assms(3)
+    using assms(1) zzz by auto
+
+  have f: "(rev (ss), rev (w)) \<in> LTS.path_with_word fa.edge_set \<Longrightarrow>
+           LTS.get_start (rev (ss), rev (w)) = fa.start \<Longrightarrow>
+           d \<in> fa.S_hat_path (rev (ss), rev (w)) d_init \<Longrightarrow> solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end (rev (ss), rev (w))), Encode_Elem_BV d]\<rangle>."
+    using assms(4) fa.summarizes_dl_BV.simps by blast
+
+  show ?thesis
+    using f[OF a b c]
+    by (metis LTS.get_end_def LTS.get_start_def assms(2) b fa.start_def fst_conv hd_rev pg_rev_def rev.simps(1) rev_swap snd_conv)
 qed
 
-lemma 
+lemma mmm:
   assumes "fa.summarizes_dl_BV \<rho>"
   shows "summarizes_dl_BV \<rho>"
   unfolding summarizes_dl_BV_def
@@ -1218,13 +1477,10 @@ proof(rule; rule ; rule ;rule ;rule)
     using xxx[of "fst \<pi>" "snd \<pi>" d \<rho>] using assms by auto
 qed
 
-  
-
 lemma sound_rev_BV:
-  undefined
-  using fa.sound_BV[of _ "rev_graph _"]
-  oops
-
+  assumes "solves_program \<rho> fa.ana_pg_BV"
+  shows "summarizes_dl_BV \<rho>"
+  using assms fa.sound_BV[of \<rho>] mmm by metis
 
 end
 
