@@ -1065,23 +1065,8 @@ lemma RD_sound_again:
 
 end
 
-section \<open>Backwards analysis\<close>
+section \<open>Reverse program graph\<close>
 
-locale analysis_BV_backwards =
-  fixes pg :: "('n,'v) program_graph"
-  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
-  fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
-  fixes d_init :: "'d set"
-begin
-
-definition edge_set where 
-  "edge_set = fst pg"
-
-definition start where
-  "start = fst (snd pg)"
-
-definition "end" where
-  "end = snd (snd pg)"
 
 fun rev_edge :: "('n,'v) edge \<Rightarrow> ('n,'v) edge" where
   "rev_edge (q\<^sub>s,\<alpha>,q\<^sub>o) = (q\<^sub>o, \<alpha>, q\<^sub>s)"
@@ -1091,6 +1076,234 @@ fun rev_path_with_word :: "'n list * 'v action list \<Rightarrow> 'n list * 'v a
 
 definition rev_edge_list :: "('n,'v action) transition list \<Rightarrow> ('n,'v action) transition list" where
   "rev_edge_list ts = rev (map rev_edge ts)"
+
+
+lemma rev_path_in_rev_pg:
+  assumes "(ss, w) \<in> LTS.path_with_word edge_set"
+  shows "(rev ss, rev w) \<in> LTS.path_with_word (rev_edge ` edge_set)"
+using assms proof (induction rule: LTS.path_with_word_induct_reverse[OF assms])
+  case (1 s)
+  show ?case
+    by (simp add: LTS.path_with_word.path_with_word_refl)
+next
+  case (2 ss s w l s')
+  have "(s', l, s) \<in> rev_edge ` edge_set"
+    using 2
+    unfolding analysis_BV.edge_set_def
+    by (simp add: rev_image_eqI)
+  moreover 
+  have "(rev (ss @ [s]), rev w) \<in> LTS.path_with_word (rev_edge ` edge_set)"
+    using "2.IH" "2.hyps"(1) by blast
+  then have "(s # rev ss, rev w) \<in> LTS.path_with_word (rev_edge ` edge_set)"
+    by auto
+  ultimately
+  have "(s' # s # rev ss, l # rev w) \<in> LTS.path_with_word (rev_edge ` edge_set)"
+    by (simp add: LTS.path_with_word.path_with_word_step)
+  then show ?case
+    by auto
+qed
+
+lemma rev_edge_rev_edge_id[simp]: "rev_edge (rev_edge x) = x"
+  by (cases x) auto
+
+lemma transition_list_append:
+  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
+  assumes "(ss',w') \<in> LTS.path_with_word edge_set"
+  assumes "last ss = hd ss'"
+  shows "transition_list ((ss,w) @\<acute> (ss',w')) = transition_list (ss,w) @ transition_list (ss',w')"
+  using assms 
+proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
+  case (1 s)
+  then have "transition_list (hd ss' # tl ss', w') = transition_list (ss', w')"
+    by (metis LTS.path_with_word_not_empty list.exhaust_sel)
+  then show ?case
+    using 1 by auto
+next
+  case (2 s' ss w s l)
+  then show ?case
+    by auto
+qed
+
+lemma split_path_with_word_beginning'':
+  assumes "(SS,WW) \<in> LTS.path_with_word edge_set"
+  assumes "SS = (ss @ ss')"
+  assumes "length ss = Suc (length w)"
+  assumes "WW = w @ w'"
+  shows "(ss,w) \<in> LTS.path_with_word edge_set"
+  using assms
+proof (induction arbitrary: ss ss' w w' rule: LTS.path_with_word.induct[OF assms(1)])
+  case (1 s)
+  then show ?case
+    by (metis (full_types) Suc_length_conv append_is_Nil_conv hd_append2 length_0_conv list.sel(1))
+next
+  case (2 s'a ssa wa s l)
+  then show ?case
+  proof (cases "w")
+    case Nil
+    then show ?thesis
+      using 2
+      by (metis LTS.path_with_word.simps length_0_conv length_Suc_conv)
+  next
+    case (Cons)
+    have "(s'a # ssa, wa) \<in> LTS.path_with_word edge_set"
+      by (simp add: "2.hyps"(1))
+    moreover
+    have "s'a # ssa = tl ss @ ss'"
+      by (metis "2.prems"(2) "2.prems"(3) Zero_not_Suc length_0_conv list.sel(3) tl_append2)
+    moreover
+    have "length (tl ss) = Suc (length (tl w))"
+      using "2.prems"(3) Cons by auto
+    moreover
+    have "wa = tl w @ w'"
+      by (metis "2.prems"(3) "2.prems"(4) calculation(3) length_Suc_conv list.sel(3) list.size(3) nat.simps(3) tl_append2)
+    ultimately
+    have "(tl ss, tl w) \<in> LTS.path_with_word edge_set"
+      using 2(3)[of "tl ss" ss' "tl w" w'] by auto
+    then show ?thesis
+      using 2(2)
+      by (smt (z3) "2.prems"(2) "2.prems"(3) "2.prems"(4) LTS.path_with_word.simps Suc_length_conv Zero_not_Suc hd_append2 length_0_conv list.collapse list.sel(1) list.sel(3) tl_append2)
+  qed
+qed
+
+lemma split_path_with_word_end':
+  assumes "(SS,WW) \<in> LTS.path_with_word edge_set"
+  assumes "SS = (ss @ ss')"
+  assumes "length ss' = Suc (length w')"
+  assumes "WW = w @ w'"
+  shows "(ss',w') \<in> LTS.path_with_word edge_set"
+  using assms
+proof (induction arbitrary: ss ss' w w' rule: LTS.path_with_word.induct[OF assms(1)])
+  case (1 s)
+  then show ?case
+    by (metis Nil_is_append_conv Zero_not_Suc append_Nil list.sel(3) list.size(3) tl_append2)
+next
+  case (2 s' ssa wa s l)
+  show ?case
+  proof (cases "ss")
+    case Nil
+    then show ?thesis
+      by (smt (verit) "2.prems"(1) "2.prems"(2) "2.prems"(3) "2.prems"(4) LTS.path_with_word_lengths append_Nil append_eq_append_conv length_append_singleton list.distinct(1) nat.inject rev_exhaust)
+  next
+    case (Cons)
+    have "(s' # ssa, wa) \<in> LTS.path_with_word edge_set"
+      using "2.hyps"(1) by blast
+    moreover
+    have "s' # ssa = tl ss @ ss'"
+      using 2(5) using local.Cons by auto
+    moreover
+    have "length ss' = Suc (length w')"
+      using "2.prems"(3) by blast
+    moreover
+    have "wa = tl w @ w'"
+    proof (cases "wa = []")
+      assume "wa \<noteq>[]"
+      then show ?thesis
+        using 2 Cons
+        by (metis LTS.path_with_word_lengths append.left_neutral append_eq_append_conv length_append_singleton list.distinct(1) list.sel(3) rev_exhaust tl_append2)
+    next
+      assume a1: "wa = []"
+      have "tl ss @ ss' \<noteq> []"
+        using calculation(2) by force
+      then have "(butlast (tl ss @ ss') @ [last (s' # ssa)], []) = (s' # ssa, wa)"
+        using a1 by (simp add: calculation(2))
+      then have "(butlast (tl ss @ ss') @ [last (s' # ssa)], []) \<in> LTS.path_with_word edge_set"
+        using "2"(1) by metis
+      then have "length (butlast (tl ss @ ss')) = length ([]::'v action list)"
+        using LTS.path_with_word_lengths by (metis list.size(3)) 
+      then have "w' = []"
+        by (simp add: calculation(3))
+      then show ?thesis
+        using "2.prems"(4) by force
+    qed
+    ultimately
+    show ?thesis
+      using 2(3)[of "tl ss" ss' w' "tl w"] by auto
+  qed
+qed
+
+lemma split_path_with_word_end:
+  assumes "(ss @ ss',w @ w') \<in> LTS.path_with_word edge_set"
+  assumes "length ss' = Suc (length w')"
+  shows "(ss',w') \<in> LTS.path_with_word edge_set"
+  using split_path_with_word_end' assms by blast 
+
+lemma split_path_with_word_beginning':
+  assumes "(ss @ ss',w @ w') \<in> LTS.path_with_word edge_set"
+  assumes "length ss = Suc (length w)"
+  shows "(ss,w) \<in> LTS.path_with_word edge_set"
+  using assms split_path_with_word_beginning'' by blast 
+
+lemma split_path_with_word_beginning:
+  assumes "(ss, w) @\<acute> (ss', w') \<in> LTS.path_with_word edge_set"
+  assumes "length ss = Suc (length w)"
+  shows "(ss,w) \<in> LTS.path_with_word edge_set"
+  using assms split_path_with_word_beginning'' by (metis append_path_with_word.simps) 
+
+lemma transition_list_append_edge:
+  assumes "(ss @ [s, s'], w @ [l]) \<in> LTS.path_with_word edge_set"
+  shows "transition_list (ss @ [s, s'], w @ [l]) = transition_list (ss @ [s], w) @ [(s, l, s')]"
+proof -
+  have "(ss @ [s], w) \<in> LTS.path_with_word edge_set"
+    using assms
+    by (smt (verit, ccfv_SIG) LTS.path_with_word_lengths append.assoc append_butlast_last_id split_path_with_word_beginning' butlast.simps(2) length_append_singleton list.distinct(1))
+  moreover
+  have "([s, s'], [l]) \<in> LTS.path_with_word edge_set"
+    using assms length_Cons list.size(3) by (metis split_path_with_word_end') 
+  moreover
+  have "last (ss @ [s]) = hd [s, s']"
+    by auto
+  ultimately
+  show ?thesis
+    using transition_list_append[of "ss @ [s]" w _ "[s, s']" "[l]"] by auto
+qed
+
+lemma transition_list_rev_edge_list:
+  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
+  shows "transition_list (rev ss, rev w) = rev_edge_list (transition_list (ss, w))"
+  using assms 
+proof (induction rule: LTS.path_with_word.induct[OF assms])
+  case (1 s)
+  then show ?case
+    by (simp add: rev_edge_list_def)
+next
+  case (2 s' ss w s l)
+  have "transition_list (rev (s # s' # ss), rev (l # w)) = transition_list (rev ss @ [s', s], rev w @ [l])"
+    by auto
+  moreover
+  have "... = transition_list (rev ss @ [s'], rev w) @ [(s', l, s)]"
+    using transition_list_reversed_simp[of "rev ss" "rev w" s' s l]
+    using "2.hyps"(1) LTS.path_with_word_lengths rev_path_in_rev_pg by fastforce
+  moreover
+  have "... = rev_edge_list (transition_list (s' # ss, w)) @ [(s', l, s)]"
+    using 2 by auto
+  moreover
+  have "... = rev_edge_list ((s, l, s') # transition_list (s' # ss, w))"
+    unfolding rev_edge_list_def by auto
+  moreover
+  have "... = rev_edge_list (transition_list (s # s' # ss, l # w))"
+    by auto
+  ultimately
+  show ?case
+    by metis
+qed
+
+section \<open>Backwards analysis\<close>
+
+locale analysis_BV_backwards =
+  fixes pg :: "('n,'v) program_graph"
+  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes d_init :: "'d set"
+begin
+
+definition edge_set where
+  "edge_set = fst pg"
+
+definition start where
+  "start = fst (snd pg)"
+
+definition "end" where
+  "end = snd (snd pg)"
 
 definition pg_rev :: "('n,'v) program_graph" where
   "pg_rev = (rev_edge ` edge_set, end, start)"
@@ -1143,34 +1356,9 @@ definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Right
   "summarizes_dl_BV \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
      solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
-interpretation fa: analysis_BV pg_rev "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e.  gen_set (rev_edge e))" d_init .
+interpretation fa: analysis_BV pg_rev "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init .
 
-lemma rev_path_in_rev_pg:
-  assumes "(ss, w) \<in> LTS.path_with_word edge_set"
-  shows "(rev ss, rev w) \<in> LTS.path_with_word fa.edge_set"
-using assms proof (induction rule: LTS.path_with_word_induct_reverse[OF assms])
-  case (1 s)
-  show ?case
-    by (simp add: LTS.path_with_word.path_with_word_refl)
-next
-  case (2 ss s w l s')
-  have "(s', l, s) \<in> fa.edge_set"
-    using 2
-    unfolding fa.edge_set_def pg_rev_def analysis_BV.edge_set_def
-    by (simp add: rev_image_eqI)
-  moreover 
-  have "(rev (ss @ [s]), rev w) \<in> LTS.path_with_word fa.edge_set"
-    using "2.IH" "2.hyps"(1) by blast
-  then have "(s # rev ss, rev w) \<in> LTS.path_with_word fa.edge_set"
-    by auto
-  ultimately
-  have "(s' # s # rev ss, l # rev w) \<in> LTS.path_with_word fa.edge_set"
-    by (simp add: LTS.path_with_word.path_with_word_step)
-  then show ?case
-    by auto
-qed
-
-lemma yyy:
+lemma rev_end_is_start:
   assumes "ss \<noteq> []"
   assumes "LTS.get_end (ss, w) = end"
   shows "LTS.get_start (rev ss, rev w) = fa.start"
@@ -1183,10 +1371,8 @@ lemma yyy:
   apply auto
   by (simp add: hd_rev)
 
-lemma ajsdflkjaskfd_simpliciation[simp]: "rev_edge (rev_edge x) = x"
-  by (cases x) auto
-
-lemma guguuggu: "S_hat_edge_list ss d_init = fa.S_hat_edge_list (rev_edge_list ss) d_init"
+lemma S_hat_edge_list_forward_backward:
+   "S_hat_edge_list ss d_init = fa.S_hat_edge_list (rev_edge_list ss) d_init"
 proof (induction ss)
   case Nil
   then show ?case
@@ -1204,264 +1390,48 @@ next
     unfolding fa.S_hat_edge_list_def2[symmetric]
     unfolding rev_edge_list_def[symmetric]
     unfolding fa.S_hat_def
-    apply (simp only: ajsdflkjaskfd_simpliciation)
+    apply (simp only: rev_edge_rev_edge_id)
     unfolding S_hat_def
     using Cons
     apply metis
     done
 qed
 
-lemma hhhhhxxx:
-  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
-  assumes "(ss',w') \<in> LTS.path_with_word edge_set"
-  assumes "last ss = hd ss'"
-  shows "transition_list ((ss,w) @\<acute> (ss',w')) = transition_list (ss,w) @ transition_list (ss',w')"
-  using assms 
-proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
-  case (1 s)
-  then show ?case
-    apply auto
-    by (metis LTS.path_with_word_not_empty list.exhaust_sel)
-next
-  case (2 s' ss w s l)
-  then show ?case
-    by auto
-qed
-
-lemma asjdfklsdjflksadf:
-  assumes "(SS,WW) \<in> LTS.path_with_word edge_set"
-  assumes "SS = (ss @ ss')"
-  assumes "length ss = Suc (length w)"
-  assumes "WW = w @ w'"
-  shows "(ss,w) \<in> LTS.path_with_word edge_set"
-  using assms
-proof (induction arbitrary: ss ss' w w' rule: LTS.path_with_word.induct[OF assms(1)])
-  case (1 s)
-  then show ?case
-    by (metis (full_types) Suc_length_conv append_is_Nil_conv hd_append2 length_0_conv list.sel(1))
-next
-  case (2 s'a ssa wa s l)
-  then show ?case
-  proof (cases "w")
-    case Nil
-    then show ?thesis
-      using 2
-      by (metis LTS.path_with_word.simps length_0_conv length_Suc_conv)
-  next
-    case (Cons)
-    have "(s'a # ssa, wa) \<in> LTS.path_with_word edge_set"
-      by (simp add: "2.hyps"(1))
-    moreover
-    have "s'a # ssa = tl ss @ ss'"
-      by (metis "2.prems"(2) "2.prems"(3) Zero_not_Suc length_0_conv list.sel(3) tl_append2)
-    moreover
-    have "length (tl ss) = Suc (length (tl w))"
-      using "2.prems"(3) Cons by auto
-    moreover
-    have "wa = tl w @ w'"
-      by (metis "2.prems"(3) "2.prems"(4) calculation(3) length_Suc_conv list.sel(3) list.size(3) nat.simps(3) tl_append2)
-    ultimately
-    have "(tl ss, tl w) \<in> LTS.path_with_word edge_set"
-      using 2(3)[of "tl ss" ss' "tl w" w'] by auto
-    then show ?thesis
-      using 2(2)
-      by (smt (z3) "2.prems"(2) "2.prems"(3) "2.prems"(4) LTS.path_with_word.simps Suc_length_conv Zero_not_Suc hd_append2 length_0_conv list.collapse list.sel(1) list.sel(3) tl_append2)
-  qed
-qed
-
-lemma asjdfklsdjflksadf2:
-  assumes "(SS,WW) \<in> LTS.path_with_word edge_set"
-  assumes "SS = (ss @ ss')"
-  assumes "length ss' = Suc (length w')"
-  assumes "WW = w @ w'"
-  shows "(ss',w') \<in> LTS.path_with_word edge_set"
-  using assms
-proof (induction arbitrary: ss ss' w w' rule: LTS.path_with_word.induct[OF assms(1)])
-  case (1 s)
-  then show ?case
-    by (metis Nil_is_append_conv Zero_not_Suc append_Nil list.sel(3) list.size(3) tl_append2)
-next
-  case (2 s' ssa wa s l)
-  show ?case
-  proof (cases "ss")
-    case Nil
-    then show ?thesis
-      by (smt (verit) "2.prems"(1) "2.prems"(2) "2.prems"(3) "2.prems"(4) LTS.path_with_word_lengths append_Nil append_eq_append_conv length_append_singleton list.distinct(1) nat.inject rev_exhaust)
-  next
-    case (Cons)
-    have "(s' # ssa, wa) \<in> LTS.path_with_word edge_set"
-      using "2.hyps"(1) by blast
-    moreover
-    have "s' # ssa = tl ss @ ss'"
-      using 2(5) using local.Cons by auto
-    moreover
-    have "length ss' = Suc (length w')"
-      using "2.prems"(3) by blast
-    moreover
-    have "wa = tl w @ w'"
-    proof (cases "wa = []")
-      assume "wa \<noteq>[]"
-      then show ?thesis
-        using 2 Cons
-        by (metis LTS.path_with_word_lengths append.left_neutral append_eq_append_conv length_append_singleton list.distinct(1) list.sel(3) rev_exhaust tl_append2)
-    next
-      assume a1: "wa = []"
-      have "tl ss @ ss' \<noteq> []"
-        using calculation(2) by force
-      then have "(butlast (tl ss @ ss') @ [last (s' # ssa)], []) = (s' # ssa, wa)"
-        using a1 by (simp add: calculation(2))
-      then have "(butlast (tl ss @ ss') @ [last (s' # ssa)], []) \<in> LTS.path_with_word edge_set"
-        using "2"(1) by metis
-      then have "length (butlast (tl ss @ ss')) = length ([]::'v action list)"
-        by (meson LTS.path_with_word_lengths)
-      then have "w' = []"
-        by (simp add: calculation(3))
-      then show ?thesis
-        using "2.prems"(4) by force
-    qed
-    ultimately
-    show ?thesis
-      using 2(3)[of "tl ss" ss' w' "tl w"] by auto
-  qed
-qed
-
-lemma asjdfklsdjflksadf21:
-  assumes "(ss @ ss',w @ w') \<in> LTS.path_with_word edge_set"
-  assumes "length ss' = Suc (length w')"
-  shows "(ss',w') \<in> LTS.path_with_word edge_set"
-  using asjdfklsdjflksadf2 assms by auto
-
-lemma asjdfklsdjflksadfaaaaa:
-  assumes "(ss @ ss',w @ w') \<in> LTS.path_with_word edge_set"
-  assumes "length ss = Suc (length w)"
-  shows "(ss,w) \<in> LTS.path_with_word edge_set"
-  using assms asjdfklsdjflksadf by auto
-
-lemma asjdfklsdjflksadfaaaaaaaaa:
-  assumes "(ss, w) @\<acute> (ss', w') \<in> LTS.path_with_word edge_set"
-  assumes "length ss = Suc (length w)"
-  shows "(ss,w) \<in> LTS.path_with_word edge_set"
-  using assms asjdfklsdjflksadf by auto
-
-lemma hhhhh:
-  assumes "(ss @ [s, s'], w @ [l]) \<in> LTS.path_with_word edge_set"
-  shows "transition_list (ss @ [s, s'], w @ [l]) = transition_list (ss @ [s], w) @ [(s, l, s')]"
-proof -
-  have "(ss @ [s], w) \<in> LTS.path_with_word edge_set"
-    using assms
-    by (smt (verit, ccfv_SIG) LTS.path_with_word_lengths append.assoc append_butlast_last_id asjdfklsdjflksadfaaaaa butlast.simps(2) length_append_singleton list.distinct(1))
-  moreover
-  have "([s, s'], [l]) \<in> LTS.path_with_word edge_set"
-    by (metis asjdfklsdjflksadf2 assms length_Cons list.size(3))
-  moreover
-  have "last (ss @ [s]) = hd [s, s']"
-    by auto
-  ultimately
-  show ?thesis
-    using hhhhhxxx[of "ss @ [s]" w "[s, s']" "[l]"]
-    by auto
-qed
-
-
-(*
-lemma hhhhhhhhhh:
-  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
-  shows "rev (transition_list (ss @ [s], w) @ [(s, l, s')]) = (s', l, s) # rev (transition_list (ss @ [s], w))"
-  sorry
-*)
-
-(*
-lemma uuuuuuuuu:
-  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
-  shows "(s', l, s) # rev (transition_list (ss @ [s], w)) = rev (transition_list (ss @ [s, s'], w @ [l]))"
-proof -
-  have "transition_list (ss @ [s, s'], w @ [l]) = transition_list (ss @ [s], w) @ [(s, l, s')]"
-    using hhhhhhhhhh sorry
-  then have "rev (transition_list (ss @ [s, s'], w @ [l])) = rev (transition_list (ss @ [s], w) @ [(s, l, s')])"
-     by auto
-  moreover
-  have "... = (s', l, s) # rev (transition_list (ss @ [s], w))"
-    using assms hhhhhhhhhh by auto
-  ultimately
-  show ?thesis
-    by metis
-qed
-*)
-
-
-find_theorems transition_list "(@)"
-
-lemma ffffff:
-  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
-  shows "transition_list (rev ss, rev w) = rev_edge_list (transition_list (ss, w))"
-  using assms 
-proof (induction rule: LTS.path_with_word.induct[OF assms])
-  case (1 s)
-  then show ?case
-    by (simp add: analysis_BV_backwards.rev_edge_list_def)
-next
-  case (2 s' ss w s l)
-  have "transition_list (rev (s # s' # ss), rev (l # w)) = transition_list (rev ss @ [s', s], rev w @ [l])"
-    by auto
-  moreover
-  have "... = transition_list (rev ss @ [s'], rev w) @ [(s', l, s)]"
-    using transition_list_reversed_simp[of "rev ss" "rev w" s' s l]
-    using "2.hyps"(1) LTS.path_with_word_lengths rev_path_in_rev_pg by fastforce
-  moreover
-  have "... = rev_edge_list (transition_list (s' # ss, w)) @ [(s', l, s)]"
-    using 2 by auto
-  moreover
-  have "... = rev_edge_list ((s, l, s') # transition_list (s' # ss, w))"
-    unfolding rev_edge_list_def by auto
-  moreover
-  have "... = rev_edge_list (transition_list (s # s' # ss, l # w))"
-    by auto
-  ultimately
-  show ?case
-    by metis
-qed
-
-
-lemma zzz:
+lemma S_hat_path_forwards_backwards:
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
   shows "S_hat_path (ss, w) d_init = fa.S_hat_path (rev ss, rev w) d_init"
-  using guguuggu unfolding S_hat_path_def fa.S_hat_path_def
-  by (metis analysis_BV_backwards.ffffff assms)
+  using S_hat_edge_list_forward_backward unfolding S_hat_path_def fa.S_hat_path_def
+  by (metis transition_list_rev_edge_list assms)
 
 (* Maybe I need a better way to swap Start and End *)
 (* And also there is a problem in my current graph reversal. I need to map rev_node
    onto the graph. I think that that will solve the "better way to swap Start and End problem"
    I did that :-D
  *)
-lemma xxx:
+lemma summarizes_dl_BV_forwards_backwards':
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
   assumes "LTS.get_end (ss,w) = end"
   assumes "d \<in> S_hat_path (ss,w) d_init"
   assumes "fa.summarizes_dl_BV \<rho>"
   shows "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_start (ss,w)), Encode_Elem_BV d]\<rangle>."
 proof -
-
-  have a: "(rev (ss), rev (w)) \<in> LTS.path_with_word fa.edge_set"
-    using assms(1) rev_path_in_rev_pg[of ss w] by auto
-
-  have b: "LTS.get_start (rev (ss), rev (w)) = fa.start"
-    using assms(1,2) yyy by (metis LTS.path_with_word_not_empty)
-
-  have c: "d \<in> fa.S_hat_path (rev (ss), rev (w)) d_init"
+  have rev_in_edge_set: "(rev (ss), rev (w)) \<in> LTS.path_with_word fa.edge_set"
+    using assms(1) rev_path_in_rev_pg[of ss w] fa.edge_set_def pg_rev_def by auto 
+  moreover
+  have "LTS.get_start (rev (ss), rev (w)) = fa.start"
+    using assms(1,2) rev_end_is_start by (metis LTS.path_with_word_not_empty)
+  moreover
+  have "d \<in> fa.S_hat_path (rev (ss), rev (w)) d_init"
     using assms(3)
-    using assms(1) zzz by auto
-
-  have f: "(rev (ss), rev (w)) \<in> LTS.path_with_word fa.edge_set \<Longrightarrow>
-           LTS.get_start (rev (ss), rev (w)) = fa.start \<Longrightarrow>
-           d \<in> fa.S_hat_path (rev (ss), rev (w)) d_init \<Longrightarrow> solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end (rev (ss), rev (w))), Encode_Elem_BV d]\<rangle>."
+    using assms(1) S_hat_path_forwards_backwards by auto
+  ultimately
+  have "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end (rev (ss), rev (w))), Encode_Elem_BV d]\<rangle>."
     using assms(4) fa.summarizes_dl_BV.simps by blast
-
-  show ?thesis
-    using f[OF a b c]
-    by (metis LTS.get_end_def LTS.get_start_def assms(2) b fa.start_def fst_conv hd_rev pg_rev_def rev.simps(1) rev_swap snd_conv)
+  then show ?thesis
+    by (metis LTS.get_end_def LTS.get_start_def LTS.path_with_word_not_empty rev_in_edge_set fst_conv hd_rev rev_rev_ident)
 qed
 
-lemma mmm:
+lemma summarizes_dl_BV_forwards_backwards:
   assumes "fa.summarizes_dl_BV \<rho>"
   shows "summarizes_dl_BV \<rho>"
   unfolding summarizes_dl_BV_def
@@ -1474,13 +1444,13 @@ proof(rule; rule ; rule ;rule ;rule)
   assume "d \<in> S_hat_path \<pi> d_init"
   ultimately
   show "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>."
-    using xxx[of "fst \<pi>" "snd \<pi>" d \<rho>] using assms by auto
+    using summarizes_dl_BV_forwards_backwards'[of "fst \<pi>" "snd \<pi>" d \<rho>] using assms by auto
 qed
 
 lemma sound_rev_BV:
   assumes "solves_program \<rho> fa.ana_pg_BV"
   shows "summarizes_dl_BV \<rho>"
-  using assms fa.sound_BV[of \<rho>] mmm by metis
+  using assms fa.sound_BV[of \<rho>] summarizes_dl_BV_forwards_backwards by metis
 
 end
 

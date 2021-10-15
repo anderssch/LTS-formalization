@@ -1331,4 +1331,6 @@ definition \<epsilon>_edge_of_edge where
 definition LTS_\<epsilon>_of_LTS where
   "LTS_\<epsilon>_of_LTS transition_relation = \<epsilon>_edge_of_edge ` transition_relation"
 
+find_theorems "(@\<acute>)"
+
 end
