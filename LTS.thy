@@ -595,9 +595,6 @@ next
     by (metis "2.IH" "2.hyps"(1) "2.hyps"(2) transition_star_states.cases assms(2) count_transitions_of'_tails transitions_of'.simps)
 qed
 
-
-subsection \<open>"New" lemmas\<close>
-
 lemma transition_list_append:
   assumes "(ss,w) \<in> path_with_word"
   assumes "(ss',w') \<in> path_with_word"
