@@ -91,9 +91,9 @@ definition triple_of :: "'v \<Rightarrow> ('n,'v) edge \<Rightarrow> ('n,'v) tri
   "triple_of == (\<lambda>x (q1, a, q2). (x, Some q1, q2))"
 
 definition def_var :: "('n,'v) edge list \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> ('n,'v) triple" where
-  "def_var \<pi> x start = (if (filter (\<lambda>e. x \<in> def_edge e) \<pi>) = []
-                    then (x, None, start)
-                    else (triple_of x (last (filter (\<lambda>e. x \<in> def_edge e) \<pi>))))"
+  "def_var \<pi> x start = (if (\<exists>e \<in> set \<pi>. x \<in> def_edge e)
+                        then (triple_of x (last (filter (\<lambda>e. x \<in> def_edge e) \<pi>)))
+                        else (x, None, start))"
 
 definition def_path :: "('n list \<times> 'v action list) \<Rightarrow> 'n \<Rightarrow> ('n,'v) triple set" where
   "def_path \<pi> start = ((\<lambda>x. def_var (LTS.transition_list \<pi>) x start) ` UNIV)"
