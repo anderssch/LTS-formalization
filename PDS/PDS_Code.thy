@@ -6,7 +6,7 @@ begin
 
 
 global_interpretation pds: PDS_with_P_automaton \<Delta> F_ctr_loc F_ctr_loc_st
-  for \<Delta> :: "('ctr_loc::{finite, linorder}, 'label::{finite, linorder}) rule set"
+  for \<Delta> :: "('ctr_loc::{enum, linorder}, 'label::{finite, linorder}) rule set"
   and F_ctr_loc :: "('ctr_loc) set"
   and F_ctr_loc_st :: "('state::finite) set"
   defines pre_star = "PDS_with_P_automaton.pre_star_exec \<Delta>"
@@ -25,6 +25,15 @@ derive linorder label
 derive linorder state
 instantiation ctr_loc :: finite begin
 instance by (standard, rule finite_subset[of _ "{p0,p1,p2}"]) (auto intro: ctr_loc.exhaust)
+end
+instantiation ctr_loc :: enum begin
+definition "enum_ctr_loc = [p0,p1,p2]"
+definition "enum_all_ctr_loc P = list_all P [p0,p1,p2]"
+definition "enum_ex_ctr_loc P = list_ex P [p0,p1,p2]"
+instance apply standard
+     apply (auto simp: enum_ctr_loc_def enum_all_ctr_loc_def enum_ex_ctr_loc_def)
+   apply (metis ctr_loc.exhaust)+
+  done
 end
 instantiation label :: finite begin
 instance by (standard, rule finite_subset[of _ "{\<gamma>0, \<gamma>1, \<gamma>2}"]) (auto intro: label.exhaust)
@@ -64,11 +73,10 @@ value "accepts {} {s2} (pre_star \<Delta> \<P>) (p0, [\<gamma>0, \<gamma>1])" \<
 thm pds.accept_pre_star_correct_True
 thm pds.accept_pre_star_correct_False
 
-(*
+
 value "accepts_pre_star_check \<Delta> {} {s2} \<P> (p0, [\<gamma>0, \<gamma>0])" \<comment> \<open>Some True\<close>
 value "accepts_pre_star_check \<Delta> {} {s1} \<P> (p0, [\<gamma>0, \<gamma>0])" \<comment> \<open>Some False\<close>
-value "accepts_pre_star_check \<Delta> {} {s2} \<P> (p0, [\<gamma>0, \<gamma>1])" \<comment> \<open>None\<close>
-*)
+value "accepts_pre_star_check \<Delta> {} {s2} \<P> (p0, [\<gamma>0, \<gamma>1])" \<comment> \<open>None @AS: wrong example to get None, need to modify \<P>?\<close>
 
 thm pds.accept_pre_star_correct_Some_True
 thm pds.accept_pre_star_correct_Some_False

@@ -947,6 +947,10 @@ lemma transition_star_exec_imp: "q \<in> transition_star_exec \<Delta> p w \<Lon
 lemma transition_star_code[code_unfold]: "(p,w,q) \<in> LTS.transition_star \<Delta> \<longleftrightarrow> q \<in> transition_star_exec \<Delta> p w"
   by (meson transition_star_exec_imp transition_star_imp_exec)
 
+lemma subset_sources_code[code_unfold]:
+  "X \<subseteq> LTS.sources A \<longleftrightarrow> (\<forall>q \<in> X. q \<notin> snd ` snd ` A)"
+  by (auto simp add: LTS.sources_def image_iff)
+
 
 lemma LTS_transition_star_mono:
   "mono LTS.transition_star"
