@@ -2507,7 +2507,7 @@ lemma inters_transition_star_\<epsilon>_iff:
   "((p1,q2), w :: 'label list, (p2,q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2) \<longleftrightarrow> (p1, w, p2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts1 \<and> (q2, w, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts2"
   by (metis fst_conv inters_transition_star_\<epsilon> inters_transition_star_\<epsilon>1 snd_conv transition_star_\<epsilon>_inter)
 
-lemma inters_accept_iff: "accepts_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2) c \<longleftrightarrow> accepts_\<epsilon> ts1 c \<and> accepts_\<epsilon> ts2 c"
+lemma inters_\<epsilon>_accept_\<epsilon>_iff: "accepts_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2) c \<longleftrightarrow> accepts_\<epsilon> ts1 c \<and> accepts_\<epsilon> ts2 c"
 proof
   assume "accepts_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2) c"
   then show "accepts_\<epsilon> ts1 c \<and> accepts_\<epsilon> ts2 c"
@@ -2527,8 +2527,8 @@ next
     using accepts_\<epsilon>_inters_def p_def transition_star_\<epsilon>_inter w_def by fastforce
 qed
 
-lemma inters_language: "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2) = language_\<epsilon> ts1 \<inter> language_\<epsilon> ts2"
-  unfolding language_\<epsilon>_inters_def language_\<epsilon>_def using inters_accept_iff by auto
+lemma inters_\<epsilon>_language_\<epsilon>: "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2) = language_\<epsilon> ts1 \<inter> language_\<epsilon> ts2"
+  unfolding language_\<epsilon>_inters_def language_\<epsilon>_def using inters_\<epsilon>_accept_\<epsilon>_iff by auto
 
 
 subsection \<open>Dual search\<close>
@@ -2630,7 +2630,7 @@ proof -
     unfolding language_def by auto
 
   have "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) = language_\<epsilon> A1' \<inter> language_\<epsilon> (LTS_\<epsilon>_of_LTS A2')"
-    using inters_language[of A1' "(LTS_\<epsilon>_of_LTS A2')"] by auto
+    using inters_\<epsilon>_language_\<epsilon>[of A1' "(LTS_\<epsilon>_of_LTS A2')"] by auto
   moreover
   have "... = language_\<epsilon> A1' \<inter> language A2'"
     using language_\<epsilon>_LTS_\<epsilon>_of_LTS_is_language by auto
@@ -2668,7 +2668,7 @@ proof -
     unfolding language_def by auto
 
   have "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) = language_\<epsilon> A1' \<inter> language_\<epsilon> (LTS_\<epsilon>_of_LTS A2')"
-    using inters_language[of A1' "(LTS_\<epsilon>_of_LTS A2')"] by auto
+    using inters_\<epsilon>_language_\<epsilon>[of A1' "(LTS_\<epsilon>_of_LTS A2')"] by auto
   moreover
   have "... = language_\<epsilon> A1' \<inter> language A2'"
     using language_\<epsilon>_LTS_\<epsilon>_of_LTS_is_language by auto

@@ -51,7 +51,7 @@ value "pre_star \<Delta> \<P>"
 
 thm pds.theorem_3_2_exec_check
 
-value "pre_star_check \<Delta> \<P>"
+(* value "pre_star_check \<Delta> \<P>" *)
 
 thm pds.theorem_3_2_exec
 
@@ -64,9 +64,11 @@ value "accepts {} {s2} (pre_star \<Delta> \<P>) (p0, [\<gamma>0, \<gamma>1])" \<
 thm pds.accept_pre_star_correct_True
 thm pds.accept_pre_star_correct_False
 
+(*
 value "accepts_pre_star_check \<Delta> {} {s2} \<P> (p0, [\<gamma>0, \<gamma>0])" \<comment> \<open>Some True\<close>
 value "accepts_pre_star_check \<Delta> {} {s1} \<P> (p0, [\<gamma>0, \<gamma>0])" \<comment> \<open>Some False\<close>
 value "accepts_pre_star_check \<Delta> {} {s2} \<P> (p0, [\<gamma>0, \<gamma>1])" \<comment> \<open>None\<close>
+*)
 
 thm pds.accept_pre_star_correct_Some_True
 thm pds.accept_pre_star_correct_Some_False
