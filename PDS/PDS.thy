@@ -2006,18 +2006,145 @@ theorem theorem_3_3_language:
 
 subsection \<open>Intersection Automata\<close>
 
-definition accepts_\<epsilon>_inter :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
-  "accepts_\<epsilon>_inter ts \<equiv> \<lambda>(p,w). (\<exists>q1 \<in> F_states. \<exists>q2 \<in> F_states. ((Ctr_Loc p, Ctr_Loc p),w,(q1,q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts)"
+definition accepts_inters :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
+  "accepts_inters ts \<equiv> \<lambda>(p,w). (\<exists>q1 \<in> F_states. \<exists>q2 \<in> F_states. ((Ctr_Loc p, Ctr_Loc p),w,(q1,q2)) \<in> LTS.transition_star ts)"
 
-definition language_\<epsilon>_inter :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf set" where
-  "language_\<epsilon>_inter ts = {c. accepts_\<epsilon>_inter ts c}"
+definition language_inters :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf set" where
+  "language_inters ts = {c. accepts_inters ts c}"
+
+lemma transition_star_inter:
+  assumes "(p1, w, p2) \<in> LTS.transition_star ts1"
+  assumes "(q1, w, q2) \<in> LTS.transition_star ts2"
+  shows "((p1,q1), w :: 'label list, (p2,q2)) \<in> LTS.transition_star (inters ts1 ts2)"
+  using assms
+proof (induction w arbitrary: p1 q1)
+  case (Cons \<alpha> w1')
+  obtain p' where p'_p: "(p1, \<alpha>, p') \<in> ts1 \<and> (p', w1', p2) \<in> LTS.transition_star ts1"
+    using Cons by (metis LTS.transition_star_cons) 
+  obtain q' where q'_p: "(q1, \<alpha>, q') \<in> ts2 \<and>(q', w1', q2) \<in> LTS.transition_star ts2"
+    using Cons by (metis LTS.transition_star_cons) 
+  have ind: "((p', q'), w1', p2, q2) \<in> LTS.transition_star (inters ts1 ts2)"
+  proof -
+    have "Suc (length w1') = length (\<alpha>#w1')"
+      by auto
+    moreover
+    have "(p', w1', p2) \<in> LTS.transition_star ts1"
+      using p'_p by simp
+    moreover
+    have "(q', w1', q2) \<in> LTS.transition_star ts2"
+      using q'_p by simp
+    ultimately
+    show "((p', q'), w1', p2, q2) \<in> LTS.transition_star (inters ts1 ts2)"
+      using Cons(1) by auto
+  qed
+  moreover
+  have "((p1, q1), \<alpha>, (p', q')) \<in> (inters ts1 ts2)"
+    by (simp add: inters_def p'_p q'_p)
+  ultimately
+  have "((p1, q1), \<alpha>#w1', p2, q2) \<in> LTS.transition_star (inters ts1 ts2)"
+    by (meson LTS.transition_star.transition_star_step)
+  moreover
+  have "length ((\<alpha>#w1')) > 0"
+    by auto
+  moreover
+  have "hd ((\<alpha>#w1')) = \<alpha>"
+    by auto
+  ultimately
+  show ?case
+    by force
+next
+  case Nil
+  then show ?case
+    by (metis LTS.transition_star.transition_star_refl LTS.transition_star_empty)
+qed
+
+lemma inters_transition_star1:
+  assumes "(p1q2, w :: 'label list, p2q2) \<in> LTS.transition_star (inters ts1 ts2)"
+  shows "(fst p1q2, w, fst p2q2) \<in> LTS.transition_star ts1"
+  using assms 
+proof (induction rule: LTS.transition_star.induct[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by (simp add: LTS.transition_star.transition_star_refl) 
+next
+  case (2 p \<gamma> q' w q)
+  then have ind: "(fst q', w, fst q) \<in> LTS.transition_star ts1"
+    by auto
+  from 2(1) have "(p, \<gamma>, q') \<in> 
+                     {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
+    unfolding inters_def by auto
+  then have "\<exists>p1 q1. p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<gamma>, p2) \<in> ts1 \<and> (q1, \<gamma>, q2) \<in> ts2)"
+    by simp
+  then obtain p1 q1 where "p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<gamma>, p2) \<in> ts1 \<and> (q1, \<gamma>, q2) \<in> ts2)"
+    by auto
+  then show ?case
+    using LTS.transition_star.transition_star_step ind by fastforce
+qed
+
+lemma inters_transition_star:
+  assumes "(p1q2, w :: 'label list, p2q2) \<in> LTS.transition_star (LTS.inters ts1 ts2)"
+  shows "(snd p1q2, w, snd p2q2) \<in> LTS.transition_star ts2"
+  using assms 
+proof (induction rule: LTS.transition_star.induct[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by (simp add: LTS.transition_star.transition_star_refl) 
+next
+  case (2 p \<gamma> q' w q)
+  then have ind: "(snd q', w, snd q) \<in> LTS.transition_star ts2"
+    by auto
+  from 2(1) have "(p, \<gamma>, q') \<in> 
+                     {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
+    unfolding inters_def by auto
+  then have "\<exists>p1 q1. p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<gamma>, p2) \<in> ts1 \<and> (q1, \<gamma>, q2) \<in> ts2)"
+    by simp
+  then obtain p1 q1 where "p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<gamma>, p2) \<in> ts1 \<and> (q1, \<gamma>, q2) \<in> ts2)"
+    by auto
+  then show ?case
+    using LTS.transition_star.transition_star_step ind by fastforce
+qed
+
+lemma inters_transition_star_iff:
+  "((p1,q2), w :: 'label list, (p2,q2)) \<in> LTS.transition_star (inters ts1 ts2) \<longleftrightarrow> (p1, w, p2) \<in> LTS.transition_star ts1 \<and> (q2, w, q2) \<in> LTS.transition_star ts2"
+  by (metis fst_conv inters_transition_star inters_transition_star1 snd_conv transition_star_inter)
+
+lemma inters_accept_iff: "accepts_inters (inters ts1 ts2) c \<longleftrightarrow> accepts ts1 c \<and> accepts ts2 c"
+proof
+  assume "accepts_inters (inters ts1 ts2) c"
+  then show "accepts ts1 c \<and> accepts ts2 c"
+    using accepts_def accepts_inters_def inters_transition_star inters_transition_star1 by fastforce
+next
+  assume a: "accepts ts1 c \<and> accepts ts2 c"
+  define p where "p = fst c"
+  define w where "w = snd c"
+
+  from a have "accepts ts1 (p,w) \<and> accepts ts2 (p,w)"
+    using p_def w_def by auto
+  then have "(\<exists>q\<in>F_states. (Ctr_Loc p, w, q) \<in> LTS.transition_star ts1) \<and> (\<exists>q\<in>F_states. (Ctr_Loc p, w, q) \<in> LTS.transition_star ts2)" 
+    unfolding accepts_def by auto
+  then show "accepts_inters (inters ts1 ts2) c"
+    using accepts_inters_def p_def transition_star_inter w_def by fastforce
+qed
+
+lemma inters_language: "language_inters (inters ts1 ts2) = language ts1 \<inter> language ts2"
+  unfolding language_inters_def language_def using inters_accept_iff by auto
+
+
+
+subsection \<open>Intersection \<epsilon>-Automata\<close>
+
+definition accepts_\<epsilon>_inters :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
+  "accepts_\<epsilon>_inters ts \<equiv> \<lambda>(p,w). (\<exists>q1 \<in> F_states. \<exists>q2 \<in> F_states. ((Ctr_Loc p, Ctr_Loc p),w,(q1,q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts)"
+
+definition language_\<epsilon>_inters :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf set" where
+  "language_\<epsilon>_inters ts = {c. accepts_\<epsilon>_inters ts c}"
 
 lemma transition_star_transition_star_\<epsilon>_inter:
   assumes "LTS_\<epsilon>.\<epsilon>_exp w1 w"
   assumes  "LTS_\<epsilon>.\<epsilon>_exp w2 w"
   assumes "(p1, w1, p2) \<in> LTS.transition_star ts1"
   assumes "(q1, w2, q2) \<in> LTS.transition_star ts2"
-  shows "((p1,q1), w :: 'label list, (p2,q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+  shows "((p1,q1), w :: 'label list, (p2,q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
   using assms
 proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_induct)
   case less
@@ -2039,7 +2166,7 @@ proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_ind
       using less True'(1) by (metis LTS_\<epsilon>.transition_star_cons_\<epsilon>)
     obtain q' where q'_p: "(q1, Some \<alpha>, q') \<in> ts2 \<and>(q', w2', q2) \<in> LTS.transition_star ts2"
       using less True'(2) by (metis LTS_\<epsilon>.transition_star_cons_\<epsilon>) 
-    have ind: "((p', q'), w', p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+    have ind: "((p', q'), w', p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
     proof -
       have "length w1' + length w2' < length w1 + length w2"
         using True'(1) True'(2) by simp
@@ -2056,14 +2183,14 @@ proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_ind
       have "(q', w2', q2) \<in> LTS.transition_star ts2"
         using q'_p by simp
       ultimately
-      show "((p', q'), w', p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+      show "((p', q'), w', p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
         using less(1)[of w1' w2' w' p' q'] by auto
     qed
     moreover
-    have "((p1, q1), Some \<alpha>, (p', q')) \<in> (LTS_\<epsilon>.inter ts1 ts2)"
-      by (simp add: LTS_\<epsilon>.inter_def p'_p q'_p)
+    have "((p1, q1), Some \<alpha>, (p', q')) \<in> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
+      by (simp add: LTS_\<epsilon>.inters_\<epsilon>_def p'_p q'_p)
     ultimately
-    have "((p1, q1), \<alpha>#w', p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+    have "((p1, q1), \<alpha>#w', p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
       by (meson LTS_\<epsilon>.transition_star_\<epsilon>.transition_star_\<epsilon>_step_\<gamma>)
     moreover
     have "length w > 0"
@@ -2101,7 +2228,7 @@ proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_ind
           using less True'(1) by (metis LTS_\<epsilon>.transition_star_cons_\<epsilon>)
         have q'_p: " (q1, w2, q2) \<in> LTS.transition_star ts2"
           using less by (metis) 
-        have ind: "((p', q1), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+        have ind: "((p', q1), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
         proof -
           have "length w1' + length w2 < length w1 + length w2"
             using True'(1) by simp
@@ -2118,14 +2245,14 @@ proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_ind
           have "(q1, w2, q2) \<in> LTS.transition_star ts2"
             using q'_p by simp
           ultimately
-          show "((p', q1), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+          show "((p', q1), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
             using less(1)[of w1' w2 w p' q1] by auto
         qed
         moreover
-        have "((p1, q1), \<epsilon>, (p', q1)) \<in> (LTS_\<epsilon>.inter ts1 ts2)"
-          by (simp add: LTS_\<epsilon>.inter_def p'_p q'_p)
+        have "((p1, q1), \<epsilon>, (p', q1)) \<in> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
+          by (simp add: LTS_\<epsilon>.inters_\<epsilon>_def p'_p q'_p)
         ultimately
-        have "((p1, q1), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+        have "((p1, q1), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
           using LTS_\<epsilon>.transition_star_\<epsilon>.simps by fastforce
         then
         show ?thesis
@@ -2143,7 +2270,7 @@ proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_ind
             using less by (metis)
           obtain q' where q'_p: "(q1, \<epsilon>, q') \<in> ts2 \<and>(q', w2', q2) \<in> LTS.transition_star ts2"
             using less True'(1) by (metis LTS_\<epsilon>.transition_star_cons_\<epsilon>) 
-          have ind: "((p1, q'), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+          have ind: "((p1, q'), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
           proof -
             have "length w1 + length w2' < length w1 + length w2"
               using True'(1) True'(1) by simp
@@ -2160,14 +2287,14 @@ proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_ind
             have "(q', w2', q2) \<in> LTS.transition_star ts2"
               using q'_p by simp
             ultimately
-            show "((p1, q'), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+            show "((p1, q'), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
               using less(1)[of w1 w2' w p1 q'] by auto
           qed
           moreover
-          have "((p1, q1), \<epsilon>, (p1, q')) \<in> (LTS_\<epsilon>.inter ts1 ts2)"
-            by (simp add: LTS_\<epsilon>.inter_def p'_p q'_p)
+          have "((p1, q1), \<epsilon>, (p1, q')) \<in> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
+            by (simp add: LTS_\<epsilon>.inters_\<epsilon>_def p'_p q'_p)
           ultimately
-          have "((p1, q1), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+          have "((p1, q1), w, p2, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
             using LTS_\<epsilon>.transition_star_\<epsilon>.simps by fastforce
           then
           show ?thesis
@@ -2188,7 +2315,7 @@ qed
 lemma transition_star_\<epsilon>_inter:
   assumes "(p1, w :: 'label list, p2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts1"
   assumes "(q1, w, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts2"
-  shows "((p1, q1), w, (p2, q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+  shows "((p1, q1), w, (p2, q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
 proof -
   have "\<exists>w1'. LTS_\<epsilon>.\<epsilon>_exp w1' w \<and> (p1, w1', p2) \<in> LTS.transition_star ts1"
     using assms by (simp add: LTS_\<epsilon>.transition_star_\<epsilon>_\<epsilon>_exp_transition_star)
@@ -2204,8 +2331,8 @@ proof -
     using transition_star_transition_star_\<epsilon>_inter by metis
 qed
 
-lemma inter_transition_star_\<epsilon>1:
-  assumes "(p1q2, w :: 'label list, p2q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+lemma inters_transition_star_\<epsilon>1:
+  assumes "(p1q2, w :: 'label list, p2q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
   shows "(fst p1q2, w, fst p2q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts1"
   using assms 
 proof (induction rule: LTS_\<epsilon>.transition_star_\<epsilon>.induct[OF assms(1)])
@@ -2220,7 +2347,7 @@ next
                      {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2} \<union> 
                      {((p1, q1), \<epsilon>, p2, q1) |p1 p2 q1. (p1, \<epsilon>, p2) \<in> ts1} \<union>
                      {((p1, q1), \<epsilon>, p1, q2) |p1 q1 q2. (q1, \<epsilon>, q2) \<in> ts1}"
-    unfolding LTS_\<epsilon>.inter_def by auto
+    unfolding LTS_\<epsilon>.inters_\<epsilon>_def by auto
   moreover                
   {
     assume "(p, Some \<gamma>, q') \<in> {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
@@ -2254,7 +2381,7 @@ next
                      {((p1, q1), \<alpha>, (p2, q2)) | p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2} \<union>
                      {((p1, q1), \<epsilon>, (p2, q1)) | p1 p2 q1. (p1, \<epsilon>, p2) \<in> ts1} \<union>
                      {((p1, q1), \<epsilon>, (p1, q2)) | p1 q1 q2. (q1, \<epsilon>, q2) \<in> ts2}"
-    unfolding LTS_\<epsilon>.inter_def by auto
+    unfolding LTS_\<epsilon>.inters_\<epsilon>_def by auto
   moreover                
   {
     assume "(p, \<epsilon>, q') \<in> {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
@@ -2290,8 +2417,8 @@ next
     by auto
 qed
 
-lemma inter_transition_star_\<epsilon>:
-  assumes "(p1q2, w :: 'label list, p2q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2)"
+lemma inters_transition_star_\<epsilon>:
+  assumes "(p1q2, w :: 'label list, p2q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2)"
   shows "(snd p1q2, w, snd p2q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts2"
   using assms 
 proof (induction rule: LTS_\<epsilon>.transition_star_\<epsilon>.induct[OF assms(1)])
@@ -2306,7 +2433,7 @@ next
                      {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2} \<union> 
                      {((p1, q1), \<epsilon>, p2, q1) |p1 p2 q1. (p1, \<epsilon>, p2) \<in> ts1} \<union>
                      {((p1, q1), \<epsilon>, p1, q2) |p1 q1 q2. (q1, \<epsilon>, q2) \<in> ts2}"
-    unfolding LTS_\<epsilon>.inter_def by auto
+    unfolding LTS_\<epsilon>.inters_\<epsilon>_def by auto
   moreover                
   {
     assume "(p, Some \<gamma>, q') \<in> {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
@@ -2340,7 +2467,7 @@ next
                      {((p1, q1), \<alpha>, (p2, q2)) | p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2} \<union>
                      {((p1, q1), \<epsilon>, (p2, q1)) | p1 p2 q1. (p1, \<epsilon>, p2) \<in> ts1} \<union>
                      {((p1, q1), \<epsilon>, (p1, q2)) | p1 q1 q2. (q1, \<epsilon>, q2) \<in> ts2}"
-    unfolding LTS_\<epsilon>.inter_def by auto
+    unfolding LTS_\<epsilon>.inters_\<epsilon>_def by auto
   moreover                
   {
     assume "(p, \<epsilon>, q') \<in> {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
@@ -2376,15 +2503,15 @@ next
     by auto
 qed
 
-lemma inter_transition_star_\<epsilon>_iff:
-  "((p1,q2), w :: 'label list, (p2,q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inter ts1 ts2) \<longleftrightarrow> (p1, w, p2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts1 \<and> (q2, w, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts2"
-  by (metis fst_conv inter_transition_star_\<epsilon> inter_transition_star_\<epsilon>1 snd_conv transition_star_\<epsilon>_inter)
+lemma inters_transition_star_\<epsilon>_iff:
+  "((p1,q2), w :: 'label list, (p2,q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2) \<longleftrightarrow> (p1, w, p2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts1 \<and> (q2, w, q2) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts2"
+  by (metis fst_conv inters_transition_star_\<epsilon> inters_transition_star_\<epsilon>1 snd_conv transition_star_\<epsilon>_inter)
 
-lemma inter_accept_iff: "accepts_\<epsilon>_inter (LTS_\<epsilon>.inter ts1 ts2) c \<longleftrightarrow> accepts_\<epsilon> ts1 c \<and> accepts_\<epsilon> ts2 c"
+lemma inters_accept_iff: "accepts_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2) c \<longleftrightarrow> accepts_\<epsilon> ts1 c \<and> accepts_\<epsilon> ts2 c"
 proof
-  assume "accepts_\<epsilon>_inter (LTS_\<epsilon>.inter ts1 ts2) c"
+  assume "accepts_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2) c"
   then show "accepts_\<epsilon> ts1 c \<and> accepts_\<epsilon> ts2 c"
-    using accepts_\<epsilon>_def accepts_\<epsilon>_inter_def inter_transition_star_\<epsilon> inter_transition_star_\<epsilon>1 by fastforce
+    using accepts_\<epsilon>_def accepts_\<epsilon>_inters_def inters_transition_star_\<epsilon> inters_transition_star_\<epsilon>1 by fastforce
 next
   assume a: "accepts_\<epsilon> ts1 c \<and> accepts_\<epsilon> ts2 c"
   define p where "p = fst c"
@@ -2396,12 +2523,12 @@ next
 
   then have "(\<exists>q\<in>F_states. (Ctr_Loc p, w, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts1) \<and> (\<exists>q\<in>F_states. (Ctr_Loc p, w, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts2)" 
     unfolding accepts_\<epsilon>_def by auto
-  then show "accepts_\<epsilon>_inter (LTS_\<epsilon>.inter ts1 ts2) c"
-    using accepts_\<epsilon>_inter_def p_def transition_star_\<epsilon>_inter w_def by fastforce
+  then show "accepts_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2) c"
+    using accepts_\<epsilon>_inters_def p_def transition_star_\<epsilon>_inter w_def by fastforce
 qed
 
-lemma inter_language: "language_\<epsilon>_inter (LTS_\<epsilon>.inter ts1 ts2) = language_\<epsilon> ts1 \<inter> language_\<epsilon> ts2"
-  unfolding language_\<epsilon>_inter_def language_\<epsilon>_def using inter_accept_iff by auto
+lemma inters_language: "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> ts1 ts2) = language_\<epsilon> ts1 \<inter> language_\<epsilon> ts2"
+  unfolding language_\<epsilon>_inters_def language_\<epsilon>_def using inters_accept_iff by auto
 
 
 subsection \<open>Dual search\<close>
@@ -2489,7 +2616,7 @@ theorem dual3_on_the_fly:
   assumes "\<forall>a b c. (a, b, c) \<in> A2 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
   assumes "post_star_rules\<^sup>*\<^sup>* A1 A1'"
   assumes "pre_star_rule\<^sup>*\<^sup>* A2 A2'"
-  assumes "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {}"
+  assumes "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {}"
   shows "\<exists>c1 \<in> language_\<epsilon> A1. \<exists>c2 \<in> language A2. c1 \<Rightarrow>\<^sup>* c2"
 proof -
   have "{c. accepts_\<epsilon> A1' c} \<subseteq> post_star (language_\<epsilon> A1)"
@@ -2502,8 +2629,8 @@ proof -
   then have A2'_correct: "language A2' \<subseteq> pre_star (language A2)" 
     unfolding language_def by auto
 
-  have "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) = language_\<epsilon> A1' \<inter> language_\<epsilon> (LTS_\<epsilon>_of_LTS A2')"
-    using inter_language[of A1' "(LTS_\<epsilon>_of_LTS A2')"] by auto
+  have "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) = language_\<epsilon> A1' \<inter> language_\<epsilon> (LTS_\<epsilon>_of_LTS A2')"
+    using inters_language[of A1' "(LTS_\<epsilon>_of_LTS A2')"] by auto
   moreover
   have "... = language_\<epsilon> A1' \<inter> language A2'"
     using language_\<epsilon>_LTS_\<epsilon>_of_LTS_is_language by auto
@@ -2511,11 +2638,11 @@ proof -
   have "... \<subseteq> post_star (language_\<epsilon> A1) \<inter> pre_star (language A2)"
     using A1'_correct A2'_correct by auto
   ultimately
-  have inter_correct: "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) \<subseteq> post_star (language_\<epsilon> A1) \<inter> pre_star (language A2)"
+  have inters_correct: "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<subseteq> post_star (language_\<epsilon> A1) \<inter> pre_star (language A2)"
     by metis
 
   from assms(7) have "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2) \<noteq> {}"
-    using inter_correct by auto
+    using inters_correct by auto
   then show "\<exists>c1\<in>language_\<epsilon> A1. \<exists>c2\<in>language A2. c1 \<Rightarrow>\<^sup>* c2"
     using dual2 by auto
 
@@ -2528,7 +2655,7 @@ theorem dual3:
   assumes "\<forall>a b c. (a, b, c) \<in> A2 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
   assumes "saturation post_star_rules A1 A1'"
   assumes "saturation pre_star_rule A2 A2'"
-  shows "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {} \<longleftrightarrow> (\<exists>c1 \<in> language_\<epsilon> A1. \<exists>c2 \<in> language A2. c1 \<Rightarrow>\<^sup>* c2)"
+  shows "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {} \<longleftrightarrow> (\<exists>c1 \<in> language_\<epsilon> A1. \<exists>c2 \<in> language A2. c1 \<Rightarrow>\<^sup>* c2)"
 proof -
   have "{c. accepts_\<epsilon> A1' c} = post_star (language_\<epsilon> A1)"
     using theorem_3_3[of A1 A1'] assms by auto
@@ -2540,8 +2667,8 @@ proof -
   then have A2'_correct: "language A2' = pre_star (language A2)" 
     unfolding language_def by auto
 
-  have "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) = language_\<epsilon> A1' \<inter> language_\<epsilon> (LTS_\<epsilon>_of_LTS A2')"
-    using inter_language[of A1' "(LTS_\<epsilon>_of_LTS A2')"] by auto
+  have "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) = language_\<epsilon> A1' \<inter> language_\<epsilon> (LTS_\<epsilon>_of_LTS A2')"
+    using inters_language[of A1' "(LTS_\<epsilon>_of_LTS A2')"] by auto
   moreover
   have "... = language_\<epsilon> A1' \<inter> language A2'"
     using language_\<epsilon>_LTS_\<epsilon>_of_LTS_is_language by auto
@@ -2549,22 +2676,22 @@ proof -
   have "... = post_star (language_\<epsilon> A1) \<inter> pre_star (language A2)"
     using A1'_correct A2'_correct by auto
   ultimately
-  have inter_correct: "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) = post_star (language_\<epsilon> A1) \<inter> pre_star (language A2)"
+  have inters_correct: "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) = post_star (language_\<epsilon> A1) \<inter> pre_star (language A2)"
     by metis
 
   show ?thesis
   proof 
-    assume "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {}"
+    assume "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {}"
     then have "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2) \<noteq> {}"
-      using inter_correct by auto
+      using inters_correct by auto
     then show "\<exists>c1\<in>language_\<epsilon> A1. \<exists>c2\<in>language A2. c1 \<Rightarrow>\<^sup>* c2"
       using dual2 by auto
   next
     assume "\<exists>c1\<in>language_\<epsilon> A1. \<exists>c2\<in>language A2. c1 \<Rightarrow>\<^sup>* c2"
     then have "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2) \<noteq> {}"
       using dual2 by auto
-    then show "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {}"
-      using inter_correct by auto
+    then show "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {}"
+      using inters_correct by auto
   qed
 qed
 
@@ -2577,7 +2704,7 @@ theorem dual4_on_the_fly:
   assumes "language A2 = {c2}"
   assumes "post_star_rules\<^sup>*\<^sup>* A1 A1'"
   assumes "pre_star_rule\<^sup>*\<^sup>* A2 A2'"
-  assumes "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {}"
+  assumes "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {}"
   shows "c1 \<Rightarrow>\<^sup>* c2"
   using dual3_on_the_fly[OF assms(1,2,3,4) assms(7,8,9)] assms(5,6) by auto
 
@@ -2590,7 +2717,7 @@ theorem dual4:
   assumes "language A2 = {c2}"
   assumes "saturation post_star_rules A1 A1'"
   assumes "saturation pre_star_rule A2 A2'"
-  shows "language_\<epsilon>_inter (LTS_\<epsilon>.inter A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {} \<longleftrightarrow> c1 \<Rightarrow>\<^sup>* c2"
+  shows "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {} \<longleftrightarrow> c1 \<Rightarrow>\<^sup>* c2"
   using assms dual3 by auto
 
 

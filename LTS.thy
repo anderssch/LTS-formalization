@@ -45,6 +45,10 @@ fun append_transition_star_states :: "('a \<times> 'b list \<times> 'a list \<ti
 fun append_transition_star_states_\<gamma> :: "(('a \<times> 'b list \<times> 'a list \<times> 'a) * 'b) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@\<^sup>\<gamma>" 65) where (* TODO: rename *)
   "((p1,w1,ss1,q1),\<gamma>) @@\<^sup>\<gamma> (p2,w2,ss2,q2) = (p1, w1 @ [\<gamma>] @ w2, ss1@ss2, q2)"
 
+term inters
+
+definition inters :: "('state, 'label) transition set \<Rightarrow> ('state, 'label) transition set \<Rightarrow> (('state * 'state), 'label) transition set" where
+  "inters ts1 ts2 = {((p1, q1), \<alpha>, (p2, q2)) | p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
 
 subsection \<open>LTS locale\<close>
 
@@ -1510,8 +1514,8 @@ lemma exp_empty_empty:
   shows "w = []"
   using assms by (metis LTS_\<epsilon>.\<epsilon>_exp_def list.simps(8) removeAll.simps(1))
 
-definition inter :: "('state, 'label option) transition set \<Rightarrow> ('state, 'label option) transition set \<Rightarrow> (('state * 'state), 'label option) transition set" where
-  "inter ts1 ts2 = {((p1, q1), \<alpha>, (p2, q2)) | p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2} \<union>
+definition inters_\<epsilon> :: "('state, 'label option) transition set \<Rightarrow> ('state, 'label option) transition set \<Rightarrow> (('state * 'state), 'label option) transition set" where
+  "inters_\<epsilon> ts1 ts2 = {((p1, q1), \<alpha>, (p2, q2)) | p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2} \<union>
                    {((p1, q1), \<epsilon>, (p2, q1)) | p1 p2 q1. (p1, \<epsilon>, p2) \<in> ts1} \<union>
                    {((p1, q1), \<epsilon>, (p1, q2)) | p1 q1 q2. (q1, \<epsilon>, q2) \<in> ts2}"
 
