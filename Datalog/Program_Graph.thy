@@ -1063,6 +1063,9 @@ proof -
     .
 qed
 
+lemma fufufufufufu: "interp.S_hat_edge_list (\<pi> @ [a]) d_init_RD = interp.S_hat a (interp.S_hat_edge_list \<pi> d_init_RD)"
+  using interp.S_hat_edge_list_def2 foldl_conv_foldr by simp
+
 lemma gugugug: "(x,q1,q2) \<in> interp.S_hat_edge_list \<pi> d_init_RD \<Longrightarrow> (x,q1,q2) = (def_var \<pi>) x start"
 proof (induction \<pi> rule: rev_induct)
 case Nil
@@ -1070,14 +1073,10 @@ case Nil
     by (metis append_is_Nil_conv d_init_RD_def def_var_def in_set_conv_decomp interp.S_hat_edge_list.simps(1) list.distinct(1) mem_Sigma_iff singletonD)
 next
   case (snoc a \<pi>)
-  from snoc (2) have "(x, q1, q2) \<in> interp.S_hat a (interp.S_hat_edge_list \<pi> d_init_RD)"
-    unfolding interp.S_hat_edge_list_def2
-      foldl_conv_foldr
-    apply simp
-    unfolding 
-      foldl_conv_foldr[symmetric]
-    unfolding interp.S_hat_edge_list_def2[symmetric]
-    .
+  
+  from snoc(2) have "(x, q1, q2) \<in> interp.S_hat a (interp.S_hat_edge_list \<pi> d_init_RD)"
+    using fufufufufufu by blast     
+
   then have "(x, q1, q2) \<in> interp.S_hat_edge_list \<pi> d_init_RD - kill_set_RD a \<or> (x, q1, q2) \<in> gen_set_RD a"
     unfolding interp.S_hat_def by auto
   then show ?case
@@ -1263,9 +1262,9 @@ proof (induction ss)
 next
   case (Cons a ss)
   show ?case
-    apply simp
+   
     unfolding rev_edge_list_def
-    apply simp
+    
     unfolding fa.S_hat_edge_list_def2
     unfolding foldl_conv_foldr
     apply simp
@@ -1384,7 +1383,7 @@ definition d_init_LV :: "'v set" where
 
 interpretation interpb: analysis_BV_backwards pg kill_set_LV gen_set_LV d_init_LV .
 
-lemma def_var_S_hat_edge_list: 
+lemma use_var_S_hat_edge_list: 
   assumes "use_var \<pi> x"
   shows "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV"
   using assms
@@ -1409,74 +1408,45 @@ next
     case Nil
     have "a = e"
       using \<pi>1_\<pi>2_e_p(1) Nil by auto
-    then have "x \<in> use_edge a"
+    then have wewewe: "x \<in> use_edge a"
       using \<pi>1_\<pi>2_e_p(2) by auto
-    then show ?thesis
-      apply simp
-      unfolding interpb.S_hat_def
-      apply (cases a)
-      subgoal for aa bb c
-        apply (cases bb)
-        subgoal for x11 x12
-          apply auto
-          done
-        subgoal for x2
-          apply auto
-          done
-        subgoal 
-          apply auto 
-          done
-        done
-      done
+    obtain p \<alpha> q where a_split: "a = (p, \<alpha>, q)"
+      by (cases a)
+    show ?thesis
+      using wewewe interpb.S_hat_def a_split by (cases \<alpha>) auto
   next
     case (Cons hd_\<pi>1 tl_\<pi>1)
-    from \<pi>1_\<pi>2_e_p have "use_var \<pi> x"
-      unfolding use_var_def
-      apply auto
-        using Cons
-        apply -
-        subgoal
-        apply (rule_tac x=tl_\<pi>1 in exI)
-          apply (rule_tac x=\<pi>2 in exI)
-          apply (cases e)
-          subgoal for aa b c
-        apply (rule_tac x=aa in exI)
-        apply (rule_tac x=b in exI)
-        apply auto
-          done
-        done
-      done
+    obtain p \<alpha> q where e_split: "e = (p, \<alpha>, q)"
+      by (cases e)
+    have "(\<pi> = tl_\<pi>1 @ (p, \<alpha>, q) # \<pi>2) \<and> x \<in> use_action \<alpha> \<and> (\<forall>e'\<in>set tl_\<pi>1. x \<notin> def_edge e')"
+      using Cons \<pi>1_\<pi>2_e_p e_split by auto
+    then have "use_var \<pi> x"
+      unfolding use_var_def by force
     then have uuu: "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV"
       using Cons_inner by auto
     have "a \<in> set \<pi>1"
       using \<pi>1_\<pi>2_e_p(1) Cons(1) by auto
-    then have "\<not>x \<in> def_edge a"
+    then have wewewewww: "\<not>x \<in> def_edge a"
       using \<pi>1_\<pi>2_e_p(3) by auto
-    then show ?thesis
-      using uuu
-      unfolding interpb.S_hat_edge_list.simps
-      unfolding interpb.S_hat_def
-      apply auto
-      apply (cases a)
-      subgoal for q1 aa b aaa ba c
-        apply auto
-        apply (cases aa)
-        subgoal for y exp
-          apply auto
-          done
-        subgoal for x2
-          apply auto
-          done
-        subgoal
-          apply auto
-          done
-        done
-      done
+
+    obtain p' \<alpha>' q' where a_split: "a = (p', \<alpha>', q')"
+      by (cases a)
+
+    show ?thesis
+    proof (cases "x \<in> kill_set_LV a")
+      case True
+      show ?thesis
+        using True a_split wewewewww by (cases \<alpha>'; force)
+    next
+      case False
+      then show ?thesis
+        by (simp add: analysis_BV_backwards.S_hat_def uuu)
+    qed
   qed
 qed
 
 
-lemma gugugugugugugggg:
+lemma S_hat_edge_list_use_var:
   assumes "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV"
   shows "use_var \<pi> x"
   using assms 
@@ -1517,88 +1487,59 @@ next
         using goo by auto
       then have xy: "x \<noteq> y"
         by auto
+      have "(q1, y ::= exp, q2) # \<pi> = ((q1, y ::= exp, q2) # \<pi>1) @ [e] @ \<pi>2"
+        using \<pi>1_\<pi>2_e_p by force
+      moreover
+      have "\<not> (\<exists>e'\<in>set ((q1, y ::= exp, q2) # \<pi>1). x \<in> def_edge e')"
+        using \<pi>1_\<pi>2_e_p xy by force
+      ultimately
       have "use_var ((q1, y ::= exp, q2) # \<pi>) x"
-        unfolding use_var_def
-        apply (rule_tac x="(q1, y ::= exp, q2) # \<pi>1" in exI)
-        apply (rule_tac x="\<pi>2" in exI)
-        apply (rule_tac x="e" in exI)
-        using \<pi>1_\<pi>2_e_p xy
-        apply auto
-        done
+        unfolding use_var_def using \<pi>1_\<pi>2_e_p xy by metis
       then show ?thesis
         by (simp add: Asg)
     next
       case (Bool b)
+      have "(q1, Bool b, q2) # \<pi> = ((q1, Bool b, q2) # \<pi>1) @ [e] @ \<pi>2"
+        using \<pi>1_\<pi>2_e_p unfolding use_var_def by auto
+      moreover
+      have "\<not> (\<exists>e'\<in>set ((q1, Bool b, q2) # \<pi>1). x \<in> def_edge e')"
+        using \<pi>1_\<pi>2_e_p unfolding use_var_def by auto
+      ultimately
       have "use_var ((q1, Bool b, q2) # \<pi>) x"
-        using \<pi>1_\<pi>2_e_p
-        unfolding use_var_def
-        apply (rule_tac x="(q1, Bool b, q2) # \<pi>1" in exI)
-        apply (rule_tac x="\<pi>2" in exI)
-        apply (rule_tac x="e" in exI)
-        using \<pi>1_\<pi>2_e_p
-        apply auto
-        done   
+        unfolding use_var_def using \<pi>1_\<pi>2_e_p by metis
       then show ?thesis
         using Bool by auto
     next
       case Skip
+      have "(q1, Skip, q2) # \<pi> = ((q1, Skip, q2) # \<pi>1) @ [e] @ \<pi>2"
+        using \<pi>1_\<pi>2_e_p unfolding use_var_def by auto
+      moreover
+      have "\<not> (\<exists>e'\<in>set ((q1, Skip, q2) # \<pi>1). x \<in> def_edge e')"
+        using \<pi>1_\<pi>2_e_p unfolding use_var_def by auto
+      ultimately
       have "use_var ((q1, Skip, q2) # \<pi>) x"
-        using \<pi>1_\<pi>2_e_p
-        unfolding use_var_def
-        apply (rule_tac x="(q1, Skip, q2) # \<pi>1" in exI)
-        apply (rule_tac x="\<pi>2" in exI)
-        apply (rule_tac x="e" in exI)
-        using \<pi>1_\<pi>2_e_p
-        apply auto
-        done   
-      then show ?thesis 
+        unfolding use_var_def using \<pi>1_\<pi>2_e_p by metis
+      then show ?thesis
         using Skip by auto
     qed
     then show "use_var (a # \<pi>) x"
       using a_split by auto
   next
-    assume "x \<in> gen_set_LV a"
+    assume a: "x \<in> gen_set_LV a"
+    obtain p \<alpha> q where a_split: "a = (p, \<alpha>, q)"
+      by (cases a)
+    have "use_var ((p, \<alpha>, q) # \<pi>) x"
+      using a a_split unfolding use_var_def by (cases \<alpha>; force)
     then show "use_var (a # \<pi>) x"
-      apply (cases a)
-      subgoal for aa b c
-        apply auto
-        apply (cases b)
-        subgoal for x11 x12 
-          apply auto
-          unfolding use_var_def
-          apply auto
-          apply (rule_tac x="[]" in exI)
-          apply (rule_tac x=\<pi> in exI)
-          apply auto
-          done
-        subgoal for x2
-          apply auto
-          unfolding use_var_def
-          apply auto
-          apply (rule_tac x="[]" in exI)
-          apply (rule_tac x=\<pi> in exI)
-          apply auto
-          done
-        subgoal 
-          apply auto
-          done
-        done
-      done
+      using a_split by auto
   qed
 qed
 
-lemma def_var_UNIV_S_hat_edge_list: "{x. use_var \<pi> x} = interpb.S_hat_edge_list \<pi> d_init_LV"
-  apply auto
-  subgoal for x
-    using def_var_S_hat_edge_list apply auto
-    done
-  subgoal for x
-    using gugugugugugugggg apply auto
-    done
-  done
-
+lemma use_var_UNIV_S_hat_edge_list: "{x. use_var \<pi> x} = interpb.S_hat_edge_list \<pi> d_init_LV"
+  using use_var_S_hat_edge_list S_hat_edge_list_use_var by auto
+  
 lemma use_path_S_hat_path: "use_path \<pi> = interpb.S_hat_path \<pi> d_init_LV"
-  by (simp add: analysis_LV.def_var_UNIV_S_hat_edge_list interpb.S_hat_path_def use_path_def)
+  by (simp add: use_var_UNIV_S_hat_edge_list interpb.S_hat_path_def use_path_def)
 
 definition summarizes_LV :: "(BV_pred, ('n,'v,'v) BV_elem) pred_val \<Rightarrow> bool" where
   "summarizes_LV \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> use_path \<pi> \<longrightarrow>
@@ -1611,17 +1552,8 @@ proof -
   from assms have "interpb.summarizes_dl_BV \<rho>"
     using interpb.sound_rev_BV[of \<rho>] by auto
   then show ?thesis
-    unfolding summarizes_LV_def
-      interpb.summarizes_dl_BV_def
-    unfolding interpb.edge_set_def
-      edge_set_def
-    unfolding interpb.end_def end_def
-    using use_path_S_hat_path 
-    unfolding start_def 
-    unfolding end_def
-    by blast
+    unfolding summarizes_LV_def interpb.summarizes_dl_BV_def interpb.edge_set_def edge_set_def
+      interpb.end_def end_def use_path_S_hat_path by blast
 qed
-  
-
 
 end
