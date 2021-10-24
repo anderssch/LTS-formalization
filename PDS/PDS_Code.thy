@@ -82,6 +82,8 @@ thm pds.accept_pre_star_correct_Some_True
 thm pds.accept_pre_star_correct_Some_False
 thm pds.accept_pre_star_correct_None
 
+value "pds.accepts_inters {p0, p1, p2} {s1,s2} (inters (pre_star \<Delta> \<P>) (pre_star \<Delta> \<P>)) (p0, [\<gamma>0, \<gamma>0])"
+
 (*
 datatype ctr_loc = q
 datatype label =
