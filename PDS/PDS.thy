@@ -99,9 +99,9 @@ end
 
 
 locale PDS_with_P_automaton = PDS \<Delta>
-  for \<Delta> :: "('ctr_loc::finite, 'label::finite) rule set"
+  for \<Delta> :: "('ctr_loc::enum, 'label::finite) rule set"
     +
-  fixes F_ctr_loc :: "('ctr_loc::finite) set"
+  fixes F_ctr_loc :: "('ctr_loc::enum) set"
   fixes F_ctr_loc_st :: "('state::finite) set"
 begin
 
@@ -114,6 +114,9 @@ lemma F_not_Ext: "\<not>(\<exists>f\<in>F_states. is_Ctr_Ext f)"
 
 definition P_states :: "('ctr_loc, 'state, 'label) state set" where 
   "P_states = {q. is_Ctr_Loc q}"
+
+lemma P_states_code[code]: "P_states = set (map Ctr_Loc Enum.enum)"
+  by (auto simp: P_states_def is_Ctr_Loc_def simp flip: UNIV_enum)
 
 definition Old_Aut_states :: "('ctr_loc, 'state, 'label) state set" where
   "Old_Aut_states = {q. is_State q}"

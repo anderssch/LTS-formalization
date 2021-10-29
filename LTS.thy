@@ -45,10 +45,12 @@ fun append_transition_star_states :: "('a \<times> 'b list \<times> 'a list \<ti
 fun append_transition_star_states_\<gamma> :: "(('a \<times> 'b list \<times> 'a list \<times> 'a) * 'b) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@\<^sup>\<gamma>" 65) where (* TODO: rename *)
   "((p1,w1,ss1,q1),\<gamma>) @@\<^sup>\<gamma> (p2,w2,ss2,q2) = (p1, w1 @ [\<gamma>] @ w2, ss1@ss2, q2)"
 
-term inters
-
 definition inters :: "('state, 'label) transition set \<Rightarrow> ('state, 'label) transition set \<Rightarrow> (('state * 'state), 'label) transition set" where
   "inters ts1 ts2 = {((p1, q1), \<alpha>, (p2, q2)) | p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
+
+lemma inters_code[code]:
+  "inters ts1 ts2 = (\<Union>(p1, \<alpha>, p2) \<in> ts1. \<Union>(q1, \<alpha>', q2) \<in> ts2. if \<alpha> = \<alpha>' then {((p1, q1), \<alpha>, (p2, q2))} else {})"
+  unfolding inters_def by (force split: if_splits)
 
 subsection \<open>LTS locale\<close>
 
@@ -946,6 +948,10 @@ lemma transition_star_exec_imp: "q \<in> transition_star_exec \<Delta> p w \<Lon
     (auto intro!: LTS.transition_star_refl[of _ \<Delta>] LTS.transition_star_step[of _ _ _ \<Delta>] split: if_splits)
 lemma transition_star_code[code_unfold]: "(p,w,q) \<in> LTS.transition_star \<Delta> \<longleftrightarrow> q \<in> transition_star_exec \<Delta> p w"
   by (meson transition_star_exec_imp transition_star_imp_exec)
+
+lemma subset_sources_code[code_unfold]:
+  "X \<subseteq> LTS.sources A \<longleftrightarrow> (\<forall>q \<in> X. q \<notin> snd ` snd ` A)"
+  by (auto simp add: LTS.sources_def image_iff)
 
 
 lemma LTS_transition_star_mono:
