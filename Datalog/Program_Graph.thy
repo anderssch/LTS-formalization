@@ -1235,6 +1235,8 @@ definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Right
   "summarizes_dl_BV \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
      solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
+(* \<rho> \<Turnstile> BV(\<pi>\<^sub>0,d). *)
+
 interpretation fa: analysis_BV pg_rev "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init .
 
 abbreviation ana_pg_BV where
@@ -1337,7 +1339,7 @@ lemma sound_rev_BV:
 end
 
 
-section \<open>Live Variables Anaylsis\<close>
+section \<open>Live Variables Analysis\<close>
 
 (* definition def_var :: "('n,'v) edge list \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> ('n,'v) triple" where *)
 
@@ -1382,6 +1384,8 @@ definition d_init_LV :: "'v set" where
   "d_init_LV = {}"
 
 interpretation interpb: analysis_BV_backwards pg kill_set_LV gen_set_LV d_init_LV .
+
+thm interpb.sound_rev_BV
 
 lemma use_var_S_hat_edge_list: 
   assumes "use_var \<pi> x"
