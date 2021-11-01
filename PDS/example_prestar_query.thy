@@ -48,6 +48,8 @@ definition final_automaton :: "((ctr_loc, state, label) PDS.state, label) transi
 definition F_ctr_loc where "F_ctr_loc = {}"
 definition F_ctr_loc_st where "F_ctr_loc_st = {q2,qf}"
 
+
+
 (* Query specific part END *)
 
 
@@ -75,7 +77,7 @@ end
 
 (* Can we return this value to terminal? *)
 value "pds.accepts_inters F_ctr_loc F_ctr_loc_st (inters initial_automaton (pre_star pds_rules final_automaton)) (p2, [x,x,y])" \<comment> \<open>True\<close>
-
+thm Intersection_P_Automaton.inters_accept_iff[of ]
 (* We don't want to specify the conf (p2, [x,x,y]), we want something like the following: *)
 (* TODO: Define inters_non_empty to compute whether the intersection is non-empty. *)
 (* value "pds.inters_non_empty F_ctr_loc F_ctr_loc_st (inters initial_automaton (pre_star pds_rules final_automaton))" \<comment> \<open>Should evaluate to: True\<close> *)

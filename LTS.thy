@@ -1315,9 +1315,11 @@ qed
 
 section \<open>Automata\<close>
 
-locale Automaton = LTS transition_relation for transition_relation :: "('state, 'label) transition set" +
+locale P_Automaton = LTS transition_relation for transition_relation :: "('state, 'label) transition set" +
   fixes finals :: "'state set" and initials :: "'state set"
 begin
+
+(* Idea: drop initial states. And drop "p \<in> initials \<and>" *)
 
 (* Question to Jiri, Morten and Dmitriy:
    Gives False if p is not inital. Is this what we want?  *)
@@ -1329,13 +1331,13 @@ definition language_aut :: "('state * 'label list) set" where
 
 end
 
-locale Intersection_Automaton = 
-  A1: Automaton ts1 finals1 initials +
-  A2: Automaton ts2 finals2 initials
+locale Intersection_P_Automaton = 
+  A1: P_Automaton ts1 finals1 initials +
+  A2: P_Automaton ts2 finals2 initials
   for ts1 :: "('state, 'label) transition set" and finals1 :: "'state set" and initials :: "'state set" and
    ts2 :: "('state, 'label) transition set" and finals2 :: "'state set" begin
 
-sublocale s: Automaton "inters ts1 ts2" "inters_finals finals1 finals2" "(initials \<times> initials)" 
+sublocale s: P_Automaton "inters ts1 ts2" "inters_finals finals1 finals2" "{(p,p). p \<in> initials}" 
   .
 
 definition accepts_aut_inters where
@@ -1447,13 +1449,13 @@ proof
     unfolding accepts_aut_inters_def
 A1.accepts_aut_def A2.accepts_aut_def s.accepts_aut_def unfolding inters_finals_def 
     using inters_transition_star_iff[of p _ w _ ]
-    by (metis SigmaE fst_conv inters_transition_star inters_transition_star1 snd_conv) 
+    using SigmaE fst_conv inters_transition_star inters_transition_star1 snd_conv by (metis Product_Type.Collect_case_prodD)
 next
   assume a: "A1.accepts_aut p w \<and> A2.accepts_aut p w"
   then have "(\<exists>q\<in>finals1. p \<in> initials \<and> (p, w, q) \<in> A1.transition_star) \<and> (\<exists>q\<in>finals2. p \<in> initials \<and> (p, w, q) \<in> A2.transition_star)" 
     unfolding A1.accepts_aut_def A2.accepts_aut_def by auto
   then show "accepts_aut_inters p w"
-    using accepts_aut_inters_def transition_star_inter by (metis inters_finals_def mem_Sigma_iff s.accepts_aut_def)
+    by (metis Intersection_P_Automaton.transition_star_inter accepts_aut_inters_def case_prod_conv inters_finals_def mem_Collect_eq mem_Sigma_iff s.accepts_aut_def)
 qed
 
 term A1.language_aut 

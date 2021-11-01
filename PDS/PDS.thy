@@ -130,12 +130,9 @@ notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 definition accepts :: "(('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
   "accepts ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_states. (Ctr_Loc p,w,q) \<in> LTS.transition_star ts)"
 
-lemma "accepts ts (p, w) \<longleftrightarrow> Automaton.accepts_aut ts F_states P_states (Ctr_Loc p) w"
-  unfolding accepts_def Automaton.accepts_aut_def
-  apply auto 
-  unfolding P_states_def
-  apply auto
-  done
+(* TODO: Give it a name *)
+lemma "accepts ts (p, w) \<longleftrightarrow> P_Automaton.accepts_aut ts F_states P_states (Ctr_Loc p) w"
+  unfolding accepts_def P_Automaton.accepts_aut_def P_states_def by auto
 
 definition accepts_\<epsilon> :: "(('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
   "accepts_\<epsilon> ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_states. (Ctr_Loc p,w,q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts)"
@@ -167,19 +164,19 @@ lemma accepts_cons: "(Ctr_Loc p, \<gamma>, Ctr_Loc p') \<in> ts \<Longrightarrow
 definition language :: "(('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf set" where
   "language ts = {c. accepts ts c}"
 
-term "(language ts, Automaton.language_aut ts F_states P_states)"
+term "(language ts, P_Automaton.language_aut ts F_states P_states)"
 
-lemma "language ts = (\<lambda>(s,w). (the_Ctr_Loc s, w)) ` (Automaton.language_aut ts F_states P_states)"
-  unfolding language_def Automaton.language_aut_def
+lemma "language ts = (\<lambda>(s,w). (the_Ctr_Loc s, w)) ` (P_Automaton.language_aut ts F_states P_states)"
+  unfolding language_def P_Automaton.language_aut_def
   apply auto
   unfolding P_states_def
   subgoal for p w
     unfolding accepts_def
     apply auto
-    apply (smt (verit) Automaton.accepts_aut_def image_iff mem_Collect_eq old.prod.case state.disc(1) state.sel(1))
+    apply (smt (verit) P_Automaton.accepts_aut_def image_iff mem_Collect_eq old.prod.case state.disc(1) state.sel(1))
     done
   subgoal for p w
-    apply (simp add: Automaton.accepts_aut_def accepts_def)
+    apply (simp add: P_Automaton.accepts_aut_def accepts_def)
     done
   done
 
@@ -1008,9 +1005,7 @@ next
     by blast
 
   then have VI_2: "(Ctr_Loc p'', [\<gamma>], q1) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'" "(q1, u1, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
-     apply (meson LTS_\<epsilon>.transition_star_\<epsilon>_iff_\<epsilon>_exp_transition_star iii)
-    apply (meson LTS_\<epsilon>.transition_star_\<epsilon>_iff_\<epsilon>_exp_transition_star VI(2) iv(1))
-    done
+    by (meson LTS_\<epsilon>.transition_star_\<epsilon>_iff_\<epsilon>_exp_transition_star iii VI(2) iv(1))+
 
   show ?case
   proof (cases w1)
@@ -1213,7 +1208,7 @@ lemma lemma_3_4'_Aux_Aux2:
   using assms 
 proof (induction rule: rtranclp_induct) (* I copy-pasted this proof from above and blindly adjusted it. So it may be a mess. *)
   case base
-  then show ?case 
+  then show ?case
     unfolding New_Aut_states_def is_Ctr_Ext_def by blast
 next
   case (step Aiminus1 Ai)
@@ -2037,107 +2032,21 @@ definition accepts_inters :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'st
 definition language_inters :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf set" where
   "language_inters ts = {c. accepts_inters ts c}"
 
-lemma transition_star_inter:
-  assumes "(p1, w, p2) \<in> LTS.transition_star ts1"
-  assumes "(q1, w, q2) \<in> LTS.transition_star ts2"
-  shows "((p1,q1), w :: 'label list, (p2,q2)) \<in> LTS.transition_star (inters ts1 ts2)"
-  using assms
-proof (induction w arbitrary: p1 q1)
-  case (Cons \<alpha> w1')
-  obtain p' where p'_p: "(p1, \<alpha>, p') \<in> ts1 \<and> (p', w1', p2) \<in> LTS.transition_star ts1"
-    using Cons by (metis LTS.transition_star_cons) 
-  obtain q' where q'_p: "(q1, \<alpha>, q') \<in> ts2 \<and>(q', w1', q2) \<in> LTS.transition_star ts2"
-    using Cons by (metis LTS.transition_star_cons) 
-  have ind: "((p', q'), w1', p2, q2) \<in> LTS.transition_star (inters ts1 ts2)"
-  proof -
-    have "Suc (length w1') = length (\<alpha>#w1')"
-      by auto
-    moreover
-    have "(p', w1', p2) \<in> LTS.transition_star ts1"
-      using p'_p by simp
-    moreover
-    have "(q', w1', q2) \<in> LTS.transition_star ts2"
-      using q'_p by simp
-    ultimately
-    show "((p', q'), w1', p2, q2) \<in> LTS.transition_star (inters ts1 ts2)"
-      using Cons(1) by auto
-  qed
-  moreover
-  have "((p1, q1), \<alpha>, (p', q')) \<in> (inters ts1 ts2)"
-    by (simp add: inters_def p'_p q'_p)
-  ultimately
-  have "((p1, q1), \<alpha>#w1', p2, q2) \<in> LTS.transition_star (inters ts1 ts2)"
-    by (meson LTS.transition_star.transition_star_step)
-  moreover
-  have "length ((\<alpha>#w1')) > 0"
-    by auto
-  moreover
-  have "hd ((\<alpha>#w1')) = \<alpha>"
-    by auto
-  ultimately
-  show ?case
-    by force
-next
-  case Nil
-  then show ?case
-    by (metis LTS.transition_star.transition_star_refl LTS.transition_star_empty)
-qed
+thm Intersection_P_Automaton.transition_star_inter
 
-lemma inters_transition_star1:
-  assumes "(p1q2, w :: 'label list, p2q2) \<in> LTS.transition_star (inters ts1 ts2)"
-  shows "(fst p1q2, w, fst p2q2) \<in> LTS.transition_star ts1"
-  using assms 
-proof (induction rule: LTS.transition_star.induct[OF assms(1)])
-  case (1 p)
-  then show ?case
-    by (simp add: LTS.transition_star.transition_star_refl) 
-next
-  case (2 p \<gamma> q' w q)
-  then have ind: "(fst q', w, fst q) \<in> LTS.transition_star ts1"
-    by auto
-  from 2(1) have "(p, \<gamma>, q') \<in> 
-                     {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
-    unfolding inters_def by auto
-  then have "\<exists>p1 q1. p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<gamma>, p2) \<in> ts1 \<and> (q1, \<gamma>, q2) \<in> ts2)"
-    by simp
-  then obtain p1 q1 where "p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<gamma>, p2) \<in> ts1 \<and> (q1, \<gamma>, q2) \<in> ts2)"
-    by auto
-  then show ?case
-    using LTS.transition_star.transition_star_step ind by fastforce
-qed
+thm Intersection_P_Automaton.inters_transition_star1
 
-lemma inters_transition_star:
-  assumes "(p1q2, w :: 'label list, p2q2) \<in> LTS.transition_star (LTS.inters ts1 ts2)"
-  shows "(snd p1q2, w, snd p2q2) \<in> LTS.transition_star ts2"
-  using assms 
-proof (induction rule: LTS.transition_star.induct[OF assms(1)])
-  case (1 p)
-  then show ?case
-    by (simp add: LTS.transition_star.transition_star_refl) 
-next
-  case (2 p \<gamma> q' w q)
-  then have ind: "(snd q', w, snd q) \<in> LTS.transition_star ts2"
-    by auto
-  from 2(1) have "(p, \<gamma>, q') \<in> 
-                     {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
-    unfolding inters_def by auto
-  then have "\<exists>p1 q1. p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<gamma>, p2) \<in> ts1 \<and> (q1, \<gamma>, q2) \<in> ts2)"
-    by simp
-  then obtain p1 q1 where "p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<gamma>, p2) \<in> ts1 \<and> (q1, \<gamma>, q2) \<in> ts2)"
-    by auto
-  then show ?case
-    using LTS.transition_star.transition_star_step ind by fastforce
-qed
+thm Intersection_P_Automaton.inters_transition_star
 
-lemma inters_transition_star_iff:
-  "((p1,q2), w :: 'label list, (p2,q2)) \<in> LTS.transition_star (inters ts1 ts2) \<longleftrightarrow> (p1, w, p2) \<in> LTS.transition_star ts1 \<and> (q2, w, q2) \<in> LTS.transition_star ts2"
-  by (metis fst_conv inters_transition_star inters_transition_star1 snd_conv transition_star_inter)
+thm Intersection_P_Automaton.inters_transition_star_iff
+
+thm Intersection_P_Automaton.inters_accept_iff
 
 lemma inters_accept_iff: "accepts_inters (inters ts1 ts2) c \<longleftrightarrow> accepts ts1 c \<and> accepts ts2 c"
 proof
   assume "accepts_inters (inters ts1 ts2) c"
   then show "accepts ts1 c \<and> accepts ts2 c"
-    using accepts_def accepts_inters_def inters_transition_star inters_transition_star1 by fastforce
+    using accepts_def accepts_inters_def Intersection_P_Automaton.inters_transition_star Intersection_P_Automaton.inters_transition_star1 by fastforce
 next
   assume a: "accepts ts1 c \<and> accepts ts2 c"
   define p where "p = fst c"
@@ -2148,7 +2057,7 @@ next
   then have "(\<exists>q\<in>F_states. (Ctr_Loc p, w, q) \<in> LTS.transition_star ts1) \<and> (\<exists>q\<in>F_states. (Ctr_Loc p, w, q) \<in> LTS.transition_star ts2)" 
     unfolding accepts_def by auto
   then show "accepts_inters (inters ts1 ts2) c"
-    using accepts_inters_def p_def transition_star_inter w_def by fastforce
+    using accepts_inters_def p_def Intersection_P_Automaton.transition_star_inter w_def by fastforce
 qed
 
 lemma inters_language: "language_inters (inters ts1 ts2) = language ts1 \<inter> language ts2"
