@@ -108,7 +108,6 @@ begin
 definition F_states :: "('ctr_loc, 'state::finite, 'label) state set" where
   "F_states = Ctr_Loc ` F_ctr_loc \<union> Ctr_Loc_St ` F_ctr_loc_st"
 
-
 lemma F_not_Ext: "\<not>(\<exists>f\<in>F_states. is_Ctr_Ext f)"
   using F_states_def by fastforce
 
@@ -130,6 +129,13 @@ notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 
 definition accepts :: "(('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
   "accepts ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_states. (Ctr_Loc p,w,q) \<in> LTS.transition_star ts)"
+
+lemma "accepts ts (p, w) \<longleftrightarrow> Automaton.accepts_aut ts F_states P_states (Ctr_Loc p) w"
+  unfolding accepts_def Automaton.accepts_aut_def
+  apply auto 
+  unfolding P_states_def
+  apply auto
+  done
 
 definition accepts_\<epsilon> :: "(('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
   "accepts_\<epsilon> ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_states. (Ctr_Loc p,w,q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts)"
@@ -160,6 +166,22 @@ lemma accepts_cons: "(Ctr_Loc p, \<gamma>, Ctr_Loc p') \<in> ts \<Longrightarrow
 
 definition language :: "(('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf set" where
   "language ts = {c. accepts ts c}"
+
+term "(language ts, Automaton.language_aut ts F_states P_states)"
+
+lemma "language ts = (\<lambda>(s,w). (the_Ctr_Loc s, w)) ` (Automaton.language_aut ts F_states P_states)"
+  unfolding language_def Automaton.language_aut_def
+  apply auto
+  unfolding P_states_def
+  subgoal for p w
+    unfolding accepts_def
+    apply auto
+    apply (smt (verit) Automaton.accepts_aut_def image_iff mem_Collect_eq old.prod.case state.disc(1) state.sel(1))
+    done
+  subgoal for p w
+    apply (simp add: Automaton.accepts_aut_def accepts_def)
+    done
+  done
 
 definition language_\<epsilon> :: "(('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf set" where
   "language_\<epsilon> ts = {c. accepts_\<epsilon> ts c}"

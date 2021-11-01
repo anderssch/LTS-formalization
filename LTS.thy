@@ -3,9 +3,11 @@ theory LTS imports Main "HOL-Library.Multiset_Order" begin
 
 section \<open>LTS\<close>
 
+
 subsection \<open>Transitions\<close>
 
 type_synonym ('state, 'label) transition = "'state * 'label * 'state"
+
 
 subsection \<open>LTS functions\<close>
 
@@ -48,9 +50,13 @@ fun append_transition_star_states_\<gamma> :: "(('a \<times> 'b list \<times> 'a
 definition inters :: "('state, 'label) transition set \<Rightarrow> ('state, 'label) transition set \<Rightarrow> (('state * 'state), 'label) transition set" where
   "inters ts1 ts2 = {((p1, q1), \<alpha>, (p2, q2)) | p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
 
+definition inters_finals :: "'state set \<Rightarrow> 'state set \<Rightarrow> ('state * 'state) set" where
+  "inters_finals finals1 finals2 = finals1 \<times> finals2"
+
 lemma inters_code[code]:
   "inters ts1 ts2 = (\<Union>(p1, \<alpha>, p2) \<in> ts1. \<Union>(q1, \<alpha>', q2) \<in> ts2. if \<alpha> = \<alpha>' then {((p1, q1), \<alpha>, (p2, q2))} else {})"
   unfolding inters_def by (force split: if_splits)
+
 
 subsection \<open>LTS locale\<close>
 
@@ -1307,14 +1313,155 @@ next
 qed
 
 
-section \<open>LTS init\<close>
+section \<open>Automata\<close>
 
-locale LTS_init = LTS transition_relation for transition_relation :: "('state, 'label) transition set" +
-  fixes r :: 'state
+locale Automaton = LTS transition_relation for transition_relation :: "('state, 'label) transition set" +
+  fixes finals :: "'state set" and initials :: "'state set"
 begin
 
-abbreviation initial :: "'state \<Rightarrow> bool" where
-  "initial == (\<lambda>r'. r' = r)"
+(* Question to Jiri, Morten and Dmitriy:
+   Gives False if p is not inital. Is this what we want?  *)
+definition accepts_aut :: "'state \<Rightarrow> 'label list \<Rightarrow> bool" where
+  "accepts_aut \<equiv> \<lambda>p w. (\<exists>q \<in> finals. p \<in> initials \<and> (p, w, q) \<in> transition_star)"
+
+definition language_aut :: "('state * 'label list) set" where
+  "language_aut = {(p,w). accepts_aut p w}"
+
+end
+
+locale Intersection_Automaton = 
+  A1: Automaton ts1 finals1 initials +
+  A2: Automaton ts2 finals2 initials
+  for ts1 :: "('state, 'label) transition set" and finals1 :: "'state set" and initials :: "'state set" and
+   ts2 :: "('state, 'label) transition set" and finals2 :: "'state set" begin
+
+sublocale s: Automaton "inters ts1 ts2" "inters_finals finals1 finals2" "(initials \<times> initials)" 
+  .
+
+definition accepts_aut_inters where
+  "accepts_aut_inters p w = s.accepts_aut (p,p) w"
+
+definition language_aut_inters :: "('state * 'label list) set" where
+  "language_aut_inters = {(p,w). accepts_aut_inters p w}"
+
+lemma transition_star_inter:
+  assumes "(p1, w, p2) \<in> A1.transition_star"
+  assumes "(q1, w, q2) \<in> A2.transition_star"
+  shows "((p1,q1), w :: 'label list, (p2,q2)) \<in> s.transition_star"
+  using assms
+proof (induction w arbitrary: p1 q1)
+  case (Cons \<alpha> w1')
+  obtain p' where p'_p: "(p1, \<alpha>, p') \<in> ts1 \<and> (p', w1', p2) \<in> A1.transition_star"
+    using Cons by (metis LTS.transition_star_cons) 
+  obtain q' where q'_p: "(q1, \<alpha>, q') \<in> ts2 \<and>(q', w1', q2) \<in> A2.transition_star"
+    using Cons by (metis LTS.transition_star_cons) 
+  have ind: "((p', q'), w1', p2, q2) \<in> s.transition_star"
+  proof -
+    have "Suc (length w1') = length (\<alpha>#w1')"
+      by auto
+    moreover
+    have "(p', w1', p2) \<in> A1.transition_star"
+      using p'_p by simp
+    moreover
+    have "(q', w1', q2) \<in> A2.transition_star"
+      using q'_p by simp
+    ultimately
+    show "((p', q'), w1', p2, q2) \<in> s.transition_star"
+      using Cons(1) by auto
+  qed
+  moreover
+  have "((p1, q1), \<alpha>, (p', q')) \<in> (inters ts1 ts2)"
+    by (simp add: inters_def p'_p q'_p)
+  ultimately
+  have "((p1, q1), \<alpha>#w1', p2, q2) \<in> s.transition_star"
+    by (meson LTS.transition_star.transition_star_step)
+  moreover
+  have "length ((\<alpha>#w1')) > 0"
+    by auto
+  moreover
+  have "hd ((\<alpha>#w1')) = \<alpha>"
+    by auto
+  ultimately
+  show ?case
+    by force
+next
+  case Nil
+  then show ?case
+    by (metis LTS.transition_star.transition_star_refl LTS.transition_star_empty)
+qed
+
+lemma inters_transition_star1:
+  assumes "(p1q2, w :: 'label list, p2q2) \<in> s.transition_star"
+  shows "(fst p1q2, w, fst p2q2) \<in> A1.transition_star"
+  using assms 
+proof (induction rule: LTS.transition_star.induct[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by (simp add: LTS.transition_star.transition_star_refl) 
+next
+  case (2 p \<gamma> q' w q)
+  then have ind: "(fst q', w, fst q) \<in> A1.transition_star"
+    by auto
+  from 2(1) have "(p, \<gamma>, q') \<in> 
+                     {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
+    unfolding inters_def by auto
+  then have "\<exists>p1 q1. p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<gamma>, p2) \<in> ts1 \<and> (q1, \<gamma>, q2) \<in> ts2)"
+    by simp
+  then obtain p1 q1 where "p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<gamma>, p2) \<in> ts1 \<and> (q1, \<gamma>, q2) \<in> ts2)"
+    by auto
+  then show ?case
+    using LTS.transition_star.transition_star_step ind by fastforce
+qed
+
+lemma inters_transition_star:
+  assumes "(p1q2, w :: 'label list, p2q2) \<in> s.transition_star"
+  shows "(snd p1q2, w, snd p2q2) \<in> A2.transition_star"
+  using assms 
+proof (induction rule: LTS.transition_star.induct[OF assms(1)])
+  case (1 p)
+  then show ?case
+    by (simp add: LTS.transition_star.transition_star_refl) 
+next
+  case (2 p \<gamma> q' w q)
+  then have ind: "(snd q', w, snd q) \<in> A2.transition_star"
+    by auto
+  from 2(1) have "(p, \<gamma>, q') \<in> 
+                     {((p1, q1), \<alpha>, p2, q2) |p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
+    unfolding inters_def by auto
+  then have "\<exists>p1 q1. p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<gamma>, p2) \<in> ts1 \<and> (q1, \<gamma>, q2) \<in> ts2)"
+    by simp
+  then obtain p1 q1 where "p = (p1, q1) \<and> (\<exists>p2 q2. q' = (p2, q2) \<and> (p1, \<gamma>, p2) \<in> ts1 \<and> (q1, \<gamma>, q2) \<in> ts2)"
+    by auto
+  then show ?case
+    using LTS.transition_star.transition_star_step ind by fastforce
+qed
+
+lemma inters_transition_star_iff:
+  "((p1,q2), w :: 'label list, (p2,q2)) \<in> s.transition_star \<longleftrightarrow> (p1, w, p2) \<in> A1.transition_star \<and> (q2, w, q2) \<in> A2.transition_star"
+  by (metis fst_conv inters_transition_star inters_transition_star1 snd_conv transition_star_inter)
+
+lemma inters_accept_iff: "accepts_aut_inters p w \<longleftrightarrow> A1.accepts_aut p w \<and> A2.accepts_aut p w"
+proof
+  assume "accepts_aut_inters p w"
+  then show "A1.accepts_aut p w \<and> A2.accepts_aut p w"
+    unfolding accepts_aut_inters_def
+A1.accepts_aut_def A2.accepts_aut_def s.accepts_aut_def unfolding inters_finals_def 
+    using inters_transition_star_iff[of p _ w _ ]
+    by (metis SigmaE fst_conv inters_transition_star inters_transition_star1 snd_conv) 
+next
+  assume a: "A1.accepts_aut p w \<and> A2.accepts_aut p w"
+  then have "(\<exists>q\<in>finals1. p \<in> initials \<and> (p, w, q) \<in> A1.transition_star) \<and> (\<exists>q\<in>finals2. p \<in> initials \<and> (p, w, q) \<in> A2.transition_star)" 
+    unfolding A1.accepts_aut_def A2.accepts_aut_def by auto
+  then show "accepts_aut_inters p w"
+    using accepts_aut_inters_def transition_star_inter by (metis inters_finals_def mem_Sigma_iff s.accepts_aut_def)
+qed
+
+term A1.language_aut 
+term accepts_aut_inters
+
+
+lemma inters_language: "language_aut_inters = A1.language_aut \<inter> A2.language_aut"
+  unfolding language_aut_inters_def A1.language_aut_def A2.language_aut_def using inters_accept_iff by auto
 
 end
 
