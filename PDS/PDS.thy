@@ -130,8 +130,7 @@ notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 definition accepts :: "(('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
   "accepts ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_states. (Ctr_Loc p,w,q) \<in> LTS.transition_star ts)"
 
-(* TODO: Give it a name *)
-lemma "accepts ts (p, w) \<longleftrightarrow> P_Automaton.accepts_aut ts F_states P_states (Ctr_Loc p) w"
+lemma accepts_accepts_aut: "accepts ts (p, w) \<longleftrightarrow> P_Automaton.accepts_aut ts F_states P_states (Ctr_Loc p) w"
   unfolding accepts_def P_Automaton.accepts_aut_def P_states_def by auto
 
 definition accepts_\<epsilon> :: "(('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
@@ -164,9 +163,7 @@ lemma accepts_cons: "(Ctr_Loc p, \<gamma>, Ctr_Loc p') \<in> ts \<Longrightarrow
 definition language :: "(('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf set" where
   "language ts = {c. accepts ts c}"
 
-term "(language ts, P_Automaton.language_aut ts F_states P_states)"
-
-lemma "language ts = (\<lambda>(s,w). (the_Ctr_Loc s, w)) ` (P_Automaton.language_aut ts F_states P_states)"
+lemma language_language_aut: "language ts = (\<lambda>(s,w). (the_Ctr_Loc s, w)) ` (P_Automaton.language_aut ts F_states P_states)"
   unfolding language_def P_Automaton.language_aut_def
   apply auto
   unfolding P_states_def
@@ -2023,14 +2020,30 @@ theorem theorem_3_3_language:
   shows "language_\<epsilon> A' = post_star (language_\<epsilon> A)"
   using assms(1) assms(2) assms(3) language_\<epsilon>_def theorem_3_3 by presburger
 
+end
 
 subsection \<open>Intersection Automata\<close>
 
-definition accepts_inters :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
-  "accepts_inters ts \<equiv> \<lambda>(p,w). (\<exists>q1 \<in> F_states. \<exists>q2 \<in> F_states. ((Ctr_Loc p, Ctr_Loc p),w,(q1,q2)) \<in> LTS.transition_star ts)"
+definition accepts_inters :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> (('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state) set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
+  "accepts_inters ts F_states \<equiv> \<lambda>(p,w). (\<exists>qq \<in> F_states. ((Ctr_Loc p, Ctr_Loc p),w,qq) \<in> LTS.transition_star ts)"
 
-definition language_inters :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) conf set" where
-  "language_inters ts = {c. accepts_inters ts c}"
+lemma accepts_inters_accepts_aut_inters:
+  assumes "ts12 = inters ts1 ts2"
+  assumes "F_states12 = inters_finals F_states1 F_states2"
+  shows "accepts_inters ts12 F_states12 (p,w) \<longleftrightarrow> Intersection_P_Automaton.accepts_aut_inters ts1 F_states1 PDS_with_P_automaton.P_states ts2 F_states2 (Ctr_Loc p) w"
+  by (simp add: Intersection_P_Automaton.accepts_aut_inters_def PDS_with_P_automaton.P_states_def P_Automaton.accepts_aut_def accepts_inters_def assms)
+
+definition language_inters :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow>  (('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state) set \<Rightarrow> ('ctr_loc, 'label) conf set" where
+  "language_inters ts F_states = {c. accepts_inters ts F_states c}"
+
+lemma language_inters_language_aut_inters:
+  assumes "ts12 = inters ts1 ts2"
+  assumes "F_states12 = inters_finals F_states1 F_states2"
+  shows "(\<lambda>(p,w). (Ctr_Loc p, w)) ` language_inters ts12 F_states12 = Intersection_P_Automaton.language_aut_inters ts1 F_states1 PDS_with_P_automaton.P_states ts2 F_states2"
+  using assms
+  apply auto
+  apply (simp add: Intersection_P_Automaton.language_aut_inters_def accepts_inters_accepts_aut_inters language_inters_def)
+  by (smt (verit, ccfv_SIG) Intersection_P_Automaton.inters_accept_iff Intersection_P_Automaton.language_aut_inters_def PDS_with_P_automaton.P_states_def P_Automaton.accepts_aut_def accepts_inters_accepts_aut_inters image_iff language_inters_def mem_Collect_eq old.prod.case state.collapse(1))
 
 thm Intersection_P_Automaton.transition_star_inter
 
@@ -2042,30 +2055,34 @@ thm Intersection_P_Automaton.inters_transition_star_iff
 
 thm Intersection_P_Automaton.inters_accept_iff
 
-lemma inters_accept_iff: "accepts_inters (inters ts1 ts2) c \<longleftrightarrow> accepts ts1 c \<and> accepts ts2 c"
-proof
-  assume "accepts_inters (inters ts1 ts2) c"
-  then show "accepts ts1 c \<and> accepts ts2 c"
-    using accepts_def accepts_inters_def Intersection_P_Automaton.inters_transition_star Intersection_P_Automaton.inters_transition_star1 by fastforce
-next
-  assume a: "accepts ts1 c \<and> accepts ts2 c"
-  define p where "p = fst c"
-  define w where "w = snd c"
+term PDS_with_P_automaton.accepts
 
-  from a have "accepts ts1 (p,w) \<and> accepts ts2 (p,w)"
-    using p_def w_def by auto
-  then have "(\<exists>q\<in>F_states. (Ctr_Loc p, w, q) \<in> LTS.transition_star ts1) \<and> (\<exists>q\<in>F_states. (Ctr_Loc p, w, q) \<in> LTS.transition_star ts2)" 
-    unfolding accepts_def by auto
-  then show "accepts_inters (inters ts1 ts2) c"
-    using accepts_inters_def p_def Intersection_P_Automaton.transition_star_inter w_def by fastforce
-qed
+term PDS_with_P_automaton.F_states
 
-lemma inters_language: "language_inters (inters ts1 ts2) = language ts1 \<inter> language ts2"
-  unfolding language_inters_def language_def using inters_accept_iff by auto
+lemma inters_accept_iff: 
+  assumes "ts12 = inters ts1 ts2"
+  assumes "F_states12 = inters_finals (PDS_with_P_automaton.F_states F_ctr_locs1 F_ctr_loc_st1) (PDS_with_P_automaton.F_states F_ctr_locs2 F_ctr_loc_st2)"
+  shows
+  "accepts_inters ts12 F_states12 (p,w) \<longleftrightarrow> 
+     PDS_with_P_automaton.accepts F_ctr_locs1 F_ctr_loc_st1 ts1 (p,w) \<and> 
+     PDS_with_P_automaton.accepts F_ctr_locs2 F_ctr_loc_st2 ts2 (p,w)"
+  using accepts_inters_accepts_aut_inters Intersection_P_Automaton.inters_accept_iff assms
+  by (simp add: Intersection_P_Automaton.inters_accept_iff accepts_inters_accepts_aut_inters PDS_with_P_automaton.accepts_accepts_aut) 
 
+lemma inters_language:
+  assumes "ts12 = inters ts1 ts2"
+  assumes "F_states12 = inters_finals (PDS_with_P_automaton.F_states F_ctr_locs1 F_ctr_loc_st1) (PDS_with_P_automaton.F_states F_ctr_locs2 F_ctr_loc_st2)"
+  shows "language_inters ts12 F_states12 = PDS_with_P_automaton.language F_ctr_locs1 F_ctr_loc_st1 ts1 \<inter> PDS_with_P_automaton.language F_ctr_locs2 F_ctr_loc_st2 ts2"
+  using assms by (auto simp add: PDS_with_P_automaton.language_def inters_accept_iff language_inters_def)
 
 
 subsection \<open>Intersection \<epsilon>-Automata\<close>
+
+context PDS_with_P_automaton begin
+
+interpretation LTS transition_rel .
+notation step_relp (infix "\<Rightarrow>" 80)
+notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 
 definition accepts_\<epsilon>_inters :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
   "accepts_\<epsilon>_inters ts \<equiv> \<lambda>(p,w). (\<exists>q1 \<in> F_states. \<exists>q2 \<in> F_states. ((Ctr_Loc p, Ctr_Loc p),w,(q1,q2)) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts)"
@@ -2653,8 +2670,6 @@ theorem dual4:
   assumes "saturation pre_star_rule A2 A2'"
   shows "language_\<epsilon>_inters (LTS_\<epsilon>.inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {} \<longleftrightarrow> c1 \<Rightarrow>\<^sup>* c2"
   using assms dual3 by auto
-
-
 
 end
 
