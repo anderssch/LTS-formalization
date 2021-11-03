@@ -1,4 +1,4 @@
-theory PDS imports "../LTS" "HOL-Library.While_Combinator" begin
+theory PDS imports "LTS" "HOL-Library.While_Combinator" begin
 
 
 
@@ -123,7 +123,7 @@ definition Old_Aut_states :: "('ctr_loc, 'state, 'label) state set" where
 definition New_Aut_states :: "('ctr_loc, 'state, 'label) state set" where
   "New_Aut_states = {q. is_Ctr_Ext q}"
 
-interpretation LTS transition_rel .
+sublocale LTS transition_rel .
 notation step_relp (infix "\<Rightarrow>" 80)
 notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 
@@ -176,6 +176,10 @@ lemma language_language_aut: "language ts = (\<lambda>(s,w). (the_Ctr_Loc s, w))
     apply (simp add: P_Automaton.accepts_aut_def accepts_def)
     done
   done
+
+lemma language_aut_language: "P_Automaton.language_aut ts F_states P_states = apfst Ctr_Loc ` language ts"
+  unfolding language_language_aut
+  by (auto 0 3 simp: P_Automaton.language_aut_def P_Automaton.accepts_aut_def P_states_def image_iff)
 
 definition language_\<epsilon> :: "(('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf set" where
   "language_\<epsilon> ts = {c. accepts_\<epsilon> ts c}"

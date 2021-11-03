@@ -1374,8 +1374,6 @@ locale Intersection_P_Automaton =
 sublocale pa: P_Automaton "inters ts1 ts2" "inters_finals finals1 finals2" "(\<lambda>x. (x,x)) `  initials"
   .
 
-term P_Automaton.nonempty
-
 definition accepts_aut_inters where
   "accepts_aut_inters p w = pa.accepts_aut (p,p) w"
 
@@ -1496,6 +1494,10 @@ next
     by (auto simp: P_Automaton.accepts_aut_def intro: transition_star_inter)
 qed
 
+lemma language_aut_alt: 
+  "pa.language_aut = {((p, q), w). p = q \<and> (p, w) \<in> language_aut_inters}"
+  unfolding pa.language_aut_def language_aut_inters_def accepts_aut_inters_def pa.accepts_aut_def
+  by auto
 
 lemma inters_language: "language_aut_inters = A1.language_aut \<inter> A2.language_aut"
   unfolding language_aut_inters_def A1.language_aut_def A2.language_aut_def using inters_accept_iff by auto

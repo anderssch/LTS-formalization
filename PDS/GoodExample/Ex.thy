@@ -1,19 +1,6 @@
-theory example_prestar_query
-  imports PDS "Deriving.Derive"
+theory Ex
+  imports PDS.PDS_Code
 begin
-
-global_interpretation pds: PDS_with_P_automaton \<Delta> F_ctr_loc F_ctr_loc_st
-  for \<Delta> :: "('ctr_loc::{enum, linorder}, 'label::{finite, linorder}) rule set"
-  and F_ctr_loc :: "('ctr_loc) set"
-  and F_ctr_loc_st :: "('state::finite) set"
-  defines pre_star = "PDS_with_P_automaton.pre_star_exec \<Delta>"
-  and pre_star_check = "PDS_with_P_automaton.pre_star_exec_check \<Delta>"
-  and accepts = "PDS_with_P_automaton.accepts F_ctr_loc F_ctr_loc_st"
-  and accepts_pre_star_check = "PDS_with_P_automaton.accept_pre_star_exec_check \<Delta> F_ctr_loc F_ctr_loc_st"
-  .
-
-export_code pre_star in SML
-
 
 (* Query specific part START *)
 
@@ -44,12 +31,10 @@ definition final_automaton :: "((ctr_loc, state, label) PDS.state, label) transi
   ((Ctr_Loc p3, x, Ctr_Loc_St q1)),
   ((Ctr_Loc_St q1, y, Ctr_Loc_St q2))}"
 
-(* TODO: A ctr_loc might be final (F) in initial_automaton but not in final_automaton. This cannot be expressed currently. *)
-definition F_ctr_loc where "F_ctr_loc = {}"
-definition F_ctr_loc_st where "F_ctr_loc_st = {q2,qf}"
-
-
-
+definition final_ctr_loc where "final_ctr_loc = {}"
+definition final_ctr_loc_st where "final_ctr_loc_st = {q2}"
+definition initial_ctr_loc where "initial_ctr_loc = {}"
+definition initial_ctr_loc_st where "initial_ctr_loc_st = {qf}"
 (* Query specific part END *)
 
 
@@ -70,22 +55,15 @@ definition "enum_all_ctr_loc P = list_all P ctr_loc_list"
 definition "enum_ex_ctr_loc P = list_ex P ctr_loc_list"
 instance apply standard
      apply (auto simp: enum_ctr_loc_def enum_all_ctr_loc_def enum_ex_ctr_loc_def ctr_loc_list_def)
-   apply (metis ctr_loc.exhaust)+
+  subgoal for x by (cases x; simp)
+  subgoal for P x by (cases x; simp)
+  subgoal for P x by (cases x; simp)
   done
 end
 
-
-(* Can we return this value to terminal? *)
-value "pds.accepts_inters F_ctr_loc F_ctr_loc_st (inters initial_automaton (pre_star pds_rules final_automaton)) (p2, [x,x,y])" \<comment> \<open>True\<close>
-thm Intersection_P_Automaton.inters_accept_iff[of ]
-(* We don't want to specify the conf (p2, [x,x,y]), we want something like the following: *)
-(* TODO: Define inters_non_empty to compute whether the intersection is non-empty. *)
-(* value "pds.inters_non_empty F_ctr_loc F_ctr_loc_st (inters initial_automaton (pre_star pds_rules final_automaton))" \<comment> \<open>Should evaluate to: True\<close> *)
-
-
-(* For post* something like this should work: *)
-(* value "pds.accepts_inters F_ctr_loc F_ctr_loc_st (inters (post_star pds_rules initial_automaton) final_automaton) (p2, [x,x,y])" \<comment> \<open>True\<close> *)
-(* value "pds.inters_non_empty F_ctr_loc F_ctr_loc_st (inters (post_star pds_rules initial_automaton) final_automaton)" \<comment> \<open>True\<close> *)
-(* but post* is not priority now. *)
+lemma
+  "check pds_rules initial_automaton initial_ctr_loc initial_ctr_loc_st
+                   final_automaton   final_ctr_loc   final_ctr_loc_st   = Some True"
+  by eval
 
 end
