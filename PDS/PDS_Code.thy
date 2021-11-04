@@ -43,8 +43,8 @@ lemma check_Some: "check \<Delta> I IF IF_st F FF FF_st = Some b \<longleftright
   unfolding check_def nonempty_def P_Automaton.nonempty_def
     inter.language_aut_alt inter.inters_language
     pds.language_aut_language
-  apply (auto 0 5 simp: pds.theorem_3_2_exec_language pds.pre_star_def image_iff)
-  by force
+  by (auto 0 5 simp: pds.theorem_3_2_exec_language pds.pre_star_def image_iff
+    elim!: bexI[rotated])
 
 declare P_Automaton.mark.simps[code]
 

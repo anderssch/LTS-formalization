@@ -715,7 +715,7 @@ next
     define w2v_ss where "w2v_ss = w2_ss @ tl v_ss"
 
     from V(1) have "(Ctr_Loc p2, op_labels w2, w2_ss, q') \<in> LTS.transition_star_states Ai"
-      using transition_star_states_mono p1_\<gamma>_p2_w2_q'_p(1) using Un_iff subsetI by (metis (no_types, hide_lams))
+      using transition_star_states_mono p1_\<gamma>_p2_w2_q'_p(1) using Un_iff subsetI by (metis (no_types))
     then have V_merged: "(Ctr_Loc p2, w2v, w2v_ss, q) \<in> LTS.transition_star_states Ai"
       using V(2) unfolding w2v_def w2v_ss_def by (meson LTS.transition_star_states_append)
 
@@ -1679,7 +1679,7 @@ next
           by (metis LTS_\<epsilon>.\<epsilon>_exp_def LTS_\<epsilon>.remove_\<epsilon>_append_dist LTS_\<epsilon>.remove_\<epsilon>_def \<open>LTS_\<epsilon>.\<epsilon>_exp \<gamma>2' [\<gamma>2] \<and> (Ctr_Loc p2, \<gamma>2', q1) \<in> LTS.transition_star Aiminus1\<close> append_Cons append_self_conv2)
         then have "(the_Ext_Ctr_Loc q, [the_Ext_Label q]) \<Rightarrow>\<^sup>* (p1, \<gamma>' # LTS_\<epsilon>.remove_\<epsilon> (tl w))"
           using VI
-          by (metis (no_types, hide_lams) append_Cons append_Nil op_labels.simps(2) rtranclp.rtrancl_into_rtrancl step_relp_def2)
+          by (metis (no_types) append_Cons append_Nil op_labels.simps(2) rtranclp.rtrancl_into_rtrancl step_relp_def2)
         then have "(the_Ext_Ctr_Loc q, [the_Ext_Label q]) \<Rightarrow>\<^sup>* (p, \<gamma>' # LTS_\<epsilon>.remove_\<epsilon> (tl w))"
           using VII by auto
         then show ?thesis
@@ -1910,7 +1910,7 @@ next
           using inddd state.exhaust_disc
           by blast
         have "(p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v))  \<Rightarrow>\<^sup>* (p1, \<gamma>1 # \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v)"
-          by (metis (mono_tags, hide_lams) LTS_\<epsilon>.\<epsilon>_exp_def LTS_\<epsilon>.remove_\<epsilon>_append_dist LTS_\<epsilon>.remove_\<epsilon>_def XIII XI_1 append_Cons append_Nil op_labels.simps(3) r_into_rtranclp step_relp_def2)
+          by (metis (mono_tags) LTS_\<epsilon>.\<epsilon>_exp_def LTS_\<epsilon>.remove_\<epsilon>_append_dist LTS_\<epsilon>.remove_\<epsilon>_def XIII XI_1 append_Cons append_Nil op_labels.simps(3) r_into_rtranclp step_relp_def2)
           
         have "(p1, \<gamma>1 # \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u @ \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v)"
           by (metis \<open>(p1, [\<gamma>1]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u)\<close> append_Cons append_Nil step_relp_append)
@@ -2127,10 +2127,10 @@ proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_ind
         using True'(1) True'(2) by simp
       moreover
       have "LTS_\<epsilon>.\<epsilon>_exp w1' w'"
-        by (metis (no_types, hide_lams) LTS_\<epsilon>.\<epsilon>_exp_def less(2) True'(1) list.map(2) list.sel(3) option.simps(3) removeAll.simps(2) w'_def)
+        by (metis (no_types) LTS_\<epsilon>.\<epsilon>_exp_def less(2) True'(1) list.map(2) list.sel(3) option.simps(3) removeAll.simps(2) w'_def)
       moreover
       have "LTS_\<epsilon>.\<epsilon>_exp w2' w'"
-        by (metis (no_types, hide_lams) LTS_\<epsilon>.\<epsilon>_exp_def less(3) True'(2) list.map(2) list.sel(3) option.simps(3) removeAll.simps(2) w'_def)
+        by (metis (no_types) LTS_\<epsilon>.\<epsilon>_exp_def less(3) True'(2) list.map(2) list.sel(3) option.simps(3) removeAll.simps(2) w'_def)
       moreover
       have "(p', w1', p2) \<in> LTS.transition_star ts1"
         using p'_p by simp
@@ -2189,10 +2189,10 @@ proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_ind
             using True'(1) by simp
           moreover
           have "LTS_\<epsilon>.\<epsilon>_exp w1' w"
-            by (metis (no_types, hide_lams) LTS_\<epsilon>.\<epsilon>_exp_def less(2) True'(1) removeAll.simps(2))
+            by (metis (no_types) LTS_\<epsilon>.\<epsilon>_exp_def less(2) True'(1) removeAll.simps(2))
           moreover
           have "LTS_\<epsilon>.\<epsilon>_exp w2 w"
-            by (metis (no_types, hide_lams) less(3))
+            by (metis (no_types) less(3))
           moreover
           have "(p', w1', p2) \<in> LTS.transition_star ts1"
             using p'_p by simp
@@ -2231,10 +2231,10 @@ proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_ind
               using True'(1) True'(1) by simp
             moreover
             have "LTS_\<epsilon>.\<epsilon>_exp w1 w"
-              by (metis (no_types, hide_lams) less(2))
+              by (metis (no_types) less(2))
             moreover
             have "LTS_\<epsilon>.\<epsilon>_exp w2' w"
-              by (metis (no_types, hide_lams) LTS_\<epsilon>.\<epsilon>_exp_def less(3) True'(1) removeAll.simps(2))
+              by (metis (no_types) LTS_\<epsilon>.\<epsilon>_exp_def less(3) True'(1) removeAll.simps(2))
             moreover
             have "(p1, w1, p2) \<in> LTS.transition_star ts1"
               using p'_p by simp

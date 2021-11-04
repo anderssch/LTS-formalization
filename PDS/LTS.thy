@@ -1120,7 +1120,7 @@ next
       using 2(2) True v_def v_ss_def by blast
     show ?thesis
       using Pair_inject True \<open>(p, u, u_ss, p1) \<in> LTS.transition_star_states Aiminus1\<close> \<open>(p1, [\<gamma>], q') \<in> LTS.transition_star Ai\<close> \<open>(q', v, v_ss, q) \<in> LTS.transition_star_states Ai\<close> append_Cons p_add_p self_append_conv2 u_def u_ss_def v_def v_ss_def
-      by (metis (no_types, hide_lams) append_transition_star_states_\<gamma>.simps)
+      by (metis (no_types) append_transition_star_states_\<gamma>.simps)
   next
     case False
     have "hd ss = q'_add"
@@ -1643,7 +1643,7 @@ lemma no_edge_to_source_\<epsilon>:
   shows "qq \<notin> sources"
 proof -
   have "\<exists>w. LTS_\<epsilon>.\<epsilon>_exp w [\<gamma>] \<and> (p, w, qq) \<in> transition_star \<and> w \<noteq> []"
-    by (metis (no_types, hide_lams) LTS_\<epsilon>.\<epsilon>_exp_def LTS_\<epsilon>.\<epsilon>_exp_split' LTS_\<epsilon>.transition_star_\<epsilon>_iff_\<epsilon>_exp_transition_star append_Cons append_Nil assms(1) list.distinct(1) list.exhaust)
+    by (metis (no_types) LTS_\<epsilon>.\<epsilon>_exp_def LTS_\<epsilon>.\<epsilon>_exp_split' LTS_\<epsilon>.transition_star_\<epsilon>_iff_\<epsilon>_exp_transition_star append_Cons append_Nil assms(1) list.distinct(1) list.exhaust)
   then obtain w where "LTS_\<epsilon>.\<epsilon>_exp w [\<gamma>] \<and> (p, w, qq) \<in> transition_star \<and> w \<noteq> []"
     by blast
   then show ?thesis
