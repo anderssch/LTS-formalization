@@ -1230,10 +1230,9 @@ next
     using w_split by auto
 qed
 
-
 lemma LTS_transition_star_mono':
   "mono LTS.transition_star_states"
-  by (smt (z3) LTS.transition_star_states_def case_prodE mem_Collect_eq monoI subsetI transition_star_states_mono)
+  by (auto simp: mono_def transition_star_states_mono)
 
 lemma path_with_word_mono':
   assumes "(ss, w) \<in> LTS.path_with_word A1"
@@ -1243,7 +1242,7 @@ lemma path_with_word_mono':
 
 lemma LTS_path_with_word_mono:
   "mono LTS.path_with_word"
-  by (smt (verit, ccfv_SIG) LTS.path_with_word_def case_prodE mem_Collect_eq monoI subsetI path_with_word_mono')
+  by (auto simp: mono_def path_with_word_mono')
 
 subsection \<open>Reverse transition system\<close>
 
