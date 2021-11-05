@@ -1975,7 +1975,7 @@ proof (rule; rule)
   define w where "w = snd c"
   assume "c \<in> post_star (language_\<epsilon> A)"
   then obtain p' w' where "(p', w') \<Rightarrow>\<^sup>* (p, w) \<and> (p', w') \<in> language_\<epsilon> A"
-    by (smt (verit, ccfv_SIG) LTS.post_star_def mem_Collect_eq p_def prod.collapse w_def)
+    by (auto simp: post_star_def p_def w_def)
   then have "accepts_\<epsilon> A' (p, w)"
     using lemma_3_3[of p' w' p w A A'] assms(1) by auto 
   then have "accepts_\<epsilon> A' c"
@@ -2497,7 +2497,7 @@ lemma dual2: "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2)
 proof (rule)
   assume "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2) \<noteq> {}"
   then show "\<exists>c1\<in>language_\<epsilon> A1. \<exists>c2\<in>language A2. c1 \<Rightarrow>\<^sup>* c2"
-    by (smt (verit, best) disjoint_iff_not_equal mem_Collect_eq post_star_def pre_star_def rtranclp_trans)
+    by (auto simp: pre_star_def post_star_def intro: rtranclp_trans)
 next
   assume "\<exists>c1\<in>language_\<epsilon> A1. \<exists>c2\<in>language A2. c1 \<Rightarrow>\<^sup>* c2"
   then show "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2) \<noteq> {}"
