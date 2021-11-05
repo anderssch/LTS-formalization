@@ -152,7 +152,7 @@ case (path_with_word_refl s)
 next
   case (path_with_word_step s' ss w s l)
   then show ?case
-    by (smt (z3) LTS.path_with_word.path_with_word_step LTS.path_with_word_length One_nat_def Suc_1 Suc_inject Suc_leI Suc_le_mono butlast.simps(2) le_less length_0_conv length_Cons list.distinct(1) list.size(4) path_with_word.path_with_word_refl) 
+    by (metis (no_types, hide_lams) LTS.path_with_word.path_with_word_refl LTS.path_with_word.path_with_word_step LTS.path_with_word_length One_nat_def Suc_1 Suc_inject Suc_leI Suc_le_mono butlast.simps(2) length_0_conv length_Cons list.distinct(1) list.size(4) not_gr0)
 qed
 
 
@@ -167,7 +167,7 @@ using assms proof (induction rule: path_with_word.induct)
 next
   case (path_with_word_step s' ss w s l)
   then show ?case
-    by (smt (z3) LTS.path_with_word_length One_nat_def Suc_1 Suc_inject Suc_leI Suc_le_mono butlast.simps(2) last.simps le_less length_0_conv length_Cons list.distinct(1) list.size(4))
+    by (metis (no_types, hide_lams) LTS.path_with_word_length One_nat_def Suc_1 Suc_inject Suc_leI Suc_le_mono butlast.simps(2) last.simps length_Cons length_greater_0_conv list.distinct(1) list.size(4))
 qed
 
 
@@ -237,8 +237,16 @@ proof (induction rule: transition_star_states.induct)
   then show ?case by auto
 next
   case (transition_star_states_step p \<gamma> q' w ss q)
-  then show ?case
-    by (smt (verit, ccfv_SIG) list.distinct(1) transition_star_states.cases)
+  show ?case
+  proof (cases "w = []")
+    case True
+    then show ?thesis
+      by (metis LTS.transition_star_states.simps list.distinct(1) transition_star_states_step.hyps(1) transition_star_states_step.hyps(2) transition_star_states_step.prems(2))
+  next
+    case False
+    then show ?thesis
+      using transition_star_states_step.IH transition_star_states_step.hyps(1) transition_star_states_step.hyps(2) transition_star_states_step.prems(2) transition_star_states_step.prems(3) by force
+  qed
 qed
                                                   
 lemma path_with_word_not_empty[simp]: "\<not>([],w) \<in> path_with_word"
@@ -328,7 +336,7 @@ lemma transition_star_states_append:
 using assms proof (induction rule: LTS.transition_star_states.induct[OF assms(1)])
   case (1 p)
   then show ?case
-    by (smt (verit, best) LTS.transition_star_states.cases append_Cons append_Nil list.sel(3))
+    by (metis append_Cons append_Nil list.sel(3) transition_star_states.simps)
 next
   case (2 p \<gamma> q' w ss q)
   then show ?case
@@ -493,8 +501,8 @@ next
       by (meson LTS.sources_def2 assms(2))
     ultimately
     have False
-      using 2 path_with_word.simps Pair_inject list.sel(1) transition_list.simps(1) transitions_of.simps(2) zero_multiset.rep_eq zero_neq_one
-      by (smt (verit, ccfv_threshold) list.sel(3))
+      using 2(1,2) unfolding 2(6)
+      by (smt (verit, ccfv_threshold)  path_with_word.simps Pair_inject list.sel(1) transition_list.simps(1) transitions_of.simps(2) zero_multiset.rep_eq zero_neq_one list.sel(3))
     then show ?case
       by auto
   qed
