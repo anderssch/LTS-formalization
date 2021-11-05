@@ -2035,9 +2035,10 @@ lemma language_inters_language_aut_inters:
   assumes "F_states12 = inters_finals F_states1 F_states2"
   shows "(\<lambda>(p,w). (Ctr_Loc p, w)) ` language_inters ts12 F_states12 = Intersection_P_Automaton.language_aut_inters ts1 F_states1 PDS_with_P_automaton.P_states ts2 F_states2"
   using assms
-  apply auto
-  apply (simp add: Intersection_P_Automaton.language_aut_inters_def accepts_inters_accepts_aut_inters language_inters_def)
-  by (smt (verit, ccfv_SIG) Intersection_P_Automaton.inters_accept_iff Intersection_P_Automaton.language_aut_inters_def PDS_with_P_automaton.P_states_def P_Automaton.accepts_aut_def accepts_inters_accepts_aut_inters image_iff language_inters_def mem_Collect_eq old.prod.case state.collapse(1))
+  by (auto simp: Intersection_P_Automaton.language_aut_inters_def 
+    Intersection_P_Automaton.inters_accept_iff
+    accepts_inters_accepts_aut_inters language_inters_def is_Ctr_Loc_def
+    PDS_with_P_automaton.P_states_def P_Automaton.accepts_aut_def image_iff)
 
 thm Intersection_P_Automaton.transition_star_inter
 
