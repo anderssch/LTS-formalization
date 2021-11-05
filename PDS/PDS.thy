@@ -944,8 +944,8 @@ lemma lemma_3_3':
 proof (induct arbitrary: pv rule: rtranclp_induct)
   case base
   show ?case
-    unfolding accepts_\<epsilon>_def
-    by (smt (verit, del_insts) Collect_case_prodD accepts_\<epsilon>_def assms(2) assms(3) language_\<epsilon>_def post_star_lim'_incr_transition_star_\<epsilon> prod.case_eq_if subsetD) 
+    using assms post_star_lim'_incr_transition_star_\<epsilon>
+    by (auto simp: language_\<epsilon>_def accepts_\<epsilon>_def)
 next
   case (step p''u p'w)
   define p' where "p' = fst p'w"
@@ -960,7 +960,7 @@ next
   then have "accepts_\<epsilon> A' (p'', u)"
     using assms(2) p''_def step.hyps(3) step.prems(2) u_def by metis
   then have "\<exists>q. q \<in> F_states \<and> (Ctr_Loc p'', u, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
-    by (smt (verit, ccfv_threshold) accepts_\<epsilon>_def case_prod_conv)
+    by (auto simp: accepts_\<epsilon>_def)
   then obtain q where q_p: "q \<in> F_states \<and> (Ctr_Loc p'', u, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
     by metis
   then have "\<exists>u_\<epsilon>. q \<in> F_states \<and> LTS_\<epsilon>.\<epsilon>_exp u_\<epsilon> u \<and> (Ctr_Loc p'', u_\<epsilon>, q) \<in> LTS.transition_star A'"
@@ -1225,9 +1225,10 @@ next
     then have nin: "\<nexists>p \<gamma>. (Ctr_Loc_Ext p' \<gamma>', \<gamma>, p) \<in> Aiminus1"
       using local.add_trans_swap(1) step.IH step.prems(1) by fastforce
     then have "Ctr_Loc_Ext p' \<gamma>' \<noteq> q"
-      using LTS_\<epsilon>.transition_star_not_to_source_\<epsilon> local.add_trans_swap(3)
-      using lemma_3_4'_Aux  UnCI local.add_trans_swap(1) step.hyps(1) step.prems(1) step.prems(2)
-       state.simps(7) sources_def2 by (smt (verit, ccfv_SIG))
+      using LTS_\<epsilon>.transition_star_not_to_source_\<epsilon>[of "Ctr_Loc p''''" "[\<gamma>'']" q Aiminus1] local.add_trans_swap(3)
+      using lemma_3_4'_Aux[of _ Aiminus1 p' \<gamma>']  UnCI local.add_trans_swap(1) step.hyps(1) step.prems(1) step.prems(2)
+       state.simps(7) sources_def2
+      by metis
     then have "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') = (Ctr_Loc p'', Some \<gamma>''', q)"
       by auto
     then show ?thesis
@@ -1246,10 +1247,10 @@ next
     then have nin: "\<nexists>p \<gamma>. (Ctr_Loc_Ext p' \<gamma>', \<gamma>, p) \<in> Aiminus1"
       using local.add_trans_push_2(1) step.IH step.prems(1) by fastforce
     then have "Ctr_Loc_Ext p' \<gamma>' \<noteq> q"
-      using state.disc(3) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon> local.add_trans_push_2(3)
-      using lemma_3_4'_Aux UnCI local.add_trans_push_2(1) step.hyps(1) step.prems(1) step.prems(2)
-        sources_def2
-      by (smt (verit, ccfv_SIG) state.disc(1)) 
+      using state.disc(3) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon>[of "Ctr_Loc p''''" "[\<gamma>'']" q Aiminus1  "Ctr_Loc_Ext p' \<gamma>'"] local.add_trans_push_2(3)
+      using lemma_3_4'_Aux[of _ Aiminus1 p' \<gamma>'] UnCI local.add_trans_push_2(1) step.hyps(1) step.prems(1) step.prems(2)
+        sources_def2 state.disc(1)
+      by metis
     then have "\<nexists>p \<gamma>. (Ctr_Loc_Ext p' \<gamma>', \<gamma>, p) = (Ctr_Loc p'', \<epsilon>, q)"
       by auto
     then show ?thesis
@@ -1731,9 +1732,10 @@ next
         using local.add_trans_push_1(1) by blast
       then have ss_w_short: "ss = [Ctr_Loc p1, Ctr_Loc_Ext p1 \<gamma>1] \<and> w = [Some \<gamma>1]"
         using Suc.prems(2) VII \<open>hd (transition_list (ss, w)) = t \<and> count (transitions_of (ss, w)) t = 1\<close> t_def
-        using LTS.nothing_after_zink
-        LTS.transition_star_states_path_with_word
-        by (smt (z3) LTS.path_with_word.simps \<open>transition_list (ss, w) \<noteq> []\<close> list.inject transition_list.simps(4) LTS.transition_list_Cons)
+        using LTS.nothing_after_zink[of "Ctr_Loc p1" "Ctr_Loc_Ext p1 \<gamma>1" "tl (tl ss)" "Some \<gamma>1" "tl w" Ai] \<open>transition_list (ss, w) \<noteq> []\<close>
+        LTS.transition_star_states_path_with_word[of "Ctr_Loc p" w ss q Ai]
+        LTS.transition_list_Cons[of "Ctr_Loc p" w ss q Ai]
+        by (auto simp: LTS.zinks_def2)
       then have q_ext: "q = Ctr_Loc_Ext p1 \<gamma>1"
         using LTS.transition_star_states_last Suc.prems(2) by fastforce
       have "(p1, [\<gamma>1]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w)"
@@ -1822,7 +1824,8 @@ next
           then have a3: "count (transitions_of (u_ss @ v_ss, u @ Some \<gamma>'' # v)) (last u_ss, Some \<gamma>'', hd v_ss) = Suc (count (transitions_of (u_ss, u)) (last u_ss, Some \<gamma>'', hd v_ss) + count (transitions_of (v_ss, v)) (last u_ss, Some \<gamma>'', hd v_ss))"
             using a1 a2 by auto
           have "j = count (transitions_of' ((q',v, v_ss, q))) t"
-            using a3 a2 a1 a4 by (smt (z3) One_nat_def Suc.prems(1) Suc_inject X_1 aaa add_Suc_right add_Suc_shift LTS.avoid_count_zero bbb counting local.add_trans_push_2(4) plus_1_eq_Suc same_append_eq t_def transitions_of'.simps)
+            using a3 a2 a1 a4
+            by (smt (z3) One_nat_def Suc.prems(1) Suc_inject X_1 aaa add_Suc_right add_Suc_shift LTS.avoid_count_zero bbb counting local.add_trans_push_2(4) plus_1_eq_Suc same_append_eq t_def transitions_of'.simps)
           show "j = count (transitions_of ((v_ss, v))) t"
             using \<open>j = count (transitions_of' (q', v, v_ss, q)) t\<close> by force
         qed
