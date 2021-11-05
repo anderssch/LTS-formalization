@@ -1343,22 +1343,30 @@ termination by (relation "measure (\<lambda>I. card (UNIV - I))") (auto intro!: 
 declare mark.simps[simp del]
 
 lemma mark_complete: "(p, w, q) \<in> transition_star \<Longrightarrow> p \<in> I \<Longrightarrow> q \<in> finals \<Longrightarrow> mark I"
-  apply (induct p w q arbitrary: I rule: transition_star.induct)
-   apply (subst mark.simps)
-   apply (auto simp: Let_def) []
-  apply (subst mark.simps)
-  apply (auto simp: Let_def)
-   apply (smt (verit, ccfv_threshold) mark.elims(1) Union_iff case_prod_conv in_mono insertI1 pair_imageI)
-  apply (smt (z3) UN_iff UnCI case_prod_conv singletonI)
-  done 
+proof (induct p w q arbitrary: I rule: transition_star.induct)
+  case (transition_star_refl p)
+  then show ?case by (subst mark.simps) (auto simp: Let_def)
+next
+  case step: (transition_star_step p \<gamma> q' w q)
+  let ?J = "\<Union>(q, w, q')\<in>transition_relation. if q \<in> I then {q'} else {}"
+  show ?case
+  proof (cases "?J \<subseteq> I")
+    case True
+    then show ?thesis
+      using step(1,2,4,5)
+      by (auto intro!: step(3) elim!: set_mp[of _ I])
+  next
+    case False
+    then show ?thesis
+      using step(3)[of "I \<union> ?J"] step(1,2,4,5)
+      by (subst mark.simps) (force split: if_splits)
+  qed
+qed
 
 
 lemma mark_sound: "mark I \<Longrightarrow> (\<exists>p \<in> I. \<exists>q \<in> finals. \<exists>w. (p, w, q) \<in> transition_star)"
-  apply (induct I rule: mark.induct)
-  apply (subst (asm) (2) mark.simps)
-  apply (auto split: if_splits)
-  apply (meson transition_star_step)
-  done
+  by (induct I rule: mark.induct)
+    (subst (asm) (2) mark.simps, auto 0 3 dest: transition_star_step split: if_splits)
 
 lemma nonempty_code[code]: "nonempty = mark initials"
   using mark_complete mark_sound nonempty_alt by blast
