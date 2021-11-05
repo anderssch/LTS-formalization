@@ -165,17 +165,7 @@ definition language :: "(('ctr_loc, 'state, 'label) state, 'label) transition se
 
 lemma language_language_aut: "language ts = (\<lambda>(s,w). (the_Ctr_Loc s, w)) ` (P_Automaton.language_aut ts F_states P_states)"
   unfolding language_def P_Automaton.language_aut_def
-  apply auto
-  unfolding P_states_def
-  subgoal for p w
-    unfolding accepts_def
-    apply auto
-    apply (smt (verit) P_Automaton.accepts_aut_def image_iff mem_Collect_eq old.prod.case state.disc(1) state.sel(1))
-    done
-  subgoal for p w
-    apply (simp add: P_Automaton.accepts_aut_def accepts_def)
-    done
-  done
+  by (auto simp: P_states_def accepts_def P_Automaton.accepts_aut_def image_iff intro!: exI[of _ "Ctr_Loc _"])
 
 lemma language_aut_language: "P_Automaton.language_aut ts F_states P_states = apfst Ctr_Loc ` language ts"
   unfolding language_language_aut
