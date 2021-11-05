@@ -580,17 +580,15 @@ lemma nothing_after_zink:
   using assms 
 proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
   case (1 s)
-  moreover
   from 1 have "\<nexists>q'' \<gamma>. (q', \<gamma>, q'') \<in> transition_relation"
     using zinks_def2[of "q'"]
     by auto
-  ultimately
-   show ?case
+  then show ?case
     by (smt (verit, ccfv_SIG) LTS.path_with_word.simps append_Cons assms(1) list.distinct(1) list.inject self_append_conv2)
 next
   case (2 s' ss w s l)
   then show ?case
-    by (metis)
+    by metis
 qed
 
 lemma count_transitions_of'_tails:
@@ -748,13 +746,33 @@ lemma split_path_with_word_beginning:
   shows "(ss,w) \<in> path_with_word"
   using assms split_path_with_word_beginning'' by (metis append_path_with_word.simps) 
 
+lemma TODO_rename_me':
+  assumes "(SS, W) \<in> path_with_word"
+  assumes "SS = ss @ [s, s']"
+  assumes "W = w @ [l]"
+  shows "(ss @ [s], w) \<in> path_with_word"
+  using assms
+proof (induction arbitrary: ss w rule: LTS.path_with_word_induct_reverse[OF assms(1)])
+  case (1 s)
+  then show ?case 
+    by auto
+next
+  case (2 ss' s w' l s')
+  then show ?case
+    by auto
+qed
+
+lemma TODO_rename_me:
+  assumes "(ss @ [s, s'], w @ [l]) \<in> path_with_word"
+  shows "(ss @ [s], w) \<in> path_with_word"
+  using TODO_rename_me' assms by auto
+
 lemma transition_list_append_edge:
   assumes "(ss @ [s, s'], w @ [l]) \<in> path_with_word"
   shows "transition_list (ss @ [s, s'], w @ [l]) = transition_list (ss @ [s], w) @ [(s, l, s')]"
 proof -
   have "(ss @ [s], w) \<in> path_with_word"
-    using assms
-    by (smt (verit, ccfv_SIG) LTS.path_with_word_lengths append.assoc append_butlast_last_id split_path_with_word_beginning' butlast.simps(2) length_append_singleton list.distinct(1))
+    using assms TODO_rename_me by auto
   moreover
   have "([s, s'], [l]) \<in> path_with_word"
     using assms length_Cons list.size(3) by (metis split_path_with_word_end') 
@@ -801,7 +819,7 @@ proof -
       case (Cons aa llist)
       have "p1 = a"
         using assms Cons Cons_outer
-        by (smt (z3) Pair_inject list.exhaust list.sel(1) transition_list.simps(1) transition_list.simps(2))
+        by (metis Pair_inject list.exhaust list.sel(1) transition_list.simps(1) transition_list.simps(2))
       moreover
       have "q1 # tl list = list"
         using assms Cons Cons_outer
@@ -1576,8 +1594,13 @@ proof (induction rule: transition_star_\<epsilon>.induct)
     by (metis LTS.transition_star.transition_star_refl \<epsilon>_exp_def list.simps(8) removeAll.simps(1))
 next
   case (transition_star_\<epsilon>_step_\<gamma> p \<gamma> q' w q)
+  obtain w\<epsilon> :: "'label option list" where
+    f1: "(q', w\<epsilon>, q) \<in> transition_star \<and> \<epsilon>_exp w\<epsilon> w"
+    using transition_star_\<epsilon>_step_\<gamma>.IH by blast
+  then have "\<epsilon>_exp (Some \<gamma> # w\<epsilon>) (\<gamma> # w)"
+    by (simp add: LTS_\<epsilon>.\<epsilon>_exp_def)
   then show ?case
-    by (smt (verit, best) LTS.transition_starp.intros(2) LTS.transition_starp_transition_star_eq \<epsilon>_exp_def list.map(2) option.sel option.simps(3) removeAll.simps(2))
+    using f1 by (meson transition_star.simps transition_star_\<epsilon>_step_\<gamma>.hyps(1))
 next
   case (transition_star_\<epsilon>_step_\<epsilon> p q' w q)
   then show ?case
@@ -1609,8 +1632,12 @@ next
   then show ?case
   proof (induction a)
     case None
+    then have gu: "\<epsilon>_exp u_\<epsilon> (\<gamma>1 # u1)"
+      using \<epsilon>_exp_def by force
+    then have "\<exists>\<gamma>1_\<epsilon> u1_\<epsilon>. \<epsilon>_exp \<gamma>1_\<epsilon> [\<gamma>1] \<and> \<epsilon>_exp u1_\<epsilon> u1 \<and> u_\<epsilon> = \<gamma>1_\<epsilon> @ u1_\<epsilon>"
+      using None(1) by auto
     then show ?case
-      by (smt (verit, ccfv_SIG) LTS_\<epsilon>.\<epsilon>_exp_def append_Cons removeAll.simps(2))
+      by (metis LTS_\<epsilon>.\<epsilon>_exp_def append_Cons removeAll.simps(2))
   next
     case (Some \<gamma>1')
     have "\<gamma>1' = \<gamma>1"
