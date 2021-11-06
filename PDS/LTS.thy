@@ -152,7 +152,7 @@ case (path_with_word_refl s)
 next
   case (path_with_word_step s' ss w s l)
   then show ?case
-    by (metis (no_types, hide_lams) LTS.path_with_word.path_with_word_refl LTS.path_with_word.path_with_word_step LTS.path_with_word_length One_nat_def Suc_1 Suc_inject Suc_leI Suc_le_mono butlast.simps(2) length_0_conv length_Cons list.distinct(1) list.size(4) not_gr0)
+    by (metis (no_types) LTS.path_with_word.path_with_word_refl LTS.path_with_word.path_with_word_step LTS.path_with_word_length One_nat_def Suc_1 Suc_inject Suc_leI Suc_le_mono butlast.simps(2) length_0_conv length_Cons list.distinct(1) list.size(4) not_gr0)
 qed
 
 
@@ -167,7 +167,7 @@ using assms proof (induction rule: path_with_word.induct)
 next
   case (path_with_word_step s' ss w s l)
   then show ?case
-    by (metis (no_types, hide_lams) LTS.path_with_word_length One_nat_def Suc_1 Suc_inject Suc_leI Suc_le_mono butlast.simps(2) last.simps length_Cons length_greater_0_conv list.distinct(1) list.size(4))
+    by (metis (no_types) LTS.path_with_word_length One_nat_def Suc_1 Suc_inject Suc_leI Suc_le_mono butlast.simps(2) last.simps length_Cons length_greater_0_conv list.distinct(1) list.size(4))
 qed
 
 
