@@ -1404,12 +1404,11 @@ next
           by (meson LTS.transition_star_states_path_with_word)
         then have one: "(tl ss, tl w) \<in> LTS.path_with_word Ai"
           by (metis LTS.path_with_word.simps \<open>transition_list (ss, w) \<noteq> []\<close> list.sel(3) transition_list.simps(2))
-        have two: "0 = count (transitions_of (tl ss, tl w)) (Ctr_Loc p1, \<epsilon>, q1)"
-        proof -
-          from ttt''' show "0 = count (transitions_of (tl ss, tl w)) (Ctr_Loc p1, \<epsilon>, q1)"
-            using count_append_path_with_word[of "[Ctr_Loc p1]" "[\<epsilon>]" "tl ss" "tl w" "Ctr_Loc p1" \<epsilon> q1] t_def
-            by (smt (z3) LTS.transition_star_states_last One_nat_def Suc.prems(2) VII \<open>(Ctr_Loc p1, [\<epsilon>], [Ctr_Loc p1, q1], q1) \<in> LTS.transition_star_states Ai\<close> \<open>transition_list (ss, w) \<noteq> []\<close> count_append_path_with_word count_next_hd length_Suc_conv list.sel(1) list.sel(3) list.size(3) one_is_add transition_list.simps(2) LTS.transition_list_Cons ttt'')
-        qed
+        from ttt''' have two: "0 = count (transitions_of (tl ss, tl w)) (Ctr_Loc p1, \<epsilon>, q1)"
+          using count_append_path_with_word_\<gamma>[of "[hd ss]" "[]" "tl ss" "hd w" "tl w" "Ctr_Loc p1" \<epsilon> q1, simplified]
+            \<open>(Ctr_Loc p1, [\<epsilon>], [Ctr_Loc p1, q1], q1) \<in> LTS.transition_star_states Ai\<close> \<open>transition_list (ss, w) \<noteq> []\<close>
+            Suc.prems(2) VII LTS.transition_list_Cons[of "Ctr_Loc p" w ss q Ai \<epsilon> q1]
+          by (auto simp: t_def)
         have three: "Ai = Aiminus1 \<union> {(Ctr_Loc p1, \<epsilon>, q1)}"
           using local.add_trans_pop(1) by auto
         from ttt''' one two three count_zero_remove_path_with_word[OF one, of "Ctr_Loc p1" \<epsilon> q1 Aiminus1] have "(tl ss, tl w) \<in> LTS.path_with_word Aiminus1"
@@ -1576,12 +1575,11 @@ next
           by (meson LTS.transition_star_states_path_with_word)
         then have one: "(tl ss, tl w) \<in> LTS.path_with_word Ai"
           by (metis LTS.path_with_word.simps \<open>transition_list (ss, w) \<noteq> []\<close> list.sel(3) transition_list.simps(2))
-        have two: "0 = count (transitions_of (tl ss, tl w)) (Ctr_Loc p1, Some \<gamma>', q1)"
-        proof -
-          from ttt''' show "0 = count (transitions_of (tl ss, tl w)) (Ctr_Loc p1, Some \<gamma>', q1)"
-            using count_append_path_with_word[of "[Ctr_Loc p1]" _ "tl ss" "tl w" "Ctr_Loc p1" _ q1] t_def
-            by (smt (z3) LTS.transition_star_states_last One_nat_def Suc.prems(2) VII \<open>(Ctr_Loc p1, [Some \<gamma>'], [Ctr_Loc p1, q1], q1) \<in> LTS.transition_star_states Ai\<close> \<open>transition_list (ss, w) \<noteq> []\<close> count_append_path_with_word count_next_hd length_Suc_conv list.sel(1) list.sel(3) list.size(3) one_is_add transition_list.simps(2) LTS.transition_list_Cons ttt'')
-        qed
+        from ttt''' have two: "0 = count (transitions_of (tl ss, tl w)) (Ctr_Loc p1, Some \<gamma>', q1)"
+          using count_append_path_with_word_\<gamma>[of "[hd ss]" "[]" "tl ss" "hd w" "tl w" "Ctr_Loc p1" "Some \<gamma>'" q1, simplified]
+            \<open>(Ctr_Loc p1, [Some \<gamma>'], [Ctr_Loc p1, q1], q1) \<in> LTS.transition_star_states Ai\<close> \<open>transition_list (ss, w) \<noteq> []\<close>
+            Suc.prems(2) VII LTS.transition_list_Cons[of "Ctr_Loc p" w ss q Ai "Some \<gamma>'" q1]
+          by (auto simp: t_def)
         have three: "Ai = Aiminus1 \<union> {(Ctr_Loc p1, Some \<gamma>', q1)}"
           using local.add_trans_swap(1) by auto 
         from ttt''' one two three count_zero_remove_path_with_word[OF one, of "Ctr_Loc p1" _ q1 Aiminus1] have "(tl ss, tl w) \<in> LTS.path_with_word Aiminus1"
@@ -1824,8 +1822,9 @@ next
           then have a3: "count (transitions_of (u_ss @ v_ss, u @ Some \<gamma>'' # v)) (last u_ss, Some \<gamma>'', hd v_ss) = Suc (count (transitions_of (u_ss, u)) (last u_ss, Some \<gamma>'', hd v_ss) + count (transitions_of (v_ss, v)) (last u_ss, Some \<gamma>'', hd v_ss))"
             using a1 a2 by auto
           have "j = count (transitions_of' ((q',v, v_ss, q))) t"
-            using a3 a2 a1 a4
-            by (smt (z3) One_nat_def Suc.prems(1) Suc_inject X_1 aaa add_Suc_right add_Suc_shift LTS.avoid_count_zero bbb counting local.add_trans_push_2(4) plus_1_eq_Suc same_append_eq t_def transitions_of'.simps)
+            using a1 a2 a3 X_1 aaa bbb add_trans_push_2(4) Suc(2)
+              LTS.avoid_count_zero[of "Ctr_Loc p" u u_ss "Ctr_Loc_Ext p1 \<gamma>1" Aiminus1 "Ctr_Loc_Ext p1 \<gamma>1" "Some \<gamma>''" q']
+            by (auto simp: t_def)
           show "j = count (transitions_of ((v_ss, v))) t"
             using \<open>j = count (transitions_of' (q', v, v_ss, q)) t\<close> by force
         qed
