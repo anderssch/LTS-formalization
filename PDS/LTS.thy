@@ -502,7 +502,7 @@ next
     ultimately
     have False
       using 2(1,2) unfolding 2(6)
-      by (smt (verit, ccfv_threshold)  path_with_word.simps Pair_inject list.sel(1) transition_list.simps(1) transitions_of.simps(2) zero_multiset.rep_eq zero_neq_one list.sel(3))
+      by (auto elim: path_with_word.cases)
     then show ?case
       by auto
   qed
@@ -560,9 +560,8 @@ next
       using assms Cons_outer by auto
   next
     case (Cons aa llist)
-    note Cons_outer' = Cons
-    show ?thesis
-      by (smt (z3) Cons_outer' Suc_length_conv assms(1) assms(2) fst_conv list.sel(1) snd_conv transition_list.simps(1)) 
+    with Cons_outer assms show ?thesis
+      by (cases list) auto
   qed
 qed
 
