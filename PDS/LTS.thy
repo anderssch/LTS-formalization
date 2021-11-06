@@ -582,8 +582,8 @@ proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
   from 1 have "\<nexists>q'' \<gamma>. (q', \<gamma>, q'') \<in> transition_relation"
     using zinks_def2[of "q'"]
     by auto
-  then show ?case
-    by (smt (verit, ccfv_SIG) LTS.path_with_word.simps append_Cons assms(1) list.distinct(1) list.inject self_append_conv2)
+  with assms(1) show ?case
+    by (auto elim: path_with_word.cases)
 next
   case (2 s' ss w s l)
   then show ?case
@@ -666,8 +666,7 @@ next
     have "(tl ss, tl w) \<in> LTS.path_with_word transition_relation"
       using 2(3)[of "tl ss" ss' "tl w" w'] by auto
     then show ?thesis
-      using 2(2)
-      by (smt (z3) "2.prems"(2) "2.prems"(3) "2.prems"(4) LTS.path_with_word.simps Suc_length_conv Zero_not_Suc hd_append2 length_0_conv list.collapse list.sel(1) list.sel(3) tl_append2)
+      using 2(2,5,6,7) by (auto simp: Cons_eq_append_conv intro: path_with_word_step)
   qed
 qed
 
