@@ -1,4 +1,4 @@
-theory Program_Graph imports "../LTS" begin
+theory Program_Graph imports "../PDS/LTS" begin
 
 
 section \<open>Actions\<close>
