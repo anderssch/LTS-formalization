@@ -874,8 +874,8 @@ next
   obtain s1' ss1' where s1'_ss1'_p: "ss1 = s1' # ss1'"
     by (meson Cons.prems(1) length_Suc_conv)
   show ?case
-    using Cons s2'_ss2'_p s1'_ss1'_p
-    by (smt (z3) Suc_length_conv add.assoc append_Cons append_path_with_word_\<gamma>.simps last_ConsR length_Cons list.simps(3) plus_multiset.rep_eq transitions_of.simps(1))
+    using Cons(1)[of "ss1'"] Cons(2-) s2'_ss2'_p s1'_ss1'_p
+    by (auto simp: length_Suc_conv)
 qed
 
 lemma count_append_path_with_word:
