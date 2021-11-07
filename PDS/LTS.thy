@@ -687,9 +687,10 @@ next
   proof (cases "ss")
     case Nil
     then show ?thesis
-      by (smt (verit) "2.prems"(1) "2.prems"(2) "2.prems"(3) "2.prems"(4) LTS.path_with_word_lengths append_Nil append_eq_append_conv length_append_singleton list.distinct(1) nat.inject rev_exhaust)
+      using 2(4-7) path_with_word_length
+      by (auto simp: Cons_eq_append_conv)
   next
-    case (Cons)
+    case (Cons x xs)
     have "(s' # ssa, wa) \<in> LTS.path_with_word transition_relation"
       using "2.hyps"(1) by blast
     moreover
@@ -703,8 +704,8 @@ next
     proof (cases "wa = []")
       assume "wa \<noteq>[]"
       then show ?thesis
-        using 2 Cons
-        by (metis LTS.path_with_word_lengths append.left_neutral append_eq_append_conv length_append_singleton list.distinct(1) list.sel(3) rev_exhaust tl_append2)
+        using 2(4-7) Cons path_with_word_length
+        by (fastforce simp: Cons_eq_append_conv)
     next
       assume a1: "wa = []"
       have "tl ss @ ss' \<noteq> []"
@@ -821,7 +822,7 @@ proof -
       moreover
       have "q1 # tl list = list"
         using assms Cons Cons_outer
-        by (smt (verit, ccfv_SIG) Pair_inject list.exhaust_sel list.sel(1) transition_list.simps(1) transition_list.simps(2))
+        by (cases list) auto
       moreover
       have "\<gamma> = aa"
         by (metis Cons_outer Pair_inject assms(1) calculation(2) list.sel(1) local.Cons transition_list.simps(1))
