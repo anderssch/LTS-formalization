@@ -874,7 +874,8 @@ next
   obtain s1' ss1' where s1'_ss1'_p: "ss1 = s1' # ss1'"
     by (meson Cons.prems(1) length_Suc_conv)
   show ?case
-    using Cons s2'_ss2'_p s1'_ss1'_p by (smt (z3) Suc_length_conv add.assoc append_Cons append_path_with_word_\<gamma>.simps last_ConsR length_Cons list.simps(3) plus_multiset.rep_eq transitions_of.simps(1))
+    using Cons s2'_ss2'_p s1'_ss1'_p
+    by (smt (z3) Suc_length_conv add.assoc append_Cons append_path_with_word_\<gamma>.simps last_ConsR length_Cons list.simps(3) plus_multiset.rep_eq transitions_of.simps(1))
 qed
 
 lemma count_append_path_with_word:
@@ -911,7 +912,7 @@ using assms proof (induction ww1 arbitrary: ss1)
 next
   case (Cons w ww11)
   show ?case
-    using Cons Suc_length_conv add.assoc append_Cons  last_ConsR  list.simps(3) plus_multiset.rep_eq transitions_of.simps(1) by (smt (z3) append_path_with_word.simps)
+    using Cons by (fastforce simp: length_Suc_conv split: if_splits)
 qed
 
 lemma count_append_transition_star_states_\<gamma>_length:
