@@ -136,6 +136,8 @@ lemma accepts_accepts_aut: "accepts ts (p, w) \<longleftrightarrow> P_Automaton.
 definition accepts_\<epsilon> :: "(('ctr_loc, 'state, 'label) state, 'label option) transition set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> bool" where
   "accepts_\<epsilon> ts \<equiv> \<lambda>(p,w). (\<exists>q \<in> F_states. (Ctr_Loc p,w,q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> ts)"
 
+(* TODO: Make a lemma similar to accepts_accepts_aut but for the epsilon versions. *)
+
 abbreviation \<epsilon> :: "'label option" where
   "\<epsilon> == None"
 
