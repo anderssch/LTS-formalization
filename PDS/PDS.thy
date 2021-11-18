@@ -255,6 +255,7 @@ proof (rule ccontr) (* TODO: it would be nice to avoid ccontr *)
     using no_infinite assms by auto
 qed
 
+
 subsection \<open>Saturation rules\<close>
 
 inductive pre_star_rule :: "(('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> (('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow> bool" where 
@@ -1134,7 +1135,7 @@ lemma no_edge_to_Ctr_Loc_post_star_rules:
 
 lemma lemma_3_4'_Aux:
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
-  assumes "\<forall>a b c. (a, b, c) \<in> A \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
   assumes "(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<notin> A'"
   shows "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') \<in> A'"
   using assms 
@@ -1195,7 +1196,7 @@ qed
 
 lemma lemma_3_4'_Aux_Aux2:
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
-  assumes "\<forall>a b c. (a, b, c) \<in> A \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
   assumes "(Ctr_Loc p', Some \<gamma>', Ctr_Loc_Ext p' \<gamma>') \<notin> A'"
   shows "\<nexists>p \<gamma>. (Ctr_Loc_Ext p' \<gamma>', \<gamma>, p) \<in> A'"
   using assms 
@@ -1264,7 +1265,7 @@ qed
 lemma lemma_3_4':
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
   assumes "P_states \<subseteq> LTS.sources A"
-  assumes "\<forall>a b c. (a, b, c) \<in> A \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
   assumes "(Ctr_Loc p, w, ss, q) \<in> LTS.transition_star_states A'"
   shows "(\<not>is_Ctr_Ext q \<longrightarrow> (\<exists>p' w'. (Ctr_Loc p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p',w') \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))) \<and>
          (is_Ctr_Ext q \<longrightarrow> (the_Ext_Ctr_Loc q, [the_Ext_Label q]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))"
@@ -1923,7 +1924,7 @@ qed
 lemma lemma_3_4'':
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
   assumes "P_states \<subseteq> LTS.sources A"
-  assumes "\<forall>a b c. (a, b, c) \<in> A \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
   assumes "(Ctr_Loc p, w, q) \<in> LTS.transition_star A'"
   shows "(\<not>is_Ctr_Ext q \<longrightarrow> (\<exists>p' w'. (Ctr_Loc p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p',w') \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))) \<and>
          (is_Ctr_Ext q \<longrightarrow> (the_Ext_Ctr_Loc q, [the_Ext_Label q]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))"
@@ -1932,7 +1933,7 @@ lemma lemma_3_4'':
 lemma lemma_3_4:
   assumes "saturation post_star_rules A A'"
   assumes "P_states \<subseteq> LTS.sources A"
-  assumes "\<forall>a b c. (a, b, c) \<in> A \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
   assumes "(Ctr_Loc p, w, q) \<in> LTS.transition_star A'"
   shows "(\<not>is_Ctr_Ext q \<longrightarrow> (\<exists>p' w'. (Ctr_Loc p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p',w') \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))) \<and>
          (is_Ctr_Ext q \<longrightarrow> (the_Ext_Ctr_Loc q, [the_Ext_Label q]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))"
@@ -1940,8 +1941,8 @@ lemma lemma_3_4:
 
 theorem theorem_3_3_on_the_fly:
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
-  assumes  "P_states \<subseteq> LTS.sources A"
-  assumes "\<forall>a b c. (a, b, c) \<in> A \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "P_states \<subseteq> LTS.sources A"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
   shows "{c. accepts_\<epsilon> A' c} \<subseteq> post_star (language_\<epsilon> A)"
 proof
   fix c :: "('ctr_loc, 'label) conf"
@@ -1971,7 +1972,7 @@ qed
 theorem theorem_3_3:
   assumes "saturation post_star_rules A A'"
   assumes  "P_states \<subseteq> LTS.sources A"
-  assumes "\<forall>a b c. (a, b, c) \<in> A \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
   shows "{c. accepts_\<epsilon> A' c} = post_star (language_\<epsilon> A)"
 proof (rule; rule)
   fix c :: "('ctr_loc, 'label) conf"
@@ -2014,7 +2015,7 @@ qed
 theorem theorem_3_3_language:
   assumes "saturation post_star_rules A A'"
   assumes "P_states \<subseteq> LTS.sources A"
-  assumes "\<forall>a b c. (a, b, c) \<in> A \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
   shows "language_\<epsilon> A' = post_star (language_\<epsilon> A)"
   using assms(1) assms(2) assms(3) language_\<epsilon>_def theorem_3_3 by presburger
 
@@ -2564,8 +2565,8 @@ lemma language_\<epsilon>_LTS_\<epsilon>_of_LTS_is_language: "language_\<epsilon
 theorem dual3_on_the_fly:
   assumes "P_states \<subseteq> LTS.sources A1"
   assumes "P_states \<subseteq> LTS.sources A2"
-  assumes "\<forall>a b c. (a, b, c) \<in> A1 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
-  assumes "\<forall>a b c. (a, b, c) \<in> A2 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A1 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A2 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
   assumes "post_star_rules\<^sup>*\<^sup>* A1 A1'"
   assumes "pre_star_rule\<^sup>*\<^sup>* A2 A2'"
   assumes "language_\<epsilon>_inters (inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {}"
@@ -2603,8 +2604,8 @@ qed
 theorem dual3:
   assumes "P_states \<subseteq> LTS.sources A1"
   assumes "P_states \<subseteq> LTS.sources A2"
-  assumes "\<forall>a b c. (a, b, c) \<in> A1 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
-  assumes "\<forall>a b c. (a, b, c) \<in> A2 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A1 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A2 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
   assumes "saturation post_star_rules A1 A1'"
   assumes "saturation pre_star_rule A2 A2'"
   shows "language_\<epsilon>_inters (inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {} \<longleftrightarrow> (\<exists>c1 \<in> language_\<epsilon> A1. \<exists>c2 \<in> language A2. c1 \<Rightarrow>\<^sup>* c2)"
@@ -2650,8 +2651,8 @@ qed
 theorem dual4_on_the_fly:
   assumes "P_states \<subseteq> LTS.sources A1"
   assumes "P_states \<subseteq> LTS.sources A2"
-  assumes "\<forall>a b c. (a, b, c) \<in> A1 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
-  assumes "\<forall>a b c. (a, b, c) \<in> A2 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A1 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A2 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
   assumes "language_\<epsilon> A1 = {c1}"
   assumes "language A2 = {c2}"
   assumes "post_star_rules\<^sup>*\<^sup>* A1 A1'"
