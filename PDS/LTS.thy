@@ -455,7 +455,7 @@ definition zinks :: "'state set" where
   "zinks = {p. \<nexists>q \<gamma>. (p, \<gamma>, q) \<in> transition_relation}"
 
 lemma sources_def2:
-  "q \<in> LTS.sources A \<longleftrightarrow> (\<nexists>q' \<gamma>. (q', \<gamma>, q) \<in> A)"
+  "q \<in> sources \<longleftrightarrow> (\<nexists>q' \<gamma>. (q', \<gamma>, q) \<in> transition_relation)"
   by (simp add: LTS.sources_def)
 
 lemma zinks_def2:

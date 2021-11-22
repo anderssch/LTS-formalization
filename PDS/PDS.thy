@@ -1153,7 +1153,7 @@ next
     then have nin: "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') \<in> Aiminus1"
       using local.add_trans_pop(1) step.IH step.prems(1) by fastforce
     then have "Ctr_Loc_Ext p' \<gamma>' \<noteq> q"
-      using add_trans_pop(4) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon> sources_def2
+      using add_trans_pop(4) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon> LTS.sources_def2
       by (metis local.add_trans_pop(3) state.distinct(3))
     then have "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') = (Ctr_Loc p'', \<epsilon>, q)"
       by auto
@@ -1166,7 +1166,7 @@ next
     then have nin: "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') \<in> Aiminus1"
       using local.add_trans_swap(1) step.IH step.prems(1) by fastforce
     then have "Ctr_Loc_Ext p' \<gamma>' \<noteq> q"
-      using sources_def2 by (metis state.distinct(4) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon> local.add_trans_swap(3)) 
+      using LTS.sources_def2 by (metis state.distinct(4) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon> local.add_trans_swap(3)) 
     then have "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') = (Ctr_Loc p'', Some \<gamma>''', q)"
       by auto
     then show ?thesis
@@ -1185,7 +1185,7 @@ next
     then have nin: "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') \<in> Aiminus1"
       using local.add_trans_push_2(1) step.IH step.prems(1) by fastforce
     then have "Ctr_Loc_Ext p' \<gamma>' \<noteq> q"
-      using sources_def2 by (metis state.disc(1,3) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon> local.add_trans_push_2(3))
+      using LTS.sources_def2 by (metis state.disc(1,3) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon> local.add_trans_push_2(3))
     then have "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') = (Ctr_Loc p'', \<epsilon>, q)"
       by auto
     then show ?thesis
@@ -1216,7 +1216,7 @@ next
     then have "Ctr_Loc_Ext p' \<gamma>' \<noteq> q"
       using add_trans_pop(4) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon>[of "Ctr_Loc p'''" "[\<gamma>'']" q Aiminus1 "Ctr_Loc_Ext p' \<gamma>'"]
       using lemma_3_4'_Aux local.add_trans_pop(1) step.hyps(1) step.prems(1) step.prems(2)
-      using UnI1 local.add_trans_pop(3) sources_def2 by (metis (full_types) state.distinct(3))
+      using UnI1 local.add_trans_pop(3) LTS.sources_def2 by (metis (full_types) state.distinct(3))
     then have "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') = (Ctr_Loc p'', \<epsilon>, q)"
       by auto
     then show ?thesis
@@ -1230,7 +1230,7 @@ next
     then have "Ctr_Loc_Ext p' \<gamma>' \<noteq> q"
       using LTS_\<epsilon>.transition_star_not_to_source_\<epsilon>[of "Ctr_Loc p''''" "[\<gamma>'']" q Aiminus1] local.add_trans_swap(3)
       using lemma_3_4'_Aux[of _ Aiminus1 p' \<gamma>']  UnCI local.add_trans_swap(1) step.hyps(1) step.prems(1) step.prems(2)
-       state.simps(7) sources_def2
+       state.simps(7) LTS.sources_def2
       by metis
     then have "\<nexists>p \<gamma>. (p, \<gamma>, Ctr_Loc_Ext p' \<gamma>') = (Ctr_Loc p'', Some \<gamma>''', q)"
       by auto
@@ -1252,7 +1252,7 @@ next
     then have "Ctr_Loc_Ext p' \<gamma>' \<noteq> q"
       using state.disc(3) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon>[of "Ctr_Loc p''''" "[\<gamma>'']" q Aiminus1  "Ctr_Loc_Ext p' \<gamma>'"] local.add_trans_push_2(3)
       using lemma_3_4'_Aux[of _ Aiminus1 p' \<gamma>'] UnCI local.add_trans_push_2(1) step.hyps(1) step.prems(1) step.prems(2)
-        sources_def2 state.disc(1)
+        LTS.sources_def2 state.disc(1)
       by metis
     then have "\<nexists>p \<gamma>. (Ctr_Loc_Ext p' \<gamma>', \<gamma>, p) = (Ctr_Loc p'', \<epsilon>, q)"
       by auto
