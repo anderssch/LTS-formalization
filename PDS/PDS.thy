@@ -2664,8 +2664,8 @@ theorem dual4_on_the_fly:
 theorem dual4:
   assumes "P_states \<subseteq> LTS.sources A1"
   assumes "P_states \<subseteq> LTS.sources A2"
-  assumes "\<forall>a b c. (a, b, c) \<in> A1 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
-  assumes "\<forall>a b c. (a, b, c) \<in> A2 \<longrightarrow> a \<notin> New_Aut_states \<and> c \<notin> New_Aut_states"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A1 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A2 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
   assumes "language_\<epsilon> A1 = {c1}"
   assumes "language A2 = {c2}"
   assumes "saturation post_star_rules A1 A1'"
