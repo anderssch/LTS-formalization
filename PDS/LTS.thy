@@ -6,7 +6,7 @@ section \<open>LTS\<close>
 
 subsection \<open>Transitions\<close>
 
-type_synonym ('state, 'label) transition = "'state * 'label * 'state"
+type_synonym ('state, 'label) transition = "'state \<times> 'label \<times> 'state"
 
 
 subsection \<open>LTS functions\<close>
@@ -67,24 +67,24 @@ begin
 text \<open>More definitions.\<close>
 
 definition step_relp  :: "'state \<Rightarrow> 'state \<Rightarrow> bool" (infix "\<Rightarrow>" 80) where
-  "c \<Rightarrow> c' \<equiv> \<exists>l. (c, l, c') \<in> transition_relation"
+  "c \<Rightarrow> c' \<longleftrightarrow> (\<exists>l. (c, l, c') \<in> transition_relation)"
 
 abbreviation step_starp :: "'state \<Rightarrow> 'state \<Rightarrow> bool" (infix "\<Rightarrow>\<^sup>*" 80) where
-  "c \<Rightarrow>\<^sup>* c' == step_relp\<^sup>*\<^sup>* c c'"
+  "c \<Rightarrow>\<^sup>* c' \<equiv> step_relp\<^sup>*\<^sup>* c c'"
 
 definition step_rel :: "'state rel" where 
-  "step_rel \<equiv> {(c, c'). step_relp c c'}"
+  "step_rel = {(c, c'). step_relp c c'}"
 
 definition step_star :: "'state rel" where 
-  "step_star \<equiv> {(c, c'). step_starp c c'}"
+  "step_star = {(c, c'). step_starp c c'}"
 
 (* For a set of states C, post*(C) is the set of all states reachable from C. *)
 definition post_star :: "'state set \<Rightarrow> 'state set" where
-  "post_star C \<equiv> {c'. \<exists>c \<in> C. c \<Rightarrow>\<^sup>* c'}"
+  "post_star C = {c'. \<exists>c \<in> C. c \<Rightarrow>\<^sup>* c'}"
 
 (* And pre*(C) is the set of all states that can reach a state in C. *)
 definition pre_star :: "'state set \<Rightarrow> 'state set" where
-  "pre_star C \<equiv> {c'. \<exists>c \<in> C. c' \<Rightarrow>\<^sup>* c}"
+  "pre_star C = {c'. \<exists>c \<in> C. c' \<Rightarrow>\<^sup>* c}"
 
 (* Paths as defined in the thesis: *)
 inductive_set path :: "'state list set" where
