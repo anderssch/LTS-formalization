@@ -809,7 +809,8 @@ proof
     unfolding p_def w_def by auto
 qed
 
-theorem theorem_3_2:
+\<comment> \<open>Corresponds to Schwoon's theorem 3.2\<close>
+theorem pre_star_rules_correct:
   assumes "P_states \<subseteq> LTS.sources A"
   assumes "saturation pre_star_rule A A'"
   shows "{c. accepts A' c} = pre_star (language A)"
@@ -853,50 +854,51 @@ next
     unfolding p_def w_def by auto
 qed
 
-theorem theorem_3_2_language:
+\<comment> \<open>Corresponds to Schwoon's theorem 3.2\<close>
+theorem pre_star_rules_language_correct:
   assumes "P_states \<subseteq> LTS.sources A"
   assumes "saturation pre_star_rule A A'"
   shows "language A' = pre_star (language A)"
-  using assms(1) assms(2) language_def theorem_3_2 by auto
+  using assms(1) assms(2) language_def pre_star_rules_correct by auto
 
-theorem theorem_3_2_exec:
+theorem pre_star_exec_correct:
   assumes "P_states \<subseteq> LTS.sources A"
   shows "{c. accepts (pre_star_exec A) c} = pre_star (language A)"
-  using theorem_3_2[of A "pre_star_exec A"] saturation_pre_star_exec[of A] using assms by auto
+  using pre_star_rules_correct[of A "pre_star_exec A"] saturation_pre_star_exec[of A] using assms by auto
 
-theorem theorem_3_2_exec_check:
+theorem pre_star_exec_language_correct:
+  assumes "P_states \<subseteq> LTS.sources A"
+  shows "language (pre_star_exec A) = pre_star (language A)"
+  using pre_star_rules_language_correct[of A "pre_star_exec A"] saturation_pre_star_exec[of A] using assms by auto
+
+theorem pre_star_exec_check_correct:
   assumes "pre_star_exec_check A \<noteq> None"
   shows "{c. accepts (the (pre_star_exec_check A)) c} = pre_star (language A)"
-  using theorem_3_2_exec assms unfolding pre_star_exec_check_def apply auto
+  using pre_star_exec_correct assms unfolding pre_star_exec_check_def apply auto
   using pre_star_exec_def apply fastforce
   using pre_star_exec_def apply fastforce
    apply (metis option.discI subsetD)
   apply (metis option.discI subsetD)
   done
 
-theorem theorem_3_2_exec_language:
-  assumes "P_states \<subseteq> LTS.sources A"
-  shows "language (pre_star_exec A) = pre_star (language A)"
-  using theorem_3_2_language[of A "pre_star_exec A"] saturation_pre_star_exec[of A] using assms by auto
-
-theorem theorem_3_2_exec_check_language:
+theorem pre_star_exec_check_language_correct:
   assumes "pre_star_exec_check A \<noteq> None"
   shows "language (the (pre_star_exec_check A)) = pre_star (language A)"
-  using theorem_3_2_exec_check assms unfolding language_def by auto
+  using pre_star_exec_check_correct assms unfolding language_def by auto
 
-theorem accept_pre_star_correct_True:
+theorem accept_pre_star_exec_correct_True:
   assumes "P_states \<subseteq> LTS.sources A"
   assumes "accepts (pre_star_exec A) c"
   shows "c \<in> pre_star (language A)"
-  using PDS_with_P_automaton.theorem_3_2_exec assms(1) assms(2) by blast
+  using pre_star_exec_correct assms(1) assms(2) by blast
 
-theorem accept_pre_star_correct_False:
+theorem accept_pre_star_exec_correct_False:
   assumes "P_states \<subseteq> LTS.sources A"
   assumes "\<not>accepts (pre_star_exec A) c"
   shows "c \<notin> pre_star (language A)"
-  using PDS_with_P_automaton.theorem_3_2_exec assms(1) assms(2) by blast
+  using pre_star_exec_correct assms(1) assms(2) by blast
 
-theorem accept_pre_star_correct_Some_True:
+theorem accept_pre_star_exec_correct_Some_True:
   assumes "accept_pre_star_exec_check A c = Some True"
   shows "c \<in> pre_star (language A)"
 proof -
@@ -910,10 +912,10 @@ proof -
     using accept_pre_star_exec_check_def calculation by auto
   ultimately
   show "c \<in> pre_star (language A)"
-    using accept_pre_star_correct_True by auto
+    using accept_pre_star_exec_correct_True by auto
 qed
 
-theorem accept_pre_star_correct_Some_False:
+theorem accept_pre_star_exec_correct_Some_False:
   assumes "accept_pre_star_exec_check A c = Some False"
   shows "c \<notin> pre_star (language A)"
 proof -
@@ -927,10 +929,10 @@ proof -
     using accept_pre_star_exec_check_def calculation by auto
   ultimately
   show "c \<notin> pre_star (language A)"
-    using accept_pre_star_correct_False by auto
+    using accept_pre_star_exec_correct_False by auto
 qed
 
-theorem accept_pre_star_correct_None:
+theorem accept_pre_star_exec_correct_None:
   assumes "accept_pre_star_exec_check A c = None"
   shows "\<not>P_states \<subseteq> LTS.sources A"
   using assms unfolding accept_pre_star_exec_check_def by auto
@@ -1969,7 +1971,8 @@ proof
     unfolding p_def w_def by auto
 qed
 
-theorem theorem_3_3:
+\<comment> \<open>Corresponds to Schwoon's theorem 3.3\<close>
+theorem post_star_rules_correct:
   assumes "saturation post_star_rules A A'"
   assumes  "P_states \<subseteq> LTS.sources A"
   assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
@@ -2012,12 +2015,13 @@ next
     unfolding p_def w_def by auto
 qed
 
-theorem theorem_3_3_language:
+\<comment> \<open>Corresponds to Schwoon's theorem 3.3\<close>
+theorem post_star_rules_language_correct:
   assumes "saturation post_star_rules A A'"
   assumes "P_states \<subseteq> LTS.sources A"
   assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
   shows "language_\<epsilon> A' = post_star (language_\<epsilon> A)"
-  using assms(1) assms(2) assms(3) language_\<epsilon>_def theorem_3_3 by presburger
+  using assms(1) assms(2) assms(3) language_\<epsilon>_def post_star_rules_correct by presburger
 
 end
 
@@ -2611,12 +2615,12 @@ theorem dual3:
   shows "language_\<epsilon>_inters (inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {} \<longleftrightarrow> (\<exists>c1 \<in> language_\<epsilon> A1. \<exists>c2 \<in> language A2. c1 \<Rightarrow>\<^sup>* c2)"
 proof -
   have "{c. accepts_\<epsilon> A1' c} = post_star (language_\<epsilon> A1)"
-    using theorem_3_3[of A1 A1'] assms by auto
+    using post_star_rules_correct[of A1 A1'] assms by auto
   then have A1'_correct: "language_\<epsilon> A1' = post_star (language_\<epsilon> A1)"
     unfolding language_\<epsilon>_def by auto
 
   have "{c. accepts A2' c} = pre_star (language A2)" 
-    using theorem_3_2[of A2 A2'] assms by auto
+    using pre_star_rules_correct[of A2 A2'] assms by auto
   then have A2'_correct: "language A2' = pre_star (language A2)" 
     unfolding language_def by auto
 
