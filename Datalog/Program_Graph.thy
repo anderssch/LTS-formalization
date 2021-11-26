@@ -1043,7 +1043,7 @@ next
   qed
 qed
 
-lemma gagagaga:
+lemma last_overwrites:
   "def_var (\<pi> @ [(q1, x ::= exp, q2)]) x start = (x, Some q1, q2)"
 proof -
   have "x \<in> def_edge (q1, x ::= exp, q2)"
@@ -1063,7 +1063,7 @@ proof -
     .
 qed
 
-lemma fufufufufufu: "interp.S_hat_edge_list (\<pi> @ [a]) d_init_RD = interp.S_hat a (interp.S_hat_edge_list \<pi> d_init_RD)"
+lemma S_hat_edge_list_last: "interp.S_hat_edge_list (\<pi> @ [a]) d_init_RD = interp.S_hat a (interp.S_hat_edge_list \<pi> d_init_RD)"
   using interp.S_hat_edge_list_def2 foldl_conv_foldr by simp
 
 lemma gugugug: "(x,q1,q2) \<in> interp.S_hat_edge_list \<pi> d_init_RD \<Longrightarrow> (x,q1,q2) = (def_var \<pi>) x start"
@@ -1075,7 +1075,7 @@ next
   case (snoc a \<pi>)
   
   from snoc(2) have "(x, q1, q2) \<in> interp.S_hat a (interp.S_hat_edge_list \<pi> d_init_RD)"
-    using fufufufufufu by blast     
+    using S_hat_edge_list_last by blast     
 
   then have "(x, q1, q2) \<in> interp.S_hat_edge_list \<pi> d_init_RD - kill_set_RD a \<or> (x, q1, q2) \<in> gen_set_RD a"
     unfolding interp.S_hat_def by auto
@@ -1133,20 +1133,24 @@ next
     then obtain exp theq1 where exp_theq1_p: "a = (theq1, x ::= exp, q2) \<and> q1 = Some theq1"
       by auto
     then have "(x, q1, q2) = def_var (\<pi> @ [(theq1, x ::= exp, q2)]) x start"
-      using gagagaga[of \<pi> theq1 x exp q2] by auto
+      using last_overwrites[of \<pi> theq1 x exp q2] by auto
     then show ?case
       using exp_theq1_p by auto
   qed
 qed
 
 lemma def_var_UNIV_S_hat_edge_list: "(\<lambda>x. def_var \<pi> x start) ` UNIV = interp.S_hat_edge_list \<pi> d_init_RD"
-  apply rule
-  subgoal
-    using def_var_S_hat_edge_list apply blast
-    done
-  subgoal
-    by (metis (no_types, lifting) analysis_RD.gugugug prod.collapse range_eqI subrelI)
-  done
+proof (rule; rule)
+  fix x
+  assume "x \<in> range (\<lambda>x. def_var \<pi> x start)"
+  then show "x \<in> interp.S_hat_edge_list \<pi> d_init_RD"
+    using def_var_S_hat_edge_list by blast
+next
+  fix x
+  assume "x \<in> interp.S_hat_edge_list \<pi> d_init_RD"
+  then show "x \<in> range (\<lambda>x. def_var \<pi> x start)"
+    by (metis (no_types, lifting) analysis_RD.gugugug prod.collapse range_eqI)
+qed
 
 lemma def_path_S_hat_path: "def_path \<pi> start = interp.S_hat_path \<pi> d_init_RD"
   using analysis_BV.S_hat_path_def def_path_def def_var_UNIV_S_hat_edge_list by metis
@@ -1247,12 +1251,7 @@ lemma rev_end_is_start:
   assumes "LTS.get_end (ss, w) = end"
   shows "LTS.get_start (rev ss, rev w) = fa.start"
   using assms
-  unfolding LTS.get_end_def
-  apply auto
-  unfolding LTS.get_start_def
-  apply auto
-  unfolding fa.start_def pg_rev_def analysis_BV.start_def
-  apply auto
+  unfolding LTS.get_end_def LTS.get_start_def fa.start_def pg_rev_def analysis_BV.start_def
   by (simp add: hd_rev)
 
 lemma S_hat_edge_list_forward_backward:
@@ -1264,9 +1263,7 @@ proof (induction ss)
 next
   case (Cons a ss)
   show ?case
-   
     unfolding rev_edge_list_def
-    
     unfolding fa.S_hat_edge_list_def2
     unfolding foldl_conv_foldr
     apply simp
@@ -1412,12 +1409,12 @@ next
     case Nil
     have "a = e"
       using \<pi>1_\<pi>2_e_p(1) Nil by auto
-    then have wewewe: "x \<in> use_edge a"
+    then have x_used_a: "x \<in> use_edge a"
       using \<pi>1_\<pi>2_e_p(2) by auto
     obtain p \<alpha> q where a_split: "a = (p, \<alpha>, q)"
       by (cases a)
     show ?thesis
-      using wewewe interpb.S_hat_def a_split by (cases \<alpha>) auto
+      using x_used_a interpb.S_hat_def a_split by (cases \<alpha>) auto
   next
     case (Cons hd_\<pi>1 tl_\<pi>1)
     obtain p \<alpha> q where e_split: "e = (p, \<alpha>, q)"
@@ -1426,11 +1423,11 @@ next
       using Cons \<pi>1_\<pi>2_e_p e_split by auto
     then have "use_var \<pi> x"
       unfolding use_var_def by force
-    then have uuu: "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV"
+    then have x_in_S_hat_\<pi>: "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV"
       using Cons_inner by auto
     have "a \<in> set \<pi>1"
       using \<pi>1_\<pi>2_e_p(1) Cons(1) by auto
-    then have wewewewww: "\<not>x \<in> def_edge a"
+    then have x_not_def_a: "\<not>x \<in> def_edge a"
       using \<pi>1_\<pi>2_e_p(3) by auto
 
     obtain p' \<alpha>' q' where a_split: "a = (p', \<alpha>', q')"
@@ -1440,11 +1437,11 @@ next
     proof (cases "x \<in> kill_set_LV a")
       case True
       show ?thesis
-        using True a_split wewewewww by (cases \<alpha>'; force)
+        using True a_split x_not_def_a by (cases \<alpha>'; force)
     next
       case False
       then show ?thesis
-        by (simp add: analysis_BV_backwards.S_hat_def uuu)
+        by (simp add: analysis_BV_backwards.S_hat_def x_in_S_hat_\<pi>)
     qed
   qed
 qed
@@ -1467,9 +1464,9 @@ next
   then show ?case
   proof
     assume a: "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV - kill_set_LV a"
-    then have b: "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV"
+    then have "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV"
       by auto
-    then have g: "use_var \<pi> x"
+    then have "use_var \<pi> x"
       using Cons by auto
     then have "\<exists>\<pi>1 \<pi>2 e. \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and> x \<in> use_edge e \<and> \<not>(\<exists>e'\<in>set \<pi>1. x \<in> def_edge e')"
       unfolding use_var_def by auto
@@ -1480,25 +1477,25 @@ next
       by auto
     obtain q1 \<alpha> q2 where a_split: "a =(q1, \<alpha>, q2)"
       by (cases a) auto
-    from a have tt: "x \<notin> kill_set_LV a"
+    from a have "x \<notin> kill_set_LV a"
       by auto
-    then have goo: "x \<notin> kill_set_LV (q1, \<alpha>, q2)"
+    then have x_not_killed: "x \<notin> kill_set_LV (q1, \<alpha>, q2)"
       using a_split by auto
     have "use_var ((q1, \<alpha>, q2) # \<pi>) x"
     proof (cases \<alpha>)
       case (Asg y exp)
       then have "x \<notin> kill_set_LV (q1, y ::= exp, q2)"
-        using goo by auto
-      then have xy: "x \<noteq> y"
+        using x_not_killed by auto
+      then have x_not_y: "x \<noteq> y"
         by auto
       have "(q1, y ::= exp, q2) # \<pi> = ((q1, y ::= exp, q2) # \<pi>1) @ [e] @ \<pi>2"
         using \<pi>1_\<pi>2_e_p by force
       moreover
       have "\<not> (\<exists>e'\<in>set ((q1, y ::= exp, q2) # \<pi>1). x \<in> def_edge e')"
-        using \<pi>1_\<pi>2_e_p xy by force
+        using \<pi>1_\<pi>2_e_p x_not_y by force
       ultimately
       have "use_var ((q1, y ::= exp, q2) # \<pi>) x"
-        unfolding use_var_def using \<pi>1_\<pi>2_e_p xy by metis
+        unfolding use_var_def using \<pi>1_\<pi>2_e_p x_not_y by metis
       then show ?thesis
         by (simp add: Asg)
     next
