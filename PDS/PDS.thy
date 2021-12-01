@@ -40,7 +40,7 @@ lemma step_relp_def2:
 end
 
 
-section \<open>PDS with P automaton\<close>
+section \<open>PDS with P automata\<close>
 
 type_synonym ('ctr_loc, 'label) sat_rule = "('ctr_loc, 'label) transition set \<Rightarrow> ('ctr_loc, 'label) transition set \<Rightarrow> bool"
 
@@ -98,7 +98,7 @@ instance by standard (simp add: finite_ctr_locs)
 end
 
 
-locale PDS_with_P_automaton = PDS \<Delta>
+locale PDS_with_P_automata = PDS \<Delta>
   for \<Delta> :: "('ctr_loc::enum, 'label::finite) rule set"
     +
   fixes F_ctr_loc :: "('ctr_loc::enum) set"
@@ -2033,8 +2033,8 @@ definition accepts_inters :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'st
 lemma accepts_inters_accepts_aut_inters:
   assumes "ts12 = inters ts1 ts2"
   assumes "F_states12 = inters_finals F_states1 F_states2"
-  shows "accepts_inters ts12 F_states12 (p,w) \<longleftrightarrow> Intersection_P_Automaton.accepts_aut_inters ts1 F_states1 PDS_with_P_automaton.P_states ts2 F_states2 (Ctr_Loc p) w"
-  by (simp add: Intersection_P_Automaton.accepts_aut_inters_def PDS_with_P_automaton.P_states_def P_Automaton.accepts_aut_def accepts_inters_def assms)
+  shows "accepts_inters ts12 F_states12 (p,w) \<longleftrightarrow> Intersection_P_Automaton.accepts_aut_inters ts1 F_states1 PDS_with_P_automata.P_states ts2 F_states2 (Ctr_Loc p) w"
+  by (simp add: Intersection_P_Automaton.accepts_aut_inters_def PDS_with_P_automata.P_states_def P_Automaton.accepts_aut_def accepts_inters_def assms)
 
 definition language_inters :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state, 'label) transition set \<Rightarrow>  (('ctr_loc, 'state, 'label) state * ('ctr_loc, 'state, 'label) state) set \<Rightarrow> ('ctr_loc, 'label) conf set" where
   "language_inters ts F_states = {c. accepts_inters ts F_states c}"
@@ -2042,12 +2042,12 @@ definition language_inters :: "(('ctr_loc, 'state, 'label) state * ('ctr_loc, 's
 lemma language_inters_language_aut_inters:
   assumes "ts12 = inters ts1 ts2"
   assumes "F_states12 = inters_finals F_states1 F_states2"
-  shows "(\<lambda>(p,w). (Ctr_Loc p, w)) ` language_inters ts12 F_states12 = Intersection_P_Automaton.language_aut_inters ts1 F_states1 PDS_with_P_automaton.P_states ts2 F_states2"
+  shows "(\<lambda>(p,w). (Ctr_Loc p, w)) ` language_inters ts12 F_states12 = Intersection_P_Automaton.language_aut_inters ts1 F_states1 PDS_with_P_automata.P_states ts2 F_states2"
   using assms
   by (auto simp: Intersection_P_Automaton.language_aut_inters_def 
     Intersection_P_Automaton.inters_accept_iff
     accepts_inters_accepts_aut_inters language_inters_def is_Ctr_Loc_def
-    PDS_with_P_automaton.P_states_def P_Automaton.accepts_aut_def image_iff)
+    PDS_with_P_automata.P_states_def P_Automaton.accepts_aut_def image_iff)
 
 thm Intersection_P_Automaton.transition_star_inter
 
@@ -2059,30 +2059,30 @@ thm Intersection_P_Automaton.inters_transition_star_iff
 
 thm Intersection_P_Automaton.inters_accept_iff
 
-term PDS_with_P_automaton.accepts
+term PDS_with_P_automata.accepts
 
-term PDS_with_P_automaton.F_states
+term PDS_with_P_automata.F_states
 
 lemma inters_accept_iff: 
   assumes "ts12 = inters ts1 ts2"
-  assumes "F_states12 = inters_finals (PDS_with_P_automaton.F_states F_ctr_locs1 F_ctr_loc_st1) (PDS_with_P_automaton.F_states F_ctr_locs2 F_ctr_loc_st2)"
+  assumes "F_states12 = inters_finals (PDS_with_P_automata.F_states F_ctr_locs1 F_ctr_loc_st1) (PDS_with_P_automata.F_states F_ctr_locs2 F_ctr_loc_st2)"
   shows
   "accepts_inters ts12 F_states12 (p,w) \<longleftrightarrow> 
-     PDS_with_P_automaton.accepts F_ctr_locs1 F_ctr_loc_st1 ts1 (p,w) \<and> 
-     PDS_with_P_automaton.accepts F_ctr_locs2 F_ctr_loc_st2 ts2 (p,w)"
+     PDS_with_P_automata.accepts F_ctr_locs1 F_ctr_loc_st1 ts1 (p,w) \<and> 
+     PDS_with_P_automata.accepts F_ctr_locs2 F_ctr_loc_st2 ts2 (p,w)"
   using accepts_inters_accepts_aut_inters Intersection_P_Automaton.inters_accept_iff assms
-  by (simp add: Intersection_P_Automaton.inters_accept_iff accepts_inters_accepts_aut_inters PDS_with_P_automaton.accepts_accepts_aut) 
+  by (simp add: Intersection_P_Automaton.inters_accept_iff accepts_inters_accepts_aut_inters PDS_with_P_automata.accepts_accepts_aut) 
 
 lemma inters_language:
   assumes "ts12 = inters ts1 ts2"
-  assumes "F_states12 = inters_finals (PDS_with_P_automaton.F_states F_ctr_locs1 F_ctr_loc_st1) (PDS_with_P_automaton.F_states F_ctr_locs2 F_ctr_loc_st2)"
-  shows "language_inters ts12 F_states12 = PDS_with_P_automaton.language F_ctr_locs1 F_ctr_loc_st1 ts1 \<inter> PDS_with_P_automaton.language F_ctr_locs2 F_ctr_loc_st2 ts2"
-  using assms by (auto simp add: PDS_with_P_automaton.language_def inters_accept_iff language_inters_def)
+  assumes "F_states12 = inters_finals (PDS_with_P_automata.F_states F_ctr_locs1 F_ctr_loc_st1) (PDS_with_P_automata.F_states F_ctr_locs2 F_ctr_loc_st2)"
+  shows "language_inters ts12 F_states12 = PDS_with_P_automata.language F_ctr_locs1 F_ctr_loc_st1 ts1 \<inter> PDS_with_P_automata.language F_ctr_locs2 F_ctr_loc_st2 ts2"
+  using assms by (auto simp add: PDS_with_P_automata.language_def inters_accept_iff language_inters_def)
 
 
 subsection \<open>Intersection \<epsilon>-Automata\<close>
 
-context PDS_with_P_automaton begin
+context PDS_with_P_automata begin
 
 interpretation LTS transition_rel .
 notation step_relp (infix "\<Rightarrow>" 80)

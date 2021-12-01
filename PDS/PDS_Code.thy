@@ -2,14 +2,14 @@ theory PDS_Code
   imports PDS "Deriving.Derive"
 begin
 
-global_interpretation pds: PDS_with_P_automaton \<Delta> F_ctr_loc F_ctr_loc_st
+global_interpretation pds: PDS_with_P_automata \<Delta> F_ctr_loc F_ctr_loc_st
   for \<Delta> :: "('ctr_loc::{enum, linorder}, 'label::{finite, linorder}) rule set"
   and F_ctr_loc :: "('ctr_loc) set"
   and F_ctr_loc_st :: "('state::finite) set"
-  defines pre_star = "PDS_with_P_automaton.pre_star_exec \<Delta>"
-  and pre_star_check = "PDS_with_P_automaton.pre_star_exec_check \<Delta>"
-  and accepts = "PDS_with_P_automaton.accepts F_ctr_loc F_ctr_loc_st"
-  and accepts_pre_star_check = "PDS_with_P_automaton.accept_pre_star_exec_check \<Delta> F_ctr_loc F_ctr_loc_st"
+  defines pre_star = "PDS_with_P_automata.pre_star_exec \<Delta>"
+  and pre_star_check = "PDS_with_P_automata.pre_star_exec_check \<Delta>"
+  and accepts = "PDS_with_P_automata.accepts F_ctr_loc F_ctr_loc_st"
+  and accepts_pre_star_check = "PDS_with_P_automata.accept_pre_star_exec_check \<Delta> F_ctr_loc F_ctr_loc_st"
   .
 
 global_interpretation inter: Intersection_P_Automaton
