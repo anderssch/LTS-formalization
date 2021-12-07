@@ -2,6 +2,22 @@ theory Ex
   imports PDS.PDS_Code
 begin
 
+fun before where
+  "before [] x y = False"
+| "before (z # zs) x y = (y \<noteq> z \<and> (x = z \<or> before zs x y))"
+
+lemma before_irrefl: "before xs x x \<Longrightarrow> False"
+  by (induct xs) auto
+
+lemma before_trans: "before xs x y \<Longrightarrow> before xs y z \<Longrightarrow> before xs x z"
+  by (induct xs) auto
+
+lemma before_asym: "before xs x y \<Longrightarrow> before xs y x \<Longrightarrow> False"
+  by (induct xs) auto
+
+lemma before_total_on: "x \<in> set xs \<Longrightarrow> y \<in> set xs \<Longrightarrow> before xs x y \<or> before xs y x \<or> x = y"
+  by (induct xs) auto
+
 (* Query specific part START *)
 
 (* List all control locations (in PDS), labels, and non-initial states in both P-automata *)
@@ -21,15 +37,15 @@ definition pds_rules :: "(ctr_loc, label) rule set" where
   ((p3, y), (p2, swap x))}"
 definition initial_automaton :: "((ctr_loc, state, label) PDS.state, label) transition set" where
   "initial_automaton = {
-  ((Ctr_Loc p1, y, Ctr_Loc_St qf)),
-  ((Ctr_Loc p2, y, Ctr_Loc_St qf)),
+  ((Ctr_Loc p1, y, Aut_State qf)),
+  ((Ctr_Loc p2, y, Aut_State qf)),
   ((Ctr_Loc p2, x, Ctr_Loc p2)),
-  ((Ctr_Loc p3, x, Ctr_Loc_St qf))}"
+  ((Ctr_Loc p3, x, Aut_State qf))}"
 definition final_automaton :: "((ctr_loc, state, label) PDS.state, label) transition set" where
   "final_automaton = {
-  ((Ctr_Loc p2, y, Ctr_Loc_St q1)),
-  ((Ctr_Loc p3, x, Ctr_Loc_St q1)),
-  ((Ctr_Loc_St q1, y, Ctr_Loc_St q2))}"
+  ((Ctr_Loc p2, y, Aut_State q1)),
+  ((Ctr_Loc p3, x, Aut_State q1)),
+  ((Aut_State q1, y, Aut_State q2))}"
 
 definition final_ctr_loc where "final_ctr_loc = {}"
 definition final_ctr_loc_st where "final_ctr_loc_st = {q2}"
@@ -37,9 +53,8 @@ definition initial_ctr_loc where "initial_ctr_loc = {}"
 definition initial_ctr_loc_st where "initial_ctr_loc_st = {qf}"
 (* Query specific part END *)
 
-
-derive linorder ctr_loc
 derive linorder label
+
 instantiation ctr_loc :: finite begin
   instance by (standard, rule finite_subset[of _ "set ctr_loc_list"]) (auto intro: ctr_loc.exhaust simp: ctr_loc_list_def)
 end
@@ -60,6 +75,17 @@ instance apply standard
   subgoal for P x by (cases x; simp)
   done
 end
+
+instantiation ctr_loc :: linorder begin
+definition less_ctr_loc :: "ctr_loc \<Rightarrow> ctr_loc \<Rightarrow> bool" where
+  "less_ctr_loc = before Enum.enum"
+definition less_eq_ctr_loc :: "ctr_loc \<Rightarrow> ctr_loc \<Rightarrow> bool" where
+  "less_eq_ctr_loc = sup (=) (<)"
+instance
+  using before_total_on[of _ "Enum.enum :: ctr_loc list"]
+  by intro_classes
+    (auto simp: less_eq_ctr_loc_def less_ctr_loc_def enum_UNIV
+        dest: before_irrefl before_asym intro: before_trans)
 
 lemma
   "check pds_rules initial_automaton initial_ctr_loc initial_ctr_loc_st
