@@ -53,8 +53,6 @@ definition initial_ctr_loc where "initial_ctr_loc = {}"
 definition initial_ctr_loc_st where "initial_ctr_loc_st = {qf}"
 (* Query specific part END *)
 
-derive linorder label
-
 instantiation ctr_loc :: finite begin
   instance by (standard, rule finite_subset[of _ "set ctr_loc_list"]) (auto intro: ctr_loc.exhaust simp: ctr_loc_list_def)
 end
@@ -86,6 +84,23 @@ instance
   by intro_classes
     (auto simp: less_eq_ctr_loc_def less_ctr_loc_def enum_UNIV
         dest: before_irrefl before_asym intro: before_trans)
+end
+
+lemma set_label_list: "set label_list = UNIV"
+  apply (auto simp: label_list_def)
+  subgoal for x by (cases x; simp)
+  done
+instantiation label :: linorder begin
+definition less_label :: "label \<Rightarrow> label \<Rightarrow> bool" where
+  "less_label = before label_list"
+definition less_eq_label :: "label \<Rightarrow> label \<Rightarrow> bool" where
+  "less_eq_label a b = (a = b \<or> a < b)"
+instance
+  using before_total_on[of _ "label_list"]
+  by intro_classes
+    (auto simp: less_eq_label_def less_label_def set_label_list
+        dest: before_irrefl before_asym intro: before_trans)
+end
 
 lemma
   "check pds_rules initial_automaton initial_ctr_loc initial_ctr_loc_st
