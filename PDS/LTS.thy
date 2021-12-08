@@ -1374,7 +1374,8 @@ lemma get_visited_set_next[simp]: "get_visited (make_mark_state Q J) = Q \<union
 
 function mark where
   "mark ms \<longleftrightarrow>
-     (let Q = get_visited ms; I = get_next ms in if I \<inter> finals \<noteq> {} then True
+     (let Q = get_visited ms; I = get_next ms in
+     if I \<inter> finals \<noteq> {} then True
      else let J = (\<Union>(q,w,q')\<in>transition_relation. if q \<in> I \<and> q' \<notin> Q then {q'} else {}) in
        if J = {} then False else mark (make_mark_state Q J))"
   by auto
