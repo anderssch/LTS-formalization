@@ -348,6 +348,7 @@ definition minimal_solution :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_pro
   "minimal_solution \<sigma> dl s \<longleftrightarrow> solves_program \<sigma> dl \<and>
                                (\<nexists>\<sigma>'. solves_program \<sigma>' dl \<and> (\<sigma>' \<sqsubset>s\<sqsubset> \<sigma>))"
 
+(* René se her *)
 lemma least_is_minimal:
   assumes "strat_wf s dl"
   shows "least_solution \<sigma> dl s \<longleftrightarrow> minimal_solution \<sigma> dl s"
@@ -378,10 +379,10 @@ lemma downward_solution:
   assumes "n > m"
   assumes "strat_wf s dl"
   assumes "least_solution \<sigma> (dl --s-- n) s"
-  shows "least_solution (\<sigma> \\s\\m) (dl --s-- m) s"
+  shows "least_solution (\<sigma> \\s\\ m) (dl --s-- m) s"
 proof (rule ccontr)
   assume a: "\<not> least_solution (\<sigma> \\s\\ m) (dl --s-- m) s"
-  have strrr: "strat_wf s  (dl --s-- m)"
+  have strrr: "strat_wf s (dl --s-- m)"
     using assms(2) sorry
   have strrrr: "strat_wf s (dl --s-- n)"
     using assms(2) sorry
@@ -771,21 +772,28 @@ section \<open>Bitvector framework\<close>
 
 datatype BV_pred =
    the_BV
-   | the_Ckill
+   | the_kill
    | the_gen
 
 datatype BV_var =
    the_\<uu>
 
 abbreviation "BV == PosRh the_BV"
-abbreviation "Ckill == PosRh the_Ckill"
+abbreviation "kill == PosRh the_kill"
+abbreviation NegRh_kill ("\<^bold>\<not>kill") where
+  "\<^bold>\<not>kill \<equiv> PosRh the_kill"
 abbreviation "gen == PosRh the_gen"
+
+fun s_BV where 
+  "s_BV the_kill = 0"
+| "s_BV the_gen = 0"
+| "s_BV the_BV = 1"
 
 abbreviation BV_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("BV\<langle>_\<rangle> :- _ .") where 
    "BV\<langle>args\<rangle> :- ls. \<equiv> Cls the_BV args ls"
 
-abbreviation not_kill_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("Ckill\<langle>_\<rangle> :- _ .") where 
-   "Ckill\<langle>args\<rangle> :- ls. \<equiv> Cls the_Ckill args ls"
+abbreviation kill_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("kill\<langle>_\<rangle> :- _ .") where 
+   "kill\<langle>args\<rangle> :- ls. \<equiv> Cls the_kill args ls"
 
 abbreviation genn_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("gen\<langle>_\<rangle> :- _ .") where 
    "gen\<langle>args\<rangle> :- ls. \<equiv> Cls the_gen args ls"
@@ -879,8 +887,8 @@ lemma S_hat_path_mono:
 fun ana_kill_BV :: "(('n, 'v) edge * 'd) \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
   "ana_kill_BV ((q\<^sub>o, \<alpha>, q\<^sub>s), d) =
    (
-   if d \<notin> kill_set (q\<^sub>o, \<alpha>, q\<^sub>s) then
-     {Ckill\<langle>[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]\<rangle> :- [].}
+   if d \<in> kill_set (q\<^sub>o, \<alpha>, q\<^sub>s) then
+     {kill\<langle>[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]\<rangle> :- [].}
    else
      {}
    )"
@@ -906,7 +914,7 @@ fun ana_edge_BV :: "('n, 'v) edge \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) B
         BV\<langle>[Encode_Node_BV q\<^sub>s, \<uu>]\<rangle> :-
           [
             BV[Encode_Node_BV q\<^sub>o, \<uu>],
-            Ckill[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, \<uu>]
+            \<^bold>\<not>kill[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, \<uu>]
           ].
         ,
         BV\<langle>[Encode_Node_BV q\<^sub>s, \<uu>]\<rangle> :- [gen[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, \<uu>]].
@@ -945,15 +953,27 @@ proof -
     by blast
 qed
 
+lemma ana_pg_BV_stratified: "strat_wf s_BV ana_pg_BV"
+  sorry
+
+lemma not_kill:
+  assumes "d \<notin> kill_set(q\<^sub>o, \<alpha>, q\<^sub>s)"
+  assumes "least_solution \<sigma> dl s_BV"
+  shows "[Encode_Elem_BV d, Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s] \<notin> \<sigma> the_kill"
+  sorry
+
 lemma sound_BV': 
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
-  assumes "solves_program \<rho> ana_pg_BV"
+  assumes "least_solution \<rho> ana_pg_BV s"
   assumes "LTS.get_start (ss,w) = start"
   assumes "d \<in> S_hat_path (ss,w) d_init"
   shows "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end (ss,w)), Encode_Elem_BV d]\<rangle>."
   using assms 
 proof (induction arbitrary: d rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   case (1 s)
+  have assms_2: "solves_program \<rho> ana_pg_BV"
+    using assms(2) unfolding least_solution_def by auto
+
   from 1(1,3) have start_end: "LTS.get_end ([s], []) = start"
     using LTS.singleton_path_start_end[of s edge_set, OF 1(1)] by (metis LTS.get_end_def prod.sel(1))
 
@@ -962,7 +982,7 @@ proof (induction arbitrary: d rule: LTS.path_with_word_induct_reverse[OF assms(1
   then have "d \<in> d_init"
     using 1(4) by auto
   moreover
-  from 1(2) have "\<forall>d \<in> d_init. solves_cls \<rho> (BV\<langle>[Encode_Node_BV start, Encode_Elem_BV d]\<rangle> :- [].)"
+  from assms_2 have "\<forall>d \<in> d_init. solves_cls \<rho> (BV\<langle>[Encode_Node_BV start, Encode_Elem_BV d]\<rangle> :- [].)"
     unfolding ana_pg_BV_def ana_init_BV_def solves_program_def by auto
   ultimately have "solves_cls \<rho> (BV\<langle>[Encode_Node_BV start, Encode_Elem_BV d]\<rangle> :- [].)"
     by auto
@@ -1010,31 +1030,31 @@ next
       using "2.hyps"(2) by blast
 
     have "\<forall>c \<in> ana_edge_BV (qnminus1, l, qn). solves_cls \<rho> c"
-      using 2(5) e_in_pg unfolding ana_pg_BV_def solves_program_def by blast
-    then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, \<uu>]\<rangle> :- [BV[Encode_Node_BV qnminus1,  \<uu>], Ckill[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, \<uu>]]."
+      using 2(5) e_in_pg unfolding ana_pg_BV_def solves_program_def least_solution_def by blast
+    then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, \<uu>]\<rangle> :- [BV[Encode_Node_BV qnminus1,  \<uu>], \<^bold>\<not>kill[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, \<uu>]]."
       by auto
-    then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- [BV[Encode_Node_BV qnminus1, Encode_Elem_BV d], Ckill[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]]."
+    then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- [BV[Encode_Node_BV qnminus1, Encode_Elem_BV d], \<^bold>\<not>kill[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]]."
       using substitution_rule[of \<rho> _ "\<lambda>u. Encode_Elem_BV d"]
       by force
     moreover
     from a have a_2: "d \<notin> kill_set (qnminus1, l, qn)"
       by auto
     have "\<forall>c\<in>\<Union>(ana_kill_BV ` (edge_set \<times> UNIV)). solves_cls \<rho> c"
-      using 2(5) unfolding ana_pg_BV_def solves_program_def by auto
+      using 2(5) unfolding ana_pg_BV_def solves_program_def least_solution_def by auto
     then have "\<forall>c\<in>ana_kill_BV ((qnminus1, l, qn),d). solves_cls \<rho> c"
       using e_in_pg by blast
-    then have "solves_cls \<rho> Ckill\<langle>[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- []."
-      using a_2 by auto
+    then have "\<not>solves_cls \<rho> kill\<langle>[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- []." (* Could maybe be phrased better *)
+      using a_2 sorry
     ultimately
     show "solves_query \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
-      by (metis a_1 append.left_neutral append_Cons solves_cls_iff_solves_rh resolution_last_rh resolution_only_rh_query)
+      sorry
   next
     assume a: "d \<in> gen_set (qnminus1, l, qn)"
     have e_in_pg: "(qnminus1, l, qn) \<in> edge_set"
       using "2.hyps"(2) by blast
 
     have "\<forall>c \<in> ana_edge_BV (qnminus1, l, qn). solves_cls \<rho> c"
-      using 2(5) e_in_pg unfolding ana_pg_BV_def solves_program_def by blast
+      using 2(5) e_in_pg unfolding ana_pg_BV_def solves_program_def least_solution_def by blast
     then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, \<uu>]\<rangle> :- [gen[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, \<uu>]]."
       by auto
     then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- [gen[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]]."
@@ -1042,7 +1062,7 @@ next
       by force
     moreover
     have "\<forall>c\<in>\<Union>(ana_gen_BV ` (edge_set \<times> UNIV)). solves_cls \<rho> c"
-      using 2(5) unfolding ana_pg_BV_def solves_program_def by auto
+      using 2(5) unfolding ana_pg_BV_def solves_program_def least_solution_def by auto
     then have "\<forall>c\<in>ana_gen_BV ((qnminus1, l, qn),d). solves_cls \<rho> c"
       using e_in_pg by blast
     then have "solves_cls \<rho> gen\<langle>[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- []."
