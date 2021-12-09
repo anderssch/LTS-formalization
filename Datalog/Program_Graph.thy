@@ -310,6 +310,129 @@ proof -
 qed
 
 
+section \<open>Stratification\<close>
+type_synonym 'p strat = "'p \<Rightarrow> nat"
+(* Maybe it should also mention the arity *)
+
+fun rnk :: "'p strat \<Rightarrow> ('p,'x,'e) righthand \<Rightarrow> nat" where
+  "rnk s (a \<^bold>= a') = 0"
+| "rnk s (a \<^bold>\<noteq> a') = 0"
+| "rnk s (PosRh p ids) = s p"
+| "rnk s (\<^bold>\<not> p ids) = 1 + s p"
+
+fun strat_wf_cls :: "'p strat \<Rightarrow> ('p,'x,'e) clause \<Rightarrow> bool" where
+  "strat_wf_cls s (Cls p ids rhs) \<longleftrightarrow> (\<forall>rh \<in> set rhs. s p \<ge> rnk s rh)"
+
+definition strat_wf :: "'p strat \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> bool" where
+  "strat_wf s dl \<longleftrightarrow> (\<forall>c \<in> dl. strat_wf_cls s c)"
+
+fun pred_val_mod_strata :: "('p,'e) pred_val \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'e) pred_val"  ("_ \\_\\ _" 0) where 
+  "(\<sigma> \\s\\ n) p = (if s p \<le> n then \<sigma> p else {})"
+
+fun dl_program_mod_strata :: "('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'e) dl_program"  ("_ --_-- _" 0) where 
+  "(dl -- s -- n) = {(Cls p ids rhs)| p ids rhs . (Cls p ids rhs) \<in> dl \<and> s(p) \<le> n}"
+
+definition lt :: "('p,'e) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'e) pred_val \<Rightarrow> bool" ("_ \<sqsubset>_\<sqsubset> _") where
+  "(\<rho> \<sqsubset>s\<sqsubset> \<rho>') \<longleftrightarrow> (\<exists>p. \<rho> p \<subset> \<rho>' p \<and>
+                       (\<forall>p'. s p' = s p \<longrightarrow> \<rho>(p') \<subseteq> \<rho>'(p')) \<and>
+                       (\<forall>p'. s p' < s p \<longrightarrow> \<rho>(p') = \<rho>'(p')))"
+
+definition lte :: "('p,'e) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'e) pred_val \<Rightarrow> bool" ("_ \<sqsubseteq>_\<sqsubseteq> _") where
+  "(\<rho> \<sqsubseteq>s\<sqsubseteq> \<rho>') \<longleftrightarrow> \<rho> = \<rho>' \<or> (\<rho> \<sqsubset>s\<sqsubset> \<rho>')"
+
+definition least_solution :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> bool" where
+  "least_solution \<sigma> dl s \<longleftrightarrow> solves_program \<sigma> dl \<and>
+                             (\<forall>\<sigma>'. solves_program \<sigma>' dl \<longrightarrow> (\<sigma> \<sqsubseteq>s\<sqsubseteq> \<sigma>'))"
+
+definition minimal_solution :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> bool" where
+  "minimal_solution \<sigma> dl s \<longleftrightarrow> solves_program \<sigma> dl \<and>
+                               (\<nexists>\<sigma>'. solves_program \<sigma>' dl \<and> (\<sigma>' \<sqsubset>s\<sqsubset> \<sigma>))"
+
+lemma least_is_minimal:
+  assumes "strat_wf s dl"
+  shows "least_solution \<sigma> dl s \<longleftrightarrow> minimal_solution \<sigma> dl s"
+  sorry (* Because \<sqsubset>s\<sqsubset> is a partial order with a least solution *)
+
+(*
+lemma
+  assumes "strat_wf s dl"
+  shows "\<exists>\<sigma>. minimal_solution \<sigma> dl s"
+  sorry
+
+lemma unique_minimal:
+  assumes "strat_wf s dl"
+  assumes "least_solution \<sigma> dl s"
+  assumes "least_solution \<sigma>' dl s"
+  shows "\<sigma> = \<sigma>'"
+  sorry
+*)
+
+lemma an_antisymmetry_lamma:
+  assumes "\<forall>a b. r a b \<and> r b a \<longrightarrow> a = b"
+  assumes "r y x \<and> x \<noteq> y"
+  shows "\<not>r x y"
+  using assms
+  by blast 
+
+lemma downward_solution:
+  assumes "n > m"
+  assumes "strat_wf s dl"
+  assumes "least_solution \<sigma> (dl --s-- n) s"
+  shows "least_solution (\<sigma> \\s\\m) (dl --s-- m) s"
+proof (rule ccontr)
+  assume a: "\<not> least_solution (\<sigma> \\s\\ m) (dl --s-- m) s"
+  have strrr: "strat_wf s  (dl --s-- m)"
+    using assms(2) sorry
+  have strrrr: "strat_wf s (dl --s-- n)"
+    using assms(2) sorry
+  from a have "\<not> minimal_solution  (\<sigma> \\s\\ m) (dl --s-- m) s"
+    using least_is_minimal[of s] strrr by metis
+  moreover 
+  have "solves_program (\<sigma> \\s\\ m) (dl --s-- m)"
+    using assms(1,3) sorry
+  ultimately
+  have "(\<exists>\<sigma>'. solves_program \<sigma>' (dl --s-- m) \<and> (\<sigma>' \<sqsubset>s\<sqsubset> (\<sigma> \\s\\ m)))"
+    unfolding minimal_solution_def by auto
+  then obtain \<sigma>' where "solves_program \<sigma>' (dl --s-- m) \<and> (\<sigma>' \<sqsubset>s\<sqsubset> (\<sigma> \\s\\ m))"
+    by auto
+  then have tt: "(\<sigma>' \<sqsubset>s\<sqsubset> (\<sigma> \\s\\ m))"
+    by auto
+  then have "\<exists>p. \<sigma>' p \<subset> (\<sigma> \\s\\ m) p \<and> 
+                    (\<forall>p'. s p' = s p \<longrightarrow> \<sigma>' p' \<subseteq> (\<sigma> \\s\\ m) p') \<and> 
+                    (\<forall>p'. s p' < s p \<longrightarrow> \<sigma>' p' = (\<sigma> \\s\\ m) p')"
+    unfolding lt_def by auto
+  then obtain p where a: "\<sigma>' p \<subset> (\<sigma> \\s\\ m) p" and
+                      b:"(\<forall>p'. s p' = s p \<longrightarrow> \<sigma>' p' \<subseteq> (\<sigma> \\s\\ m) p')" and
+                      c:"(\<forall>p'. s p' < s p \<longrightarrow> \<sigma>' p' = (\<sigma> \\s\\ m) p')"
+    by auto
+  define \<sigma>'' where "\<sigma>'' == \<lambda>p. (if s p \<le> m then \<sigma>' p else UNIV)"
+
+  have "\<sigma>'' p \<subset> \<sigma> p"
+    using a
+    by (metis \<sigma>''_def empty_iff leD pred_val_mod_strata.simps subsetI) 
+  moreover
+  have "(\<forall>p'. s p' = s p \<longrightarrow> \<sigma>'' p' \<subseteq> \<sigma> p')"
+    using b
+    by (metis \<sigma>''_def calculation pred_val_mod_strata.simps top.extremum_strict)
+  moreover
+  have "(\<forall>p'. s p' < s p \<longrightarrow> \<sigma>'' p' = \<sigma> p')"
+    using \<sigma>''_def c calculation(1) by force
+  ultimately
+  have "(\<sigma>'' \<sqsubset>s\<sqsubset> \<sigma>)"
+    by (metis lt_def)
+  moreover
+  have "solves_program \<sigma>'' (dl --s-- n)"
+    sorry
+  ultimately
+  have "\<not>minimal_solution \<sigma> (dl --s-- n) s"
+    unfolding minimal_solution_def by auto
+  then have "\<not>least_solution \<sigma> (dl --s-- n) s" 
+    using least_is_minimal[of s "(dl --s-- n)" \<sigma>] strrrr by auto
+  then show "False"
+    using assms(3) by auto
+qed
+
+
 section \<open>Reaching Definitions in Datalog\<close>
 
 datatype ('n,'v) RD_elem =
@@ -1556,5 +1679,9 @@ proof -
     unfolding summarizes_LV_def interpb.summarizes_dl_BV_def interpb.edge_set_def edge_set_def
       interpb.end_def end_def use_path_S_hat_path by blast
 qed
+end
+
+
+
 
 end

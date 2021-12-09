@@ -13,8 +13,8 @@ global_interpretation pds: PDS_with_P_automata \<Delta> F_ctr_loc F_ctr_loc_st
   .
 
 global_interpretation inter: Intersection_P_Automaton
-  initial_automaton "pds.F_states initial_F_ctr_loc initial_F_ctr_loc_st" pds.P_states
-  "pre_star \<Delta> final_automaton" "pds.F_states final_F_ctr_loc final_F_ctr_loc_st"
+  initial_automaton "pds.finals initial_F_ctr_loc initial_F_ctr_loc_st" pds.initials
+  "pre_star \<Delta> final_automaton" "pds.finals final_F_ctr_loc final_F_ctr_loc_st"
   for \<Delta> :: "('ctr_loc::{enum, linorder}, 'label::{finite, linorder}) rule set"
   and initial_automaton :: "(('ctr_loc, 'state::finite, 'label) state, 'label) transition set"
   and initial_F_ctr_loc :: "'ctr_loc set"
@@ -24,19 +24,19 @@ global_interpretation inter: Intersection_P_Automaton
   and final_F_ctr_loc_st :: "'state set"
   defines nonempty = "P_Automaton.nonempty
     (inters initial_automaton (pre_star \<Delta> final_automaton))
-    (inters_finals (pds.F_states initial_F_ctr_loc initial_F_ctr_loc_st)
-                   (pds.F_states final_F_ctr_loc final_F_ctr_loc_st))
-    ((\<lambda>x. (x,x)) ` pds.P_states)"
+    (inters_finals (pds.finals initial_F_ctr_loc initial_F_ctr_loc_st)
+                   (pds.finals final_F_ctr_loc final_F_ctr_loc_st))
+    ((\<lambda>x. (x,x)) ` pds.initials)"
   .
 
 definition "check \<Delta> I IF IF_st F FF FF_st =
-  (if pds.P_states \<subseteq> LTS.sources F then Some (nonempty \<Delta> I IF IF_st F FF FF_st) else None)"
+  (if pds.initials \<subseteq> LTS.sources F then Some (nonempty \<Delta> I IF IF_st F FF FF_st) else None)"
 
-lemma check_None: "check \<Delta> I IF IF_st F FF FF_st = None \<longleftrightarrow> \<not> (pds.P_states \<subseteq> LTS.sources F)"
+lemma check_None: "check \<Delta> I IF IF_st F FF FF_st = None \<longleftrightarrow> \<not> (pds.initials \<subseteq> LTS.sources F)"
   unfolding check_def by auto
 
 lemma check_Some: "check \<Delta> I IF IF_st F FF FF_st = Some b \<longleftrightarrow>
-  (pds.P_states \<subseteq> LTS.sources F \<and> b = (\<exists>p w p' w'.
+  (pds.initials \<subseteq> LTS.sources F \<and> b = (\<exists>p w p' w'.
      (p, w) \<in> pds.language IF IF_st I \<and>
      (p', w') \<in> pds.language FF FF_st F \<and>
      pds.step_starp \<Delta> (p, w) (p', w')))"
