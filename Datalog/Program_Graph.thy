@@ -771,21 +771,21 @@ section \<open>Bitvector framework\<close>
 
 datatype BV_pred =
    the_BV
-   | the_notkill
+   | the_Ckill
    | the_gen
 
 datatype BV_var =
    the_\<uu>
 
 abbreviation "BV == PosRh the_BV"
-abbreviation "notkill == PosRh the_notkill"
+abbreviation "Ckill == PosRh the_Ckill"
 abbreviation "gen == PosRh the_gen"
 
 abbreviation BV_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("BV\<langle>_\<rangle> :- _ .") where 
    "BV\<langle>args\<rangle> :- ls. \<equiv> Cls the_BV args ls"
 
-abbreviation not_kill_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("notkill\<langle>_\<rangle> :- _ .") where 
-   "notkill\<langle>args\<rangle> :- ls. \<equiv> Cls the_notkill args ls"
+abbreviation not_kill_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("Ckill\<langle>_\<rangle> :- _ .") where 
+   "Ckill\<langle>args\<rangle> :- ls. \<equiv> Cls the_Ckill args ls"
 
 abbreviation genn_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("gen\<langle>_\<rangle> :- _ .") where 
    "gen\<langle>args\<rangle> :- ls. \<equiv> Cls the_gen args ls"
@@ -880,7 +880,7 @@ fun ana_kill_BV :: "(('n, 'v) edge * 'd) \<Rightarrow> (BV_pred, BV_var, ('n, 'v
   "ana_kill_BV ((q\<^sub>o, \<alpha>, q\<^sub>s), d) =
    (
    if d \<notin> kill_set (q\<^sub>o, \<alpha>, q\<^sub>s) then
-     {notkill\<langle>[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]\<rangle> :- [].}
+     {Ckill\<langle>[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]\<rangle> :- [].}
    else
      {}
    )"
@@ -906,7 +906,7 @@ fun ana_edge_BV :: "('n, 'v) edge \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) B
         BV\<langle>[Encode_Node_BV q\<^sub>s, \<uu>]\<rangle> :-
           [
             BV[Encode_Node_BV q\<^sub>o, \<uu>],
-            notkill[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, \<uu>]
+            Ckill[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, \<uu>]
           ].
         ,
         BV\<langle>[Encode_Node_BV q\<^sub>s, \<uu>]\<rangle> :- [gen[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, \<uu>]].
@@ -1011,9 +1011,9 @@ next
 
     have "\<forall>c \<in> ana_edge_BV (qnminus1, l, qn). solves_cls \<rho> c"
       using 2(5) e_in_pg unfolding ana_pg_BV_def solves_program_def by blast
-    then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, \<uu>]\<rangle> :- [BV[Encode_Node_BV qnminus1,  \<uu>], notkill[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, \<uu>]]."
+    then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, \<uu>]\<rangle> :- [BV[Encode_Node_BV qnminus1,  \<uu>], Ckill[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, \<uu>]]."
       by auto
-    then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- [BV[Encode_Node_BV qnminus1, Encode_Elem_BV d], notkill[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]]."
+    then have "solves_cls \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- [BV[Encode_Node_BV qnminus1, Encode_Elem_BV d], Ckill[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]]."
       using substitution_rule[of \<rho> _ "\<lambda>u. Encode_Elem_BV d"]
       by force
     moreover
@@ -1023,7 +1023,7 @@ next
       using 2(5) unfolding ana_pg_BV_def solves_program_def by auto
     then have "\<forall>c\<in>ana_kill_BV ((qnminus1, l, qn),d). solves_cls \<rho> c"
       using e_in_pg by blast
-    then have "solves_cls \<rho> notkill\<langle>[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- []."
+    then have "solves_cls \<rho> Ckill\<langle>[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- []."
       using a_2 by auto
     ultimately
     show "solves_query \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
