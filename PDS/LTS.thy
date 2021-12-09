@@ -1359,44 +1359,80 @@ lemma nonempty_alt:
   "nonempty \<longleftrightarrow> (\<exists>p \<in> initials. \<exists>q \<in> finals. \<exists>w. (p, w, q) \<in> transition_star)"
   unfolding language_aut_def nonempty_def accepts_aut_def by auto
 
-function mark where
-  "mark I \<longleftrightarrow> 
-     (if finals \<inter> I \<noteq> {} then True
-     else let J = (\<Union>(q,w,q')\<in>transition_relation. if q \<in> I then {q'} else {}) in
-       if J \<subseteq> I then False else mark (I \<union> J))"
+typedef 'a mark_state = "{(Q :: 'a set, I). I \<subseteq> Q}"
   by auto
-termination by (relation "measure (\<lambda>I. card (UNIV - I))") (auto intro!: psubset_card_mono)
+setup_lifting type_definition_mark_state
+lift_definition get_visited :: "'a mark_state \<Rightarrow> 'a set" is fst .
+lift_definition get_next :: "'a mark_state \<Rightarrow> 'a set" is snd .
+lift_definition make_mark_state :: "'a set \<Rightarrow> 'a set \<Rightarrow> 'a mark_state" is "\<lambda>Q J. (Q \<union> J, J)" by auto
+lemma get_next_get_visited: "get_next ms \<subseteq> get_visited ms"
+  by transfer auto
+lemma get_next_set_next[simp]: "get_next (make_mark_state Q J) = J"
+  by transfer auto
+lemma get_visited_set_next[simp]: "get_visited (make_mark_state Q J) = Q \<union> J"
+  by transfer auto
+
+function mark where
+  "mark ms \<longleftrightarrow>
+     (let Q = get_visited ms; I = get_next ms in
+     if I \<inter> finals \<noteq> {} then True
+     else let J = (\<Union>(q,w,q')\<in>transition_relation. if q \<in> I \<and> q' \<notin> Q then {q'} else {}) in
+       if J = {} then False else mark (make_mark_state Q J))"
+  by auto
+termination by (relation "measure (\<lambda>ms. card (UNIV :: 'a set) - card (get_visited ms :: 'a set))")
+    (fastforce intro!: diff_less_mono2 psubset_card_mono split: if_splits)+
 
 declare mark.simps[simp del]
 
-lemma mark_complete: "(p, w, q) \<in> transition_star \<Longrightarrow> p \<in> I \<Longrightarrow> q \<in> finals \<Longrightarrow> mark I"
-proof (induct p w q arbitrary: I rule: transition_star.induct)
+lemma trapped_transitions: "(p, w, q) \<in> transition_star \<Longrightarrow>
+  \<forall>p \<in> Q. (\<forall>\<gamma> q. (p, \<gamma>, q) \<in> transition_relation \<longrightarrow> q \<in> Q) \<Longrightarrow>
+  p \<in> Q \<Longrightarrow> q \<in> Q"
+  by (induct p w q rule: transition_star.induct) auto
+
+lemma mark_complete: "(p, w, q) \<in> transition_star \<Longrightarrow> (get_visited ms - get_next ms) \<inter> finals = {} \<Longrightarrow>
+  \<forall>p \<in> get_visited ms - get_next ms. \<forall>q \<gamma>. (p, \<gamma>, q) \<in> transition_relation \<longrightarrow> q \<in> get_visited ms \<Longrightarrow>
+  p \<in> get_visited ms \<Longrightarrow> q \<in> finals \<Longrightarrow> mark ms"
+proof (induct p w q arbitrary: ms rule: transition_star.induct)
   case (transition_star_refl p)
   then show ?case by (subst mark.simps) (auto simp: Let_def)
 next
   case step: (transition_star_step p \<gamma> q' w q)
-  let ?J = "\<Union>(q, w, q')\<in>transition_relation. if q \<in> I then {q'} else {}"
+  define J where "J \<equiv> \<Union>(q, w, q')\<in>transition_relation. if q \<in> get_next ms \<and> q' \<notin> get_visited ms then {q'} else {}"
   show ?case
-  proof (cases "?J \<subseteq> I")
+  proof (cases "J = {}")
     case True
-    then show ?thesis
-      using step(1,2,4,5)
-      by (auto intro!: step(3) elim!: set_mp[of _ I])
+    then have "q' \<in> get_visited ms"
+      by (smt (z3) DiffI Diff_disjoint Int_iff J_def SUP_bot_conv(2) case_prod_conv insertI1 step.hyps(1) step.prems(2) step.prems(3))
+    with True show ?thesis
+      using step(1,2,4,5,7)
+      by (subst mark.simps)
+        (auto 10 0 intro!: step(3) elim!: set_mp[of _ "get_next ms"] simp: split_beta J_def
+          dest: trapped_transitions[of q' w q "get_visited ms"])
   next
     case False
-    then show ?thesis
-      using step(3)[of "I \<union> ?J"] step(1,2,4,5)
-      by (subst mark.simps) (force split: if_splits)
+    then have [simp]: "get_visited ms \<union> J - J = get_visited ms"
+      by (auto simp: J_def split: if_splits)
+    then have "p \<in> get_visited ms \<Longrightarrow> (p, \<gamma>, q) \<in> transition_relation \<Longrightarrow> q \<notin> get_visited ms \<Longrightarrow> q \<in> J" for p \<gamma> q
+      using step(5)
+      by (cases "p \<in> get_next ms") (auto simp only: J_def simp_thms if_True if_False intro!: UN_I[of "(p, \<gamma>, q)"])
+    with False show ?thesis
+      using step(1,4,5,6,7)
+      by (subst mark.simps)
+        (auto 0 2 simp add: Let_def J_def[symmetric] disj_commute
+        intro!: step(3)[of "make_mark_state (get_visited ms) J"])
   qed
 qed
 
 
-lemma mark_sound: "mark I \<Longrightarrow> (\<exists>p \<in> I. \<exists>q \<in> finals. \<exists>w. (p, w, q) \<in> transition_star)"
-  by (induct I rule: mark.induct)
-    (subst (asm) (2) mark.simps, auto 0 3 dest: transition_star_step split: if_splits)
+lemma mark_sound: "mark ms \<Longrightarrow> (\<exists>p \<in> get_next ms. \<exists>q \<in> finals. \<exists>w. (p, w, q) \<in> transition_star)"
+  by (induct ms rule: mark.induct)
+    (subst (asm) (2) mark.simps, fastforce dest: transition_star_step simp: Let_def split: if_splits)
 
-lemma nonempty_code[code]: "nonempty = mark initials"
-  using mark_complete mark_sound nonempty_alt by blast
+lemma nonempty_code[code]: "nonempty = mark (make_mark_state {} initials)"
+  using mark_complete[of _ _ _ "make_mark_state {} initials"]
+        mark_sound[of "make_mark_state {} initials"] nonempty_alt
+  by auto
+
 
 end
 
