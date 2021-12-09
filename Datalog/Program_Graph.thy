@@ -1,6 +1,6 @@
 theory Program_Graph imports "../PDS/LTS" begin
 
-
+                                                                                  
 section \<open>Actions\<close>
 
 datatype (fv_arith: 'v) arith =
@@ -349,10 +349,32 @@ definition minimal_solution :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_pro
                                (\<nexists>\<sigma>'. solves_program \<sigma>' dl \<and> (\<sigma>' \<sqsubset>s\<sqsubset> \<sigma>))"
 
 (* René se her *)
+(* Her er linket til det vi så på på nettet https://www.physicsforums.com/threads/difference-between-least-minimal-element.380114/ *)
 lemma least_is_minimal:
   assumes "strat_wf s dl"
   shows "least_solution \<sigma> dl s \<longleftrightarrow> minimal_solution \<sigma> dl s"
   sorry (* Because \<sqsubset>s\<sqsubset> is a partial order with a least solution *)
+
+(*
+  Noter fra møde:
+  Lattice
+
+Partielt ordnet mængde
+
+mængden:
+  L løsningerne til datalog dl
+
+ordning:
+  \<sqsubseteq>
+
+
+ordningen er partiel
+
+for alle a \in L, b \in L.
+  exists lub(a,b)
+  exists glb(a,b)
+*)
+
 
 (*
 lemma
@@ -375,6 +397,108 @@ lemma an_antisymmetry_lamma:
   using assms
   by blast 
 
+lemma downward_strat:
+  assumes "n > m"
+  assumes "strat_wf s (dl --s-- n)"
+  shows "strat_wf s (dl --s-- m)"
+  using assms unfolding strat_wf_def by fastforce
+
+lemma downward_strat2:
+  assumes "strat_wf s dl"
+  shows "strat_wf s (dl --s-- m)"
+  using assms unfolding strat_wf_def by auto
+
+lemma downward_solves:
+  assumes "n > m"
+  assumes "solves_program \<sigma> (dl --s-- n)"
+  assumes "strat_wf s dl"
+  shows "solves_program (\<sigma> \\s\\ m) (dl --s-- m)"
+  unfolding solves_program_def
+proof
+  fix c
+  assume a: "c \<in> (dl --s-- m)"
+  then obtain p ids rhs where c_def: "c = Cls p ids rhs"
+    by (cases c) auto
+
+  have "c \<in> (dl --s-- n)"
+    using a assms(1) by auto
+
+  have "strat_wf s (dl --s-- m)"
+    using assms(3) downward_strat2 by blast
+
+  have "solves_cls (\<sigma> \\s\\ m) (Cls p ids rhs)"
+    unfolding solves_cls_def
+  proof 
+    fix \<eta>
+    have mm: "meaning_cls (Cls p ids rhs) \<sigma> \<eta>"
+      using \<open>c \<in> (dl --s-- n)\<close> assms(2) c_def solves_cls_def solves_program_def by blast
+    have "s p \<le> m"
+      using \<open>c \<in> (dl --s-- m)\<close> c_def by fastforce
+    moreover
+    have "\<forall>rh \<in> set rhs. rnk s rh \<le> m"
+      using \<open>c \<in> (dl --s-- m)\<close> assms(2) c_def dual_order.trans strat_wf_def
+      by (metis (no_types, lifting) \<open>strat_wf s (dl --s-- m)\<close> calculation strat_wf_cls.simps)
+    ultimately
+    show "meaning_cls (Cls p ids rhs) (\<sigma> \\s\\ m) \<eta>"
+      apply auto
+      subgoal
+        using mm
+        apply auto
+        subgoal for rh
+          apply (cases rh)
+             apply auto
+           apply fastforce
+          apply fastforce
+          done
+        done
+      done
+  qed
+  then show "solves_cls (\<sigma> \\s\\ m) c"
+    using c_def by auto
+qed
+
+lemma downward_solves2:
+  assumes "solves_program \<sigma> dl"
+  assumes "strat_wf s dl"
+  shows "solves_program (\<sigma> \\s\\ m) (dl --s-- m)"
+  unfolding solves_program_def
+proof
+  fix c
+  assume "c \<in> (dl --s-- m)"
+  then obtain p ids rhs where c_def: "c = Cls p ids rhs"
+    by (cases c) auto
+  
+  have "solves_cls (\<sigma> \\s\\ m) (Cls p ids rhs)"
+    unfolding solves_cls_def
+  proof 
+    fix \<eta>
+    have mm: "meaning_cls (Cls p ids rhs) \<sigma> \<eta>"
+      by (smt (verit) \<open>c \<in> (dl --s-- m)\<close> assms(1) c_def dl_program_mod_strata.simps mem_Collect_eq solves_cls_def solves_program_def)
+    have "s p \<le> m"
+      using \<open>c \<in> (dl --s-- m)\<close> c_def by fastforce
+    moreover
+    have "\<forall>rh \<in> set rhs. rnk s rh \<le> m"
+      using \<open>c \<in> (dl --s-- m)\<close> assms(2) c_def dual_order.trans strat_wf_def by fastforce
+    ultimately
+    show "meaning_cls (Cls p ids rhs) (\<sigma> \\s\\ m) \<eta>"
+      apply auto
+      subgoal
+        using mm
+        apply auto
+        subgoal for rh
+          apply (cases rh)
+             apply auto
+           apply fastforce
+          apply fastforce
+          done
+        done
+      done
+  qed
+  then show "solves_cls (\<sigma> \\s\\ m) c"
+    using c_def by auto
+qed
+  
+
 lemma downward_solution:
   assumes "n > m"
   assumes "strat_wf s dl"
@@ -383,20 +507,18 @@ lemma downward_solution:
 proof (rule ccontr)
   assume a: "\<not> least_solution (\<sigma> \\s\\ m) (dl --s-- m) s"
   have strrr: "strat_wf s (dl --s-- m)"
-    using assms(2) sorry
+    using assms(2) downward_strat2 by auto
   have strrrr: "strat_wf s (dl --s-- n)"
-    using assms(2) sorry
+    using assms(2) downward_strat2 by auto
   from a have "\<not> minimal_solution  (\<sigma> \\s\\ m) (dl --s-- m) s"
     using least_is_minimal[of s] strrr by metis
   moreover 
   have "solves_program (\<sigma> \\s\\ m) (dl --s-- m)"
-    using assms(1,3) sorry
+    using assms(1,3) assms(2) downward_solves least_solution_def by blast
   ultimately
   have "(\<exists>\<sigma>'. solves_program \<sigma>' (dl --s-- m) \<and> (\<sigma>' \<sqsubset>s\<sqsubset> (\<sigma> \\s\\ m)))"
     unfolding minimal_solution_def by auto
-  then obtain \<sigma>' where "solves_program \<sigma>' (dl --s-- m) \<and> (\<sigma>' \<sqsubset>s\<sqsubset> (\<sigma> \\s\\ m))"
-    by auto
-  then have tt: "(\<sigma>' \<sqsubset>s\<sqsubset> (\<sigma> \\s\\ m))"
+  then obtain \<sigma>' where tt: "solves_program \<sigma>' (dl --s-- m)" and ttt: "(\<sigma>' \<sqsubset>s\<sqsubset> (\<sigma> \\s\\ m))"
     by auto
   then have "\<exists>p. \<sigma>' p \<subset> (\<sigma> \\s\\ m) p \<and> 
                     (\<forall>p'. s p' = s p \<longrightarrow> \<sigma>' p' \<subseteq> (\<sigma> \\s\\ m) p') \<and> 
@@ -423,7 +545,46 @@ proof (rule ccontr)
     by (metis lt_def)
   moreover
   have "solves_program \<sigma>'' (dl --s-- n)"
-    sorry
+    unfolding solves_program_def
+  proof
+    fix c
+    assume a: "c \<in> (dl --s-- n)"
+    then obtain p ids rhs where c_def: "c = Cls p ids rhs"
+      by (cases c) auto
+
+    have "solves_cls \<sigma>'' (Cls p ids rhs)"
+      unfolding solves_cls_def
+    proof
+      fix \<eta>
+      
+      show "meaning_cls (Cls p ids rhs) \<sigma>'' \<eta>"
+      proof (cases "s p \<le> m")
+        case True
+        then have "c \<in> (dl --s-- m)"
+          using a c_def by auto
+        then have gugu: "meaning_cls (Cls p ids rhs) \<sigma>' \<eta>"
+          using tt c_def solves_cls_def solves_program_def by blast
+        from gugu show ?thesis
+          apply -
+          unfolding \<sigma>''_def
+          apply auto
+          subgoal for rh
+            apply (cases rh)
+               apply fastforce
+              apply fastforce
+             apply (smt (verit, ccfv_threshold) \<open>c \<in> (dl --s-- n)\<close> c_def dual_order.trans meaning_rh.simps(3) rnk.simps(3) strat_wf_cls.simps strat_wf_def strrrr)
+            apply (smt (z3) UNIV_I meaning_rh.simps(4))
+            done
+          done
+      next
+        case False
+        then show ?thesis
+          by (simp add: \<sigma>''_def)
+      qed
+    qed
+    then show "solves_cls \<sigma>'' c"
+      using c_def by blast
+  qed
   ultimately
   have "\<not>minimal_solution \<sigma> (dl --s-- n) s"
     unfolding minimal_solution_def by auto
@@ -431,6 +592,98 @@ proof (rule ccontr)
     using least_is_minimal[of s "(dl --s-- n)" \<sigma>] strrrr by auto
   then show "False"
     using assms(3) by auto
+qed
+
+lemma downward_solution2:
+  assumes "strat_wf s dl"
+  assumes "least_solution \<sigma> dl s"
+  shows "least_solution (\<sigma> \\s\\ m) (dl --s-- m) s"
+proof (rule ccontr)
+  assume a: "\<not> least_solution (\<sigma> \\s\\ m) (dl --s-- m) s"
+  have strrr: "strat_wf s (dl --s-- m)"
+    using assms(1) downward_strat2 by auto
+  from a have "\<not> minimal_solution  (\<sigma> \\s\\ m) (dl --s-- m) s"
+    using least_is_minimal[of s] strrr by metis
+  moreover 
+  have "solves_program (\<sigma> \\s\\ m) (dl --s-- m)"
+    using assms(1) assms(2) downward_solves2 least_solution_def by blast
+  ultimately
+  have "(\<exists>\<sigma>'. solves_program \<sigma>' (dl --s-- m) \<and> (\<sigma>' \<sqsubset>s\<sqsubset> (\<sigma> \\s\\ m)))"
+    unfolding minimal_solution_def by auto
+  then obtain \<sigma>' where tt: "solves_program \<sigma>' (dl --s-- m)" and ttt: "(\<sigma>' \<sqsubset>s\<sqsubset> (\<sigma> \\s\\ m))"
+    by auto
+  then have "\<exists>p. \<sigma>' p \<subset> (\<sigma> \\s\\ m) p \<and> 
+                    (\<forall>p'. s p' = s p \<longrightarrow> \<sigma>' p' \<subseteq> (\<sigma> \\s\\ m) p') \<and> 
+                    (\<forall>p'. s p' < s p \<longrightarrow> \<sigma>' p' = (\<sigma> \\s\\ m) p')"
+    unfolding lt_def by auto
+  then obtain p where a: "\<sigma>' p \<subset> (\<sigma> \\s\\ m) p" and
+                      b:"(\<forall>p'. s p' = s p \<longrightarrow> \<sigma>' p' \<subseteq> (\<sigma> \\s\\ m) p')" and
+                      c:"(\<forall>p'. s p' < s p \<longrightarrow> \<sigma>' p' = (\<sigma> \\s\\ m) p')"
+    by auto
+  define \<sigma>'' where "\<sigma>'' == \<lambda>p. (if s p \<le> m then \<sigma>' p else UNIV)"
+
+  have "\<sigma>'' p \<subset> \<sigma> p"
+    using a
+    by (metis \<sigma>''_def empty_iff leD pred_val_mod_strata.simps subsetI) 
+  moreover
+  have "(\<forall>p'. s p' = s p \<longrightarrow> \<sigma>'' p' \<subseteq> \<sigma> p')"
+    using b
+    by (metis \<sigma>''_def calculation pred_val_mod_strata.simps top.extremum_strict)
+  moreover
+  have "(\<forall>p'. s p' < s p \<longrightarrow> \<sigma>'' p' = \<sigma> p')"
+    using \<sigma>''_def c calculation(1) by force
+  ultimately
+  have "(\<sigma>'' \<sqsubset>s\<sqsubset> \<sigma>)"
+    by (metis lt_def)
+  moreover
+  have "solves_program \<sigma>'' dl"
+    unfolding solves_program_def
+  proof
+    fix c
+    assume a: "c \<in> dl"
+    then obtain p ids rhs where c_def: "c = Cls p ids rhs"
+      by (cases c) auto
+
+    have "solves_cls \<sigma>'' (Cls p ids rhs)"
+      unfolding solves_cls_def
+    proof
+      fix \<eta>
+      show "meaning_cls (Cls p ids rhs) \<sigma>'' \<eta>"
+      proof (cases "s p \<le> m")
+        case True
+        then have "c \<in> (dl --s-- m)"
+          using a c_def by auto
+        then have gugu: "meaning_cls (Cls p ids rhs) \<sigma>' \<eta>"
+          using tt c_def solves_cls_def solves_program_def by blast
+        from gugu show ?thesis
+          apply -
+          unfolding \<sigma>''_def
+          apply auto
+          subgoal for rh
+            apply (cases rh)
+               apply fastforce
+              apply fastforce
+            using \<open>c \<in> dl\<close> c_def dual_order.trans meaning_rh.simps(3) rnk.simps(3) strat_wf_cls.simps strat_wf_def
+            apply (smt (verit, ccfv_SIG) assms(1))
+             apply (smt (z3) UNIV_I meaning_rh.simps(4))
+            done
+          done
+      next
+        case False
+        then show ?thesis
+          by (simp add: \<sigma>''_def)
+      qed
+    qed
+    then show "solves_cls \<sigma>'' c"
+      using c_def by blast
+  qed
+  ultimately
+  have "\<not>minimal_solution \<sigma> dl s"
+    unfolding minimal_solution_def by auto
+  then have "\<not>least_solution \<sigma> dl s" 
+    using least_is_minimal[of s "dl" \<sigma>] assms(1) by simp 
+  then show "False"
+    using assms(2) by auto
 qed
 
 
@@ -781,10 +1034,10 @@ datatype BV_var =
 abbreviation "BV == PosRh the_BV"
 abbreviation "kill == PosRh the_kill"
 abbreviation NegRh_kill ("\<^bold>\<not>kill") where
-  "\<^bold>\<not>kill \<equiv> PosRh the_kill"
+  "\<^bold>\<not>kill \<equiv> NegRh the_kill"
 abbreviation "gen == PosRh the_gen"
 
-fun s_BV where 
+fun s_BV :: "BV_pred \<Rightarrow> nat" where 
   "s_BV the_kill = 0"
 | "s_BV the_gen = 0"
 | "s_BV the_BV = 1"
@@ -954,17 +1207,134 @@ proof -
 qed
 
 lemma ana_pg_BV_stratified: "strat_wf s_BV ana_pg_BV"
-  sorry
+  unfolding ana_pg_BV_def
+  apply auto
+  unfolding strat_wf_def
+  apply auto
+  unfolding ana_init_BV_def
+    apply auto
+  subgoal for x a aa b ba
+    apply (cases "ba \<in> kill_set (a, aa, b)")
+    subgoal
+      apply auto
+      done
+    subgoal
+      apply auto
+      done
+    done
+  subgoal for x a aa b ba
+    apply (cases "ba \<in> gen_set (a, aa, b)")
+    subgoal
+      apply auto
+      done
+    subgoal
+      apply auto
+      done
+    done
+  done
 
 lemma not_kill:
   assumes "d \<notin> kill_set(q\<^sub>o, \<alpha>, q\<^sub>s)"
-  assumes "least_solution \<sigma> dl s_BV"
-  shows "[Encode_Elem_BV d, Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s] \<notin> \<sigma> the_kill"
-  sorry
+  assumes "least_solution \<sigma> ana_pg_BV s_BV"
+  shows "[BV_Node q\<^sub>o, BV_Action \<alpha>, BV_Node q\<^sub>s, BV_Elem d] \<notin> \<sigma> the_kill"
+proof (rule ccontr)
+  assume "\<not> [BV_Node q\<^sub>o, BV_Action \<alpha>, BV_Node q\<^sub>s, BV_Elem d] \<notin> \<sigma> the_kill"
+  then have a: "[BV_Node q\<^sub>o, BV_Action \<alpha>, BV_Node q\<^sub>s, BV_Elem d] \<in> \<sigma> the_kill"
+    by auto
+  have "least_solution (\<sigma> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
+    using downward_solution2[of s_BV ana_pg_BV \<sigma> 0] assms(2)
+    using ana_pg_BV_stratified by linarith
+  then have "minimal_solution (\<sigma> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
+    using least_is_minimal[of s_BV "ana_pg_BV --s_BV-- 0" "(\<sigma> \\s_BV\\ 0)"]
+    using ana_pg_BV_stratified downward_strat2 by blast
+  moreover
+  define \<sigma>' where "\<sigma>' = (\<lambda>p. (if p = the_kill then ((\<sigma> \\s_BV\\ 0) the_kill) - {[BV_Node q\<^sub>o, BV_Action \<alpha>, BV_Node q\<^sub>s, BV_Elem d]} else (\<sigma> \\s_BV\\ 0) p))"
+
+  have "solves_program \<sigma>' (ana_pg_BV --s_BV-- 0)"
+    unfolding solves_program_def
+  proof
+    fix c
+    assume a: "c \<in> (ana_pg_BV --s_BV-- 0)"
+    then obtain p ids rhs where c_def: "c = Cls p ids rhs"
+      by (cases c) auto
+
+    have "solves_cls \<sigma>' (Cls p ids rhs)"
+      unfolding solves_cls_def
+    proof
+      fix \<eta>
+      have rhs_is: "rhs = []"
+        using a
+        apply auto
+        unfolding ana_pg_BV_def
+        apply auto
+        using ana_init_BV_def apply auto[1]
+         apply (metis c_def clause.inject equals0D insertE)
+        apply (metis c_def clause.inject empty_iff singletonD)
+        done
+      show "meaning_cls (Cls p ids rhs) \<sigma>' \<eta>"
+      proof (cases "p = the_kill \<and> ids = [Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]")
+        case True
+        then show ?thesis
+          using a c_def assms(1) rhs_is
+          apply auto
+          unfolding ana_pg_BV_def
+          apply auto
+            apply (auto simp add: analysis_BV.ana_init_BV_def)
+           apply (metis (no_types, lifting) BV_elem.inject(1) BV_elem.inject(2) BV_elem.inject(3) clause.inject equals0D identifier.inject(2) list.inject singletonD)
+          apply (meson BV_pred.distinct(5) clause.inject empty_iff singletonD)
+          done
+      next
+        case False
+        have "meaning_cls (Cls p ids rhs) (\<sigma> \\s_BV\\ 0) \<eta>"
+          using \<open>least_solution (\<sigma> \s_BV\ 0) (ana_pg_BV --s_BV-- 0) s_BV\<close> a c_def least_solution_def solves_cls_def solves_program_def by blast
+        moreover
+        have "rhs = []"
+          using rhs_is by auto
+        ultimately
+        show ?thesis
+          using False unfolding \<sigma>'_def
+          using a c_def
+          apply auto
+          unfolding ana_pg_BV_def
+             apply auto
+                     apply (auto simp add: analysis_BV.ana_init_BV_def)
+                 apply (metis clause.inject equals0D eval_id.simps(2) list.inject singletonD)
+                apply (meson BV_pred.distinct(5) clause.inject empty_iff singletonD)
+               apply (metis clause.inject equals0D eval_id.simps(2) list.inject singletonD)
+              apply (meson BV_pred.distinct(5) clause.inject empty_iff singletonD)
+             apply (metis clause.inject equals0D eval_id.simps(2) list.inject singletonD)
+            apply (meson BV_pred.distinct(5) clause.inject empty_iff singletonD)
+           apply (metis (no_types, lifting) clause.inject equals0D eval_id.simps(2) list.inject singletonD)
+          apply (meson BV_pred.distinct(5) clause.inject empty_iff singletonD)
+          done
+      qed
+    qed
+    then show "solves_cls \<sigma>' c"
+      using c_def by blast
+  qed
+  moreover
+  have "\<sigma>' \<sqsubset>s_BV\<sqsubset> (\<sigma> \\s_BV\\ 0)"
+  proof -
+    have "\<sigma>' the_kill \<subset> (\<sigma> \\s_BV\\ 0) the_kill"
+      unfolding \<sigma>'_def using a by auto
+    moreover
+    have "\<forall>p'. s_BV p' = s_BV the_kill \<longrightarrow> \<sigma>' p' \<subseteq> (\<sigma> \\s_BV\\ 0) p'"
+      unfolding \<sigma>'_def by auto
+    moreover
+    have "\<forall>p'. s_BV p' < s_BV the_kill \<longrightarrow> \<sigma>' p' = (\<sigma> \\s_BV\\ 0) p'"
+      unfolding \<sigma>'_def by auto
+    ultimately
+    show "\<sigma>' \<sqsubset>s_BV\<sqsubset> (\<sigma> \\s_BV\\ 0)"
+      unfolding lt_def  by auto
+  qed
+  ultimately
+  show False
+    unfolding minimal_solution_def by auto
+qed
 
 lemma sound_BV': 
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
-  assumes "least_solution \<rho> ana_pg_BV s"
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "LTS.get_start (ss,w) = start"
   assumes "d \<in> S_hat_path (ss,w) d_init"
   shows "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end (ss,w)), Encode_Elem_BV d]\<rangle>."
@@ -1043,11 +1413,13 @@ next
       using 2(5) unfolding ana_pg_BV_def solves_program_def least_solution_def by auto
     then have "\<forall>c\<in>ana_kill_BV ((qnminus1, l, qn),d). solves_cls \<rho> c"
       using e_in_pg by blast
-    then have "\<not>solves_cls \<rho> kill\<langle>[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- []." (* Could maybe be phrased better *)
-      using a_2 sorry
+    have "[BV_Node qnminus1, BV_Action l, BV_Node qn, BV_Elem d] \<notin> \<rho> the_kill"
+      using a_2 not_kill[of d qnminus1 l qn \<rho>] 2(5) by auto
+    then have "solves_rh \<rho> (\<^bold>\<not>kill[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d])" (* Could maybe be phrased better *)
+      by auto
     ultimately
     show "solves_query \<rho> BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
-      sorry
+      by (metis append.left_neutral append_Cons resolution_last_rh resolution_only_rh_query)
   next
     assume a: "d \<in> gen_set (qnminus1, l, qn)"
     have e_in_pg: "(qnminus1, l, qn) \<in> edge_set"
@@ -1077,7 +1449,7 @@ next
 qed
 
 lemma sound_BV:
-  assumes "solves_program \<rho> ana_pg_BV"
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
   shows "summarizes_dl_BV \<rho>"
   using sound_BV' assms unfolding summarizes_dl_BV.simps by (cases pg) fastforce
 
@@ -1303,7 +1675,7 @@ fun summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Right
      solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
 lemma RD_sound_again: 
-  assumes "solves_program \<rho> (interp.ana_pg_BV)"
+  assumes "least_solution \<rho> (interp.ana_pg_BV) s_BV"
   shows "summarizes_RD \<rho>"
   using assms def_path_S_hat_path interp.sound_BV unfolding interp.summarizes_dl_BV.simps summarizes_RD.simps
   using edge_set_def in_mono interp.edge_set_def interp.start_def start_def by fastforce 
@@ -1472,7 +1844,7 @@ proof(rule; rule ; rule ;rule ;rule)
 qed
 
 lemma sound_rev_BV:
-  assumes "solves_program \<rho> fa.ana_pg_BV"
+  assumes "least_solution \<rho> fa.ana_pg_BV s_BV"
   shows "summarizes_dl_BV \<rho>"
   using assms fa.sound_BV[of \<rho>] summarizes_dl_BV_forwards_backwards by metis
 
@@ -1690,7 +2062,7 @@ definition summarizes_LV :: "(BV_pred, ('n,'v,'v) BV_elem) pred_val \<Rightarrow
      solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
 lemma LV_sound:
-  assumes "solves_program \<rho> (interpb.ana_pg_BV)"
+  assumes "least_solution \<rho> (interpb.ana_pg_BV) s_BV"
   shows "summarizes_LV \<rho>"
 proof -
   from assms have "interpb.summarizes_dl_BV \<rho>"
