@@ -37,15 +37,15 @@ definition pds_rules :: "(ctr_loc, label) rule set" where
   ((p3, y), (p2, swap x))}"
 definition initial_automaton :: "((ctr_loc, state, label) PDS.state, label) transition set" where
   "initial_automaton = {
-  ((Ctr_Loc p1, y, Aut_State qf)),
-  ((Ctr_Loc p2, y, Aut_State qf)),
-  ((Ctr_Loc p2, x, Ctr_Loc p2)),
-  ((Ctr_Loc p3, x, Aut_State qf))}"
+  ((Initial p1, y, Noninitial qf)),
+  ((Initial p2, y, Noninitial qf)),
+  ((Initial p2, x, Initial p2)),
+  ((Initial p3, x, Noninitial qf))}"
 definition final_automaton :: "((ctr_loc, state, label) PDS.state, label) transition set" where
   "final_automaton = {
-  ((Ctr_Loc p2, y, Aut_State q1)),
-  ((Ctr_Loc p3, x, Aut_State q1)),
-  ((Aut_State q1, y, Aut_State q2))}"
+  ((Initial p2, y, Noninitial q1)),
+  ((Initial p3, x, Noninitial q1)),
+  ((Noninitial q1, y, Noninitial q2))}"
 
 definition final_ctr_loc where "final_ctr_loc = {}"
 definition final_ctr_loc_st where "final_ctr_loc_st = {q2}"
