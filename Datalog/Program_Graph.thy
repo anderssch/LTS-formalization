@@ -350,6 +350,7 @@ definition minimal_solution :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_pro
 
 (* René se her *)
 (* Her er linket til det vi så på på nettet https://www.physicsforums.com/threads/difference-between-least-minimal-element.380114/ *)
+(* En god bog: Priestly *)
 lemma least_is_minimal:
   assumes "strat_wf s dl"
   shows "least_solution \<sigma> dl s \<longleftrightarrow> minimal_solution \<sigma> dl s"
