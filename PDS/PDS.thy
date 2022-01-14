@@ -25,8 +25,8 @@ primrec op_labels :: "'label operation \<Rightarrow> 'label list" where
 definition is_rule :: "'ctr_loc \<times> 'label \<Rightarrow> 'ctr_loc \<times> 'label operation \<Rightarrow> bool" (infix "\<hookrightarrow>" 80) where
   "p\<gamma> \<hookrightarrow> p'w \<equiv> (p\<gamma>,p'w) \<in> \<Delta>"
 
-inductive_set transition_rel :: "(('ctr_loc, 'label) conf \<times> 'label \<times> ('ctr_loc, 'label) conf) set" where
-  "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> ((p, \<gamma>#w'), \<gamma>, (p', (op_labels w)@w')) \<in> transition_rel"
+inductive_set transition_rel :: "(('ctr_loc, 'label) conf \<times> unit \<times> ('ctr_loc, 'label) conf) set" where
+  "(p, \<gamma>) \<hookrightarrow> (p', w) \<Longrightarrow> ((p, \<gamma>#w'), (), (p', (op_labels w)@w')) \<in> transition_rel"
 
 interpretation LTS transition_rel .
 
@@ -49,7 +49,7 @@ datatype ('ctr_loc, 'noninitial, 'label) state =
   | is_Noninitial: Noninitial (the_St: 'noninitial) (* q \<in> Q \<and> q \<notin> P *)
   | is_New_Noninitial: New_Noninitial (the_New_Ctr_Loc: 'ctr_loc) (the_New_Label: 'label) (* q\<^sub>p\<^sub>\<gamma> *)
 
-lemma finite_ctr_locs:
+lemma finitely_many_states:
   assumes "finite (UNIV :: 'ctr_loc set)"
   assumes "finite (UNIV :: 'noninitial set)"
   assumes "finite (UNIV :: 'label set)"
@@ -93,7 +93,7 @@ qed
 
 instantiation state :: (finite, finite, finite) finite begin
 
-instance by standard (simp add: finite_ctr_locs)
+instance by standard (simp add: finitely_many_states)
 
 end
 
@@ -781,9 +781,8 @@ lemma lemma_3_2_a:
   shows "\<exists>p' w'. (Initial p', w', q) \<in> LTS.transition_star A \<and> (p, w) \<Rightarrow>\<^sup>* (p', w')"
   using assms lemma_3_2_a' saturation_def by metis
 
-lemmas lemma_3_2 = lemma_3_2_a word_into_init_empty
-
-theorem theorem_3_2_on_the_fly:
+\<comment> \<open>Corresponds to one direction of Schwoon's theorem 3.2\<close>
+theorem pre_star_rules_subset_pre_star_language:
   assumes "initials \<subseteq> LTS.sources A"
   assumes "pre_star_rule\<^sup>*\<^sup>* A A'"
   shows "{c. accepts A' c} \<subseteq> pre_star (language A)"
@@ -834,25 +833,9 @@ proof (rule; rule)
     using p_def w_def by auto
 next
   fix c :: "'ctr_loc \<times> 'label list"
-  assume c_a: "c \<in> {w. accepts A' w}"
-  define p where "p = fst c"
-  define w where "w = snd c"
-  from p_def w_def c_a have "accepts A' (p,w)"
-    by auto
-  then have "\<exists>q \<in> finals. (Initial p, w, q) \<in> LTS.transition_star A'"
-    unfolding accepts_def by auto
-  then obtain q where q_p: "q \<in> finals" "(Initial p, w, q) \<in> LTS.transition_star A'"
-    by auto
-  then have "\<exists>p' w'. (p,w) \<Rightarrow>\<^sup>* (p',w') \<and> (Initial p', w', q) \<in> LTS.transition_star A"
-    using lemma_3_2_a assms(1) assms(2) by metis
-  then obtain p' w' where p'_w'_p: "(p,w) \<Rightarrow>\<^sup>* (p',w')" "(Initial p', w', q) \<in> LTS.transition_star A"
-    by auto
-  then have "(p', w') \<in> language A"
-    unfolding language_def unfolding accepts_def using q_p(1) by auto
-  then have "(p,w) \<in> pre_star (language A)"
-    unfolding pre_star_def using p'_w'_p(1) by auto
+  assume "c \<in> {w. accepts A' w}"
   then show "c \<in> pre_star (language A)"
-    unfolding p_def w_def by auto
+    using pre_star_rules_subset_pre_star_language assms unfolding saturation_def by auto
 qed
 
 \<comment> \<open>Corresponds to Schwoon's theorem 3.2\<close>
@@ -1041,7 +1024,9 @@ next
     from this r VI_2 iii post_star_rules.intros(4)[OF r, of q1 A', OF VI_2(1)] have "(New_Noninitial p' \<gamma>', Some \<gamma>'', q1) \<in> A'"
       using assms(3) using saturated_def saturation_def
       by metis
-    have "(Initial p', [\<gamma>'], New_Noninitial p' \<gamma>') \<in> LTS_\<epsilon>.transition_star_\<epsilon> A' \<and> (New_Noninitial p' \<gamma>', [\<gamma>''], q1) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A' \<and> (q1, u1, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
+    have "(Initial p', [\<gamma>'], New_Noninitial p' \<gamma>') \<in> LTS_\<epsilon>.transition_star_\<epsilon> A' \<and>
+          (New_Noninitial p' \<gamma>', [\<gamma>''], q1) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A' \<and>
+          (q1, u1, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
       by (metis LTS_\<epsilon>.transition_star_\<epsilon>.simps VI_2(2) \<open>(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<in> A'\<close> \<open>(New_Noninitial p' \<gamma>', Some \<gamma>'', q1) \<in> A'\<close>)
     have "(Initial p', w, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'"
        using III(2) VI_2(2) \<open>(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<in> A'\<close> \<open>(New_Noninitial p' \<gamma>', Some \<gamma>'', q1) \<in> A'\<close> push LTS_\<epsilon>.append_edge_edge_transition_star_\<epsilon> by auto
@@ -1203,7 +1188,7 @@ lemma lemma_3_4'_Aux_Aux2:
   assumes "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> A'"
   shows "\<nexists>p \<gamma>. (New_Noninitial p' \<gamma>', \<gamma>, p) \<in> A'"
   using assms 
-proof (induction rule: rtranclp_induct) (* I copy-pasted this proof from above and blindly adjusted it. So it may be a mess. *)
+proof (induction rule: rtranclp_induct)
   case base
   then show ?case
     unfolding New_Aut_states_def is_New_Noninitial_def by blast
@@ -1278,12 +1263,11 @@ proof (induction arbitrary: p q w ss rule: rtranclp_induct)
   {
     assume ctr_loc: "is_Initial q \<or> is_Noninitial q"
     then have "(Initial p, LTS_\<epsilon>.remove_\<epsilon> w, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A"
-      using base using LTS_\<epsilon>.transition_star_states_transition_star_\<epsilon> by metis
+      using base LTS_\<epsilon>.transition_star_states_transition_star_\<epsilon> by metis
     then have "\<exists>p' w'. (p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A"
       by auto
     then have ?case
-      using ctr_loc
-      using \<open>(Initial p, LTS_\<epsilon>.remove_\<epsilon> w, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A\<close> by blast
+      using ctr_loc \<open>(Initial p, LTS_\<epsilon>.remove_\<epsilon> w, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A\<close> by blast
   }
   moreover
   {
@@ -1942,7 +1926,8 @@ lemma lemma_3_4:
          (is_New_Noninitial q \<longrightarrow> (the_New_Ctr_Loc q, [the_New_Label q]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))"
   using lemma_3_4'' assms saturation_def by metis
 
-theorem theorem_3_3_on_the_fly:
+ \<comment> \<open>Corresponds to one direction of Schwoon's theorem 3.3\<close>
+theorem post_star_rules_subset_post_star_language:
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
   assumes "initials \<subseteq> LTS.sources A"
   assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
@@ -1992,28 +1977,10 @@ proof (rule; rule)
   then show "c \<in> {c. accepts_\<epsilon> A' c}"
     by auto
 next
-  fix c :: "('ctr_loc, 'label) conf" (* This proof is the same as theorem_3_3_on_the_fly *)
-  define p where "p = fst c"
-  define w where "w = snd c"
+  fix c :: "('ctr_loc, 'label) conf"
   assume "c \<in>  {c. accepts_\<epsilon> A' c}"
-  then have "accepts_\<epsilon> A' (p,w)"
-    unfolding p_def w_def by auto
-  then obtain q where q_p: "q \<in> finals" "(Initial p, w, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A'" 
-    unfolding accepts_\<epsilon>_def by auto
-  then obtain w' where w'_def: "LTS_\<epsilon>.\<epsilon>_exp w' w \<and> (Initial p, w', q) \<in> LTS.transition_star A'"
-    by (meson LTS_\<epsilon>.transition_star_\<epsilon>_iff_\<epsilon>_exp_transition_star)
-  then have ttt: "(Initial p, w', q) \<in> LTS.transition_star A'"
-    by auto
-  have "\<not> is_New_Noninitial q"
-    using F_not_Ext q_p(1) by blast
-  then obtain p' w'a where "(Initial p', w'a, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w'a) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w')"
-    using lemma_3_4[OF assms(1) assms(2) assms(3) ttt] by auto
-  then have "(Initial p', w'a, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w'a) \<Rightarrow>\<^sup>* (p, w)"
-    using w'_def by (metis LTS_\<epsilon>.\<epsilon>_exp_def LTS_\<epsilon>.remove_\<epsilon>_def \<open>LTS_\<epsilon>.\<epsilon>_exp w' w \<and> (Initial p, w', q) \<in> LTS.transition_star A'\<close>)
-  then have "(p,w) \<in> post_star (language_\<epsilon> A)"
-    using \<open>q \<in> finals\<close> unfolding LTS.post_star_def accepts_\<epsilon>_def language_\<epsilon>_def by fastforce
   then show "c \<in> post_star (language_\<epsilon> A)"
-    unfolding p_def w_def by auto
+    using assms post_star_rules_subset_post_star_language unfolding saturation_def by blast
 qed
 
 \<comment> \<open>Corresponds to Schwoon's theorem 3.3\<close>
@@ -2583,7 +2550,7 @@ proof -
     unfolding language_\<epsilon>_def by auto
 
   have "{c. accepts A2' c} \<subseteq> pre_star (language A2)" 
-    using theorem_3_2_on_the_fly[of A2 A2'] assms by auto
+    using pre_star_rules_subset_pre_star_language[of A2 A2'] assms by auto
   then have A2'_correct: "language A2' \<subseteq> pre_star (language A2)" 
     unfolding language_def by auto
 

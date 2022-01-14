@@ -1094,7 +1094,6 @@ next
 qed
 
 lemma count_zero_remove_transition_star_states_transition_star:
- (* This proof is a bit messy. *)
   assumes "(p, w, ss ,q) \<in> LTS.transition_star_states Ai"
   assumes "0 = count (transitions_of' (p, w, ss, q)) (p1, \<gamma>, q')"
   assumes "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}"
