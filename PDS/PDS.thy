@@ -122,8 +122,8 @@ lemma initials_code[code]: "initials = set (map Initial Enum.enum)"
 definition Old_Aut_states :: "('ctr_loc, 'noninitial, 'label) state set" where
   "Old_Aut_states = {q. is_Noninitial q}"
 
-definition New_Aut_states :: "('ctr_loc, 'noninitial, 'label) state set" where
-  "New_Aut_states = {q. is_New_Noninitial q}"
+definition new_noninitials :: "('ctr_loc, 'noninitial, 'label) state set" where
+  "new_noninitials = {q. is_New_Noninitial q}"
 
 sublocale LTS transition_rel .
 notation step_relp (infix "\<Rightarrow>" 80)
@@ -782,7 +782,7 @@ lemma lemma_3_2_a:
   using assms lemma_3_2_a' saturation_def by metis
 
 \<comment> \<open>Corresponds to one direction of Schwoon's theorem 3.2\<close>
-theorem pre_star_rules_subset_pre_star_language:
+theorem pre_star_rule_subset_pre_star_language:
   assumes "initials \<subseteq> LTS.sources A"
   assumes "pre_star_rule\<^sup>*\<^sup>* A A'"
   shows "{c. accepts A' c} \<subseteq> pre_star (language A)"
@@ -810,7 +810,7 @@ proof
 qed
 
 \<comment> \<open>Corresponds to Schwoon's theorem 3.2\<close>
-theorem pre_star_rules_correct:
+theorem pre_star_rule_accepts_correct:
   assumes "initials \<subseteq> LTS.sources A"
   assumes "saturation pre_star_rule A A'"
   shows "{c. accepts A' c} = pre_star (language A)"
@@ -835,52 +835,52 @@ next
   fix c :: "'ctr_loc \<times> 'label list"
   assume "c \<in> {w. accepts A' w}"
   then show "c \<in> pre_star (language A)"
-    using pre_star_rules_subset_pre_star_language assms unfolding saturation_def by auto
+    using pre_star_rule_subset_pre_star_language assms unfolding saturation_def by auto
 qed
 
 \<comment> \<open>Corresponds to Schwoon's theorem 3.2\<close>
-theorem pre_star_rules_language_correct:
+theorem pre_star_rule_correct:
   assumes "initials \<subseteq> LTS.sources A"
   assumes "saturation pre_star_rule A A'"
   shows "language A' = pre_star (language A)"
-  using assms(1) assms(2) language_def pre_star_rules_correct by auto
+  using assms(1) assms(2) language_def pre_star_rule_accepts_correct by auto
+
+theorem pre_star_exec_accepts_correct:
+  assumes "initials \<subseteq> LTS.sources A"
+  shows "{c. accepts (pre_star_exec A) c} = pre_star (language A)"
+  using pre_star_rule_accepts_correct[of A "pre_star_exec A"] saturation_pre_star_exec[of A] using assms by auto
 
 theorem pre_star_exec_correct:
   assumes "initials \<subseteq> LTS.sources A"
-  shows "{c. accepts (pre_star_exec A) c} = pre_star (language A)"
-  using pre_star_rules_correct[of A "pre_star_exec A"] saturation_pre_star_exec[of A] using assms by auto
-
-theorem pre_star_exec_language_correct:
-  assumes "initials \<subseteq> LTS.sources A"
   shows "language (pre_star_exec A) = pre_star (language A)"
-  using pre_star_rules_language_correct[of A "pre_star_exec A"] saturation_pre_star_exec[of A] using assms by auto
+  using pre_star_rule_correct[of A "pre_star_exec A"] saturation_pre_star_exec[of A] using assms by auto
 
-theorem pre_star_exec_check_correct:
+theorem pre_star_exec_check_accepts_correct:
   assumes "pre_star_exec_check A \<noteq> None"
   shows "{c. accepts (the (pre_star_exec_check A)) c} = pre_star (language A)"
-  using pre_star_exec_correct assms unfolding pre_star_exec_check_def apply auto
+  using pre_star_exec_accepts_correct assms unfolding pre_star_exec_check_def apply auto
   using pre_star_exec_def apply fastforce
   using pre_star_exec_def apply fastforce
    apply (metis option.discI subsetD)
   apply (metis option.discI subsetD)
   done
 
-theorem pre_star_exec_check_language_correct:
+theorem pre_star_exec_check_correct:
   assumes "pre_star_exec_check A \<noteq> None"
   shows "language (the (pre_star_exec_check A)) = pre_star (language A)"
-  using pre_star_exec_check_correct assms unfolding language_def by auto
+  using pre_star_exec_check_accepts_correct assms unfolding language_def by auto
 
 theorem accept_pre_star_exec_correct_True:
   assumes "initials \<subseteq> LTS.sources A"
   assumes "accepts (pre_star_exec A) c"
   shows "c \<in> pre_star (language A)"
-  using pre_star_exec_correct assms(1) assms(2) by blast
+  using pre_star_exec_accepts_correct assms(1) assms(2) by blast
 
 theorem accept_pre_star_exec_correct_False:
   assumes "initials \<subseteq> LTS.sources A"
   assumes "\<not>accepts (pre_star_exec A) c"
   shows "c \<notin> pre_star (language A)"
-  using pre_star_exec_correct assms(1) assms(2) by blast
+  using pre_star_exec_accepts_correct assms(1) assms(2) by blast
 
 theorem accept_pre_star_exec_correct_Some_True:
   assumes "accept_pre_star_exec_check A c = Some True"
@@ -1121,16 +1121,22 @@ lemma no_edge_to_Ctr_Loc_post_star_rules:
   shows "initials \<subseteq> LTS.sources Ai"
   using assms no_edge_to_Ctr_Loc_post_star_rules' initials_sources_iff_Ctr_Loc_sources by metis
 
+lemma source_and_zink_isolated:
+  assumes "N \<subseteq> LTS.sources A"
+  assumes "N \<subseteq> LTS.zinks A"
+  shows "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> N \<and> q \<notin> N"
+  by (metis LTS.sources_def2 LTS.zinks_def2 assms(1) assms(2) in_mono)
+
 lemma lemma_3_4'_Aux:
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "new_noninitials \<subseteq> LTS.isolated A"
   assumes "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> A'"
   shows "\<nexists>p \<gamma>. (p, \<gamma>, New_Noninitial p' \<gamma>') \<in> A'"
   using assms 
 proof (induction rule: rtranclp_induct)
   case base
   then show ?case 
-    unfolding New_Aut_states_def is_New_Noninitial_def by blast
+    unfolding new_noninitials_def is_New_Noninitial_def using LTS.isolated_no_edges by fastforce
 next
   case (step Aiminus1 Ai)
   from step(2) show ?case
@@ -1139,7 +1145,7 @@ next
     then have "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> Ai"
       using step.prems(2) by blast
     then have nin: "\<nexists>p \<gamma>. (p, \<gamma>, New_Noninitial p' \<gamma>') \<in> Aiminus1"
-      using local.add_trans_pop(1) step.IH step.prems(1) by fastforce
+      using local.add_trans_pop(1) step.IH step.prems(1,2) by fastforce
     then have "New_Noninitial p' \<gamma>' \<noteq> q"
       using add_trans_pop(4) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon> LTS.sources_def2
       by (metis local.add_trans_pop(3) state.distinct(3))
@@ -1152,7 +1158,7 @@ next
     then have "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> Ai"
       using step.prems(2) by blast
     then have nin: "\<nexists>p \<gamma>. (p, \<gamma>, New_Noninitial p' \<gamma>') \<in> Aiminus1"
-      using local.add_trans_swap(1) step.IH step.prems(1) by fastforce
+      using local.add_trans_swap(1) step.IH step.prems(1,2) by fastforce
     then have "New_Noninitial p' \<gamma>' \<noteq> q"
       using LTS.sources_def2 by (metis state.distinct(4) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon> local.add_trans_swap(3)) 
     then have "\<nexists>p \<gamma>. (p, \<gamma>, New_Noninitial p' \<gamma>') = (Initial p'', Some \<gamma>''', q)"
@@ -1165,13 +1171,13 @@ next
       using step.prems(2) by blast
     then show ?thesis
       using add_trans_push_1(1)
-      using Un_iff state.inject(2) prod.inject singleton_iff step.IH step.prems(1) by blast 
+      using Un_iff state.inject(2) prod.inject singleton_iff step.IH step.prems(1,2) by blast 
   next
     case (add_trans_push_2 p'''' \<gamma>'' p'' \<gamma>''' \<gamma>'''' q)
     then have "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> Ai"
       using step.prems(2) by blast
     then have nin: "\<nexists>p \<gamma>. (p, \<gamma>, New_Noninitial p' \<gamma>') \<in> Aiminus1"
-      using local.add_trans_push_2(1) step.IH step.prems(1) by fastforce
+      using local.add_trans_push_2(1) step.IH step.prems(1,2) by fastforce
     then have "New_Noninitial p' \<gamma>' \<noteq> q"
       using LTS.sources_def2 by (metis state.disc(1,3) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon> local.add_trans_push_2(3))
     then have "\<nexists>p \<gamma>. (p, \<gamma>, New_Noninitial p' \<gamma>') = (Initial p'', \<epsilon>, q)"
@@ -1184,14 +1190,15 @@ qed
 
 lemma lemma_3_4'_Aux_Aux2:
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "new_noninitials \<subseteq> LTS.isolated A"
   assumes "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> A'"
   shows "\<nexists>p \<gamma>. (New_Noninitial p' \<gamma>', \<gamma>, p) \<in> A'"
   using assms 
 proof (induction rule: rtranclp_induct)
   case base
   then show ?case
-    unfolding New_Aut_states_def is_New_Noninitial_def by blast
+    unfolding new_noninitials_def is_New_Noninitial_def
+    using LTS.isolated_no_edges by fastforce  
 next
   case (step Aiminus1 Ai)
   from step(2) show ?case
@@ -1200,10 +1207,10 @@ next
     then have "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> Ai"
       using step.prems(2) by blast
     then have nin: "\<nexists>p \<gamma>. (New_Noninitial p' \<gamma>', \<gamma>, p) \<in> Aiminus1"
-      using local.add_trans_pop(1) step.IH step.prems(1) by fastforce
+      using local.add_trans_pop(1) step.IH step.prems(1,2) by fastforce
     then have "New_Noninitial p' \<gamma>' \<noteq> q"
       using add_trans_pop(4) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon>[of "Initial p'''" "[\<gamma>'']" q Aiminus1 "New_Noninitial p' \<gamma>'"]
-      using lemma_3_4'_Aux local.add_trans_pop(1) step.hyps(1) step.prems(1) step.prems(2)
+      using lemma_3_4'_Aux local.add_trans_pop(1) step.hyps(1) step.prems(1,2)
       using UnI1 local.add_trans_pop(3) LTS.sources_def2 by (metis (full_types) state.distinct(3))
     then have "\<nexists>p \<gamma>. (p, \<gamma>, New_Noninitial p' \<gamma>') = (Initial p'', \<epsilon>, q)"
       by auto
@@ -1214,10 +1221,10 @@ next
     then have "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> Ai"
       using step.prems(2) by blast
     then have nin: "\<nexists>p \<gamma>. (New_Noninitial p' \<gamma>', \<gamma>, p) \<in> Aiminus1"
-      using local.add_trans_swap(1) step.IH step.prems(1) by fastforce
+      using local.add_trans_swap(1) step.IH step.prems(1,2) by fastforce
     then have "New_Noninitial p' \<gamma>' \<noteq> q"
       using LTS_\<epsilon>.transition_star_not_to_source_\<epsilon>[of "Initial p''''" "[\<gamma>'']" q Aiminus1] local.add_trans_swap(3)
-      using lemma_3_4'_Aux[of _ Aiminus1 p' \<gamma>']  UnCI local.add_trans_swap(1) step.hyps(1) step.prems(1) step.prems(2)
+      using lemma_3_4'_Aux[of _ Aiminus1 p' \<gamma>']  UnCI local.add_trans_swap(1) step.hyps(1) step.prems(1,2)
        state.simps(7) LTS.sources_def2
       by metis
     then have "\<nexists>p \<gamma>. (p, \<gamma>, New_Noninitial p' \<gamma>') = (Initial p'', Some \<gamma>''', q)"
@@ -1230,16 +1237,16 @@ next
       using step.prems(2) by blast
     then show ?thesis
       using add_trans_push_1(1)
-      using Un_iff state.inject prod.inject singleton_iff step.IH step.prems(1) by blast 
+      using Un_iff state.inject prod.inject singleton_iff step.IH step.prems(1,2) by blast 
   next
     case (add_trans_push_2 p'''' \<gamma>'' p'' \<gamma>''' \<gamma>'''' q)
     then have "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> Ai"
       using step.prems(2) by blast
     then have nin: "\<nexists>p \<gamma>. (New_Noninitial p' \<gamma>', \<gamma>, p) \<in> Aiminus1"
-      using local.add_trans_push_2(1) step.IH step.prems(1) by fastforce
+      using local.add_trans_push_2(1) step.IH step.prems(1,2) by fastforce
     then have "New_Noninitial p' \<gamma>' \<noteq> q"
       using state.disc(3) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon>[of "Initial p''''" "[\<gamma>'']" q Aiminus1  "New_Noninitial p' \<gamma>'"] local.add_trans_push_2(3)
-      using lemma_3_4'_Aux[of _ Aiminus1 p' \<gamma>'] UnCI local.add_trans_push_2(1) step.hyps(1) step.prems(1) step.prems(2)
+      using lemma_3_4'_Aux[of _ Aiminus1 p' \<gamma>'] UnCI local.add_trans_push_2(1) step.hyps(1) step.prems(1,2)
         LTS.sources_def2 state.disc(1)
       by metis
     then have "\<nexists>p \<gamma>. (New_Noninitial p' \<gamma>', \<gamma>, p) = (Initial p'', \<epsilon>, q)"
@@ -1253,7 +1260,7 @@ qed
 lemma lemma_3_4':
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
   assumes "initials \<subseteq> LTS.sources A"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "new_noninitials \<subseteq> LTS.isolated A"
   assumes "(Initial p, w, ss, q) \<in> LTS.transition_star_states A'"
   shows "(\<not>is_New_Noninitial q \<longrightarrow> (\<exists>p' w'. (Initial p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p',w') \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))) \<and>
          (is_New_Noninitial q \<longrightarrow> (the_New_Ctr_Loc q, [the_New_Label q]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))"
@@ -1287,7 +1294,8 @@ proof (induction arbitrary: p q w ss rule: rtranclp_induct)
       then have "\<exists>s \<gamma>'. (s, \<gamma>', q) \<in> A"
         using LTS.transition_star_states_transition_relation by metis
       then have False
-        using \<open>is_New_Noninitial q\<close> base.prems(2) New_Aut_states_def by blast
+        using \<open>is_New_Noninitial q\<close> new_noninitials_def base.prems(2) LTS.isolated_no_edges
+        by (metis mem_Collect_eq subset_eq)
       then show ?thesis
         by auto
     qed
@@ -1315,7 +1323,7 @@ next
     case 0
     then have "(Initial p, w, ss, q) \<in> LTS.transition_star_states Aiminus1"
       using count_zero_remove_path_with_word_transition_star_states p1_\<gamma>_p2_w2_q'_p(1) t_def
-      by metis
+      by metis 
     then show ?case
       using step by auto
   next
@@ -1438,7 +1446,7 @@ next
      (\<exists>p' w'. (Initial p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w') \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2' @ tl w)))) \<and>
     (is_New_Noninitial q \<longrightarrow> (the_New_Ctr_Loc q, [the_New_Label q]) \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2' @ tl w)))"
         using IIII
-        using step.IH step.prems(1) step.prems(2) by blast
+        using step.IH step.prems(1,2,3) by blast
 
       have "\<not>is_New_Noninitial q \<or> is_New_Noninitial q"
         using state.exhaust_disc by blast
@@ -1608,7 +1616,7 @@ next
      (\<exists>p' w'. (Initial p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w') \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2' @ tl w)))) \<and>
     (is_New_Noninitial q \<longrightarrow> (the_New_Ctr_Loc q, [the_New_Label q]) \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2' @ tl w)))"
         using IIII
-        using step.IH step.prems(1) step.prems(2) by blast
+        using step.IH step.prems(1,2,3) by blast
 
       have "\<not>is_New_Noninitial q \<or> is_New_Noninitial q"
         using state.exhaust_disc by blast
@@ -1714,8 +1722,7 @@ next
           using LTS.hd_is_hd by fastforce
       qed
       from add_trans_push_1(4) have "\<nexists>p \<gamma>. (New_Noninitial p1 \<gamma>1, \<gamma>, p) \<in> Aiminus1"
-        using lemma_3_4'_Aux_Aux2[OF step(1) assms(3) add_trans_push_1(4)]
-        by auto
+        using lemma_3_4'_Aux_Aux2 step.hyps(1) step.prems(1,2,3) by blast
       then have "\<nexists>p \<gamma>. (New_Noninitial p1 \<gamma>1, \<gamma>, p) \<in> Ai"
         using local.add_trans_push_1(1) by blast
       then have ss_w_short: "ss = [Initial p1, New_Noninitial p1 \<gamma>1] \<and> w = [Some \<gamma>1]"
@@ -1764,7 +1771,7 @@ next
            (\<exists>p' w'. (Initial p', w', New_Noninitial p1 \<gamma>1) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w') \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u))) \<and>
          (is_New_Noninitial (New_Noninitial p1 \<gamma>1) \<longrightarrow> 
            (the_New_Ctr_Loc (New_Noninitial p1 \<gamma>1), [the_New_Label (New_Noninitial p1 \<gamma>1)]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u))"
-        using step.prems(1) step.prems(2) by auto 
+        using step.prems(1,2,3) by auto 
       then have "(the_New_Ctr_Loc (New_Noninitial p1 \<gamma>1), [the_New_Label (New_Noninitial p1 \<gamma>1)]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u)"
         by auto
       then have "(p1, [\<gamma>1]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u)"
@@ -1911,7 +1918,7 @@ qed
 lemma lemma_3_4'':
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
   assumes "initials \<subseteq> LTS.sources A"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "new_noninitials \<subseteq> LTS.isolated A"
   assumes "(Initial p, w, q) \<in> LTS.transition_star A'"
   shows "(\<not>is_New_Noninitial q \<longrightarrow> (\<exists>p' w'. (Initial p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p',w') \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))) \<and>
          (is_New_Noninitial q \<longrightarrow> (the_New_Ctr_Loc q, [the_New_Label q]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))"
@@ -1920,7 +1927,7 @@ lemma lemma_3_4'':
 lemma lemma_3_4:
   assumes "saturation post_star_rules A A'"
   assumes "initials \<subseteq> LTS.sources A"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "new_noninitials \<subseteq> LTS.isolated A"
   assumes "(Initial p, w, q) \<in> LTS.transition_star A'"
   shows "(\<not>is_New_Noninitial q \<longrightarrow> (\<exists>p' w'. (Initial p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p',w') \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))) \<and>
          (is_New_Noninitial q \<longrightarrow> (the_New_Ctr_Loc q, [the_New_Label q]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))"
@@ -1930,7 +1937,7 @@ lemma lemma_3_4:
 theorem post_star_rules_subset_post_star_language:
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
   assumes "initials \<subseteq> LTS.sources A"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "new_noninitials \<subseteq> LTS.isolated A"
   shows "{c. accepts_\<epsilon> A' c} \<subseteq> post_star (language_\<epsilon> A)"
 proof
   fix c :: "('ctr_loc, 'label) conf"
@@ -1958,10 +1965,10 @@ proof
 qed
 
 \<comment> \<open>Corresponds to Schwoon's theorem 3.3\<close>
-theorem post_star_rules_correct:
+theorem post_star_rules_accepts_\<epsilon>_correct:
   assumes "saturation post_star_rules A A'"
   assumes  "initials \<subseteq> LTS.sources A"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "new_noninitials \<subseteq> LTS.isolated A"
   shows "{c. accepts_\<epsilon> A' c} = post_star (language_\<epsilon> A)"
 proof (rule; rule)
   fix c :: "('ctr_loc, 'label) conf"
@@ -1984,12 +1991,12 @@ next
 qed
 
 \<comment> \<open>Corresponds to Schwoon's theorem 3.3\<close>
-theorem post_star_rules_language_correct:
+theorem post_star_rules_correct:
   assumes "saturation post_star_rules A A'"
   assumes "initials \<subseteq> LTS.sources A"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "new_noninitials \<subseteq> LTS.isolated A"
   shows "language_\<epsilon> A' = post_star (language_\<epsilon> A)"
-  using assms(1) assms(2) assms(3) language_\<epsilon>_def post_star_rules_correct by presburger
+  using assms language_\<epsilon>_def post_star_rules_accepts_\<epsilon>_correct by presburger
 
 end
 
@@ -2534,23 +2541,23 @@ lemma accepts_\<epsilon>_LTS_\<epsilon>_of_LTS_iff_accepts: "accepts_\<epsilon> 
 lemma language_\<epsilon>_LTS_\<epsilon>_of_LTS_is_language: "language_\<epsilon> (LTS_\<epsilon>_of_LTS A2') = language A2'"
   unfolding language_\<epsilon>_def language_def using accepts_\<epsilon>_LTS_\<epsilon>_of_LTS_iff_accepts by auto
 
-theorem dual3_on_the_fly:
+theorem dual_star_correct_early_termination:
   assumes "initials \<subseteq> LTS.sources A1"
   assumes "initials \<subseteq> LTS.sources A2"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A1 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A2 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "new_noninitials \<subseteq> LTS.isolated A1"
+  assumes "new_noninitials \<subseteq> LTS.isolated A2"
   assumes "post_star_rules\<^sup>*\<^sup>* A1 A1'"
   assumes "pre_star_rule\<^sup>*\<^sup>* A2 A2'"
   assumes "language_\<epsilon>_inters (inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {}"
   shows "\<exists>c1 \<in> language_\<epsilon> A1. \<exists>c2 \<in> language A2. c1 \<Rightarrow>\<^sup>* c2"
 proof -
   have "{c. accepts_\<epsilon> A1' c} \<subseteq> post_star (language_\<epsilon> A1)"
-    using theorem_3_3_on_the_fly[of A1 A1'] assms by auto
+    using assms using  post_star_rules_subset_post_star_language by auto
   then have A1'_correct: "language_\<epsilon> A1' \<subseteq> post_star (language_\<epsilon> A1)"
     unfolding language_\<epsilon>_def by auto
 
   have "{c. accepts A2' c} \<subseteq> pre_star (language A2)" 
-    using pre_star_rules_subset_pre_star_language[of A2 A2'] assms by auto
+    using pre_star_rule_subset_pre_star_language[of A2 A2'] assms by auto
   then have A2'_correct: "language A2' \<subseteq> pre_star (language A2)" 
     unfolding language_def by auto
 
@@ -2566,7 +2573,7 @@ proof -
   have inters_correct: "language_\<epsilon>_inters (inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<subseteq> post_star (language_\<epsilon> A1) \<inter> pre_star (language A2)"
     by metis
 
-  from assms(7) have "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2) \<noteq> {}"
+  from assms have "post_star (language_\<epsilon> A1) \<inter> pre_star (language A2) \<noteq> {}"
     using inters_correct by auto
   then show "\<exists>c1\<in>language_\<epsilon> A1. \<exists>c2\<in>language A2. c1 \<Rightarrow>\<^sup>* c2"
     using dual2 by auto
@@ -2576,19 +2583,19 @@ qed
 theorem dual3:
   assumes "initials \<subseteq> LTS.sources A1"
   assumes "initials \<subseteq> LTS.sources A2"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A1 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A2 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "new_noninitials \<subseteq> LTS.isolated A1"
+  assumes "new_noninitials \<subseteq> LTS.isolated A2"
   assumes "saturation post_star_rules A1 A1'"
   assumes "saturation pre_star_rule A2 A2'"
   shows "language_\<epsilon>_inters (inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {} \<longleftrightarrow> (\<exists>c1 \<in> language_\<epsilon> A1. \<exists>c2 \<in> language A2. c1 \<Rightarrow>\<^sup>* c2)"
 proof -
   have "{c. accepts_\<epsilon> A1' c} = post_star (language_\<epsilon> A1)"
-    using post_star_rules_correct[of A1 A1'] assms by auto
+    using post_star_rules_accepts_\<epsilon>_correct[of A1 A1'] assms by auto
   then have A1'_correct: "language_\<epsilon> A1' = post_star (language_\<epsilon> A1)"
     unfolding language_\<epsilon>_def by auto
 
   have "{c. accepts A2' c} = pre_star (language A2)" 
-    using pre_star_rules_correct[of A2 A2'] assms by auto
+    using pre_star_rule_accepts_correct[of A2 A2'] assms by auto
   then have A2'_correct: "language A2' = pre_star (language A2)" 
     unfolding language_def by auto
 
@@ -2623,21 +2630,21 @@ qed
 theorem dual4_on_the_fly:
   assumes "initials \<subseteq> LTS.sources A1"
   assumes "initials \<subseteq> LTS.sources A2"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A1 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A2 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "new_noninitials \<subseteq> LTS.isolated A1"
+  assumes "new_noninitials \<subseteq> LTS.isolated A2"
   assumes "language_\<epsilon> A1 = {c1}"
   assumes "language A2 = {c2}"
   assumes "post_star_rules\<^sup>*\<^sup>* A1 A1'"
   assumes "pre_star_rule\<^sup>*\<^sup>* A2 A2'"
   assumes "language_\<epsilon>_inters (inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {}"
   shows "c1 \<Rightarrow>\<^sup>* c2"
-  using dual3_on_the_fly[OF assms(1,2,3,4) assms(7,8,9)] assms(5,6) by auto
+  using dual_star_correct_early_termination assms by (metis singletonD)
 
 theorem dual4:
   assumes "initials \<subseteq> LTS.sources A1"
   assumes "initials \<subseteq> LTS.sources A2"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A1 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
-  assumes "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A2 \<longrightarrow> p \<notin> New_Aut_states \<and> q \<notin> New_Aut_states"
+  assumes "new_noninitials \<subseteq> LTS.isolated A1"
+  assumes "new_noninitials \<subseteq> LTS.isolated A2"
   assumes "language_\<epsilon> A1 = {c1}"
   assumes "language A2 = {c2}"
   assumes "saturation post_star_rules A1 A1'"

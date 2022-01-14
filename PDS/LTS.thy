@@ -454,6 +454,9 @@ definition sources :: "'state set" where
 definition zinks :: "'state set" where
   "zinks = {p. \<nexists>q \<gamma>. (p, \<gamma>, q) \<in> transition_relation}"
 
+definition isolated :: "'state set" where
+  "isolated = sources \<inter> zinks"
+
 lemma sources_def2:
   "q \<in> sources \<longleftrightarrow> (\<nexists>q' \<gamma>. (q', \<gamma>, q) \<in> transition_relation)"
   by (simp add: LTS.sources_def)
@@ -461,6 +464,11 @@ lemma sources_def2:
 lemma zinks_def2:
   "q \<in> zinks \<longleftrightarrow> (\<nexists>q' \<gamma>. (q, \<gamma>, q') \<in> transition_relation)"
   by (simp add: LTS.zinks_def)
+
+lemma isolated_no_edges:
+  assumes "(p, \<gamma>, q) \<in> transition_relation"
+  shows "p \<notin> isolated \<and> q \<notin> isolated"
+  using assms isolated_def sources_def2 zinks_def2 by fastforce
 
 lemma source_never_or_hd:
   assumes "(ss, w) \<in> path_with_word"
