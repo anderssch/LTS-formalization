@@ -850,7 +850,7 @@ theorem pre_star_exec_accepts_correct:
   shows "{c. accepts (pre_star_exec A) c} = pre_star (language A)"
   using pre_star_rule_accepts_correct[of A "pre_star_exec A"] saturation_pre_star_exec[of A] using assms by auto
 
-theorem pre_star_exec_correct:
+theorem pre_star_exec_language_correct:
   assumes "initials \<subseteq> LTS.sources A"
   shows "language (pre_star_exec A) = pre_star (language A)"
   using pre_star_rule_correct[of A "pre_star_exec A"] saturation_pre_star_exec[of A] using assms by auto
