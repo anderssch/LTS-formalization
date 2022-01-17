@@ -1041,8 +1041,8 @@ qed
 
 lemma lemma_3_3:
   assumes "(p,v) \<Rightarrow>\<^sup>* (p',w)"
-    and "(p, v) \<in> language_\<epsilon> A"
-    and "saturation post_star_rules A A'"
+  and "(p, v) \<in> language_\<epsilon> A"
+  and "saturation post_star_rules A A'"
   shows "accepts_\<epsilon> A' (p', w)"
   using assms lemma_3_3' by force
 
@@ -1257,7 +1257,8 @@ next
   qed
 qed
 
-lemma lemma_3_4':
+\<comment> \<open>Corresponds to Schwoon's lemma 3.4\<close>
+lemma rtranclp_post_star_rules_constains_successors_states:
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
   assumes "initials \<subseteq> LTS.sources A"
   assumes "new_noninitials \<subseteq> LTS.isolated A"
@@ -1746,7 +1747,7 @@ next
       note IX = add_trans_push_2(3)
       note XIII = add_trans_push_2(2)
       have t_def: "t = (New_Noninitial p1 \<gamma>1, Some \<gamma>'', q')"
-        using local.add_trans_swap(1) local.add_trans_push_2 p1_\<gamma>_p2_w2_q'_p(1) t_def by blast
+        using local.add_trans_push_2(1,4) p1_\<gamma>_p2_w2_q'_p(1) t_def by blast
       have init_Ai: "initials \<subseteq> LTS.sources Ai"
         using step(1,2) step(4)
         using no_edge_to_Ctr_Loc_post_star_rules
@@ -1774,7 +1775,7 @@ next
         using step.prems(1,2,3) by auto 
       then have "(the_New_Ctr_Loc (New_Noninitial p1 \<gamma>1), [the_New_Label (New_Noninitial p1 \<gamma>1)]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u)"
         by auto
-      then have "(p1, [\<gamma>1]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u)"
+      then have p1_\<gamma>1_p_u: "(p1, [\<gamma>1]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u)"
         by auto
       term \<gamma>2
       from IX have "\<exists>\<gamma>2\<epsilon> \<gamma>2ss. LTS_\<epsilon>.\<epsilon>_exp \<gamma>2\<epsilon> [\<gamma>2] \<and> (Initial p2, \<gamma>2\<epsilon>, \<gamma>2ss, q') \<in> LTS.transition_star_states Aiminus1"
@@ -1782,7 +1783,7 @@ next
       then obtain \<gamma>2\<epsilon> \<gamma>2ss where XI_1: "LTS_\<epsilon>.\<epsilon>_exp \<gamma>2\<epsilon> [\<gamma>2] \<and> (Initial p2, \<gamma>2\<epsilon>, \<gamma>2ss, q') \<in> LTS.transition_star_states Aiminus1"
         by blast
       have "(q', v, v_ss, q) \<in> LTS.transition_star_states Ai"
-        by (simp add: \<open>(q', v, v_ss, q) \<in> LTS.transition_star_states Ai\<close>)
+        using ddd .
       have inddd:
         "(\<not>is_New_Noninitial q \<longrightarrow> (\<exists>p' w'. (Initial p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w') \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v)))) \<and>
          (is_New_Noninitial q \<longrightarrow> (the_New_Ctr_Loc q, [the_New_Label q]) \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v)))"
@@ -1791,10 +1792,10 @@ next
           by (meson LTS.transition_star_states_length XI_1)
           
         have two: "v_ss \<noteq> []"
-          by (metis LTS.transition_star_states.simps \<open>(q', v, v_ss, q) \<in> LTS.transition_star_states Ai\<close> list.distinct(1))
+          by (metis LTS.transition_star_states.simps ddd list.distinct(1))
           
         have three: "last \<gamma>2ss = hd v_ss"
-          by (metis LTS.transition_star_states_hd LTS.transition_star_states_last XI_1 \<open>(q', v, v_ss, q) \<in> LTS.transition_star_states Ai\<close>)
+          by (metis LTS.transition_star_states_hd LTS.transition_star_states_last XI_1 ddd)
 
 
         have cv: "j = count (transitions_of ((v_ss, v))) t"
@@ -1822,10 +1823,10 @@ next
             using a1 a2 a3 X_1 aaa bbb add_trans_push_2(4) Suc(2)
               LTS.avoid_count_zero[of "Initial p" u u_ss "New_Noninitial p1 \<gamma>1" Aiminus1 "New_Noninitial p1 \<gamma>1" "Some \<gamma>''" q']
             by (auto simp: t_def)
-          show "j = count (transitions_of ((v_ss, v))) t"
-            using \<open>j = count (transitions_of' (q', v, v_ss, q)) t\<close> by force
+          then show "j = count (transitions_of ((v_ss, v))) t"
+             by force
         qed
-        have "(Initial p2, \<gamma>2\<epsilon>, \<gamma>2ss, q') \<in> LTS.transition_star_states Aiminus1"
+        have p2_q'_states_Aiminus1: "(Initial p2, \<gamma>2\<epsilon>, \<gamma>2ss, q') \<in> LTS.transition_star_states Aiminus1"
           using XI_1 by blast
         then have c\<gamma>2: "count (transitions_of (\<gamma>2ss, \<gamma>2\<epsilon>)) t = 0"
           using LTS.avoid_count_zero local.add_trans_push_2(4) t_def by fastforce
@@ -1833,12 +1834,11 @@ next
           using LTS.count_append_path_with_word[of \<gamma>2ss \<gamma>2\<epsilon> v_ss v "New_Noninitial p1 \<gamma>1" "Some \<gamma>''" q'] t_def
             c\<gamma>2 cv one two three
           by force 
-
-        have "j = count (transitions_of' (Initial p2, \<gamma>2\<epsilon> @ v, \<gamma>2ss @ tl v_ss, q)) t"
-          by (simp add: \<open>j = count (transitions_of ((\<gamma>2ss, \<gamma>2\<epsilon>) @\<acute> (v_ss, v))) t\<close>)
+        then have j_count: "j = count (transitions_of' (Initial p2, \<gamma>2\<epsilon> @ v, \<gamma>2ss @ tl v_ss, q)) t"
+          by simp
 
         have "(\<gamma>2ss, \<gamma>2\<epsilon>) \<in> LTS.path_with_word Aiminus1"
-          by (meson LTS.transition_star_states_path_with_word \<open>(Initial p2, \<gamma>2\<epsilon>, \<gamma>2ss, q') \<in> LTS.transition_star_states Aiminus1\<close>)
+          by (meson LTS.transition_star_states_path_with_word p2_q'_states_Aiminus1)
         then have gugugu: "(\<gamma>2ss, \<gamma>2\<epsilon>) \<in> LTS.path_with_word Ai"
           using add_trans_push_2(1) 
           path_with_word_mono'[of \<gamma>2ss \<gamma>2\<epsilon> Aiminus1 Ai] by auto
@@ -1846,35 +1846,34 @@ next
         have gugugu3: "last \<gamma>2ss = hd v_ss"
           using three by blast
         have gugugu2: "(v_ss, v) \<in> LTS.path_with_word Ai"
-          by (meson LTS.transition_star_states_path_with_word \<open>(q', v, v_ss, q) \<in> LTS.transition_star_states Ai\<close>)
+          by (meson LTS.transition_star_states_path_with_word ddd)
         have "(\<gamma>2ss, \<gamma>2\<epsilon>) @\<acute> (v_ss, v) \<in> LTS.path_with_word Ai"
           using gugugu gugugu2 LTS.append_path_with_word_path_with_word gugugu3
           by auto
-
-        have "(\<gamma>2ss @ tl v_ss, \<gamma>2\<epsilon> @ v) \<in> LTS.path_with_word Ai"
-          using \<open>(\<gamma>2ss, \<gamma>2\<epsilon>) @\<acute> (v_ss, v) \<in> LTS.path_with_word Ai\<close> by auto
+        then have "(\<gamma>2ss @ tl v_ss, \<gamma>2\<epsilon> @ v) \<in> LTS.path_with_word Ai"
+           by auto
 
 
         have "(Initial p2, \<gamma>2\<epsilon> @ v, \<gamma>2ss @ tl v_ss, q) \<in> LTS.transition_star_states Ai"
-          by (metis (no_types, lifting) LTS.path_with_word_transition_star_states LTS.transition_star_states_append LTS.transition_star_states_hd XI_1 \<open>(q', v, v_ss, q) \<in> LTS.transition_star_states Ai\<close> gugugu three)
+          by (metis (no_types, lifting) LTS.path_with_word_transition_star_states LTS.transition_star_states_append LTS.transition_star_states_hd XI_1 ddd gugugu three)
           
         from this Suc(1)[of p2 "\<gamma>2\<epsilon> @ v" "\<gamma>2ss @ tl v_ss" q]
         show
           "(\<not>is_New_Noninitial q \<longrightarrow> (\<exists>p' w'. (Initial p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w') \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v)))) \<and>
            (is_New_Noninitial q \<longrightarrow> (the_New_Ctr_Loc q, [the_New_Label q]) \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v)))"
-          using \<open>j = count (transitions_of' (Initial p2, \<gamma>2\<epsilon> @ v, \<gamma>2ss @ tl v_ss, q)) t\<close> by fastforce
+          using j_count by fastforce
       qed
 
       show ?thesis
       proof (cases "is_Initial q \<or> is_Noninitial q")
         case True
         have "(\<exists>p' w'. (Initial p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w') \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v)))"
-          using True \<open>(\<not>is_New_Noninitial q \<longrightarrow> (\<exists>p' w'. (Initial p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w') \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v)))) \<and> (is_New_Noninitial q \<longrightarrow> (the_New_Ctr_Loc q, [the_New_Label q]) \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v)))\<close> by fastforce
-        then obtain p' w' where "(Initial p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w') \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v))"
+          using True inddd by fastforce
+        then obtain p' w' where p'_w'_p: "(Initial p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w') \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v))"
           by auto
         then have "(p', w') \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v))"
           by auto
-        have "(p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v)) \<Rightarrow>\<^sup>* (p1, \<gamma>1#\<gamma>''#LTS_\<epsilon>.remove_\<epsilon> v)"
+        have p2_\<gamma>2\<epsilon>v_p1_\<gamma>1_\<gamma>''_v: "(p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v)) \<Rightarrow>\<^sup>* (p1, \<gamma>1#\<gamma>''#LTS_\<epsilon>.remove_\<epsilon> v)"
         proof -
           have "\<gamma>2 #(LTS_\<epsilon>.remove_\<epsilon> v) = LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v)"
             using XI_1
@@ -1886,54 +1885,56 @@ next
           show "(p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v)) \<Rightarrow>\<^sup>* (p1, \<gamma>1#\<gamma>''#LTS_\<epsilon>.remove_\<epsilon> v)"
             by auto
         qed
-        have "(p1, \<gamma>1#\<gamma>''#LTS_\<epsilon>.remove_\<epsilon> v) \<Rightarrow>\<^sup>* (p, (LTS_\<epsilon>.remove_\<epsilon> u) @ (\<gamma>''#LTS_\<epsilon>.remove_\<epsilon> v))"
-          by (metis \<open>(p1, [\<gamma>1]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u)\<close> append_Cons append_Nil step_relp_append)
+        have p1_\<gamma>1\<gamma>''v_p_uv: "(p1, \<gamma>1#\<gamma>''#LTS_\<epsilon>.remove_\<epsilon> v) \<Rightarrow>\<^sup>* (p, (LTS_\<epsilon>.remove_\<epsilon> u) @ (\<gamma>''#LTS_\<epsilon>.remove_\<epsilon> v))"
+          by (metis p1_\<gamma>1_p_u append_Cons append_Nil step_relp_append)
         have "(p, (LTS_\<epsilon>.remove_\<epsilon> u) @ (\<gamma>''#LTS_\<epsilon>.remove_\<epsilon> v)) = (p, LTS_\<epsilon>.remove_\<epsilon> w)"
-          by (metis (no_types, lifting) Cons_eq_append_conv LTS_\<epsilon>.remove_\<epsilon>_Cons_tl LTS_\<epsilon>.remove_\<epsilon>_append_dist \<open>w = u @ [Some \<gamma>''] @ v\<close> hd_Cons_tl list.inject list.sel(1) list.simps(3) self_append_conv2)
-          
-        show ?thesis
-          using True \<open>(p, LTS_\<epsilon>.remove_\<epsilon> u @ \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v) = (p, LTS_\<epsilon>.remove_\<epsilon> w)\<close> \<open>(p1, \<gamma>1 # \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u @ \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v)\<close> \<open>(p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v)) \<Rightarrow>\<^sup>* (p1, \<gamma>1 # \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v)\<close> \<open>\<exists>p' w'. (Initial p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w') \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v))\<close> by fastforce
+          by (metis (no_types, lifting) Cons_eq_append_conv LTS_\<epsilon>.remove_\<epsilon>_Cons_tl LTS_\<epsilon>.remove_\<epsilon>_append_dist bbb hd_Cons_tl list.inject list.sel(1) list.simps(3) self_append_conv2)
+        then show ?thesis
+          using True p1_\<gamma>1\<gamma>''v_p_uv p2_\<gamma>2\<epsilon>v_p1_\<gamma>1_\<gamma>''_v p'_w'_p by fastforce
       next
         case False
-        then have "(the_New_Ctr_Loc q, [the_New_Label q]) \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v))"
+        then have q_nlq_p2_\<gamma>2\<epsilon>v: "(the_New_Ctr_Loc q, [the_New_Label q]) \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v))"
           using inddd state.exhaust_disc
           by blast
-        have "(p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v))  \<Rightarrow>\<^sup>* (p1, \<gamma>1 # \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v)"
+        have p2_\<gamma>2\<epsilon>v_p1_\<gamma>1\<gamma>''v: "(p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v))  \<Rightarrow>\<^sup>* (p1, \<gamma>1 # \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v)"
           by (metis (mono_tags) LTS_\<epsilon>.\<epsilon>_exp_def LTS_\<epsilon>.remove_\<epsilon>_append_dist LTS_\<epsilon>.remove_\<epsilon>_def XIII XI_1 append_Cons append_Nil op_labels.simps(3) r_into_rtranclp step_relp_def2)
           
-        have "(p1, \<gamma>1 # \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u @ \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v)"
-          by (metis \<open>(p1, [\<gamma>1]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u)\<close> append_Cons append_Nil step_relp_append)
+        have p1_\<gamma>1\<gamma>''_v_p_u\<gamma>''v: "(p1, \<gamma>1 # \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u @ \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v)"
+          by (metis p1_\<gamma>1_p_u append_Cons append_Nil step_relp_append)
           
         have "(p, LTS_\<epsilon>.remove_\<epsilon> u @ \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v) = (p, LTS_\<epsilon>.remove_\<epsilon> w)"
           by (metis LTS_\<epsilon>.remove_\<epsilon>_Cons_tl LTS_\<epsilon>.remove_\<epsilon>_append_dist append_Cons append_Nil bbb hd_Cons_tl list.distinct(1) list.inject)
           
-        show ?thesis
-          using False \<open>(p, LTS_\<epsilon>.remove_\<epsilon> u @ \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v) = (p, LTS_\<epsilon>.remove_\<epsilon> w)\<close> \<open>(p1, \<gamma>1 # \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> u @ \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v)\<close> \<open>(p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v)) \<Rightarrow>\<^sup>* (p1, \<gamma>1 # \<gamma>'' # LTS_\<epsilon>.remove_\<epsilon> v)\<close> \<open>(the_New_Ctr_Loc q, [the_New_Label q]) \<Rightarrow>\<^sup>* (p2, LTS_\<epsilon>.remove_\<epsilon> (\<gamma>2\<epsilon> @ v))\<close>
+        then show ?thesis
+          using False p1_\<gamma>1\<gamma>''_v_p_u\<gamma>''v p2_\<gamma>2\<epsilon>v_p1_\<gamma>1\<gamma>''v q_nlq_p2_\<gamma>2\<epsilon>v
           by (metis (no_types, lifting) inddd rtranclp_trans) 
       qed
     qed
   qed
 qed
 
-lemma lemma_3_4'':
+\<comment> \<open>Corresponds to Schwoon's lemma 3.4\<close>
+lemma rtranclp_post_star_rules_constains_successors:
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
   assumes "initials \<subseteq> LTS.sources A"
   assumes "new_noninitials \<subseteq> LTS.isolated A"
   assumes "(Initial p, w, q) \<in> LTS.transition_star A'"
   shows "(\<not>is_New_Noninitial q \<longrightarrow> (\<exists>p' w'. (Initial p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p',w') \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))) \<and>
          (is_New_Noninitial q \<longrightarrow> (the_New_Ctr_Loc q, [the_New_Label q]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))"
-  using lemma_3_4' assms by (metis LTS.transition_star_transition_star_states) 
+  using rtranclp_post_star_rules_constains_successors_states assms by (metis LTS.transition_star_transition_star_states) 
 
-lemma lemma_3_4:
+
+\<comment> \<open>Corresponds to Schwoon's lemma 3.4\<close>
+lemma post_star_rules_saturation_constains_successors:
   assumes "saturation post_star_rules A A'"
   assumes "initials \<subseteq> LTS.sources A"
   assumes "new_noninitials \<subseteq> LTS.isolated A"
   assumes "(Initial p, w, q) \<in> LTS.transition_star A'"
   shows "(\<not>is_New_Noninitial q \<longrightarrow> (\<exists>p' w'. (Initial p', w', q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p',w') \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))) \<and>
          (is_New_Noninitial q \<longrightarrow> (the_New_Ctr_Loc q, [the_New_Label q]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w))"
-  using lemma_3_4'' assms saturation_def by metis
+  using rtranclp_post_star_rules_constains_successors assms saturation_def by metis
 
- \<comment> \<open>Corresponds to one direction of Schwoon's theorem 3.3\<close>
+\<comment> \<open>Corresponds to one direction of Schwoon's theorem 3.3\<close>
 theorem post_star_rules_subset_post_star_language:
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
   assumes "initials \<subseteq> LTS.sources A"
@@ -1955,7 +1956,7 @@ proof
   have "\<not> is_New_Noninitial q"
     using F_not_Ext q_p(1) by blast
   then obtain p' w'a where "(Initial p', w'a, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w'a) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w')"
-    using lemma_3_4''[OF assms(1) assms(2) assms(3) ttt] by auto
+    using rtranclp_post_star_rules_constains_successors[OF assms(1) assms(2) assms(3) ttt] by auto
   then have "(Initial p', w'a, q) \<in> LTS_\<epsilon>.transition_star_\<epsilon> A \<and> (p', w'a) \<Rightarrow>\<^sup>* (p, w)"
     using w'_def by (metis LTS_\<epsilon>.\<epsilon>_exp_def LTS_\<epsilon>.remove_\<epsilon>_def \<open>LTS_\<epsilon>.\<epsilon>_exp w' w \<and> (Initial p, w', q) \<in> LTS.transition_star A'\<close>)
   then have "(p,w) \<in> post_star (language_\<epsilon> A)"
