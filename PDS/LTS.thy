@@ -48,7 +48,7 @@ fun append_transition_star_states_\<gamma> :: "(('a \<times> 'b list \<times> 'a
   "((p1,w1,ss1,q1),\<gamma>) @@\<^sup>\<gamma> (p2,w2,ss2,q2) = (p1, w1 @ [\<gamma>] @ w2, ss1@ss2, q2)"
 
 definition inters :: "('state, 'label) transition set \<Rightarrow> ('state, 'label) transition set \<Rightarrow> (('state * 'state), 'label) transition set" where
-  "inters ts1 ts2 = {((p1, q1), \<alpha>, (p2, q2)) | p1 q1 \<alpha> p2 q2. (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
+  "inters ts1 ts2 = {((p1, q1), \<alpha>, (p2, q2)). (p1, \<alpha>, p2) \<in> ts1 \<and> (q1, \<alpha>, q2) \<in> ts2}"
 
 definition inters_finals :: "'state set \<Rightarrow> 'state set \<Rightarrow> ('state * 'state) set" where
   "inters_finals finals1 finals2 = finals1 \<times> finals2"
