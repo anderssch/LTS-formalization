@@ -1799,15 +1799,10 @@ next
 
         have cv: "j = count (transitions_of ((v_ss, v))) t"
         proof -
-
-          have a1: "New_Noninitial p1 \<gamma>1 = last u_ss"
+          have last_u_ss: "New_Noninitial p1 \<gamma>1 = last u_ss"
             by (meson LTS.transition_star_states_last X_1)
-          have a2: "q' = hd v_ss"
+          have q'_hd_v_ss: "q' = hd v_ss"
             by (meson LTS.transition_star_states_hd path)
-          have a4: "Some \<gamma>'' # v = [Some \<gamma>''] @ v"
-            by auto
-          have a5: "New_Noninitial p1 \<gamma>1 = last u_ss \<and> q' = hd v_ss"
-            using a1 a2 by blast
 
           have "count (transitions_of' (((Initial p, u, u_ss, New_Noninitial p1 \<gamma>1), Some \<gamma>'') @@\<^sup>\<gamma> (q', v, v_ss, q)))
                 (New_Noninitial p1 \<gamma>1, Some \<gamma>'', q') =
@@ -1816,10 +1811,10 @@ next
                 count (transitions_of' (q', v, v_ss, q)) (New_Noninitial p1 \<gamma>1, Some \<gamma>'', q')"
             using count_append_transition_star_states_\<gamma>_length[of u_ss u v_ss "Initial p" "New_Noninitial p1 \<gamma>1" "Some \<gamma>''" q' v q "New_Noninitial p1 \<gamma>1" "Some \<gamma>''" q'] t_def ss_split w_split X_1
             by (meson LTS.transition_star_states_length v_ss_empty)
-          then have a3: "count (transitions_of (u_ss @ v_ss, u @ Some \<gamma>'' # v)) (last u_ss, Some \<gamma>'', hd v_ss) = Suc (count (transitions_of (u_ss, u)) (last u_ss, Some \<gamma>'', hd v_ss) + count (transitions_of (v_ss, v)) (last u_ss, Some \<gamma>'', hd v_ss))"
-            using a1 a2 by auto
-          have "j = count (transitions_of' ((q',v, v_ss, q))) t"
-            using a1 a2 a3 X_1 ss_split w_split add_trans_push_2(4) Suc(2)
+          then have "count (transitions_of (u_ss @ v_ss, u @ Some \<gamma>'' # v)) (last u_ss, Some \<gamma>'', hd v_ss) = Suc (count (transitions_of (u_ss, u)) (last u_ss, Some \<gamma>'', hd v_ss) + count (transitions_of (v_ss, v)) (last u_ss, Some \<gamma>'', hd v_ss))"
+            using last_u_ss q'_hd_v_ss by auto
+          then have "j = count (transitions_of' ((q',v, v_ss, q))) t"
+            using last_u_ss q'_hd_v_ss X_1 ss_split w_split add_trans_push_2(4) Suc(2)
               LTS.avoid_count_zero[of "Initial p" u u_ss "New_Noninitial p1 \<gamma>1" Aiminus1 "New_Noninitial p1 \<gamma>1" "Some \<gamma>''" q']
             by (auto simp: t_def)
           then show "j = count (transitions_of ((v_ss, v))) t"
