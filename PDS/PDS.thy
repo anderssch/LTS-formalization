@@ -1174,12 +1174,12 @@ next
       using Un_iff state.inject(2) prod.inject singleton_iff step.IH step.prems(1,2) by blast 
   next
     case (add_trans_push_2 p'''' \<gamma>'' p'' \<gamma>''' \<gamma>'''' q)
-    then have "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> Ai"
-      using step.prems(2) by blast
+    have "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> Ai"
+      using step.prems(2) .
     then have nin: "\<nexists>p \<gamma>. (p, \<gamma>, New_Noninitial p' \<gamma>') \<in> Aiminus1"
-      using local.add_trans_push_2(1) step.IH step.prems(1,2) by fastforce
+      using local.add_trans_push_2(1) step.IH step.prems(1) by fastforce
     then have "New_Noninitial p' \<gamma>' \<noteq> q"
-      using LTS.sources_def2 by (metis state.disc(1,3) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon> local.add_trans_push_2(3))
+      using LTS.sources_def2 local.add_trans_push_2(3) by (metis state.disc(1,3) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon>)
     then have "\<nexists>p \<gamma>. (p, \<gamma>, New_Noninitial p' \<gamma>') = (Initial p'', \<epsilon>, q)"
       by auto
     then show ?thesis
@@ -1187,6 +1187,12 @@ next
   qed
 qed
 
+lemma post_star_rules_New_Noninitial_source_invariant:
+  assumes "post_star_rules\<^sup>*\<^sup>* A A'"
+  assumes "new_noninitials \<subseteq> LTS.isolated A"
+  assumes "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> A'"
+  shows "New_Noninitial p' \<gamma>' \<in> LTS.sources A'"
+  by (meson LTS.sources_def2 assms(1) assms(2) assms(3) lemma_3_4'_Aux)
 
 lemma lemma_3_4'_Aux_Aux2:
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
@@ -1210,8 +1216,8 @@ next
       using local.add_trans_pop(1) step.IH step.prems(1,2) by fastforce
     then have "New_Noninitial p' \<gamma>' \<noteq> q"
       using add_trans_pop(4) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon>[of "Initial p'''" "[\<gamma>'']" q Aiminus1 "New_Noninitial p' \<gamma>'"]
-      using lemma_3_4'_Aux local.add_trans_pop(1) step.hyps(1) step.prems(1,2)
-      using UnI1 local.add_trans_pop(3) LTS.sources_def2 by (metis (full_types) state.distinct(3))
+      using post_star_rules_New_Noninitial_source_invariant local.add_trans_pop(1) step.hyps(1) step.prems(1,2)
+      using UnI1 local.add_trans_pop(3) by (metis (full_types) state.distinct(3))
     then have "\<nexists>p \<gamma>. (p, \<gamma>, New_Noninitial p' \<gamma>') = (Initial p'', \<epsilon>, q)"
       by auto
     then show ?thesis
@@ -1224,9 +1230,8 @@ next
       using local.add_trans_swap(1) step.IH step.prems(1,2) by fastforce
     then have "New_Noninitial p' \<gamma>' \<noteq> q"
       using LTS_\<epsilon>.transition_star_not_to_source_\<epsilon>[of "Initial p''''" "[\<gamma>'']" q Aiminus1] local.add_trans_swap(3)
-      using lemma_3_4'_Aux[of _ Aiminus1 p' \<gamma>']  UnCI local.add_trans_swap(1) step.hyps(1) step.prems(1,2)
-       state.simps(7) LTS.sources_def2
-      by metis
+      using post_star_rules_New_Noninitial_source_invariant[of _ Aiminus1 p' \<gamma>']  UnCI local.add_trans_swap(1) step.hyps(1) step.prems(1,2)
+       state.simps(7) by metis
     then have "\<nexists>p \<gamma>. (p, \<gamma>, New_Noninitial p' \<gamma>') = (Initial p'', Some \<gamma>''', q)"
       by auto
     then show ?thesis
@@ -1240,14 +1245,14 @@ next
       using Un_iff state.inject prod.inject singleton_iff step.IH step.prems(1,2) by blast 
   next
     case (add_trans_push_2 p'''' \<gamma>'' p'' \<gamma>''' \<gamma>'''' q)
-    then have "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> Ai"
+    have "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> Ai"
       using step.prems(2) by blast
     then have nin: "\<nexists>p \<gamma>. (New_Noninitial p' \<gamma>', \<gamma>, p) \<in> Aiminus1"
       using local.add_trans_push_2(1) step.IH step.prems(1,2) by fastforce
     then have "New_Noninitial p' \<gamma>' \<noteq> q"
       using state.disc(3) LTS_\<epsilon>.transition_star_not_to_source_\<epsilon>[of "Initial p''''" "[\<gamma>'']" q Aiminus1  "New_Noninitial p' \<gamma>'"] local.add_trans_push_2(3)
-      using lemma_3_4'_Aux[of _ Aiminus1 p' \<gamma>'] UnCI local.add_trans_push_2(1) step.hyps(1) step.prems(1,2)
-        LTS.sources_def2 state.disc(1)
+      using post_star_rules_New_Noninitial_source_invariant[of _ Aiminus1 p' \<gamma>'] UnCI local.add_trans_push_2(1) step.hyps(1) step.prems(1,2)
+         state.disc(1)
       by metis
     then have "\<nexists>p \<gamma>. (New_Noninitial p' \<gamma>', \<gamma>, p) = (Initial p'', \<epsilon>, q)"
       by auto
@@ -1256,6 +1261,14 @@ next
       using local.add_trans_push_2 step.prems(2) by auto 
   qed
 qed
+
+lemma post_star_rules_New_Noninitial_zink_invariant:
+  assumes "post_star_rules\<^sup>*\<^sup>* A A'"
+  assumes "new_noninitials \<subseteq> LTS.isolated A"
+  assumes "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> A'"
+  shows "New_Noninitial p' \<gamma>' \<in> LTS.zinks A'"
+  by (meson LTS.zinks_def2 assms(1) assms(2) assms(3) lemma_3_4'_Aux_Aux2)
+
 
 \<comment> \<open>Corresponds to Schwoon's lemma 3.4\<close>
 lemma rtranclp_post_star_rules_constains_successors_states:
@@ -1723,7 +1736,7 @@ next
           using LTS.hd_is_hd by fastforce
       qed
       from add_trans_push_1(4) have "\<nexists>p \<gamma>. (New_Noninitial p1 \<gamma>1, \<gamma>, p) \<in> Aiminus1"
-        using lemma_3_4'_Aux_Aux2 step.hyps(1) step.prems(1,2,3) by blast
+        using post_star_rules_New_Noninitial_zink_invariant[of A Aiminus1 p1 \<gamma>1] step.hyps(1) step.prems(1,2,3) unfolding LTS.zinks_def by blast 
       then have "\<nexists>p \<gamma>. (New_Noninitial p1 \<gamma>1, \<gamma>, p) \<in> Ai"
         using local.add_trans_push_1(1) by blast
       then have ss_w_short: "ss = [Initial p1, New_Noninitial p1 \<gamma>1] \<and> w = [Some \<gamma>1]"
@@ -1737,7 +1750,6 @@ next
       have "(p1, [\<gamma>1]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w)"
         using ss_w_short unfolding LTS_\<epsilon>.remove_\<epsilon>_def
         using VII by force
-      thm Suc(1)
       have "(the_New_Ctr_Loc q, [the_New_Label q]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w)"
         by (simp add: \<open>(p1, [\<gamma>1]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w)\<close> q_ext)
       then show ?thesis
