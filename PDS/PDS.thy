@@ -1109,11 +1109,11 @@ lemma no_edge_to_Ctr_Loc_post_star_rules:
   shows "initials \<subseteq> LTS.sources Ai"
   using assms no_edge_to_Ctr_Loc_post_star_rules' initials_sources_iff_Ctr_Loc_sources by metis
 
-lemma source_and_zink_isolated:
+lemma source_and_sink_isolated:
   assumes "N \<subseteq> LTS.sources A"
-  assumes "N \<subseteq> LTS.zinks A"
+  assumes "N \<subseteq> LTS.sinks A"
   shows "\<forall>p \<gamma> q. (p, \<gamma>, q) \<in> A \<longrightarrow> p \<notin> N \<and> q \<notin> N"
-  by (metis LTS.sources_def2 LTS.zinks_def2 assms(1) assms(2) in_mono)
+  by (metis LTS.sources_def2 LTS.sinks_def2 assms(1) assms(2) in_mono)
 
 lemma post_star_rules_New_Noninitial_source_invariant':
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
@@ -1182,7 +1182,7 @@ lemma post_star_rules_New_Noninitial_source_invariant:
   shows "New_Noninitial p' \<gamma>' \<in> LTS.sources A'"
   by (meson LTS.sources_def2 assms(1) assms(2) assms(3) post_star_rules_New_Noninitial_source_invariant')
 
-lemma post_star_rules_New_Noninitial_zink_invariant':
+lemma post_star_rules_New_Noninitial_sink_invariant':
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
   assumes "new_noninitials \<subseteq> LTS.isolated A"
   assumes "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> A'"
@@ -1250,12 +1250,12 @@ next
   qed
 qed
 
-lemma post_star_rules_New_Noninitial_zink_invariant:
+lemma post_star_rules_New_Noninitial_sink_invariant:
   assumes "post_star_rules\<^sup>*\<^sup>* A A'"
   assumes "new_noninitials \<subseteq> LTS.isolated A"
   assumes "(Initial p', Some \<gamma>', New_Noninitial p' \<gamma>') \<notin> A'"
-  shows "New_Noninitial p' \<gamma>' \<in> LTS.zinks A'"
-  by (meson LTS.zinks_def2 assms(1) assms(2) assms(3) post_star_rules_New_Noninitial_zink_invariant')
+  shows "New_Noninitial p' \<gamma>' \<in> LTS.sinks A'"
+  by (meson LTS.sinks_def2 assms(1) assms(2) assms(3) post_star_rules_New_Noninitial_sink_invariant')
 
 
 \<comment> \<open>Corresponds to Schwoon's lemma 3.4\<close>
@@ -1723,15 +1723,15 @@ next
           using LTS.hd_is_hd by fastforce
       qed
       from add_trans_push_1(4) have "\<nexists>p \<gamma>. (New_Noninitial p1 \<gamma>1, \<gamma>, p) \<in> Aiminus1"
-        using post_star_rules_New_Noninitial_zink_invariant[of A Aiminus1 p1 \<gamma>1] step.hyps(1) step.prems(1,2,3) unfolding LTS.zinks_def by blast 
+        using post_star_rules_New_Noninitial_sink_invariant[of A Aiminus1 p1 \<gamma>1] step.hyps(1) step.prems(1,2,3) unfolding LTS.sinks_def by blast 
       then have "\<nexists>p \<gamma>. (New_Noninitial p1 \<gamma>1, \<gamma>, p) \<in> Ai"
         using local.add_trans_push_1(1) by blast
       then have ss_w_short: "ss = [Initial p1, New_Noninitial p1 \<gamma>1] \<and> w = [Some \<gamma>1]"
         using Suc.prems(2) VII \<open>hd (transition_list (ss, w)) = t \<and> count (transitions_of (ss, w)) t = 1\<close> t_def
-        using LTS.nothing_after_zink[of "Initial p1" "New_Noninitial p1 \<gamma>1" "tl (tl ss)" "Some \<gamma>1" "tl w" Ai] \<open>transition_list (ss, w) \<noteq> []\<close>
+        using LTS.nothing_after_sink[of "Initial p1" "New_Noninitial p1 \<gamma>1" "tl (tl ss)" "Some \<gamma>1" "tl w" Ai] \<open>transition_list (ss, w) \<noteq> []\<close>
         LTS.transition_star_states_path_with_word[of "Initial p" w ss q Ai]
         LTS.transition_list_Cons[of "Initial p" w ss q Ai]
-        by (auto simp: LTS.zinks_def2)
+        by (auto simp: LTS.sinks_def2)
       then have q_ext: "q = New_Noninitial p1 \<gamma>1"
         using LTS.transition_star_states_last Suc.prems(2) by fastforce
       have "(p1, [\<gamma>1]) \<Rightarrow>\<^sup>* (p, LTS_\<epsilon>.remove_\<epsilon> w)"

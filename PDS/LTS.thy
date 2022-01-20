@@ -447,24 +447,24 @@ qed
 definition sources :: "'state set" where
   "sources = {p. \<nexists>q \<gamma>. (q, \<gamma>, p) \<in> transition_relation}"
 
-definition zinks :: "'state set" where
-  "zinks = {p. \<nexists>q \<gamma>. (p, \<gamma>, q) \<in> transition_relation}"
+definition sinks :: "'state set" where
+  "sinks = {p. \<nexists>q \<gamma>. (p, \<gamma>, q) \<in> transition_relation}"
 
 definition isolated :: "'state set" where
-  "isolated = sources \<inter> zinks"
+  "isolated = sources \<inter> sinks"
 
 lemma sources_def2:
   "q \<in> sources \<longleftrightarrow> (\<nexists>q' \<gamma>. (q', \<gamma>, q) \<in> transition_relation)"
   by (simp add: LTS.sources_def)
 
-lemma zinks_def2:
-  "q \<in> zinks \<longleftrightarrow> (\<nexists>q' \<gamma>. (q, \<gamma>, q') \<in> transition_relation)"
-  by (simp add: LTS.zinks_def)
+lemma sinks_def2:
+  "q \<in> sinks \<longleftrightarrow> (\<nexists>q' \<gamma>. (q, \<gamma>, q') \<in> transition_relation)"
+  by (simp add: LTS.sinks_def)
 
 lemma isolated_no_edges:
   assumes "(p, \<gamma>, q) \<in> transition_relation"
   shows "p \<notin> isolated \<and> q \<notin> isolated"
-  using assms isolated_def sources_def2 zinks_def2 by fastforce
+  using assms isolated_def sources_def2 sinks_def2 by fastforce
 
 lemma source_never_or_hd:
   assumes "(ss, w) \<in> path_with_word"
@@ -576,15 +576,15 @@ lemma transition_list_Cons:
   shows "\<exists>w' ss'. w = \<gamma> # w' \<and> ss = p # q1 # ss'"
   using assms transition_list_length_Cons by (metis LTS.transition_star_states_length) 
 
-lemma nothing_after_zink:
+lemma nothing_after_sink:
   assumes "([q, q']@ss, \<gamma>1#w) \<in> path_with_word"
-  assumes "q' \<in> zinks"
+  assumes "q' \<in> sinks"
   shows "ss = [] \<and> w = []"
   using assms 
 proof (induction rule: LTS.path_with_word.induct[OF assms(1)])
   case (1 s)
   from 1 have "\<nexists>q'' \<gamma>. (q', \<gamma>, q'') \<in> transition_relation"
-    using zinks_def2[of "q'"]
+    using sinks_def2[of "q'"]
     by auto
   with assms(1) show ?case
     by (auto elim: path_with_word.cases)
