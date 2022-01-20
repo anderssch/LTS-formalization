@@ -35,16 +35,16 @@ fun transition_list_of' where
 | "transition_list_of' (p, _, [], p'') = []" (* Equivalent to the above *)
 | "transition_list_of' (v, va # vc, [vf], ve) = []" (* Should not occur *)
 
-fun append_path_with_word :: "('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list)" (infix "@\<acute>" 65) where (* TODO: rename *)
+fun append_path_with_word :: "('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list)" (infix "@\<acute>" 65) where
   "(ss1,w1) @\<acute> (ss2,w2) = (ss1@(tl ss2), w1 @ w2)"
 
-fun append_path_with_word_\<gamma> :: "(('a list \<times> 'b list) * 'b) \<Rightarrow> ('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list)" (infix "@\<^sup>\<gamma>" 65) where (* TODO: rename *)
+fun append_path_with_word_\<gamma> :: "(('a list \<times> 'b list) * 'b) \<Rightarrow> ('a list \<times> 'b list) \<Rightarrow> ('a list \<times> 'b list)" (infix "@\<^sup>\<gamma>" 65) where
   "((ss1,w1),\<gamma>) @\<^sup>\<gamma> (ss2,w2) = (ss1@ss2, w1 @ [\<gamma>] @ w2)"
 
-fun append_transition_star_states :: "('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@\<acute>" 65) where (* TODO: rename *)
+fun append_transition_star_states :: "('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@\<acute>" 65) where
   "(p1,w1,ss1,q1) @@\<acute> (p2,w2,ss2,q2) = (p1, w1 @ w2, ss1@(tl ss2), q2)"
 
-fun append_transition_star_states_\<gamma> :: "(('a \<times> 'b list \<times> 'a list \<times> 'a) * 'b) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@\<^sup>\<gamma>" 65) where (* TODO: rename *)
+fun append_transition_star_states_\<gamma> :: "(('a \<times> 'b list \<times> 'a list \<times> 'a) * 'b) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a) \<Rightarrow> ('a \<times> 'b list \<times> 'a list \<times> 'a)" (infix "@@\<^sup>\<gamma>" 65) where
   "((p1,w1,ss1,q1),\<gamma>) @@\<^sup>\<gamma> (p2,w2,ss2,q2) = (p1, w1 @ [\<gamma>] @ w2, ss1@ss2, q2)"
 
 definition inters :: "('state, 'label) transition set \<Rightarrow> ('state, 'label) transition set \<Rightarrow> (('state * 'state), 'label) transition set" where
@@ -86,7 +86,6 @@ definition post_star :: "'state set \<Rightarrow> 'state set" where
 definition pre_star :: "'state set \<Rightarrow> 'state set" where
   "pre_star C = {c'. \<exists>c \<in> C. c' \<Rightarrow>\<^sup>* c}"
 
-(* Paths as defined in the thesis: *)
 inductive_set path :: "'state list set" where
   "[s] \<in> path"
 | "(s'#ss) \<in> path \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> s#s'#ss \<in> path"
@@ -95,9 +94,6 @@ inductive_set transition_star :: "('state * 'label list * 'state) set" where
   transition_star_refl[iff]: "(p, [], p) \<in> transition_star"
 | transition_star_step: "(p,\<gamma>,q') \<in> transition_relation \<Longrightarrow> (q',w,q) \<in> transition_star
                            \<Longrightarrow> (p, \<gamma>#w, q) \<in> transition_star"
-
-
-(* I could make a notation like p \<Midarrow>w\<Rightarrow>* q *)
 
 inductive_cases transition_star_empty [elim]: "(p, [], q) \<in> transition_star"
 inductive_cases transition_star_cons: "(p, \<gamma>#w, q) \<in> transition_star"
@@ -487,18 +483,18 @@ next
     by auto
   then show ?case
   proof
-    assume a: "count (transitions_of (s' # ss, w)) t = 0"
+    assume asm: "count (transitions_of (s' # ss, w)) t = 0"
     show ?case
     proof (cases "s = p1 \<and> l = \<gamma> \<and> q1 = s'")
       case True
       then have "hd (transition_list (s # s' # ss, l # w)) = t \<and> count (transitions_of (s # s' # ss, l # w)) t = 1"
-        using 2 a by simp
+        using 2 asm by simp
       then show ?thesis
         by auto
     next
       case False
       then have "count (transitions_of (s # s' # ss, l # w)) t = 0"
-        using 2 a by auto
+        using 2 asm by auto
       then show ?thesis
         by auto
     qed
@@ -715,11 +711,11 @@ next
         using 2(4-7) Cons path_with_word_length
         by (fastforce simp: Cons_eq_append_conv)
     next
-      assume a1: "wa = []"
+      assume wa_empty: "wa = []"
       have "tl ss @ ss' \<noteq> []"
         using calculation(2) by force
       then have "(butlast (tl ss @ ss') @ [last (s' # ssa)], []) = (s' # ssa, wa)"
-        using a1 by (simp add: calculation(2))
+        using wa_empty by (simp add: calculation(2))
       then have "(butlast (tl ss @ ss') @ [last (s' # ssa)], []) \<in> LTS.path_with_word transition_relation"
         using "2"(1) by metis
       then have "length (butlast (tl ss @ ss')) = length ([]::'v list)"
@@ -753,7 +749,7 @@ lemma split_path_with_word_beginning:
   shows "(ss,w) \<in> path_with_word"
   using assms split_path_with_word_beginning'' by (metis append_path_with_word.simps) 
 
-lemma TODO_rename_me':
+lemma path_with_word_remove_last':
   assumes "(SS, W) \<in> path_with_word"
   assumes "SS = ss @ [s, s']"
   assumes "W = w @ [l]"
@@ -769,17 +765,17 @@ next
     by auto
 qed
 
-lemma TODO_rename_me:
+lemma path_with_word_remove_last:
   assumes "(ss @ [s, s'], w @ [l]) \<in> path_with_word"
   shows "(ss @ [s], w) \<in> path_with_word"
-  using TODO_rename_me' assms by auto
+  using path_with_word_remove_last' assms by auto
 
 lemma transition_list_append_edge:
   assumes "(ss @ [s, s'], w @ [l]) \<in> path_with_word"
   shows "transition_list (ss @ [s, s'], w @ [l]) = transition_list (ss @ [s], w) @ [(s, l, s')]"
 proof -
   have "(ss @ [s], w) \<in> path_with_word"
-    using assms TODO_rename_me by auto
+    using assms path_with_word_remove_last by auto
   moreover
   have "([s, s'], [l]) \<in> path_with_word"
     using assms length_Cons list.size(3) by (metis split_path_with_word_end') 
@@ -1055,7 +1051,6 @@ next
 qed
 
 lemma count_zero_remove_path_with_word_transition_star_states:
- (* This proof is a bit messy. *)
   assumes "(p, w, ss ,q) \<in> LTS.transition_star_states Ai"
   assumes "0 = count (transitions_of' (p, w, ss, q)) (p1, \<gamma>, q')"
   assumes "Ai = Aiminus1 \<union> {(p1, \<gamma>, q')}"
@@ -1693,7 +1688,7 @@ next
   then show ?case
   proof (induction a)
     case None
-    then have gu: "\<epsilon>_exp u_\<epsilon> (\<gamma>1 # u1)"
+    then have "\<epsilon>_exp u_\<epsilon> (\<gamma>1 # u1)"
       using \<epsilon>_exp_def by force
     then have "\<exists>\<gamma>1_\<epsilon> u1_\<epsilon>. \<epsilon>_exp \<gamma>1_\<epsilon> [\<gamma>1] \<and> \<epsilon>_exp u1_\<epsilon> u1 \<and> u_\<epsilon> = \<gamma>1_\<epsilon> @ u1_\<epsilon>"
       using None(1) by auto
@@ -1780,7 +1775,6 @@ lemma append_edge_edge_transition_star_\<epsilon>:
   shows "(p1, [\<gamma>', \<gamma>''] @ u1, q) \<in> transition_star_\<epsilon>"
   using assms by (metis transition_star_\<epsilon>_step_\<gamma> append_Cons append_Nil)
 
-(* I doubt a bit that this definition is useful *)
 inductive_set transition_star_states_\<epsilon> :: "('state * 'label list * 'state list * 'state) set" where
   transition_star_states_\<epsilon>_refl[iff]: "(p,[],[p],p) \<in> transition_star_states_\<epsilon>"
 | transition_star_states_\<epsilon>_step_\<gamma>: "(p,Some \<gamma>,q') \<in> transition_relation \<Longrightarrow> (q',w,ss,q) \<in> transition_star_states_\<epsilon>
@@ -1788,7 +1782,6 @@ inductive_set transition_star_states_\<epsilon> :: "('state * 'label list * 'sta
 | transition_star_states_\<epsilon>_step_\<epsilon>: "(p, \<epsilon> ,q') \<in> transition_relation \<Longrightarrow> (q',w,ss,q) \<in> transition_star_states_\<epsilon>
                            \<Longrightarrow> (p, w, p#ss, q) \<in> transition_star_states_\<epsilon>"
 
-(* I doubt a bit that this definition is useful *)
 inductive_set path_with_word_\<epsilon> :: "('state list * 'label list) set" where
   path_with_word_\<epsilon>_refl[iff]: "([s],[]) \<in> path_with_word_\<epsilon>"
 | path_with_word_\<epsilon>_step_\<gamma>: "(s'#ss, w) \<in> path_with_word_\<epsilon> \<Longrightarrow> (s,Some l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,l#w) \<in> path_with_word_\<epsilon>"
@@ -1848,7 +1841,6 @@ section \<open>Automata with epsilon\<close>
 
 subsection \<open>P-Automaton with epsilon locale\<close>
 
-(* Or it could have extended P_Automaton. Hmm... *)
 locale P_Automaton_\<epsilon> = LTS_\<epsilon> transition_relation for transition_relation :: "('state::finite, 'label option) transition set" +
   fixes finals :: "'state set" and initials :: "'state set"
 begin
@@ -1967,7 +1959,7 @@ proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_ind
       note False_outer_outer_outer = False
       show ?thesis
       proof (cases "\<exists>w1'. w1=\<epsilon>#w1'")
-        case True (* Adapted from above... maybe they can be merged....... *)
+        case True (* Adapted from above. Maybe they can be merged. *)
         then obtain w1' where True':
           "w1=\<epsilon>#w1'"
           by auto
@@ -2009,7 +2001,7 @@ proof (induction "length w1 + length w2" arbitrary: w1 w2 w p1 q1 rule: less_ind
         note False_outer_outer = False
         then show ?thesis
         proof (cases "\<exists>w2'. w2 = \<epsilon> # w2'")
-          case True (* Adapted from above... maybe they can be merged....... *)
+          case True (* Adapted from above. Maybe they can be merged. *)
           then obtain w2' where True':
             "w2=\<epsilon>#w2'"
             by auto
