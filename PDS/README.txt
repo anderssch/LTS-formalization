@@ -1,30 +1,24 @@
-Formalization of push down systems
+This directory contains the Isabelle formalization used in our CAV2022 submission.
+If you have Isabelle2021 (https://isabelle.in.tum.de/website-Isabelle2021) and the 
+Archive of Formal Proofs 2021 (https://www.isa-afp.org) installed, then you can open 
+Isabelle/jEdit to inspect our proofs.
 
-PDS.thy is a new version where using locales and libraries
+If Isabelle2021 and the Archive of Formal Proofs 2021 are not on your machine you can 
+install them as explained here:
 
-morten_* are Morten's original version 
-anders_* are the same as Morten's with some additions
+== Installation of Isabelle and AFP on Linux ==
 
-
-Based on this thesis: http://www.lsv.fr/Publis/PAPERS/PDF/schwoon-phd02.pdf
-
-
-Future work:
-https://github.com/DEIS-Tools/PDAAAL/blob/master/src/pdaaal/Solver.h#L92
-
-
-LTS formalizations:
-	https://www.isa-afp.org/entries/Transition_Systems_and_Automata.html
-	Not a good fit, because LTS are defined differently
-
-	afp-2021/thys/CAVA_LTL_Modelchecker/SM/Lib/LTS.thy
-	Similar to what we are doing, but very small.
-
-	There is a comprehensive overview of Graph and LTS libraries:
-	https://github.com/wimmers/archive-of-graph-formalizations
-
-	See also Anders's mail to Simon "Formalizing model checking"
+$ cd ~
+$ mkdir CAV2022
+$ cd CAV2022
+$ wget https://isabelle.in.tum.de/website-Isabelle2021/dist/Isabelle2021_linux.tar.gz
+$ tar zxvf Isabelle2021_linux.tar.gz
+$ wget https://www.isa-afp.org/release/afp-2021-12-13.tar.gz
+$ tar zxvf afp-2021-12-13.tar.gz
+$ ./Isabelle2021/bin/isabelle components -u ./afp-2021-12-13/thys/
+$ ./Isabelle2021/bin/isabelle jedit
 
 
-
-
+The last command starts Isabelle/jEdit which is Isabelle's Prover IDE.
+In Isabelle/jEdit under File>Open you can  open the various .thy files in our 
+reproducibility package to inspect our proofs.
