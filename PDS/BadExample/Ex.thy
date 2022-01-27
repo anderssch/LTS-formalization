@@ -1,5 +1,5 @@
 theory Ex
-  imports PDS.PDS_Code
+  imports "../PDS_Code"
 begin
 
 (* Query specific part START *)
@@ -113,6 +113,8 @@ lift_definition equal_state :: "state \<Rightarrow> state \<Rightarrow> bool" is
 instance by (standard; transfer) auto
 end
 
+(* The check function disagrees with the encoded answer (Some False) 
+   and therefore the proof fails as expected. *)
 lemma
   "check pds_rules initial_automaton initial_ctr_loc initial_ctr_loc_st
                    final_automaton   final_ctr_loc   final_ctr_loc_st   = Some False"
