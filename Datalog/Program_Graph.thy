@@ -50,7 +50,7 @@ fun sem_action :: "'v action \<Rightarrow> 'v memory \<rightharpoonup> 'v memory
 
 section \<open>Program Graphs\<close>
 
-type_synonym ('n,'v) edge = "'n * 'v action * 'n"
+type_synonym ('n,'v) edge = "'n \<times> 'v action \<times> 'n"
 
 type_synonym ('n,'v) program_graph = "(('n,'v) edge set \<times> 'n \<times> 'n)"
 
@@ -110,21 +110,28 @@ section \<open>Datalog programs and their solutions\<close>
 
 datatype ('x,'e) identifier = DLVar 'x | DLElement 'e
 
-datatype ('p,'x,'e) righthand = 
+datatype (preds_rh: 'p,'x,'e) righthand = 
   Eql "('x,'e) identifier" "('x,'e) identifier" ("_ \<^bold>= _" [61, 61] 61)
   | Neql "('x,'e) identifier" "('x,'e) identifier" ("_ \<^bold>\<noteq> _" [61, 61] 61)
   | PosRh 'p "('x,'e) identifier list"
   | NegRh 'p "('x,'e) identifier list" ("\<^bold>\<not> _ _" [61, 61] 61)
 
-datatype ('p,'x,'e) clause = Cls 'p "('x,'e) identifier list" "('p,'x,'e) righthand list" (* Why not righthand set? *)
+datatype (preds_cls: 'p, 'x,'e) clause = Cls 'p "('x,'e) identifier list" "('p,'x,'e) righthand list" (* Why not righthand set? *)
 
 type_synonym ('p,'x,'e) dl_program = "('p,'x,'e) clause set"
+
+definition "preds_dl dl = \<Union>{preds_cls c| c. c \<in> dl}"
+
+lemma preds_dl_union[simp]: "preds_dl (dl1 \<union> dl2) = preds_dl dl1 \<union> preds_dl dl2"
+  unfolding preds_dl_def by auto
 
 type_synonym ('x,'e) var_val = "'x \<Rightarrow> 'e"
 
 type_synonym ('p,'e) pred_val = "'p \<Rightarrow> 'e list set"
 
 type_synonym ('p,'x,'e) lefthand = "'p * ('x,'e) identifier list"
+
+fun preds_lh where "preds_lh (p,ids) = {p}"
 
 fun eval_id :: "('x,'e) var_val \<Rightarrow> ('x,'e) identifier \<Rightarrow> 'e" where
   "eval_id \<sigma> (DLVar x) = \<sigma> x"
@@ -1028,11 +1035,14 @@ datatype BV_pred =
    the_BV
    | the_kill
    | the_gen
+   | the_CBV
 
 datatype BV_var =
-   the_\<uu>
+   the_\<uu> | the_\<vv>
 
 abbreviation "BV == PosRh the_BV"
+abbreviation NegRh_BV ("\<^bold>\<not>BV") where
+  "\<^bold>\<not>BV \<equiv> NegRh the_BV"
 abbreviation "kill == PosRh the_kill"
 abbreviation NegRh_kill ("\<^bold>\<not>kill") where
   "\<^bold>\<not>kill \<equiv> NegRh the_kill"
@@ -1042,18 +1052,25 @@ fun s_BV :: "BV_pred \<Rightarrow> nat" where
   "s_BV the_kill = 0"
 | "s_BV the_gen = 0"
 | "s_BV the_BV = 1"
+| "s_BV the_CBV = 2"
 
 abbreviation BV_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("BV\<langle>_\<rangle> :- _ .") where 
-   "BV\<langle>args\<rangle> :- ls. \<equiv> Cls the_BV args ls"
+  "BV\<langle>args\<rangle> :- ls. \<equiv> Cls the_BV args ls"
+
+abbreviation CBV_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("CBV\<langle>_\<rangle> :- _ .") where
+  "CBV\<langle>args\<rangle> :- ls. \<equiv> Cls the_CBV args ls"
 
 abbreviation kill_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("kill\<langle>_\<rangle> :- _ .") where 
-   "kill\<langle>args\<rangle> :- ls. \<equiv> Cls the_kill args ls"
+  "kill\<langle>args\<rangle> :- ls. \<equiv> Cls the_kill args ls"
 
 abbreviation genn_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("gen\<langle>_\<rangle> :- _ .") where 
-   "gen\<langle>args\<rangle> :- ls. \<equiv> Cls the_gen args ls"
+  "gen\<langle>args\<rangle> :- ls. \<equiv> Cls the_gen args ls"
 
 abbreviation BV_Query :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) query" ("BV\<langle>_\<rangle>.") where 
-   "BV\<langle>args\<rangle>. \<equiv> (the_BV, args)"
+  "BV\<langle>args\<rangle>. \<equiv> (the_BV, args)"
+
+abbreviation CBV_Query :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) query" ("CBV\<langle>_\<rangle>.") where 
+  "CBV\<langle>args\<rangle>. \<equiv> (the_CBV, args)"
 
 datatype ('n,'v,'elem) BV_elem =
   BV_Node 'n
@@ -1062,6 +1079,9 @@ datatype ('n,'v,'elem) BV_elem =
 
 abbreviation \<uu> :: "(BV_var, 'a) identifier" where
   "\<uu> == DLVar the_\<uu>"
+
+abbreviation \<vv> :: "(BV_var, 'a) identifier" where
+  "\<vv> == DLVar the_\<vv>"
 
 abbreviation Encode_Node_BV :: "'n \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) identifier" where
   "Encode_Node_BV n == DLElement (BV_Node n)"
@@ -1072,7 +1092,10 @@ abbreviation Encode_Elem_BV :: "'elem \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_
 abbreviation Encode_Action_BV :: "'v action \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) identifier" where
   "Encode_Action_BV \<alpha> == DLElement (BV_Action \<alpha>)"
 
-locale analysis_BV =
+
+section \<open>Forwards may-analysis\<close>
+
+locale analysis_BV_forward_may =
   fixes pg :: "('n,'v) program_graph"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
@@ -1138,7 +1161,7 @@ lemma S_hat_path_mono:
   shows "S_hat_path \<pi> d1 \<subseteq> S_hat_path \<pi> d2"
   unfolding S_hat_path_def using assms S_hat_edge_list_mono by auto
 
-fun ana_kill_BV :: "(('n, 'v) edge * 'd) \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
+fun ana_kill_BV :: "(('n, 'v) edge \<times> 'd) \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
   "ana_kill_BV ((q\<^sub>o, \<alpha>, q\<^sub>s), d) =
    (
    if d \<in> kill_set (q\<^sub>o, \<alpha>, q\<^sub>s) then
@@ -1174,15 +1197,20 @@ fun ana_edge_BV :: "('n, 'v) edge \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) B
         BV\<langle>[Encode_Node_BV q\<^sub>s, \<uu>]\<rangle> :- [gen[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, \<uu>]].
      }"
 
+definition ana_CBV :: "(BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause" where
+  "ana_CBV = (CBV\<langle>[\<uu>,\<vv>]\<rangle> :- [\<^bold>\<not>BV [\<uu>,\<vv>]].)"
+
 definition ana_pg_BV :: "(BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
   "ana_pg_BV = \<Union>(ana_edge_BV ` edge_set) 
                \<union> \<Union>(ana_init_BV ` d_init)
                \<union> \<Union>(ana_kill_BV ` (edge_set \<times> UNIV))
-               \<union> \<Union>(ana_gen_BV ` (edge_set \<times> UNIV))"
+               \<union> \<Union>(ana_gen_BV ` (edge_set \<times> UNIV))
+               \<union> {ana_CBV}"
 
 fun summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
-  "summarizes_dl_BV \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
-     solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
+  "summarizes_dl_BV \<rho> \<longleftrightarrow> 
+     (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
+        solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
 lemma S_hat_path_append:
   assumes "length qs = length w"                               
@@ -1213,7 +1241,11 @@ lemma ana_pg_BV_stratified: "strat_wf s_BV ana_pg_BV"
   unfolding strat_wf_def
   apply auto
   unfolding ana_init_BV_def
+     apply auto
+  subgoal
+    unfolding ana_CBV_def
     apply auto
+    done
   subgoal for x a aa b ba
     apply (cases "ba \<in> kill_set (a, aa, b)")
     subgoal
@@ -1268,7 +1300,9 @@ proof (rule ccontr)
         apply auto
         unfolding ana_pg_BV_def
         apply auto
-        using ana_init_BV_def apply auto[1]
+        using ana_init_BV_def
+        unfolding ana_CBV_def
+           apply auto
          apply (metis c_def clause.inject equals0D insertE)
         apply (metis c_def clause.inject empty_iff singletonD)
         done
@@ -1280,9 +1314,10 @@ proof (rule ccontr)
           apply auto
           unfolding ana_pg_BV_def
           apply auto
-            apply (auto simp add: analysis_BV.ana_init_BV_def)
+          unfolding ana_CBV_def 
+             apply (auto simp add: ana_init_BV_def)
            apply (metis (no_types, lifting) BV_elem.inject(1) BV_elem.inject(2) BV_elem.inject(3) clause.inject equals0D identifier.inject(2) list.inject singletonD)
-          apply (meson BV_pred.distinct(5) clause.inject empty_iff singletonD)
+          apply (meson BV_pred.distinct clause.inject empty_iff singletonD)
           done
       next
         case False
@@ -1298,15 +1333,15 @@ proof (rule ccontr)
           apply auto
           unfolding ana_pg_BV_def
              apply auto
-                     apply (auto simp add: analysis_BV.ana_init_BV_def)
+                         apply (auto simp add: ana_init_BV_def ana_CBV_def)
                  apply (metis clause.inject equals0D eval_id.simps(2) list.inject singletonD)
-                apply (meson BV_pred.distinct(5) clause.inject empty_iff singletonD)
+                apply (meson BV_pred.distinct clause.inject empty_iff singletonD)
                apply (metis clause.inject equals0D eval_id.simps(2) list.inject singletonD)
-              apply (meson BV_pred.distinct(5) clause.inject empty_iff singletonD)
+              apply (meson BV_pred.distinct clause.inject empty_iff singletonD)
              apply (metis clause.inject equals0D eval_id.simps(2) list.inject singletonD)
-            apply (meson BV_pred.distinct(5) clause.inject empty_iff singletonD)
+            apply (meson BV_pred.distinct clause.inject empty_iff singletonD)
            apply (metis (no_types, lifting) clause.inject equals0D eval_id.simps(2) list.inject singletonD)
-          apply (meson BV_pred.distinct(5) clause.inject empty_iff singletonD)
+          apply (meson BV_pred.distinct clause.inject empty_iff singletonD)
           done
       qed
     qed
@@ -1485,7 +1520,7 @@ fun gen_set_RD :: "('n,'v) edge \<Rightarrow> ('n,'v) triple set" where
 definition d_init_RD :: " ('n,'v) triple set" where
   "d_init_RD = (UNIV \<times> {None} \<times> {start})"
 
-interpretation interp: analysis_BV pg kill_set_RD gen_set_RD d_init_RD .
+interpretation interp: analysis_BV_forward_may pg kill_set_RD gen_set_RD d_init_RD .
 
 lemma def_var_def_edge_S_hat:
   assumes "def_var \<pi> x start \<in> R"
@@ -1509,11 +1544,11 @@ proof -
   next
     case (Bool b)
     then show ?thesis
-      by (simp add: analysis_BV.S_hat_def assms(1))
+      by (simp add: analysis_BV_forward_may.S_hat_def assms(1))
   next
     case Skip
     then show ?thesis
-      by (simp add: analysis_BV.S_hat_def assms(1))
+      by (simp add: analysis_BV_forward_may.S_hat_def assms(1))
   qed
   then show ?thesis
     unfolding t_def by auto
@@ -1669,7 +1704,7 @@ next
 qed
 
 lemma def_path_S_hat_path: "def_path \<pi> start = interp.S_hat_path \<pi> d_init_RD"
-  using analysis_BV.S_hat_path_def def_path_def def_var_UNIV_S_hat_edge_list by metis
+  using analysis_BV_forward_may.S_hat_path_def def_path_def def_var_UNIV_S_hat_edge_list by metis
 
 fun summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Rightarrow> bool" where
   "summarizes_RD \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> def_path \<pi> start \<longrightarrow>
@@ -1684,11 +1719,9 @@ lemma RD_sound_again:
 end
 
 
+section \<open>Backwards may-analysis\<close>
 
-
-section \<open>Backwards analysis\<close>
-
-locale analysis_BV_backwards =
+locale analysis_BV_backwards_may =
   fixes pg :: "('n,'v) program_graph"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
@@ -1757,7 +1790,7 @@ definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Right
 
 (* \<rho> \<Turnstile> BV(\<pi>\<^sub>0,d). *)
 
-interpretation fa: analysis_BV pg_rev "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init .
+interpretation fa: analysis_BV_forward_may pg_rev "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init .
 
 abbreviation ana_pg_BV where
   "ana_pg_BV == fa.ana_pg_BV"
@@ -1767,7 +1800,7 @@ lemma rev_end_is_start:
   assumes "LTS.get_end (ss, w) = end"
   shows "LTS.get_start (rev ss, rev w) = fa.start"
   using assms
-  unfolding LTS.get_end_def LTS.get_start_def fa.start_def pg_rev_def analysis_BV.start_def
+  unfolding LTS.get_end_def LTS.get_start_def fa.start_def pg_rev_def analysis_BV_forward_may.start_def
   by (simp add: hd_rev)
 
 lemma S_hat_edge_list_forward_backward:
@@ -1825,7 +1858,7 @@ proof -
   have "solves_query \<rho> BV\<langle>[Encode_Node_BV (LTS.get_end (rev (ss), rev (w))), Encode_Elem_BV d]\<rangle>."
     using assms(4) fa.summarizes_dl_BV.simps by blast
   then show ?thesis
-    by (metis LTS.get_end_def LTS.get_start_def LTS.path_with_word_not_empty rev_in_edge_set fst_conv hd_rev rev_rev_ident)
+    by (metis LTS.get_end_def LTS.get_start_def fst_conv hd_rev rev_rev_ident)
 qed
 
 lemma summarizes_dl_BV_forwards_backwards:
@@ -1854,7 +1887,6 @@ end
 
 section \<open>Live Variables Analysis\<close>
 
-(* definition def_var :: "('n,'v) edge list \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> ('n,'v) triple" where *)
 
 fun use_action :: "'v action \<Rightarrow> 'v set" where
   "use_action (x ::= a) = fv_arith a"
@@ -1896,7 +1928,7 @@ fun gen_set_LV :: "('n,'v) edge \<Rightarrow> 'v set" where
 definition d_init_LV :: "'v set" where
   "d_init_LV = {}"
 
-interpretation interpb: analysis_BV_backwards pg kill_set_LV gen_set_LV d_init_LV .
+interpretation interpb: analysis_BV_backwards_may pg kill_set_LV gen_set_LV d_init_LV .
 
 thm interpb.sound_rev_BV
 
@@ -1957,7 +1989,7 @@ next
     next
       case False
       then show ?thesis
-        by (simp add: analysis_BV_backwards.S_hat_def x_in_S_hat_\<pi>)
+        by (simp add: analysis_BV_backwards_may.S_hat_def x_in_S_hat_\<pi>)
     qed
   qed
 qed
@@ -2075,6 +2107,354 @@ qed
 end
 
 
+section \<open>Forward must-analysis\<close>
 
+locale analysis_BV_forwards_must =
+  fixes pg :: "('n,'v) program_graph"
+  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes d_init :: "'d set"
+begin
+
+definition edge_set where
+  "edge_set = fst pg"
+
+definition start where
+  "start = fst (snd pg)"
+
+definition "end" where
+  "end = snd (snd pg)"
+
+
+definition "S_hat" :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" where
+  "S_hat e R = (R - kill_set e) \<union> gen_set e"
+
+lemma S_hat_mono:
+  assumes "d1 \<subseteq> d2"
+  shows "S_hat e d1 \<subseteq> S_hat e d2"
+  using assms unfolding S_hat_def by auto
+
+fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" where
+  "S_hat_edge_list [] R = R" |
+  "S_hat_edge_list (e # \<pi>) R = S_hat_edge_list \<pi> (S_hat e R)"
+
+lemma S_hat_edge_list_def2:
+  "S_hat_edge_list \<pi> R = foldl (\<lambda>a b. S_hat b a) R \<pi>"
+proof (induction \<pi> arbitrary: R)
+  case Nil
+  then show ?case
+    by simp
+next
+  case (Cons a \<pi>)
+  then show ?case
+    by simp
+qed
+
+lemma S_hat_edge_list_append[simp]:
+  "S_hat_edge_list (xs @ ys) R = S_hat_edge_list ys (S_hat_edge_list xs R)"
+  unfolding S_hat_edge_list_def2 foldl_append by auto
+
+lemma S_hat_edge_list_mono:
+  assumes "d1 \<subseteq> d2"
+  shows "S_hat_edge_list \<pi> d1 \<subseteq> S_hat_edge_list \<pi> d2"
+proof(induction \<pi> rule: List.rev_induct)
+  case Nil
+  then show ?case
+    using assms by auto
+next
+  case (snoc x xs)
+  then show ?case
+    using assms by (simp add: S_hat_mono)
+qed
+
+definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" where
+  "S_hat_path \<pi> = S_hat_edge_list (LTS.transition_list \<pi>)"
+
+lemma S_hat_path_mono:
+  assumes "d1 \<subseteq> d2"
+  shows "S_hat_path \<pi> d1 \<subseteq> S_hat_path \<pi> d2"
+  unfolding S_hat_path_def using assms S_hat_edge_list_mono by auto
+
+
+fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+  "summarizes_dl_BV_must \<rho> \<longleftrightarrow> 
+     (\<forall>\<pi>_end d. solves_query \<rho> (CBV\<langle>[Encode_Node_BV \<pi>_end, Encode_Elem_BV d]\<rangle>.) \<longrightarrow> 
+       (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = \<pi>_end \<longrightarrow> d \<in> S_hat_path \<pi> d_init))"
+
+interpretation a_may: analysis_BV_forward_may pg "\<lambda>e. UNIV - (kill_set e)" "(\<lambda>e. UNIV - gen_set e)" "UNIV - d_init" .
+
+lemma opposite_lemma:
+  assumes "\<not>d \<in> a_may.S_hat_edge_list \<pi> (UNIV - d_init)"
+  shows "d \<in> S_hat_edge_list \<pi> d_init"
+  using assms proof (induction \<pi> rule: List.rev_induct)
+  case Nil
+  then show ?case by simp 
+next
+  case (snoc x xs)
+  then show ?case
+    unfolding a_may.S_hat_edge_list_def2
+    by (simp add: S_hat_def a_may.S_hat_def)
+qed
+
+lemma opposite_lemma2:
+  assumes "\<not>d \<in> a_may.S_hat_path \<pi> (UNIV - d_init)"
+  shows "d \<in> S_hat_path \<pi> d_init"
+  by (metis S_hat_path_def analysis_BV_forward_may.S_hat_path_def assms opposite_lemma)
+
+find_theorems "(-)"  "(\<union>)"
+
+lemma the_CBV_only_ana_CBV: "the_CBV \<notin> preds_dl (a_may.ana_pg_BV - {a_may.ana_CBV})"
+  unfolding a_may.ana_pg_BV_def
+  apply simp
+  apply (simp only: Un_Diff)
+  apply simp
+  apply (rule)
+  subgoal
+    unfolding preds_dl_def
+    apply auto
+    done
+  apply (rule)
+  subgoal
+    unfolding preds_dl_def a_may.ana_init_BV_def
+    apply auto
+    done
+  apply (rule)
+  subgoal
+    unfolding preds_dl_def
+    apply auto
+    subgoal for c a aa b y
+      apply (cases "y \<notin> kill_set (a, aa, b)")
+       apply auto
+      done
+    done
+  subgoal
+    unfolding preds_dl_def
+    apply auto
+    subgoal for c a aa b y
+      apply (cases "y \<notin> gen_set (a, aa, b)")
+       apply auto
+      done
+    done
+  done    
+
+lemma agree_off_rh:
+  assumes "\<forall>p. p \<noteq> p' \<longrightarrow> \<rho>' p = \<rho> p"
+  assumes "p' \<notin> preds_rh rh"
+  shows "meaning_rh rh \<rho>' \<sigma> = meaning_rh rh \<rho> \<sigma>"
+using assms proof (cases rh)
+  case (Eql a a')
+  then show ?thesis
+    by auto 
+next
+  case (Neql a a')
+  then show ?thesis 
+    by auto 
+next
+  case (PosRh p ids)
+  then show ?thesis
+    using assms by auto 
+next
+  case (NegRh p ids)
+  then show ?thesis 
+    using assms by auto 
+qed
+
+lemma agree_off_lh:
+  assumes "\<forall>p. p \<noteq> p' \<longrightarrow> \<rho>' p = \<rho> p"
+  assumes "p' \<notin> preds_lh lh"
+  shows "meaning_lh lh \<rho>' \<sigma> = meaning_lh lh \<rho> \<sigma>"
+proof (cases lh)
+  case (Pair p ids)
+  then show ?thesis
+    using assms by auto
+qed
+
+lemma agree_off_cls:
+  assumes "\<forall>p. p \<noteq> p' \<longrightarrow> \<rho>' p = \<rho> p"
+  assumes "p' \<notin> preds_cls c"
+  shows "meaning_cls c \<rho>' \<sigma> \<longleftrightarrow> meaning_cls c \<rho> \<sigma>"
+proof (cases c)
+  case (Cls p ids rhs)
+  then show ?thesis
+    apply auto
+       apply (metis (no_types, lifting) agree_off_rh assms clause.set_intros(2))
+      using assms apply force
+     apply (metis (full_types) agree_off_rh assms clause.set_intros(2))
+    using assms apply fastforce
+    done
+qed
+
+lemma agree_off_solves_cls:
+  assumes "\<forall>p. p \<noteq> p' \<longrightarrow> \<rho>' p = \<rho> p"
+  assumes "p' \<notin> preds_cls c"
+  shows "solves_cls \<rho>' c \<longleftrightarrow> solves_cls \<rho> c"
+proof (cases c)
+  case (Cls p ids rhs)
+  then show ?thesis
+    by (metis (mono_tags, opaque_lifting) agree_off_cls assms solves_cls_def)
+qed
+
+lemma agree_off_dl:
+  assumes "\<forall>p. p \<noteq> p' \<longrightarrow> \<rho>' p = \<rho> p"
+  assumes "p' \<notin> preds_dl dl"
+  shows "solves_program \<rho>' dl \<longleftrightarrow> solves_program \<rho> dl"
+proof 
+  assume "solves_program \<rho>' dl"
+  then show "solves_program \<rho> dl"
+    unfolding solves_program_def apply auto
+    using assms
+    by (smt (verit, ccfv_SIG) agree_off_solves_cls insert_iff mem_Collect_eq mem_simps(9) preds_dl_def)
+next 
+  assume "solves_program \<rho> dl"
+  then show "solves_program \<rho>' dl"
+    unfolding solves_program_def apply auto
+    using assms
+    by (smt (verit, ccfv_SIG) agree_off_solves_cls insert_iff mem_Collect_eq mem_simps(9) preds_dl_def)
+qed
+
+lemma not_CBV:
+  assumes "[BV_Node q, BV_Elem d] \<in> \<rho> the_CBV"
+  assumes "least_solution \<rho> a_may.ana_pg_BV s_BV"
+  assumes a: "[BV_Node q, BV_Elem d] \<in> \<rho> the_BV"                  
+  shows False
+proof -
+  have "least_solution \<rho> a_may.ana_pg_BV s_BV"
+    using assms(2) by force
+  then have "minimal_solution \<rho> a_may.ana_pg_BV s_BV"
+    using a_may.ana_pg_BV_stratified least_is_minimal by blast
+
+  define \<rho>' where  "\<rho>' = (\<lambda>p. (if p = the_CBV then (\<rho> the_CBV) - {[BV_Node q, BV_Elem d]} else \<rho> p))"
+
+  have CBV_solves: "solves_cls \<rho>' (CBV\<langle>[\<uu>,\<vv>]\<rangle> :- [\<^bold>\<not>BV [\<uu>,\<vv>]].)"
+    unfolding solves_cls_def
+  proof 
+    fix \<sigma>
+    show "meaning_cls CBV\<langle>[\<uu>, \<vv>]\<rangle> :- [\<^bold>\<not>BV [\<uu>, \<vv>]] . \<rho>' \<sigma>"
+    proof (cases "\<sigma> the_\<uu> = BV_Node q \<and> \<sigma> the_\<vv> = BV_Elem d")
+      case True
+      then have "\<not>meaning_rh (\<^bold>\<not>BV [\<uu>, \<vv>]) \<rho>' \<sigma>"
+        unfolding \<rho>'_def using a by auto
+      then show ?thesis
+        unfolding meaning_cls.simps by auto
+    next
+      case False
+      then have "meaning_rh (\<^bold>\<not>BV [\<uu>, \<vv>]) \<rho>' \<sigma> \<longleftrightarrow> meaning_rh (\<^bold>\<not>BV [\<uu>, \<vv>]) \<rho> \<sigma>"
+        by (simp add: \<rho>'_def)
+      moreover
+      from False have "meaning_lh CBV\<langle>[\<uu>, \<vv>]\<rangle>. \<rho>' \<sigma> \<longleftrightarrow> meaning_lh CBV\<langle>[\<uu>, \<vv>]\<rangle>. \<rho> \<sigma>"
+        unfolding \<rho>'_def by auto
+      moreover
+      have "(\<forall>rh\<in>set [\<^bold>\<not>BV [\<uu>, \<vv>]]. meaning_rh rh \<rho> \<sigma>) \<longrightarrow> meaning_lh CBV\<langle>[\<uu>, \<vv>]\<rangle>. \<rho> \<sigma>"
+      proof -
+        have "CBV\<langle>[\<uu>, \<vv>]\<rangle> :- [\<^bold>\<not>BV [\<uu>, \<vv>]] . \<in> a_may.ana_pg_BV"
+          unfolding a_may.ana_pg_BV_def a_may.ana_CBV_def by auto
+        then have "solves_cls \<rho> (CBV\<langle>[\<uu>,\<vv>]\<rangle> :- [\<^bold>\<not>BV [\<uu>,\<vv>]].)"
+          using assms(2) unfolding least_solution_def
+          unfolding solves_program_def
+          by auto
+        then show "(\<forall>rh\<in>set [\<^bold>\<not>BV [\<uu>, \<vv>]]. meaning_rh rh \<rho> \<sigma>) \<longrightarrow> meaning_lh CBV\<langle>[\<uu>, \<vv>]\<rangle>. \<rho> \<sigma>"
+          unfolding solves_cls_def meaning_cls.simps by auto
+      qed
+      ultimately
+      show ?thesis 
+        unfolding meaning_cls.simps by auto
+    qed
+  qed
+
+  have \<rho>'_off_the_CBV: "\<forall>p. p \<noteq> the_CBV \<longrightarrow> \<rho>' p = \<rho> p"
+    unfolding \<rho>'_def by auto
+  moreover
+  have "solves_program \<rho> (a_may.ana_pg_BV - {a_may.ana_CBV})"
+    using assms(2) unfolding least_solution_def solves_program_def by auto
+  moreover
+  have "the_CBV \<notin> preds_dl (a_may.ana_pg_BV - {a_may.ana_CBV})"
+    using the_CBV_only_ana_CBV .
+  ultimately
+  have "solves_program \<rho>' (a_may.ana_pg_BV - {a_may.ana_CBV})"
+    by (simp add: agree_off_dl)
+  then have "solves_program \<rho>' (a_may.ana_pg_BV)"
+    using CBV_solves unfolding a_may.ana_CBV_def solves_program_def
+    by auto
+  moreover
+  have "\<rho>' \<sqsubset>s_BV\<sqsubset> \<rho>"
+  proof -
+    have "\<rho>' the_CBV \<subset> \<rho> the_CBV"
+      using Diff_iff \<rho>'_def assms(1) by fastforce
+    moreover
+    have "\<forall>p'. s_BV p' = s_BV the_CBV \<longrightarrow> \<rho>' p' \<subseteq> \<rho> p'"
+      by (simp add: \<rho>'_def)
+    moreover
+    have "\<forall>p'. s_BV p' < s_BV the_CBV \<longrightarrow> \<rho>' p' = \<rho> p'"
+      by (metis \<rho>'_off_the_CBV nat_neq_iff)
+    ultimately
+    show "\<rho>' \<sqsubset>s_BV\<sqsubset> \<rho>"
+      unfolding lt_def by blast
+  qed
+  ultimately
+  show "False"
+    using \<open>minimal_solution \<rho> a_may.ana_pg_BV s_BV\<close> minimal_solution_def
+     by blast 
+qed
+
+lemma not_CBV2:
+  assumes "least_solution \<rho> a_may.ana_pg_BV s_BV"
+  assumes "solves_query \<rho> CBV\<langle>[Encode_Node_BV q, Encode_Elem_BV d]\<rangle>."
+  assumes "solves_query \<rho> BV\<langle>[Encode_Node_BV q, Encode_Elem_BV d]\<rangle>."
+  shows "False"
+proof -
+  have "[BV_Node q, BV_Elem d] \<in> \<rho> the_CBV"
+    using assms(2)
+    unfolding solves_query.simps
+    unfolding meaning_query.simps
+    by auto
+  moreover
+  have "[BV_Node q, BV_Elem d] \<in> \<rho> the_BV"
+    using assms(3)
+    unfolding solves_query.simps
+    unfolding meaning_query.simps
+    by auto
+  ultimately
+  show "False"
+    using not_CBV[of q d \<rho>] assms(1) by auto
+qed
+
+lemma sound_BV_must':
+  assumes "least_solution \<rho> a_may.ana_pg_BV s_BV"
+  assumes "solves_query \<rho> CBV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>."
+  assumes "\<pi> \<in> LTS.path_with_word edge_set"
+  assumes "LTS.get_start \<pi> = start"
+  shows "d \<in> S_hat_path \<pi> d_init"
+proof -
+  have m: "\<not>solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.)"
+  proof 
+    assume "solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.)"
+    then show False
+      using assms(1,2) not_CBV2 by auto
+  qed
+  have "\<not>d \<in> a_may.S_hat_path \<pi> (UNIV - d_init)"
+    using a_may.sound_BV[of \<rho>, OF assms(1)]
+    unfolding a_may.summarizes_dl_BV.simps
+    apply -
+    apply (erule_tac x=\<pi> in allE)
+    apply (erule_tac x=d in allE)
+    by (metis analysis_BV_forward_may.edge_set_def analysis_BV_forward_may.start_def assms(3,4) edge_set_def m start_def)
+  then show "d \<in> S_hat_path \<pi> d_init"
+    using opposite_lemma2 by auto
+qed
+
+
+  
+  
+
+
+lemma sound_CBV:
+  assumes "least_solution \<rho> a_may.ana_pg_BV s_BV"
+  shows "summarizes_dl_BV_must \<rho>"
+  using assms unfolding summarizes_dl_BV_must.simps using sound_BV_must' by auto
+
+
+
+
+end
 
 end
