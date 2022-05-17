@@ -2571,7 +2571,7 @@ proof -
 
 qed
 
-theorem dual3:
+theorem dual_star_correct_saturation:
   assumes "inits \<subseteq> LTS.srcs A1"
   assumes "inits \<subseteq> LTS.srcs A2"
   assumes "isols \<subseteq> LTS.isolated A1"
@@ -2618,7 +2618,7 @@ proof -
   qed
 qed
 
-theorem dual4':
+theorem dual_star_correct_early_termination_configs:
   assumes "inits \<subseteq> LTS.srcs A1"
   assumes "inits \<subseteq> LTS.srcs A2"
   assumes "isols \<subseteq> LTS.isolated A1"
@@ -2631,7 +2631,7 @@ theorem dual4':
   shows "c1 \<Rightarrow>\<^sup>* c2"
   using dual_star_correct_early_termination assms by (metis singletonD)
 
-theorem dual4:
+theorem dual_star_correct_saturation_configs:
   assumes "inits \<subseteq> LTS.srcs A1"
   assumes "inits \<subseteq> LTS.srcs A2"
   assumes "isols \<subseteq> LTS.isolated A1"
