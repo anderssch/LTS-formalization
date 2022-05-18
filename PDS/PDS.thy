@@ -2641,7 +2641,7 @@ theorem dual_star_correct_saturation_configs:
   assumes "saturation post_star_rules A1 A1'"
   assumes "saturation pre_star_rule A2 A2'"
   shows "lang_\<epsilon>_inters (inters_\<epsilon> A1' (LTS_\<epsilon>_of_LTS A2')) \<noteq> {} \<longleftrightarrow> c1 \<Rightarrow>\<^sup>* c2"
-  using assms dual3 by auto
+  using assms dual_star_correct_saturation by auto
 
 end
 
