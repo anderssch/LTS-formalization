@@ -17,7 +17,7 @@ global_interpretation pds: PDS_with_P_automata \<Delta> F_ctr_loc F_ctr_loc_st
   .
 
 global_interpretation inter: Intersection_P_Automaton
-  initial_automaton "finals initial_F_ctr_loc initial_F_ctr_loc_st" inits
+  initial_automaton inits "finals initial_F_ctr_loc initial_F_ctr_loc_st"
   "pre_star \<Delta> final_automaton" "finals final_F_ctr_loc final_F_ctr_loc_st"
   for \<Delta> :: "('ctr_loc::{enum, linorder}, 'label::{finite, linorder}) rule set"
   and initial_automaton :: "(('ctr_loc, 'state::finite, 'label) state, 'label) transition set"
@@ -28,9 +28,9 @@ global_interpretation inter: Intersection_P_Automaton
   and final_F_ctr_loc_st :: "'state set"
   defines nonempty_inter = "P_Automaton.nonempty
     (inters initial_automaton (pre_star \<Delta> final_automaton))
+    ((\<lambda>x. (x,x)) ` inits)
     (inters_finals (finals initial_F_ctr_loc initial_F_ctr_loc_st)
-                   (finals final_F_ctr_loc final_F_ctr_loc_st))
-    ((\<lambda>x. (x,x)) ` inits)"
+                   (finals final_F_ctr_loc final_F_ctr_loc_st))"
   .
 
 definition "check \<Delta> I IF IF_st F FF FF_st =
