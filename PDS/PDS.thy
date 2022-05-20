@@ -2001,7 +2001,7 @@ definition accepts_inters :: "(('ctr_loc, 'noninit, 'label) state * ('ctr_loc, '
 lemma accepts_inters_accepts_aut_inters:
   assumes "ts12 = inters ts1 ts2"
   assumes "finals12 = inters_finals finals1 finals2"
-  shows "accepts_inters ts12 finals12 (p,w) \<longleftrightarrow> Intersection_P_Automaton.accepts_aut_inters ts1 finals1 PDS_with_P_automata.inits ts2 finals2 (Init p) w"
+  shows "accepts_inters ts12 finals12 (p,w) \<longleftrightarrow> Intersection_P_Automaton.accepts_aut_inters ts1  PDS_with_P_automata.inits finals1 ts2 finals2 (Init p) w"
   by (simp add: Intersection_P_Automaton.accepts_aut_inters_def PDS_with_P_automata.inits_def P_Automaton.accepts_aut_def accepts_inters_def assms)
 
 definition lang_inters :: "(('ctr_loc, 'noninit, 'label) state * ('ctr_loc, 'noninit, 'label) state, 'label) transition set \<Rightarrow>  (('ctr_loc, 'noninit, 'label) state * ('ctr_loc, 'noninit, 'label) state) set \<Rightarrow> ('ctr_loc, 'label) conf set" where

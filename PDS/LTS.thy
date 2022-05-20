@@ -1559,7 +1559,6 @@ proof
     unfolding accepts_aut_inters_def A1.accepts_aut_def A2.accepts_aut_def pa.accepts_aut_def unfolding inters_finals_def 
     using inters_trans_star_iff[of p _ w _ ]
     using SigmaE fst_conv inters_trans_star inters_trans_star1 snd_conv
-    sledgehammer
     by (metis (no_types, lifting) imageE)
 next
   assume a: "A1.accepts_aut p w \<and> A2.accepts_aut p w"
