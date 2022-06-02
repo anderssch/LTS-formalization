@@ -326,12 +326,15 @@ fun pred_val_mod_strata :: "('p,'e) pred_val \<Rightarrow> 'p strat \<Rightarrow
   "(\<sigma> \\s\\ n) p = (if s p \<le> n then \<sigma> p else {})"
 
 fun dl_program_mod_strata :: "('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'e) dl_program"  ("_ --_-- _" 0) where 
-  "(dl -- s -- n) = {(Cls p ids rhs)| p ids rhs . (Cls p ids rhs) \<in> dl \<and> s(p) \<le> n}"
+  "(dl -- s -- n) = {(Cls p ids rhs)| p ids rhs . (Cls p ids rhs) \<in> dl \<and> s p \<le> n}"
+
+fun dl_program_on_strata :: "('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'e) dl_program"  ("_ ==_== _" 0) where 
+  "(dl == s == n) = {(Cls p ids rhs)| p ids rhs . (Cls p ids rhs) \<in> dl \<and> s p = n}"
 
 definition lt :: "('p,'e) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'e) pred_val \<Rightarrow> bool" ("_ \<sqsubset>_\<sqsubset> _") where
   "(\<rho> \<sqsubset>s\<sqsubset> \<rho>') \<longleftrightarrow> (\<exists>p. \<rho> p \<subset> \<rho>' p \<and>
-                       (\<forall>p'. s p' = s p \<longrightarrow> \<rho>(p') \<subseteq> \<rho>'(p')) \<and>
-                       (\<forall>p'. s p' < s p \<longrightarrow> \<rho>(p') = \<rho>'(p')))"
+                       (\<forall>p'. s p' = s p \<longrightarrow> \<rho> p' \<subseteq> \<rho>' p') \<and>
+                       (\<forall>p'. s p' < s p \<longrightarrow> \<rho> p' = \<rho>' p'))"
 
 definition lte :: "('p,'e) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'e) pred_val \<Rightarrow> bool" ("_ \<sqsubseteq>_\<sqsubseteq> _") where
   "(\<rho> \<sqsubseteq>s\<sqsubseteq> \<rho>') \<longleftrightarrow> \<rho> = \<rho>' \<or> (\<rho> \<sqsubset>s\<sqsubset> \<rho>')"
@@ -491,8 +494,8 @@ definition Inter' ("\<^bold>\<Inter>") where
   "(\<^bold>\<Inter> \<rho>s) = (\<lambda>p. \<Inter>{m. \<exists>\<rho> \<in> \<rho>s. m = \<rho> p})"
 
 fun solve_pg where
-  "solve_pg s dl 0 = (\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)})"
-| "solve_pg s dl (Suc n) = (\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<and> (\<rho>' \\s\\ n) = solve_pg s dl n})"
+  "solve_pg s dl 0 = (\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== 0)})"
+| "solve_pg s dl (Suc n) = (\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<and> (\<rho>' \\s\\ n) = solve_pg s dl n})"
 
 definition least_rank_p_st :: "('p \<Rightarrow> bool) \<Rightarrow> 'p \<Rightarrow> ('p \<Rightarrow> nat)  \<Rightarrow> bool" where 
   "least_rank_p_st P p s \<longleftrightarrow> P p \<and> (\<forall>p'. P p' \<longrightarrow> s p \<le> s p')"
@@ -534,18 +537,384 @@ next
     by (metis least_rank_p_st_def linorder_not_le)
 qed
 
-lemma Inter'_subset: (* Can be generalized from 0 to n and Inter' to solve_pg *)
-  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
-  shows "(\<^bold>\<Inter> {\<rho>. \<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)}) p \<subseteq> \<rho> p"
-  using assms unfolding Inter'_def by auto
+lemma solves_leq:
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
+  assumes "n \<le> m"
+  shows "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
+  by (smt (verit, best) assms(1) assms(2) dl_program_mod_strata.simps le_trans mem_Collect_eq solves_program_def)
 
-lemma Inter'_empty: (* Can be generalized from 0 to n and Inter' to solve_pg *)
-  assumes "s p > 0"
-  shows "(\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)}) p = {}"
+lemma solves_Suc:
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n)"
+  shows "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
+  by (meson assms lessI less_imp_le_nat solves_leq)
+
+lemma solve_pg_0_subset:
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
+  shows "(solve_pg s dl 0) p \<subseteq> \<rho> p"
+  using assms by (auto simp add: Inter'_def)
+
+lemma solve_pg_Suc_subset:
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n)"
+  assumes "(\<rho> \\s\\ n) = solve_pg s dl n"
+  shows "(solve_pg s dl (Suc n)) p \<subseteq> \<rho> p"
+  using assms by (force simp add: Inter'_def) 
+
+
+lemma exi_sol_n: "\<exists>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \\s\\ m) = solve_pg s dl m"
 proof -
-  define \<rho>'' :: "'a \<Rightarrow> 'b list set" where "\<rho>'' = (\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)})"
+  define \<rho> where "\<rho> = (\<lambda>p. (if s p < Suc m then (solve_pg s dl m) p else if s p = Suc m then UNIV else {}))"
+
+  have "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m)" (* Rigtig fordi den gør alle venstresider på dette strata sande *)
+    sorry
+  moreover
+  have "\<forall>p. (\<rho> \\s\\ m) p = solve_pg s dl m p" (* Jeg skal bruge at solve_pg er empty på de høje strata. *)
+    sorry
+  ultimately
+  show ?thesis 
+    by force
+qed
+
+lemma solve_pg_agree_above:
+  assumes "s p \<le> m"
+  shows "(solve_pg s dl m) p = (solve_pg s dl (s p)) p"
+  using assms proof (induction m)
+  case 0
+  then show ?case
+    by force
+next
+  case (Suc m)
+  show ?case
+  proof (cases "s p = Suc m")
+    case True
+    then show ?thesis by auto
+  next
+    case False
+    then have s_p: "s p \<le> m"
+      using Suc by auto
+    then have "(solve_pg s dl (s p)) p = (solve_pg s dl m) p"
+      using Suc by auto
+
+    have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \\s\\ m) = solve_pg s dl m \<longrightarrow> \<rho>' p = solve_pg s dl m p"
+      by (metis pred_val_mod_strata.simps s_p)
+    then have "\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \\s\\ m) = solve_pg s dl m} p = solve_pg s dl (s p) p"
+      unfolding Inter'_def apply auto
+       apply (metis \<open>solve_pg s dl (s p) p = solve_pg s dl m p\<close> dl_program_on_strata.elims exi_sol_n)
+      using \<open>solve_pg s dl (s p) p = solve_pg s dl m p\<close> by blast
+    then show ?thesis
+      by simp
+  qed
+qed
+
+lemma solve_pg_two_agree_above:
+  assumes "s p \<le> n"
+  assumes "s p \<le> m"
+  shows "(solve_pg s dl m) p = (solve_pg s dl n) p"
+  using assms solve_pg_agree_above by metis
+
+term PosRh
+
+
+lemma lcrghaxekablcsflhjkbauihlb:
+  assumes "strat_wf s dl"
+  assumes "Cls p ids rhs \<in> dl"
+  assumes "s p < Suc n"
+  assumes "PosRh p' ids' \<in> set rhs"
+  shows "s p' < Suc n"
+  using assms unfolding strat_wf_def by fastforce
+
+lemma lshlihcralh:
+  assumes "strat_wf s dl"
+  assumes "Cls p ids rhs \<in> dl"
+  assumes "s p < Suc n"
+  assumes "\<^bold>\<not> p' ids' \<in> set rhs"
+  shows "s p' < Suc n"
+  using assms unfolding strat_wf_def by fastforce
+
+lemma huibafgcwaihbucwafev:
+  assumes "strat_wf s dl"
+  assumes "Cls p ids rhs \<in> dl"
+  assumes "s p < Suc n"
+  assumes "rh \<in> set rhs"
+  shows "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl (Suc n)) \<sigma> \<longleftrightarrow> \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl n) \<sigma>" (* Maybe we can generalize from Suc n to m>n *)
+proof (cases rh)
+  case (Eql a a')
+  then show ?thesis
+    using assms by auto
+next
+  case (Neql a a')
+  then show ?thesis 
+    using assms by auto
+next
+  case (PosRh p' ids')
+  then have "s p' < Suc n"
+    by (metis assms(1) assms(2) assms(3) assms(4) lcrghaxekablcsflhjkbauihlb)
+  then show ?thesis
+    using PosRh
+    by (metis less_Suc_eq_le less_imp_le_nat meaning_rh.simps(3) solve_pg_two_agree_above) 
+next
+  case (NegRh p' ids)
+  have "s p' < Suc n"
+    by (metis NegRh assms(1) assms(2) assms(3) assms(4) lshlihcralh)
+  then show ?thesis
+    by (metis NegRh less_Suc_eq_le less_imp_le_nat meaning_rh.simps(4) solve_pg_two_agree_above)
+qed
+
+lemma uiohvaryuibweafbyvuib:
+  assumes "strat_wf s dl"
+  assumes "Cls p ids rhs \<in> dl"
+  assumes "s p < Suc n"
+  shows "\<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl (Suc n)) \<sigma> \<longleftrightarrow> \<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl n) \<sigma>" (* Maybe we can generalize from Suc n to m>n *)
+  by (metis assms(3) less_Suc_eq_le less_imp_le_nat meaning_lh.simps solve_pg_two_agree_above)
+
+lemma uiaerhuivrsaivrfhweaof:
+  assumes "strat_wf s dl"
+  assumes "Cls p ids rhs \<in> dl"
+  assumes "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl n) \<sigma>"
+  assumes "s p < Suc n"
+  shows "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl (Suc n)) \<sigma>"
+  unfolding meaning_cls.simps
+proof 
+  assume "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
+  then have "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl n) \<sigma>"
+    using huibafgcwaihbucwafev assms by metis
+  then have "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl n) \<sigma>"
+    using assms unfolding meaning_cls.simps by auto
+  then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
+    using assms uiohvaryuibweafbyvuib by metis
+qed
+
+lemma strata0_no_neg':
+  assumes "strat_wf s dl"
+  assumes "Cls p ids rhs \<in> dl"
+  assumes "s p = 0"
+  assumes "rh \<in> set rhs"
+  shows "\<nexists>p' ids. rh = \<^bold>\<not> p' ids"
+  by (metis One_nat_def add_eq_0_iff_both_eq_0 assms bot_nat_0.extremum_uniqueI bot_nat_0.not_eq_extremum rnk.simps(4) strat_wf_cls.simps strat_wf_def zero_less_Suc)
+
+lemma strataSuc_less_neg':
+  assumes "strat_wf s dl"
+  assumes "Cls p ids rhs \<in> dl"
+  assumes "s p = Suc n"
+  assumes "\<^bold>\<not> p' ids' \<in> set rhs"
+  shows "s p' \<le> n"
+  using assms unfolding strat_wf_def
+  apply auto
+  apply force
+  done
+
+lemma strata0_no_neg:
+  assumes "strat_wf s dl"
+  assumes "Cls p ids rhs \<in> (dl --s-- 0)"
+  assumes "rh \<in> set rhs"
+  shows "\<nexists>p' ids. rh = \<^bold>\<not> p ids"
+  using assms strata0_no_neg' by fastforce 
+
+lemma strataSuc_less_neg:
+  assumes "strat_wf s dl"
+  assumes "Cls p ids rhs \<in> (dl --s-- Suc n)"
+  assumes "\<^bold>\<not> p' ids' \<in> set rhs"
+  shows "s p' \<le> n"
+  using assms strataSuc_less_neg'
+  by (smt (verit, ccfv_SIG) clause.inject dl_program_mod_strata.elims le_eq_less_or_eq less_Suc_eq_le lshlihcralh mem_Collect_eq) 
+
+lemma all_meaning_rh_if_solve_pg_0:
+  assumes "strat_wf s dl"
+  assumes "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl 0) \<sigma>"
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
+  assumes "rh \<in> set rhs"
+  assumes "Cls p ids rhs \<in> (dl --s-- 0)"
+  shows "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+  using assms
+  apply (cases rh)
+     apply auto
+  subgoal for p ids
+    unfolding Inter'_def
+    apply auto
+    done
+  subgoal for p ids
+    unfolding Inter'_def
+    apply auto
+    apply (meson strata0_no_neg')
+    done
+  done
+
+lemma all_meaning_rh_if_solve_pg_Suc:
+  assumes "strat_wf s dl"
+  assumes "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n)"
+  assumes "(\<rho> \\s\\ n) = solve_pg s dl n"
+  assumes "rh \<in> set rhs"
+  assumes "Cls p ids rhs \<in> (dl --s-- Suc n)"
+  shows "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+proof (cases rh)
+  case (Eql a a')
+  then show ?thesis
+    using assms(2) by auto
+next
+  case (Neql a a')
+  then show ?thesis
+    using assms(2) by force
+next
+  case (PosRh p' ids')
+  then show ?thesis
+    using assms
+    unfolding Inter'_def
+    apply auto
+    by (smt (verit, best) CollectI Inter'_def mem_simps(11))
+next
+  case (NegRh p' ids')
+  then have "s p' \<le> n"
+    using strataSuc_less_neg[OF assms(1) assms(6), of p'] assms(5) by auto
+  then have "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl n) \<sigma>"
+    by (metis NegRh assms(2) le_imp_less_Suc less_imp_le_nat meaning_rh.simps(4) solve_pg_two_agree_above)
+  then have "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ n) \<sigma>"
+    using assms(4) by presburger
+  then show ?thesis
+    by (simp add: NegRh \<open>s p' \<le> n\<close>)
+qed
+
+lemma solve_pg_0_if_all_meaning_lh:
+  assumes "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
+  shows "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl 0) \<sigma>"
+  using assms by (auto simp add: Inter'_def)
+
+lemma solve_pg_Suc_if_all_meaning_lh:
+  assumes "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \\s\\ n) = solve_pg s dl n \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
+  shows "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
+  using assms by (auto simp add: Inter'_def)
+
+lemma solve_pg_0_meaning_cls':
+  assumes "strat_wf s dl"
+  assumes "Cls p ids rhs \<in> (dl --s-- 0)"
+  shows "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl 0) \<sigma>"
+  unfolding meaning_cls.simps
+proof
+  define \<rho>'' :: "'a \<Rightarrow> 'c list set" where "\<rho>'' = (solve_pg s dl 0)"
+  assume "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl 0) \<sigma>"
+  then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0) \<longrightarrow> (\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>)"
+    using all_meaning_rh_if_solve_pg_0[OF assms(1), of _ \<sigma> _ rhs p ids, OF _ _ _ assms(2)] 
+    by auto
+  then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h  \<rho>' \<sigma>"
+    by (metis assms(2) meaning_cls.simps solves_cls_def solves_program_def)
+  then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl 0) \<sigma>"
+    using solve_pg_0_if_all_meaning_lh by auto
+qed
+
+(* For clauses under Suc n er (solve_pg s dl (Suc n)) og (solve_pg s dl n) enige  *)
+
+lemma solve_pg_Suc_meaning_cls':
+  assumes "strat_wf s dl"
+  assumes "Cls p ids rhs \<in> (dl --s-- n)"
+  shows "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl n) \<sigma>"
+ unfolding meaning_cls.simps
+  using assms
+proof (induction n)
+  case 0
+  then show ?case
+    using solve_pg_0_meaning_cls' unfolding meaning_cls.simps by metis 
+next
+  case (Suc n)
+  have leq_n: "s p \<le> Suc n"
+    using Suc.prems(2) by auto
+
+  have cls_in: "Cls p ids rhs \<in> dl"
+    using assms(2) by force
+
+  show ?case
+  proof (cases "s p = Suc n")
+    case True
+    have cls_in_Suc: "Cls p ids rhs \<in> (dl ==s== Suc n)"
+      by (simp add: True cls_in)
+    show ?thesis
+    proof
+      define \<rho>'' :: "'a \<Rightarrow> 'c list set" where "\<rho>'' = (solve_pg s dl (Suc n))"
+      assume "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
+      then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \\s\\ n) = solve_pg s dl n \<longrightarrow> (\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>)"
+        using all_meaning_rh_if_solve_pg_Suc[OF assms(1) _ _ _ _ Suc(3), of _ \<sigma>] 
+        by auto
+      then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \\s\\ n) = solve_pg s dl n \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
+        using meaning_cls.simps solves_cls_def solves_program_def cls_in_Suc by metis
+      then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
+        using solve_pg_Suc_if_all_meaning_lh[of dl s n p ids \<sigma>] by auto
+    qed
+  next
+    case False
+    then have False': "s p < Suc n"
+      using leq_n by auto
+    then have "Cls p ids rhs \<in> (dl --s-- n)"
+      by (simp add: cls_in)
+    then have "(\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl n) \<sigma>) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl n) \<sigma>"
+      using Suc by auto
+    then show ?thesis (* For clauses under Suc n er (solve_pg s dl (Suc n)) og (solve_pg s dl n) enige  *)
+      unfolding meaning_cls.simps[symmetric] using False' using uiaerhuivrsaivrfhweaof[OF assms(1) cls_in] by metis
+  qed
+qed
+
+
+  define \<rho>'' :: "'a \<Rightarrow> 'c list set" where "\<rho>'' =  (solve_pg s dl (Suc n))"
+  assume "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
+  then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<longrightarrow> (\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>)"
+    using all_meaning_rh_if_solve_pg_Suc[OF assms(1) _ _ _ _ assms(2)] 
+    by auto
+  then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h  \<rho>' \<sigma>"
+    by (metis assms(2) meaning_cls.simps solves_cls_def solves_program_def)
+  then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
+    using solve_pg_Suc_if_all_meaning_lh by auto
+qed
+
+lemma solve_pg_0_meaning_cls:
+  assumes "strat_wf s dl"
+  assumes "c \<in> (dl --s-- 0)"
+  shows "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl 0) \<sigma>"
+  using assms solve_pg_0_meaning_cls'[of s dl _ _ _ \<sigma>] 
+  by (cases c) auto
+
+lemma solve_pg_Suc_meaning_cls:
+  assumes "strat_wf s dl"
+  assumes "c \<in> (dl --s-- (Suc n))"
+  shows "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl (Suc n)) \<sigma>"
+  using assms solve_pg_Suc_meaning_cls'[of s dl _ _ _ \<sigma>] 
+  by (cases c) auto
+
+lemma solve_pg_0_models_cls:
+  assumes "strat_wf s dl"
+  assumes "c \<in> (dl --s-- 0)"
+  shows "(solve_pg s dl 0) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
+  unfolding solves_cls_def using solve_pg_0_meaning_cls assms by blast
+
+lemma solve_pg_Suc_models_cls:
+  assumes "strat_wf s dl"
+  assumes "c \<in> (dl --s-- Suc n)"
+  shows "(solve_pg s dl (Suc n)) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
+  unfolding solves_cls_def using solve_pg_Suc_meaning_cls assms by blast
+
+lemma solve_pg_0_solves_dl:
+  assumes "strat_wf s dl"
+  shows "(solve_pg s dl 0) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
+proof -
+  have "\<forall>c \<in> (dl --s-- 0). (solve_pg s dl 0) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
+    using assms solve_pg_0_models_cls[of s dl] by auto
+  then show "(solve_pg s dl 0) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
+    using solves_program_def by blast
+qed
+
+lemma solve_pg_Suc_solves_dl:
+  assumes "strat_wf s dl"
+  shows "(solve_pg s dl (Suc n)) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- (Suc n))"
+proof -
+  have "\<forall>c \<in> (dl --s-- Suc n). (solve_pg s dl (Suc n)) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
+    using assms solve_pg_Suc_models_cls[of s dl] by auto
+  then show "(solve_pg s dl (Suc n)) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n)"
+    using solves_program_def by blast
+qed
+
+lemma solve_pg_0_empty: (* Can be generalized from 0 to n and Inter' to solve_pg. ARE YOU REALLY SURE ABOUT THAT? *)
+  assumes "s p > 0"
+  shows "(solve_pg s dl 0) p = {}"
+proof -
+  define \<rho>'' :: "'a \<Rightarrow> 'b list set" where "\<rho>'' = (solve_pg s dl 0)"
   define \<rho>' :: "'a \<Rightarrow> 'b list set" where "\<rho>' = (\<lambda>p. if s p = 0 then UNIV else {})"
-  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)" (* Can be generalized from 0 to n and some more general definition of  \<rho>' *)
+  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
     unfolding solves_program_def solves_cls_def 
   proof (rule, rule)
     fix c \<sigma>
@@ -565,26 +934,83 @@ proof -
       unfolding c_split by auto
   qed
   have "\<rho>'' p \<subseteq> \<rho>' p"
-    by (metis Inter'_subset \<open>\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)\<close> \<rho>''_def)
+    by (metis solve_pg_0_subset \<open>\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)\<close> \<rho>''_def)
   then have "\<rho>'' p = {}"
     unfolding \<rho>'_def using assms(1) by simp
   then show ?thesis 
     unfolding \<rho>''_def by auto
 qed
 
-lemma snit_below_model:
-  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
-  shows "(\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)}) \<sqsubseteq>s\<sqsubseteq> \<rho>"
+
+lemma solve_pg_Suc_empty:
+  assumes "s p > Suc n"
+  shows "(solve_pg s dl (Suc n)) p = {}"
 proof -
-  define \<rho>'' :: "'a \<Rightarrow> 'b list set" where "\<rho>'' = (\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)})"
+  define \<rho>''n :: "'a \<Rightarrow> 'b list set" where "\<rho>''n = (solve_pg s dl n)"
+  define \<rho>''n1 :: "'a \<Rightarrow> 'b list set" where "\<rho>''n1 = (solve_pg s dl (Suc n))"
+  define \<rho>' :: "'a \<Rightarrow> 'b list set" where "\<rho>' = (\<lambda>p. if s p > n then UNIV else (solve_pg s dl n) p)"
+  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n)"
+    unfolding solves_program_def solves_cls_def 
+  proof (rule, rule)
+    fix c \<sigma>
+    assume c_dlSuc: "c \<in> (dl --s-- Suc n)"
+    obtain p' ids rhs where c_split: "c = Cls p' ids rhs"
+      by (cases c) auto
+    then have sp'Suc: "s p' \<le> Suc n" 
+      using c_dlSuc by auto
+    have "\<lbrakk>Cls p' ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
+      unfolding meaning_cls.simps
+    proof (rule) 
+      assume "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>"
+      show "\<lbrakk>(p', ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
+          using \<rho>'_def sp'Suc 
+          sorry
+      
+      qed
+    then show "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
+      unfolding c_split by auto
+  qed
+  oops
+
+
+lemma disjE3:
+  assumes major: "P \<or> Q \<or> Z"
+    and minorP: "P \<Longrightarrow> R"
+    and minorQ: "Q \<Longrightarrow> R"
+    and minorZ: "Z \<Longrightarrow> R"
+  shows R
+  using assms by auto
+
+
+lemma solve_pg_subset: 
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
+  shows "(solve_pg s dl n) p \<subseteq> \<rho> p"
+using assms proof (induction n)
+  case 0
+  then show ?case
+    using solve_pg_0_subset by metis
+next
+  case (Suc n)
+  then have "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
+    using solves_Suc by auto
+  then have "solve_pg s dl n p \<subseteq> \<rho> p"
+    using Suc by auto
+  
+  then show ?case oops
+
+lemma solve_pg_0_below_model:
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
+  shows "(solve_pg s dl 0) \<sqsubseteq>s\<sqsubseteq> \<rho>"
+proof -
+  define \<rho>'' :: "'a \<Rightarrow> 'b list set" where "\<rho>'' = solve_pg s dl 0"
 
   have "\<rho>'' \<noteq> \<rho> \<longrightarrow> \<rho>'' \<sqsubset>s\<sqsubset> \<rho>"
   proof 
     assume "\<rho>'' \<noteq> \<rho>"
     have "\<forall>p. \<rho>'' p \<subseteq> \<rho> p"
-      using Inter'_subset unfolding \<rho>''_def using assms(1) by force
+      using solve_pg_0_subset unfolding \<rho>''_def using assms(1) by force
     have "\<forall>p. s p > 0 \<longrightarrow> \<rho>'' p = {}"
-      by (metis Inter'_empty \<rho>''_def) (* Can be generalized to n! Should probably be a lemma. *)
+      by (metis solve_pg_0_empty \<rho>''_def) (* Can be generalized to n! Should probably be a lemma. *)
     have "\<exists>p. least_rank_p_st (\<lambda>p. \<rho>'' p \<noteq> \<rho> p) p s"
       by (meson \<open>\<rho>'' \<noteq> \<rho>\<close> ext least_rank_p_st_exists)
     then obtain p where p_p: "least_rank_p_st (\<lambda>p. \<rho>'' p \<noteq> \<rho> p) p s"
@@ -602,85 +1028,177 @@ proof -
       unfolding lt_def by auto
   qed
   then show ?thesis
-    by (metis \<rho>''_def lte_def)
+    using \<rho>''_def lte_def by auto
 qed
 
-lemma dddd:
-  assumes "strat_wf s dl"
-  assumes "Cls p ids rhs \<in> dl"
-  assumes "s p = 0"
-  assumes "rh \<in> set rhs"
-  shows "\<nexists>p' ids. rh = \<^bold>\<not> p' ids"
-  by (metis One_nat_def add_eq_0_iff_both_eq_0 assms bot_nat_0.extremum_uniqueI bot_nat_0.not_eq_extremum rnk.simps(4) strat_wf_cls.simps strat_wf_def zero_less_Suc)
+lemma 
+  assumes "n \<le> s p"
+  shows "solve_pg s dl n p = {}"
+  sorry
 
-lemma dddddddd:
-  assumes "strat_wf s dl"
-  assumes "Cls p ids rhs \<in> (dl --s-- 0)"
-  assumes "rh \<in> set rhs"
-  shows "\<nexists>p' ids. rh = \<^bold>\<not> p ids"
-  using assms dddd by fastforce 
+lemma 
+  assumes "n \<le> m"
+  assumes "(solve_pg s dl n) \<sqsubset>s\<sqsubset> \<rho>"
+  shows "(solve_pg s dl m) \<sqsubset>s\<sqsubset> \<rho>"
+proof -
+  obtain p where p_p:
+    "solve_pg s dl n p \<subset> \<rho> p"
+    "(\<forall>p'. s p' = s p \<longrightarrow> solve_pg s dl n p' \<subseteq> \<rho> p')"
+    "(\<forall>p'. s p' < s p \<longrightarrow> solve_pg s dl n p' = \<rho> p')"
+    using assms unfolding lt_def by auto
 
-lemma dddddddddddddddd:
-  assumes "strat_wf s dl"
-  assumes "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)}) \<sigma>"
-  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
-  assumes "rh \<in> set rhs"
-  assumes "Cls p ids rhs \<in> (dl --s-- 0)"
-  shows "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+  have "s p \<le> n"
+    using p_p(1) sorry
+
+  have "solve_pg s dl m p \<subset> \<rho> p"
+    by (metis \<open>s p \<le> n\<close> assms(1) dual_order.trans p_p(1) solve_pg_agree_above)
+  moreover
+  have "(\<forall>p'. s p' = s p \<longrightarrow> solve_pg s dl m p' \<subseteq> \<rho> p')"
+    by (metis \<open>s p \<le> n\<close> assms(1) dual_order.trans p_p(2) solve_pg_two_agree_above)
+  moreover
+  have "(\<forall>p'. s p' < s p \<longrightarrow> solve_pg s dl m p' = \<rho> p')"
+    by (metis \<open>s p \<le> n\<close> assms(1) less_or_eq_imp_le order_trans p_p(3) solve_pg_agree_above)
+  ultimately
+  show "solve_pg s dl m \<sqsubset>s\<sqsubset> \<rho>"
+    unfolding lt_def by auto
+  oops
+
+
+(*
+lemma gugugugugug123111342:
+  assumes "\<forall>q. rnk q \<le> rnk p \<longrightarrow> (solve_pg s dl n) q = \<rho> q"
+  assumes "(solve_pg s dl n) p \<subset> \<rho> q"
+  assumes "n \<le> m"
+  shows "\<rho> \<sqsubset>s\<sqsubset> (solve_pg s dl m)"
+proof -
+  show "\<rho> \<sqsubset>s\<sqsubset> (solve_pg s dl m)"
+    unfolding 
+qed
+*)
+
+lemma solve_pg_below_model:
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
+  shows "(solve_pg s dl n) \<sqsubseteq>s\<sqsubseteq> \<rho>"
   using assms
-  apply (cases rh)
-     apply auto
-  subgoal for p ids
-    unfolding Inter'_def
-    apply auto
-    done
-  subgoal for p ids
-    unfolding Inter'_def
-    apply auto
-    apply (meson dddd)
-    done
-  done
+proof (induction n arbitrary: \<rho>)
+  case 0
+  then show ?case
+    using solve_pg_0_below_model by blast
+next
+  case (Suc n)
+  define \<rho>''n :: "'a \<Rightarrow> 'b list set" where "\<rho>''n = solve_pg s dl n"
+  define \<rho>''n1 :: "'a \<Rightarrow> 'b list set" where "\<rho>''n1 = solve_pg s dl (Suc n)"
 
-lemma snit_meaning_cls:
+  have A: "\<rho>''n \<sqsubseteq>s\<sqsubseteq> \<rho>"
+    using Suc.IH Suc.prems \<rho>''n_def solves_Suc by blast
+
+  have B: "\<forall>p. s p \<le> n \<longrightarrow> \<rho>''n1 p = \<rho>''n p"
+    using solve_pg_two_agree_above[of s _ "n" "Suc n" dl]
+    unfolding \<rho>''n_def \<rho>''n1_def by auto
+
+  have "\<rho>''n1 \<sqsubseteq>s\<sqsubseteq> \<rho>"
+  proof (cases "\<rho>''n1 = \<rho>")
+    case True
+    then show ?thesis
+      by (simp add: lte_def)
+  next
+    case False
+    then have "\<exists>p. least_rank_p_st (\<lambda>p. \<rho>''n1 p \<noteq> \<rho> p) p s"
+      using least_rank_p_st_exists[of "(\<lambda>p. \<rho>''n1 p \<noteq> \<rho> p)"] by force
+    then obtain p where p_p: "least_rank_p_st (\<lambda>p. \<rho>''n1 p \<noteq> \<rho> p) p s"
+      by blast
+    then have dis: "\<rho>''n1 p \<noteq> \<rho> p"
+      unfolding least_rank_p_st_def by auto
+    define i where "i = s p"
+    have "i < Suc n \<or> i = Suc n \<or> Suc n < i"
+      by auto
+    then show ?thesis
+    proof (rule disjE3)
+      assume "i < Suc n"
+      then have "s p \<le> n"
+        unfolding i_def by auto
+      then have "\<rho>''n p \<noteq> \<rho> p"
+        using dis B by auto
+
+      have "\<rho>''n \<sqsubset>s\<sqsubset> \<rho>"
+        by (metis A \<open>\<rho>''n p \<noteq> \<rho> p\<close> lte_def)
+      moreover
+      have "least_rank_p_st (\<lambda>p. \<rho>''n p \<noteq> \<rho> p) p s"
+        by (smt (verit, best) B \<open>s p \<le> n\<close> least_rank_p_st_def nle_le order.trans p_p)
+      ultimately
+      have "\<rho>''n p \<subset> \<rho> p \<and>
+           (\<forall>p'. s p' = s p \<longrightarrow> \<rho>''n(p') \<subseteq> \<rho>(p')) \<and>
+           (\<forall>p'. s p' < s p \<longrightarrow> \<rho>''n(p') = \<rho>(p'))"
+        by (smt (z3) least_rank_p_st_def lt_def nless_le)
+      then have "\<rho>''n1 p \<subset> \<rho> p \<and>
+           (\<forall>p'. s p' = s p \<longrightarrow> \<rho>''n1(p') \<subseteq> \<rho>(p')) \<and>
+           (\<forall>p'. s p' < s p \<longrightarrow> \<rho>''n1(p') = \<rho>(p'))"
+        using B \<open>s p \<le> n\<close> by auto
+      then have "\<rho>''n1 \<sqsubset>s\<sqsubset> \<rho>"
+        unfolding lt_def by auto
+      then show "\<rho>''n1 \<sqsubseteq>s\<sqsubseteq> \<rho>"
+        by (simp add: lte_def)
+    next
+      assume "i = Suc n"
+      have "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n)"
+        using Suc.prems by auto
+      moreover
+      have "\<forall>p'. (\<rho> \\s\\ n) p' = (solve_pg s dl n) p'"
+      proof
+        fix p'
+        show "(\<rho> \\s\\ n) p' = (solve_pg s dl n) p'"
+        proof (cases "s p' \<le> n")
+          case True
+          then show ?thesis
+            using B \<open>i = Suc n\<close> \<rho>''n_def below_least_rank_p_st i_def p_p by fastforce
+        next
+          case False
+          then show ?thesis
+            by (metis exi_sol_n pred_val_mod_strata.simps)
+        qed
+      qed
+      ultimately
+      have "\<rho> \<in> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<and> (\<rho>' \\s\\ n) = solve_pg s dl n}"
+        by auto
+      then have "\<rho>''n1 p \<subseteq> \<rho> p"
+        unfolding \<rho>''n1_def apply (auto simp del: dl_program_mod_strata.simps)
+        by (smt (verit, best) Inter'_def mem_Collect_eq mem_simps(11))
+      then have "\<rho>''n1 p \<subset> \<rho> p"
+        using dis by auto
+      moreover
+      have "\<forall>p'. s p' = s p \<longrightarrow> \<rho>''n1 p' \<subseteq> \<rho> p'"
+        sorry
+      moreover
+      have "\<forall>p'. s p' < s p \<longrightarrow> \<rho>''n1 p' = \<rho> p'"
+        sorry
+      ultimately
+      have "\<rho>''n1 \<sqsubset>s\<sqsubset> \<rho>"
+        unfolding lt_def by auto
+      then show "\<rho>''n1 \<sqsubseteq>s\<sqsubseteq> \<rho>"
+        unfolding lte_def by auto
+    next
+      assume "Suc n < i"
+      show "\<rho>''n1 \<sqsubseteq>s\<sqsubseteq> \<rho>"
+        sorry
+    qed
+  qed
+  then show ?case
+    unfolding \<rho>''n1_def by auto
+qed
+
+lemma solve_pg_0_least_solution:
   assumes "strat_wf s dl"
-  assumes "Cls p ids rhs \<in> (dl --s-- 0)"
-  shows "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)}) \<sigma>"
-  unfolding meaning_cls.simps
-proof
-  define \<rho>'' :: "'a \<Rightarrow> 'c list set" where "\<rho>'' = (\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)})"
-  assume "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)}) \<sigma>"
-  then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0) \<longrightarrow> (\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>)"
-    using dddddddddddddddd[OF assms(1), of _ \<sigma> _ rhs p ids, OF _ _ _ assms(2)] 
-    by auto
-  then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h  \<rho>' \<sigma>"
-    by (metis assms(2) meaning_cls.simps solves_cls_def solves_program_def)
-
-  then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)}) \<sigma>"
-    sorry
-qed
-
-lemma snit_models_cls:
-  assumes "Cls p ids rhs \<in> (dl --s-- 0)"
-  shows "(\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)}) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
-  unfolding solves_cls_def
-proof
-  
-qed
-
-lemma snit_models: "(\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)}) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
-  unfolding solves_program_def
-proof 
-  fix 
-qed
+  shows "least_solution (solve_pg s dl 0) (dl --s-- 0) s"
+  by (metis (mono_tags, lifting) assms least_solution_def solve_pg_0_below_model snit_models)
 
 
-lemma
+lemma 
   assumes "strat_wf s dl"
   shows "least_solution (solve_pg s dl n) (dl --s-- n) s" (* Man kunne styrke dette til least og ikke kun "slår \<rho>". Nok en god idé tbh. Meh. Du har nogle beviser på papir som nok er bedre *)
 proof (induction n)
   case 0
   then show ?case
-    sorry
+    using solve_pg_0_least_solution by (metis assms solve_pg.simps(1))
 next
   case (Suc n)
   have "solve_pg s dl n \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
