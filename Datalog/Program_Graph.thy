@@ -322,6 +322,9 @@ fun strat_wf_cls :: "'p strat \<Rightarrow> ('p,'x,'e) clause \<Rightarrow> bool
 definition strat_wf :: "'p strat \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> bool" where
   "strat_wf s dl \<longleftrightarrow> (\<forall>c \<in> dl. strat_wf_cls s c)"
 
+definition max_strata :: "'p strat \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> nat" where
+  "max_strata s dl = Max {s p | p ids rhs. Cls p ids rhs \<in> dl}"
+
 fun pred_val_mod_strata :: "('p,'e) pred_val \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'e) pred_val"  ("_ \\_\\ _" 0) where 
   "(\<sigma> \\s\\ n) p = (if s p \<le> n then \<sigma> p else {})"
 
@@ -560,15 +563,92 @@ lemma solve_pg_Suc_subset:
   using assms by (force simp add: Inter'_def) 
 
 
+lemma solve_pg_0_empty: (* Can be generalized from 0 to n and Inter' to solve_pg. ARE YOU REALLY SURE ABOUT THAT? *)
+  assumes "s p > 0"
+  shows "(solve_pg s dl 0) p = {}"
+proof -
+  define \<rho>'' :: "'a \<Rightarrow> 'b list set" where "\<rho>'' = (solve_pg s dl 0)"
+  define \<rho>' :: "'a \<Rightarrow> 'b list set" where "\<rho>' = (\<lambda>p. if s p = 0 then UNIV else {})"
+  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== 0)"
+    unfolding solves_program_def solves_cls_def 
+  proof (rule, rule)
+    fix c \<sigma>
+    assume c_dl0: "c \<in> (dl ==s== 0)"
+    obtain p' ids rhs where c_split: "c = Cls p' ids rhs"
+      by (cases c) auto
+    then have sp'0: "s p' = 0" 
+      using c_dl0 by auto
+    have "\<lbrakk>Cls p' ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
+      unfolding meaning_cls.simps
+    proof (rule) 
+      assume "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>"
+      show "\<lbrakk>(p', ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
+        using \<rho>'_def sp'0 by force
+    qed
+    then show "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
+      unfolding c_split by auto
+  qed
+  have "\<rho>'' p \<subseteq> \<rho>' p"
+    using \<open>\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== 0)\<close> \<rho>''_def solve_pg_0_subset by fastforce
+  then have "\<rho>'' p = {}"
+    unfolding \<rho>'_def using assms(1) by simp
+  then show ?thesis 
+    unfolding \<rho>''_def by auto
+qed
+
+lemma solve_pg_Suc_empty:
+  assumes "s p > n"
+  shows "(solve_pg s dl n) p = {}"
+  using assms proof (induction n arbitrary: p)
+  case 0
+  then show ?case
+    using solve_pg_0_empty by metis
+next
+  case (Suc n)
+  define \<rho>'' :: "'a \<Rightarrow> 'b list set" where "\<rho>'' = (solve_pg s dl (Suc n))"
+  define \<rho>' :: "'a \<Rightarrow> 'b list set" where "\<rho>' = (\<lambda>p. if s p < Suc n then (solve_pg s dl n) p else if s p = Suc n then UNIV else {})"
+
+  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n)"
+    unfolding solves_program_def solves_cls_def 
+  proof (rule, rule)
+    fix c \<sigma>
+    assume c_dlSucn: "c \<in> (dl ==s== Suc n)"
+    obtain p' ids rhs where c_split: "c = Cls p' ids rhs"
+      by (cases c) auto
+    then have sp'Sucn: "s p' = Suc n" 
+      using c_dlSucn by auto
+    have "\<lbrakk>Cls p' ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
+      unfolding meaning_cls.simps
+    proof (rule)
+      assume "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>"
+      show "\<lbrakk>(p', ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
+        using \<rho>'_def sp'Sucn
+        by auto[]
+    qed
+    then show "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
+      unfolding c_split by auto
+  qed
+  have "\<forall>p. (\<rho>' \\s\\ n) p = (solve_pg s dl n) p"
+    apply auto
+    apply (simp add: \<rho>'_def)+
+    using Suc  by auto
+  have "\<rho>'' p \<subseteq> \<rho>' p"
+    using solve_pg_Suc_subset[of \<rho>' dl s n  p] \<open>\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n)\<close> \<rho>''_def \<open>\<forall>p. (\<rho>' \s\ n) p = (solve_pg s dl n) p\<close> by force
+  then have "\<rho>'' p = {}"
+    unfolding \<rho>'_def using assms(1) Suc by simp
+  then show ?case
+    unfolding \<rho>''_def by auto
+qed
+
 lemma exi_sol_n: "\<exists>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \\s\\ m) = solve_pg s dl m"
 proof -
-  define \<rho> where "\<rho> = (\<lambda>p. (if s p < Suc m then (solve_pg s dl m) p else if s p = Suc m then UNIV else {}))"
+  define \<rho>' where "\<rho>' = (\<lambda>p. (if s p < Suc m then (solve_pg s dl m) p else if s p = Suc m then UNIV else {}))"
 
-  have "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m)" (* Rigtig fordi den gør alle venstresider på dette strata sande *)
-    sorry
+  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m)"
+    unfolding \<rho>'_def solves_cls_def solves_program_def by fastforce
   moreover
-  have "\<forall>p. (\<rho> \\s\\ m) p = solve_pg s dl m p" (* Jeg skal bruge at solve_pg er empty på de høje strata. *)
-    sorry
+  have "\<forall>p. (\<rho>' \\s\\ m) p = solve_pg s dl m p"
+    unfolding \<rho>'_def using solve_pg_Suc_empty[of m s _ dl] by auto
   ultimately
   show ?thesis 
     by force
@@ -610,9 +690,6 @@ lemma solve_pg_two_agree_above:
   assumes "s p \<le> m"
   shows "(solve_pg s dl m) p = (solve_pg s dl n) p"
   using assms solve_pg_agree_above by metis
-
-term PosRh
-
 
 lemma lcrghaxekablcsflhjkbauihlb:
   assumes "strat_wf s dl"
@@ -850,7 +927,7 @@ next
   qed
 qed
 
-
+(*
   define \<rho>'' :: "'a \<Rightarrow> 'c list set" where "\<rho>'' =  (solve_pg s dl (Suc n))"
   assume "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
   then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<longrightarrow> (\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>)"
@@ -861,6 +938,7 @@ qed
   then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
     using solve_pg_Suc_if_all_meaning_lh by auto
 qed
+*)
 
 lemma solve_pg_0_meaning_cls:
   assumes "strat_wf s dl"
@@ -873,8 +951,7 @@ lemma solve_pg_Suc_meaning_cls:
   assumes "strat_wf s dl"
   assumes "c \<in> (dl --s-- (Suc n))"
   shows "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl (Suc n)) \<sigma>"
-  using assms solve_pg_Suc_meaning_cls'[of s dl _ _ _ \<sigma>] 
-  by (cases c) auto
+  using assms solve_pg_Suc_meaning_cls'[of s dl] by (cases c) metis
 
 lemma solve_pg_0_models_cls:
   assumes "strat_wf s dl"
@@ -908,69 +985,6 @@ proof -
     using solves_program_def by blast
 qed
 
-lemma solve_pg_0_empty: (* Can be generalized from 0 to n and Inter' to solve_pg. ARE YOU REALLY SURE ABOUT THAT? *)
-  assumes "s p > 0"
-  shows "(solve_pg s dl 0) p = {}"
-proof -
-  define \<rho>'' :: "'a \<Rightarrow> 'b list set" where "\<rho>'' = (solve_pg s dl 0)"
-  define \<rho>' :: "'a \<Rightarrow> 'b list set" where "\<rho>' = (\<lambda>p. if s p = 0 then UNIV else {})"
-  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
-    unfolding solves_program_def solves_cls_def 
-  proof (rule, rule)
-    fix c \<sigma>
-    assume c_dl0: "c \<in> (dl --s-- 0)"
-    obtain p' ids rhs where c_split: "c = Cls p' ids rhs"
-      by (cases c) auto
-    then have sp'0: "s p' = 0" 
-      using c_dl0 by auto
-    have "\<lbrakk>Cls p' ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
-      unfolding meaning_cls.simps
-    proof (rule) 
-      assume "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>"
-      show "\<lbrakk>(p', ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
-        using \<rho>'_def sp'0 by force
-    qed
-    then show "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
-      unfolding c_split by auto
-  qed
-  have "\<rho>'' p \<subseteq> \<rho>' p"
-    by (metis solve_pg_0_subset \<open>\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)\<close> \<rho>''_def)
-  then have "\<rho>'' p = {}"
-    unfolding \<rho>'_def using assms(1) by simp
-  then show ?thesis 
-    unfolding \<rho>''_def by auto
-qed
-
-
-lemma solve_pg_Suc_empty:
-  assumes "s p > Suc n"
-  shows "(solve_pg s dl (Suc n)) p = {}"
-proof -
-  define \<rho>''n :: "'a \<Rightarrow> 'b list set" where "\<rho>''n = (solve_pg s dl n)"
-  define \<rho>''n1 :: "'a \<Rightarrow> 'b list set" where "\<rho>''n1 = (solve_pg s dl (Suc n))"
-  define \<rho>' :: "'a \<Rightarrow> 'b list set" where "\<rho>' = (\<lambda>p. if s p > n then UNIV else (solve_pg s dl n) p)"
-  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n)"
-    unfolding solves_program_def solves_cls_def 
-  proof (rule, rule)
-    fix c \<sigma>
-    assume c_dlSuc: "c \<in> (dl --s-- Suc n)"
-    obtain p' ids rhs where c_split: "c = Cls p' ids rhs"
-      by (cases c) auto
-    then have sp'Suc: "s p' \<le> Suc n" 
-      using c_dlSuc by auto
-    have "\<lbrakk>Cls p' ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
-      unfolding meaning_cls.simps
-    proof (rule) 
-      assume "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>"
-      show "\<lbrakk>(p', ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
-          using \<rho>'_def sp'Suc 
-          sorry
-      
-      qed
-    then show "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
-      unfolding c_split by auto
-  qed
-  oops
 
 
 lemma disjE3:
@@ -1031,11 +1045,7 @@ proof -
     using \<rho>''_def lte_def by auto
 qed
 
-lemma 
-  assumes "n \<le> s p"
-  shows "solve_pg s dl n p = {}"
-  sorry
-
+(*
 lemma 
   assumes "n \<le> m"
   assumes "(solve_pg s dl n) \<sqsubset>s\<sqsubset> \<rho>"
@@ -1062,6 +1072,7 @@ proof -
   show "solve_pg s dl m \<sqsubset>s\<sqsubset> \<rho>"
     unfolding lt_def by auto
   oops
+*)
 
 
 (*
@@ -1097,7 +1108,7 @@ next
     unfolding \<rho>''n_def \<rho>''n1_def by auto
 
   have "\<rho>''n1 \<sqsubseteq>s\<sqsubseteq> \<rho>"
-  proof (cases "\<rho>''n1 = \<rho>")
+  proof (cases "\<rho>''n1 = \<rho>") (* Change to \<noteq> \<longrightarrow> \<sqsubset> structure *)
     case True
     then show ?thesis
       by (simp add: lte_def)
@@ -1110,10 +1121,10 @@ next
     then have dis: "\<rho>''n1 p \<noteq> \<rho> p"
       unfolding least_rank_p_st_def by auto
     define i where "i = s p"
-    have "i < Suc n \<or> i = Suc n \<or> Suc n < i"
+    have "i < Suc n \<or> Suc n \<le> i"
       by auto
     then show ?thesis
-    proof (rule disjE3)
+    proof (rule disjE)
       assume "i < Suc n"
       then have "s p \<le> n"
         unfolding i_def by auto
@@ -1139,7 +1150,7 @@ next
       then show "\<rho>''n1 \<sqsubseteq>s\<sqsubseteq> \<rho>"
         by (simp add: lte_def)
     next
-      assume "i = Suc n"
+      assume "Suc n \<le> i"
       have "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n)"
         using Suc.prems by auto
       moreover
@@ -1150,7 +1161,7 @@ next
         proof (cases "s p' \<le> n")
           case True
           then show ?thesis
-            using B \<open>i = Suc n\<close> \<rho>''n_def below_least_rank_p_st i_def p_p by fastforce
+            using B \<open>Suc n \<le> i\<close> \<rho>''n_def below_least_rank_p_st i_def p_p by fastforce
         next
           case False
           then show ?thesis
@@ -1162,24 +1173,20 @@ next
         by auto
       then have "\<rho>''n1 p \<subseteq> \<rho> p"
         unfolding \<rho>''n1_def apply (auto simp del: dl_program_mod_strata.simps)
-        by (smt (verit, best) Inter'_def mem_Collect_eq mem_simps(11))
+        by (smt (verit, del_insts) Inter'_def Suc_n_not_le_n dl_program_mod_strata.simps less_Suc_eq_le linorder_not_le mem_Collect_eq mem_simps(11) solves_program_def)
       then have "\<rho>''n1 p \<subset> \<rho> p"
         using dis by auto
       moreover
       have "\<forall>p'. s p' = s p \<longrightarrow> \<rho>''n1 p' \<subseteq> \<rho> p'"
-        sorry
+        by (smt (verit, ccfv_threshold) \<open>\<rho> \<in> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<and> (\<rho>' \s\ n) = solve_pg s dl n}\<close> \<rho>''n1_def dl_program_mod_strata.simps dl_program_on_strata.elims le_eq_less_or_eq mem_Collect_eq solve_pg_Suc_subset solves_program_def)
       moreover
       have "\<forall>p'. s p' < s p \<longrightarrow> \<rho>''n1 p' = \<rho> p'"
-        sorry
+        using below_least_rank_p_st p_p by fastforce
       ultimately
       have "\<rho>''n1 \<sqsubset>s\<sqsubset> \<rho>"
         unfolding lt_def by auto
       then show "\<rho>''n1 \<sqsubseteq>s\<sqsubseteq> \<rho>"
         unfolding lte_def by auto
-    next
-      assume "Suc n < i"
-      show "\<rho>''n1 \<sqsubseteq>s\<sqsubseteq> \<rho>"
-        sorry
     qed
   qed
   then show ?case
@@ -1189,47 +1196,72 @@ qed
 lemma solve_pg_0_least_solution:
   assumes "strat_wf s dl"
   shows "least_solution (solve_pg s dl 0) (dl --s-- 0) s"
-  by (metis (mono_tags, lifting) assms least_solution_def solve_pg_0_below_model snit_models)
+  using assms least_solution_def solve_pg_0_below_model solve_pg_0_solves_dl by blast 
 
-
-lemma 
+lemma solve_pg_Suc_least_solution:
   assumes "strat_wf s dl"
-  shows "least_solution (solve_pg s dl n) (dl --s-- n) s" (* Man kunne styrke dette til least og ikke kun "slår \<rho>". Nok en god idé tbh. Meh. Du har nogle beviser på papir som nok er bedre *)
-proof (induction n)
-  case 0
-  then show ?case
-    using solve_pg_0_least_solution by (metis assms solve_pg.simps(1))
-next
-  case (Suc n)
-  have "solve_pg s dl n \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
-    using Suc least_solution_def by blast
+  shows "least_solution (solve_pg s dl (Suc n)) (dl --s-- (Suc n)) s"
+  using assms least_solution_def solve_pg_Suc_solves_dl solve_pg_below_model by blast (* Man kunne styrke dette til least og ikke kun "slår \<rho>". Nok en god idé tbh. Meh. Du har nogle beviser på papir som nok er bedre *)
 
-  have "\<forall>\<sigma>'. \<sigma>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n) \<longrightarrow> solve_pg s dl n \<sqsubseteq>s\<sqsubseteq> \<sigma>'"
-    using Suc least_solution_def by blast
+lemma solve_pg_least_solution':
+  assumes "strat_wf s dl"
+  shows "least_solution (solve_pg s dl n) (dl --s-- n) s"
+  using assms solve_pg_0_least_solution solve_pg_Suc_least_solution by (cases n) auto
 
-  have "solve_pg s dl (Suc n) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n)"
-    sorry
-  moreover
-  have "\<forall>\<sigma>'. \<sigma>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<longrightarrow> solve_pg s dl (Suc n) \<sqsubseteq>s\<sqsubseteq> \<sigma>'"
-  proof (rule, rule)
-    fix \<sigma>'
-    assume "\<sigma>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n)"
-    have f: "\<sigma>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<and> (\<sigma>' \\s\\ n) = solve_pg s dl n"
-      sorry
-    show "solve_pg s dl (Suc n) \<sqsubseteq>s\<sqsubseteq> \<sigma>'"
-      apply (simp del: dl_program_mod_strata.simps)
-      using f (* Jeg skal nok over på papir og lave noget... *)
-      sorry
-  qed
-  ultimately
-  show ?case
-    unfolding least_solution_def by auto
+find_theorems Max "(\<le>)"
+
+
+find_theorems finite name: induct
+
+lemma finite_max_strata:
+  assumes "finite dl"
+  shows "(dl --s-- (max_strata s dl)) = dl"
+  unfolding max_strata_def  apply auto
+  subgoal for c
+    apply (cases c)
+    subgoal for p ids rhs
+      apply (rule exI[of _ p])
+      apply (rule exI[of _ ids])
+      apply (rule exI[of _ rhs])
+      apply auto
+      using assms 
+      apply -
+      apply (rule Lattices_Big.linorder_class.Max.coboundedI[of "{s p |p. \<exists>ids rhs. Cls p ids rhs \<in> dl}" "s p"])
+       apply auto
+      apply (subgoal_tac " {s p |p. \<exists>ids rhs. Cls p ids rhs \<in> dl} = (\<lambda>c. (case c of Cls p ids rhs \<Rightarrow> s p)) ` dl")
+       apply simp
+      unfolding image_def 
+      apply auto
+      subgoal for pa idsa rhsa
+        apply (rule bexI[of _ "Cls pa idsa rhsa"])
+         apply auto
+        done
+      subgoal for c'
+        apply (cases c')
+        apply auto
+        done
+      done
+    done
+  done      
+
+lemma solve_pg_least_solution:
+  assumes "finite dl"
+  assumes "strat_wf s dl"
+  shows "least_solution (solve_pg s dl (max_strata s dl)) dl s"
+proof -
+  have "least_solution (solve_pg s dl (max_strata s dl)) (dl --s-- (max_strata s dl)) s"
+    using solve_pg_least_solution' assms by auto
+  then show ?thesis
+    using finite_max_strata assms by metis
 qed
+
+  
 
 (* René se her *)
 (* Her er linket til det vi så på på nettet https://www.physicsforums.com/threads/difference-between-least-minimal-element.380114/ *)
 (* En god bog: Priestly *)
 lemma least_is_minimal:
+  assumes "finite dl"
   assumes "strat_wf s dl"
   shows "least_solution \<sigma> dl s \<longleftrightarrow> minimal_solution \<sigma> dl s"
 proof
@@ -1240,13 +1272,22 @@ next
   assume "minimal_solution \<sigma> dl s"
 
   have "\<exists>\<sigma>'. least_solution \<sigma>' dl s"
-    sorry
+    using solve_pg_least_solution assms by metis
 
   show "least_solution \<sigma> dl s"
     by (metis \<open>\<exists>\<sigma>'. least_solution \<sigma>' dl s\<close> \<open>minimal_solution \<sigma> dl s\<close> least_solution_def lte_def minimal_solution_def)
 qed
 
+lemma xxasjkdfaskl:
+  assumes "finite dl"
+  shows "finite (dl --s-- n)"
+  using assms
+  apply auto
+  by (smt (verit) finite_subset mem_Collect_eq subsetI)
+  
+
 lemma downward_solution:
+  assumes "finite dl"
   assumes "n > m"
   assumes "strat_wf s dl"
   assumes "least_solution \<sigma> (dl --s-- n) s"
@@ -1254,14 +1295,14 @@ lemma downward_solution:
 proof (rule ccontr)
   assume a: "\<not> least_solution (\<sigma> \\s\\ m) (dl --s-- m) s"
   have strrr: "strat_wf s (dl --s-- m)"
-    using assms(2) downward_strat2 by auto
+    using assms downward_strat2 by auto
   have strrrr: "strat_wf s (dl --s-- n)"
-    using assms(2) downward_strat2 by auto
+    using assms downward_strat2 by auto
   from a have "\<not> minimal_solution  (\<sigma> \\s\\ m) (dl --s-- m) s"
-    using least_is_minimal[of s] strrr by metis
+    using least_is_minimal strrr assms(1) xxasjkdfaskl by metis
   moreover 
   have "(\<sigma> \\s\\ m) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
-    using assms(1,3) assms(2) downward_solves least_solution_def by blast
+    using assms downward_solves least_solution_def by blast
   ultimately
   have "(\<exists>\<sigma>'. \<sigma>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m) \<and> (\<sigma>' \<sqsubset>s\<sqsubset> (\<sigma> \\s\\ m)))"
     unfolding minimal_solution_def by auto
@@ -1336,24 +1377,25 @@ proof (rule ccontr)
   have "\<not>minimal_solution \<sigma> (dl --s-- n) s"
     unfolding minimal_solution_def by auto
   then have "\<not>least_solution \<sigma> (dl --s-- n) s" 
-    using least_is_minimal[of s "(dl --s-- n)" \<sigma>] strrrr by auto
+    using least_is_minimal strrrr xxasjkdfaskl assms by metis
   then show "False"
-    using assms(3) by auto
+    using assms by auto
 qed
 
 lemma downward_solution2:
+  assumes "finite dl"
   assumes "strat_wf s dl"
   assumes "least_solution \<sigma> dl s"
   shows "least_solution (\<sigma> \\s\\ m) (dl --s-- m) s"
 proof (rule ccontr)
   assume a: "\<not> least_solution (\<sigma> \\s\\ m) (dl --s-- m) s"
   have strrr: "strat_wf s (dl --s-- m)"
-    using assms(1) downward_strat2 by auto
+    using assms downward_strat2 by auto
   from a have "\<not> minimal_solution  (\<sigma> \\s\\ m) (dl --s-- m) s"
-    using least_is_minimal[of s] strrr by metis
+    using least_is_minimal strrr xxasjkdfaskl assms by metis  
   moreover 
   have "(\<sigma> \\s\\ m) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
-    using assms(1) assms(2) downward_solves2 least_solution_def by blast
+    using assms downward_solves2 least_solution_def by blast
   ultimately
   have "\<exists>\<sigma>'. \<sigma>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m) \<and> \<sigma>' \<sqsubset>s\<sqsubset> \<sigma> \\s\\ m"
     unfolding minimal_solution_def by auto
@@ -1411,7 +1453,7 @@ proof (rule ccontr)
                apply fastforce
               apply fastforce
             using \<open>c \<in> dl\<close> c_def dual_order.trans meaning_rh.simps(3) rnk.simps(3) strat_wf_cls.simps strat_wf_def
-            apply (smt (verit, ccfv_SIG) assms(1))
+            apply (smt (verit, ccfv_SIG) assms)
              apply (smt (z3) UNIV_I meaning_rh.simps(4))
             done
           done
@@ -1428,9 +1470,10 @@ proof (rule ccontr)
   have "\<not>minimal_solution \<sigma> dl s"
     unfolding minimal_solution_def by auto
   then have "\<not>least_solution \<sigma> dl s" 
-    using least_is_minimal[of s "dl" \<sigma>] assms(1) by simp 
+    (* using least_is_minimal assms  *) (* This funny metis proof is not really what I intended..... *)
+    by (metis \<open>\<forall>p'. s p' < s p \<longrightarrow> \<sigma>'' p' = \<sigma> p'\<close> \<open>\<sigma>'' \<Turnstile>\<^sub>d\<^sub>l dl\<close> \<open>\<sigma>'' p \<subset> \<sigma> p\<close> leD least_solution_def linorder_neq_iff lt_def lte_def psubset_imp_subset)
   then show "False"
-    using assms(2) by auto
+    using assms by auto
 qed
 
 
@@ -1831,9 +1874,10 @@ section \<open>Forwards may-analysis\<close>
 
 locale analysis_BV_forward_may =
   fixes pg :: "('n,'v) program_graph"
-  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd::finite set"
   fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
+  assumes "finite (fst pg)"
 begin
 
 definition edge_set where 
@@ -2008,12 +2052,19 @@ proof (rule ccontr)
   assume "\<not> [BV_Node q\<^sub>o, BV_Action \<alpha>, BV_Node q\<^sub>s, BV_Elem d] \<notin> \<sigma> the_kill"
   then have a: "[BV_Node q\<^sub>o, BV_Action \<alpha>, BV_Node q\<^sub>s, BV_Elem d] \<in> \<sigma> the_kill"
     by auto
-  have "least_solution (\<sigma> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
-    using downward_solution2[of s_BV ana_pg_BV \<sigma> 0] assms(2)
-    using ana_pg_BV_stratified by linarith
+  have "finite ana_pg_BV"
+    unfolding ana_pg_BV_def
+    apply auto
+       apply (smt (verit, best) analysis_BV_forward_may.ana_edge_BV.elims analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def finite.emptyI finite.intros(2) finite_UN)
+    using ana_init_BV_def apply force
+     apply (smt (verit, del_insts) analysis_BV_forward_may.ana_kill_BV.elims analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def finite.emptyI finite.insertI finite_SigmaI finite_UN finite_code)
+    by (smt (verit, best) ana_gen_BV.elims analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def finite.emptyI finite.insertI finite_SigmaI finite_UN finite_code)
+
+  then have "least_solution (\<sigma> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
+    using downward_solution2[of ana_pg_BV s_BV \<sigma> 0] assms(2) using ana_pg_BV_stratified by linarith
   then have "minimal_solution (\<sigma> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
-    using least_is_minimal[of s_BV "ana_pg_BV --s_BV-- 0" "(\<sigma> \\s_BV\\ 0)"]
-    using ana_pg_BV_stratified downward_strat2 by blast
+    using least_is_minimal[of]
+    using ana_pg_BV_stratified downward_strat2 by (smt (verit) \<open>finite ana_pg_BV\<close> xxasjkdfaskl) 
   moreover
   define \<sigma>' where "\<sigma>' = (\<lambda>p. (if p = the_kill then ((\<sigma> \\s_BV\\ 0) the_kill) - {[BV_Node q\<^sub>o, BV_Action \<alpha>, BV_Node q\<^sub>s, BV_Elem d]} else (\<sigma> \\s_BV\\ 0) p))"
 
@@ -2227,7 +2278,8 @@ end
 section \<open>Reaching definitions revisited\<close>
 
 locale analysis_RD =
-  fixes pg :: "('n,'v) program_graph"
+  fixes pg :: "('n::finite,'v::finite) program_graph"
+  assumes "finite (fst pg)"
 begin
 
 definition edge_set where
@@ -2252,7 +2304,8 @@ fun gen_set_RD :: "('n,'v) edge \<Rightarrow> ('n,'v) triple set" where
 definition d_init_RD :: " ('n,'v) triple set" where
   "d_init_RD = (UNIV \<times> {None} \<times> {start})"
 
-interpretation interp: analysis_BV_forward_may pg kill_set_RD gen_set_RD d_init_RD .
+interpretation interp: analysis_BV_forward_may pg kill_set_RD gen_set_RD d_init_RD 
+  using analysis_BV_forward_may_def analysis_RD_axioms analysis_RD_def by blast 
 
 lemma def_var_def_edge_S_hat:
   assumes "def_var \<pi> x start \<in> R"
@@ -2276,11 +2329,12 @@ proof -
   next
     case (Bool b)
     then show ?thesis
-      by (simp add: analysis_BV_forward_may.S_hat_def assms(1))
+      by (simp add: interp.S_hat_def assms(1))
+
   next
     case Skip
     then show ?thesis
-      by (simp add: analysis_BV_forward_may.S_hat_def assms(1))
+      by (simp add: interp.S_hat_def assms(1))
   qed
   then show ?thesis
     unfolding t_def by auto
@@ -2432,11 +2486,11 @@ next
   fix x
   assume "x \<in> interp.S_hat_edge_list \<pi> d_init_RD"
   then show "x \<in> range (\<lambda>x. def_var \<pi> x start)"
-    by (metis (no_types, lifting) analysis_RD.gugugug prod.collapse range_eqI)
+    by (metis gugugug preds_lh.cases range_eqI)
 qed
 
 lemma def_path_S_hat_path: "def_path \<pi> start = interp.S_hat_path \<pi> d_init_RD"
-  using analysis_BV_forward_may.S_hat_path_def def_path_def def_var_UNIV_S_hat_edge_list by metis
+  using interp.S_hat_path_def def_path_def def_var_UNIV_S_hat_edge_list by metis
 
 fun summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Rightarrow> bool" where
   "summarizes_RD \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> def_path \<pi> start \<longrightarrow> 
@@ -2455,9 +2509,10 @@ section \<open>Backwards may-analysis\<close>
 
 locale analysis_BV_backwards_may =
   fixes pg :: "('n,'v) program_graph"
-  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd::finite set"
   fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
+  assumes "finite (fst pg)"
 begin
 
 definition edge_set where
@@ -2522,7 +2577,11 @@ definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Right
 
 thm summarizes_dl_BV_def[of \<rho>]
 
-interpretation fa: analysis_BV_forward_may pg_rev "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init .
+lemma finite_pg_rev: "finite (fst pg_rev)"
+  by (metis analysis_BV_backwards_may_axioms analysis_BV_backwards_may_def edge_set_def finite_imageI fst_conv pg_rev_def)
+
+interpretation fa: analysis_BV_forward_may pg_rev "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
+  using analysis_BV_forward_may_def finite_pg_rev by metis
 
 abbreviation ana_pg_BV where
   "ana_pg_BV == fa.ana_pg_BV"
@@ -2532,8 +2591,8 @@ lemma rev_end_is_start:
   assumes "LTS.get_end (ss, w) = end"
   shows "LTS.get_start (rev ss, rev w) = fa.start"
   using assms
-  unfolding LTS.get_end_def LTS.get_start_def fa.start_def pg_rev_def analysis_BV_forward_may.start_def
-  by (simp add: hd_rev)
+  unfolding LTS.get_end_def LTS.get_start_def fa.start_def pg_rev_def fa.start_def
+  using hd_rev by (metis fa.start_def fst_conv pg_rev_def snd_conv) 
 
 lemma S_hat_edge_list_forward_backward:
    "S_hat_edge_list ss d_init = fa.S_hat_edge_list (rev_edge_list ss) d_init"
@@ -2635,7 +2694,8 @@ definition use_path where
   "use_path \<pi> = {x. use_var (LTS.transition_list \<pi>) x}"
 
 locale analysis_LV =
-  fixes pg :: "('n,'v) program_graph"
+  fixes pg :: "('n::finite,'v::finite) program_graph"
+  assumes "finite (fst pg)"
 begin
 
 definition edge_set where 
@@ -2660,7 +2720,9 @@ fun gen_set_LV :: "('n,'v) edge \<Rightarrow> 'v set" where
 definition d_init_LV :: "'v set" where
   "d_init_LV = {}"
 
-interpretation interpb: analysis_BV_backwards_may pg kill_set_LV gen_set_LV d_init_LV .
+interpretation interpb: analysis_BV_backwards_may pg kill_set_LV gen_set_LV d_init_LV
+  using analysis_BV_backwards_may.intro analysis_LV_axioms analysis_LV_def by blast
+
 
 thm interpb.sound_rev_BV
 
@@ -2721,7 +2783,7 @@ next
     next
       case False
       then show ?thesis
-        by (simp add: analysis_BV_backwards_may.S_hat_def x_in_S_hat_\<pi>)
+        by (simp add: interpb.S_hat_def x_in_S_hat_\<pi>)
     qed
   qed
 qed
@@ -2843,9 +2905,10 @@ section \<open>Forward must-analysis\<close>
 
 locale analysis_BV_forwards_must =
   fixes pg :: "('n,'v) program_graph"
-  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd::finite set" (* Is it OK to insists 'd finite? *)
   fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
+  assumes "finite (fst pg)"
 begin
 
 definition edge_set where
@@ -2914,7 +2977,8 @@ fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightar
         \<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Node_BV \<pi>_end, Encode_Elem_BV d]\<rangle>. \<longrightarrow>
           (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = \<pi>_end \<longrightarrow> d \<in> S_hat_path \<pi> d_init))"
 
-interpretation a_may: analysis_BV_forward_may pg "\<lambda>e. UNIV - (kill_set e)" "(\<lambda>e. UNIV - gen_set e)" "UNIV - d_init" .
+interpretation a_may: analysis_BV_forward_may pg "\<lambda>e. UNIV - (kill_set e)" "(\<lambda>e. UNIV - gen_set e)" "UNIV - d_init"
+  using analysis_BV_forward_may.intro analysis_BV_forwards_must_axioms analysis_BV_forwards_must_def by blast
 
 lemma opposite_lemma:
   assumes "\<not>d \<in> a_may.S_hat_edge_list \<pi> (UNIV - d_init)"
@@ -2932,7 +2996,7 @@ qed
 lemma opposite_lemma2:
   assumes "\<not>d \<in> a_may.S_hat_path \<pi> (UNIV - d_init)"
   shows "d \<in> S_hat_path \<pi> d_init"
-  by (metis S_hat_path_def analysis_BV_forward_may.S_hat_path_def assms opposite_lemma)
+  by (metis S_hat_path_def a_may.S_hat_path_def assms opposite_lemma)
 
 find_theorems "(-)"  "(\<union>)"
 
@@ -3051,10 +3115,19 @@ lemma not_CBV:
   assumes a: "[BV_Node q, BV_Elem d] \<in> \<rho> the_BV"                  
   shows False
 proof -
+  have fin: "finite a_may.ana_pg_BV"
+    unfolding a_may.ana_pg_BV_def a_may.edge_set_def apply auto[]
+    apply (smt (verit, ccfv_SIG) a_may.ana_edge_BV.elims analysis_BV_forwards_must_axioms analysis_BV_forwards_must_def finite.intros(1) finite.intros(2) finite_UN)
+    unfolding a_may.ana_init_BV_def
+      apply auto[]
+     apply (smt (verit, best) a_may.ana_kill_BV.elims analysis_BV_forwards_must_axioms analysis_BV_forwards_must_def finite.emptyI finite.insertI finite_SigmaI finite_UN finite_code)
+    apply (smt (verit) a_may.ana_gen_BV.elims analysis_BV_forwards_must_axioms analysis_BV_forwards_must_def finite.emptyI finite.insertI finite_SigmaI finite_UN finite_code)
+    done
+
   have "least_solution \<rho> a_may.ana_pg_BV s_BV"
     using assms(2) by force
   then have "minimal_solution \<rho> a_may.ana_pg_BV s_BV"
-    using a_may.ana_pg_BV_stratified least_is_minimal by blast
+    using a_may.ana_pg_BV_stratified least_is_minimal[of a_may.ana_pg_BV s_BV \<rho>] fin by auto
 
   define \<rho>' where  "\<rho>' = (\<lambda>p. (if p = the_CBV then (\<rho> the_CBV) - {[BV_Node q, BV_Elem d]} else \<rho> p))"
 
@@ -3166,7 +3239,7 @@ proof -
     apply -
     apply (erule_tac x=\<pi> in allE)
     apply (erule_tac x=d in allE)
-    by (metis analysis_BV_forward_may.edge_set_def analysis_BV_forward_may.start_def assms(3,4) edge_set_def m start_def)
+    by (metis a_may.edge_set_def a_may.start_def assms(3,4) edge_set_def m start_def)
   then show "d \<in> S_hat_path \<pi> d_init"
     using opposite_lemma2 by auto
 qed
@@ -3175,9 +3248,6 @@ lemma sound_CBV:
   assumes "least_solution \<rho> a_may.ana_pg_BV s_BV"
   shows "summarizes_dl_BV_must \<rho>"
   using assms unfolding summarizes_dl_BV_must.simps using sound_BV_must' by auto
-
-
-
 
 end
 
