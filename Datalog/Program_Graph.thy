@@ -2068,7 +2068,7 @@ definition ana_pg_BV :: "(BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" whe
 fun summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
   "summarizes_dl_BV \<rho> \<longleftrightarrow> 
      (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
-        solves_query \<rho> (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
+        \<rho> \<Turnstile>\<^sub>q (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
 lemma S_hat_path_append:
   assumes "length qs = length w"                               
@@ -2770,7 +2770,6 @@ end
 
 section \<open>Live Variables Analysis\<close>
 
-
 fun use_action :: "'v action \<Rightarrow> 'v set" where
   "use_action (x ::= a) = fv_arith a"
 | "use_action (Bool b) = fv_boolean b"
@@ -3012,7 +3011,6 @@ definition start where
 definition "end" where
   "end = snd (snd pg)"
 
-
 definition "S_hat" :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" where
   "S_hat e R = (R - kill_set e) \<union> gen_set e"
 
@@ -3071,6 +3069,9 @@ fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightar
 interpretation a_may: analysis_BV_forward_may pg "\<lambda>e. UNIV - (kill_set e)" "(\<lambda>e. UNIV - gen_set e)" "UNIV - d_init"
   using analysis_BV_forward_may.intro analysis_BV_forwards_must_axioms analysis_BV_forwards_must_def by blast
 
+abbreviation ana_pg_BV where (* Copy paste *)
+  "ana_pg_BV == a_may.ana_pg_BV"
+
 lemma opposite_lemma:
   assumes "\<not>d \<in> a_may.S_hat_edge_list \<pi> (UNIV - d_init)"
   shows "d \<in> S_hat_edge_list \<pi> d_init"
@@ -3089,7 +3090,7 @@ lemma opposite_lemma2:
   shows "d \<in> S_hat_path \<pi> d_init"
   by (metis S_hat_path_def a_may.S_hat_path_def assms opposite_lemma)
 
-lemma the_CBV_only_ana_CBV: "the_CBV \<notin> preds_dl (a_may.ana_pg_BV - {a_may.ana_CBV})"
+lemma the_CBV_only_ana_CBV: "the_CBV \<notin> preds_dl (ana_pg_BV - {a_may.ana_CBV})"
   unfolding a_may.ana_pg_BV_def
   apply simp
   apply (simp only: Un_Diff)
@@ -3200,17 +3201,17 @@ qed
 
 lemma not_CBV:
   assumes "[BV_Node q, BV_Elem d] \<in> \<rho> the_CBV"
-  assumes "least_solution \<rho> a_may.ana_pg_BV s_BV"
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes a: "[BV_Node q, BV_Elem d] \<in> \<rho> the_BV"                  
   shows False
 proof -
-  have fin: "finite a_may.ana_pg_BV"
+  have fin: "finite ana_pg_BV"
     using a_may.ana_pg_BV_finite by auto
 
-  have "least_solution \<rho> a_may.ana_pg_BV s_BV"
+  have "least_solution \<rho> ana_pg_BV s_BV"
     using assms(2) by force
-  then have "minimal_solution \<rho> a_may.ana_pg_BV s_BV"
-    using a_may.ana_pg_BV_stratified least_is_minimal[of a_may.ana_pg_BV s_BV \<rho>] fin by auto
+  then have "minimal_solution \<rho> ana_pg_BV s_BV"
+    using a_may.ana_pg_BV_stratified least_is_minimal[of ana_pg_BV s_BV \<rho>] fin by auto
 
   define \<rho>' where  "\<rho>' = (\<lambda>p. (if p = the_CBV then (\<rho> the_CBV) - {[BV_Node q, BV_Elem d]} else \<rho> p))"
 
@@ -3235,7 +3236,7 @@ proof -
       moreover
       have "(\<forall>rh\<in>set [\<^bold>\<not>BV [\<uu>, \<vv>]]. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>) \<longrightarrow> \<lbrakk>CBV\<langle>[\<uu>, \<vv>]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
       proof -
-        have "CBV\<langle>[\<uu>, \<vv>]\<rangle> :- [\<^bold>\<not>BV [\<uu>, \<vv>]] . \<in> a_may.ana_pg_BV"
+        have "CBV\<langle>[\<uu>, \<vv>]\<rangle> :- [\<^bold>\<not>BV [\<uu>, \<vv>]] . \<in> ana_pg_BV"
           unfolding a_may.ana_pg_BV_def a_may.ana_CBV_def by auto
         then have "solves_cls \<rho> (CBV\<langle>[\<uu>,\<vv>]\<rangle> :- [\<^bold>\<not>BV [\<uu>,\<vv>]].)"
           using assms(2) unfolding least_solution_def
@@ -3253,15 +3254,15 @@ proof -
   have \<rho>'_off_the_CBV: "\<forall>p. p \<noteq> the_CBV \<longrightarrow> \<rho>' p = \<rho> p"
     unfolding \<rho>'_def by auto
   moreover
-  have "\<rho> \<Turnstile>\<^sub>d\<^sub>l (a_may.ana_pg_BV - {a_may.ana_CBV})"
+  have "\<rho> \<Turnstile>\<^sub>d\<^sub>l (ana_pg_BV - {a_may.ana_CBV})"
     using assms(2) unfolding least_solution_def solves_program_def by auto
   moreover
-  have "the_CBV \<notin> preds_dl (a_may.ana_pg_BV - {a_may.ana_CBV})"
+  have "the_CBV \<notin> preds_dl (ana_pg_BV - {a_may.ana_CBV})"
     using the_CBV_only_ana_CBV .
   ultimately
-  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (a_may.ana_pg_BV - {a_may.ana_CBV})"
+  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (ana_pg_BV - {a_may.ana_CBV})"
     by (simp add: agree_off_dl)
-  then have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l a_may.ana_pg_BV"
+  then have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l ana_pg_BV"
     using CBV_solves unfolding a_may.ana_CBV_def solves_program_def
     by auto
   moreover
@@ -3281,12 +3282,12 @@ proof -
   qed
   ultimately
   show "False"
-    using \<open>minimal_solution \<rho> a_may.ana_pg_BV s_BV\<close> minimal_solution_def
+    using \<open>minimal_solution \<rho> ana_pg_BV s_BV\<close> minimal_solution_def
      by blast 
 qed
 
 lemma not_CBV2:
-  assumes "least_solution \<rho> a_may.ana_pg_BV s_BV"
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Node_BV q, Encode_Elem_BV d]\<rangle>."
   assumes "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV q, Encode_Elem_BV d]\<rangle>."
   shows "False"
@@ -3308,7 +3309,7 @@ proof -
 qed
 
 lemma sound_BV_must':
-  assumes "least_solution \<rho> a_may.ana_pg_BV s_BV"
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>."
   assumes "\<pi> \<in> LTS.path_with_word edge_set"
   assumes "LTS.get_start \<pi> = start"
@@ -3328,12 +3329,208 @@ proof -
 qed
 
 lemma sound_CBV:
-  assumes "least_solution \<rho> a_may.ana_pg_BV s_BV"
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
   shows "summarizes_dl_BV_must \<rho>"
   using assms unfolding summarizes_dl_BV_must.simps using sound_BV_must' by auto
 
 end
 
 section \<open>TODO: Canonical example of forwards must\<close>
+
+section \<open>Backward must-analysis\<close>
+
+locale analysis_BV_backwards_must =
+  fixes pg :: "('n,'v) program_graph"
+  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd::finite set" (* Is it OK to insists 'd finite? *)
+  fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes d_init :: "'d set"
+  assumes "finite (fst pg)"
+begin
+
+definition edge_set where (* Copy paste *)
+  "edge_set = fst pg"
+
+definition start where (* Copy paste *)
+  "start = fst (snd pg)"
+
+definition "end" where (* Copy paste *)
+  "end = snd (snd pg)"
+
+definition pg_rev :: "('n,'v) program_graph" where (* Copy paste *)
+  "pg_rev = (rev_edge ` edge_set, end, start)"
+
+definition "S_hat" :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" where (* Copy paste *)
+  "S_hat e R = (R - kill_set e) \<union> gen_set e"
+
+lemma S_hat_mono: (* Copy paste *)
+  assumes "d1 \<subseteq> d2"
+  shows "S_hat e d1 \<subseteq> S_hat e d2"
+  using assms unfolding S_hat_def by auto
+
+fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" where (* Copy paste *)
+  "S_hat_edge_list [] R = R" |
+  "S_hat_edge_list (e # \<pi>) R = S_hat e (S_hat_edge_list \<pi> R)"
+
+lemma S_hat_edge_list_def2: (* Copy paste *)
+  "S_hat_edge_list \<pi> R = foldr S_hat \<pi> R"
+proof (induction \<pi> arbitrary: R)
+  case Nil
+  then show ?case
+    by simp
+next
+  case (Cons a \<pi>)
+  then show ?case
+    by simp
+qed
+
+lemma S_hat_edge_list_append[simp]: (* Copy paste *)
+  "S_hat_edge_list (xs @ ys) R = S_hat_edge_list xs (S_hat_edge_list ys R)"
+  unfolding S_hat_edge_list_def2 foldl_append by auto
+
+lemma S_hat_edge_list_mono: (* Copy paste *)
+  assumes "d1 \<subseteq> d2"
+  shows "S_hat_edge_list \<pi> d1 \<subseteq> S_hat_edge_list \<pi> d2"
+proof(induction \<pi>)
+  case Nil
+  then show ?case
+    using assms by auto
+next
+  case (Cons x xs)
+  then show ?case
+    using assms by (simp add: S_hat_mono)
+qed
+
+definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" where (* Copy paste *)
+  "S_hat_path \<pi> = S_hat_edge_list (LTS.transition_list \<pi>)"
+
+fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where (* Ny *)
+  "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
+     (\<forall>\<pi>_start d.
+        \<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Node_BV \<pi>_start, Encode_Elem_BV d]\<rangle>. \<longrightarrow>
+          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> LTS.get_start \<pi> = \<pi>_start \<longrightarrow> d \<in> S_hat_path \<pi> d_init))"
+
+lemma finite_pg_rev: "finite (fst pg_rev)" (* Copy paste *)
+  by (metis analysis_BV_backwards_must_axioms analysis_BV_backwards_must_def edge_set_def finite_imageI fst_conv pg_rev_def)
+
+interpretation fa: analysis_BV_forwards_must pg_rev "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
+  using analysis_BV_forwards_must_def finite_pg_rev by metis
+
+abbreviation ana_pg_BV where (* Copy paste *)
+  "ana_pg_BV == fa.ana_pg_BV"
+
+lemma rev_end_is_start: (* Copy paste *)
+  assumes "ss \<noteq> []"
+  assumes "LTS.get_end (ss, w) = end"
+  shows "LTS.get_start (rev ss, rev w) = fa.start"
+  using assms
+  unfolding LTS.get_end_def LTS.get_start_def fa.start_def pg_rev_def fa.start_def
+  using hd_rev by (metis fa.start_def fst_conv pg_rev_def snd_conv) 
+
+lemma S_hat_edge_list_forward_backward: (* Copy paste *)
+   "S_hat_edge_list ss d_init = fa.S_hat_edge_list (rev_edge_list ss) d_init"
+proof (induction ss)
+  case Nil
+  then show ?case
+    unfolding rev_edge_list_def by auto
+next
+  case (Cons a ss)
+  show ?case
+    unfolding rev_edge_list_def
+    unfolding fa.S_hat_edge_list_def2
+    unfolding foldl_conv_foldr
+    apply simp
+    unfolding foldr_conv_foldl
+    unfolding fa.S_hat_edge_list_def2[symmetric]
+    unfolding rev_edge_list_def[symmetric]
+    unfolding fa.S_hat_def
+    apply (simp only: rev_edge_rev_edge_id)
+    unfolding S_hat_def
+    using Cons
+    apply metis
+    done
+qed
+
+lemma S_hat_path_forwards_backwards: (* Copy paste *)
+  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
+  shows "S_hat_path (ss, w) d_init = fa.S_hat_path (rev ss, rev w) d_init"
+  using S_hat_edge_list_forward_backward unfolding S_hat_path_def fa.S_hat_path_def
+  by (metis transition_list_rev_edge_list assms)
+
+lemma summarizes_dl_BV_forwards_backwards':
+  assumes "fa.summarizes_dl_BV_must \<rho>"
+  assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Node_BV (LTS.get_start (ss,w)), Encode_Elem_BV d]\<rangle>."
+  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
+  assumes "LTS.get_end (ss,w) = end"
+  shows "d \<in> S_hat_path (ss,w) d_init"
+  by (metis LTS.get_end_def LTS.get_start_def S_hat_path_forwards_backwards analysis_BV_backwards_must.finite_pg_rev analysis_BV_backwards_must_axioms analysis_BV_forwards_must.edge_set_def analysis_BV_forwards_must_def assms(1) assms(2) assms(3) assms(4) fa.start_def fa.summarizes_dl_BV_must.simps fst_conv hd_rev last_rev pg_rev_def rev_path_in_rev_pg snd_conv)
+  (* TODO? Expand proof into something coherent? *)
+
+lemma summarizes_dl_BV_forwards_backwards: (* Copy paste statement by adapted proof *)
+  assumes "fa.summarizes_dl_BV_must \<rho>"
+  shows "summarizes_dl_BV_must \<rho>"
+  unfolding summarizes_dl_BV_must.simps
+proof(rule; rule ; rule ;rule ;rule; rule; rule)
+  fix \<pi> d \<pi>_start
+  assume "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Node_BV \<pi>_start, Encode_Elem_BV d]\<rangle>."
+  moreover
+  assume "\<pi> \<in> LTS.path_with_word edge_set"
+  moreover
+  assume "LTS.get_end \<pi> = end"
+  moreover
+  assume "LTS.get_start \<pi> = \<pi>_start"
+  ultimately
+  show "d \<in> S_hat_path \<pi> d_init"
+    by (metis assms prod.collapse summarizes_dl_BV_forwards_backwards')
+qed
+
+lemma sound_rev_BV:
+  assumes "least_solution \<rho> fa.ana_pg_BV s_BV"
+  shows "summarizes_dl_BV_must \<rho>"
+  using assms fa.sound_CBV[of \<rho>] summarizes_dl_BV_forwards_backwards by metis
+
+(* 
+
+Plan:
+Forstå hvordan du 
+
+FORWARD MAY:
+fun summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+  "summarizes_dl_BV \<rho> \<longleftrightarrow> 
+     (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
+        \<rho> \<Turnstile>\<^sub>q (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
+
+
+BACKWARD MAY:
+definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+  "summarizes_dl_BV \<rho> \<longleftrightarrow> 
+     (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
+                             \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.)"
+
+FORWARD MUST:
+fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+  "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
+     (\<forall>\<pi>_end d.
+        \<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Node_BV \<pi>_end, Encode_Elem_BV d]\<rangle>. \<longrightarrow>
+          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = \<pi>_end \<longrightarrow> d \<in> S_hat_path \<pi> d_init))"
+
+BACKWARD MUST:
+fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+  "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
+     (\<forall>\<pi>_start d.
+        \<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Node_BV \<pi>_start, Encode_Elem_BV d]\<rangle>. \<longrightarrow>
+          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> LTS.get_start \<pi> = \<pi>_start \<longrightarrow> d \<in> S_hat_path \<pi> d_init))"
+
+MAY  betyder \<Turnstile> på højresiden og BV.
+MUST betyder \<Turnstile> på venstresiden og CBV.
+
+Forward betyder at vi bruger kravet LTS.get_start \<pi> = start, og at vi har slutknuden i vores prædikat.
+Backward betyder at vi bruger kravet LTS.get_end \<pi> = end, og at vi har start knuden i vores prædikat.
+
+*)
+
+
+end
+
+section \<open>TODO: Canonical example of backwards must\<close>
 
 end
