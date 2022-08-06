@@ -3406,6 +3406,21 @@ lemma sound_BV_must':
 proof -
   have "Decode_Elem_BV d \<in> analysis_dom"
     sorry
+  (* 
+    Jeg tror ikke vi kan konkludere dette.
+    Problemet er at skøre ting som
+    \<rho> \<Turnstile>\<^sub>q CBV\<langle>[q1, q1]\<rangle>.
+    også gælder. Dette problem er der også i Flemmings bog.
+    Vi kan løse problemet ved at lave om i datalog programmet:
+    Vi laver et prædikat D og programmet indholder så D(d). 
+    for alle elementer i analyse domænet.
+    Analysen af den initielle knude skal så være denne ene clause:
+      BV(q_start,u) <- D(u).
+    Og vi ændrer også CBV clausesne til følgende clauses:
+      CBV(q,u) <- \<not>BV(q,u), D(u).
+      
+  *)
+
 
   have \<pi>e: "\<pi>_end = Encode_Node_BV (LTS.get_end \<pi>)"
     sorry
