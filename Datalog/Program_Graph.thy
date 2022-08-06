@@ -1967,6 +1967,8 @@ locale analysis_BV_forward_may =
   assumes "finite (fst pg)"
   assumes "finite analysis_dom"
   assumes "d_init \<subseteq> analysis_dom"
+  assumes "\<forall>e. gen_set e \<subseteq> analysis_dom" (* Could be limited to just the edges in pg *)
+  assumes "\<forall>e. kill_set e \<subseteq> analysis_dom"
 begin
 
 lemma finite_d_init: "finite d_init"
@@ -2157,7 +2159,7 @@ lemma ana_pg_BV_finite: "finite ana_pg_BV"
   apply auto
   using jklfdsjkla1 apply blast
   using finite_d_init jklfdsjkla2 apply blast
-  apply (metis analysis_BV_forward_may.ana_kill_BV_edge_def analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def finite_Int finite_UN finite_imageI)
+   apply (metis analysis_BV_forward_may.ana_kill_BV_edge_def analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def finite_Int finite_UN finite_imageI)
   apply (metis analysis_BV_forward_may.ana_gen_BV_edge_def analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def finite_Int finite_UN finite_imageI)
   done
 
@@ -2263,9 +2265,24 @@ proof (rule)
     unfolding minimal_solution_def by auto
 qed
 
+lemma the_funny_invariant':
+  "d \<in> S_hat_edge_list \<pi> d_init \<Longrightarrow> d \<in> analysis_dom"
+proof(induction \<pi> rule: List.rev_induct)
+  case Nil
+  then show ?case
+    by (metis S_hat_edge_list.simps(1) analysis_BV_forward_may_axioms analysis_BV_forward_may_def subsetD)
+next
+  case (snoc x xs)
+  then show ?case
+    apply auto
+    unfolding S_hat_def
+    apply auto
+    by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_def subsetD)
+qed
+
 lemma the_funny_invariant:
   "d \<in> S_hat_path (ss,w) d_init \<Longrightarrow> d \<in> analysis_dom"
-  sorry
+  using S_hat_path_def the_funny_invariant' by auto
 
 lemma sound_BV': 
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
@@ -2430,9 +2447,17 @@ lemma d_init_RD_subset_analysis_dom_RD:
   "d_init_RD \<subseteq> analysis_dom_RD"
   unfolding d_init_RD_def analysis_dom_RD_def by auto
 
+lemma neccccccc: "gen_set_RD e \<subseteq> analysis_dom_RD"
+  unfolding analysis_dom_RD_def by auto
+
+lemma necccccccccccc: "kill_set_RD e \<subseteq> analysis_dom_RD"
+  unfolding analysis_dom_RD_def by auto
+
+
 interpretation interp: analysis_BV_forward_may pg analysis_dom_RD kill_set_RD gen_set_RD d_init_RD 
   using analysis_BV_forward_may_def analysis_RD_axioms analysis_RD_def
-  using d_init_RD_subset_analysis_dom_RD finite_analysis_dom_RD by blast 
+  using d_init_RD_subset_analysis_dom_RD finite_analysis_dom_RD neccccccc necccccccccccc
+  by blast 
 
 lemma def_var_def_edge_S_hat:
   assumes "def_var \<pi> x start \<in> R"
@@ -2644,6 +2669,8 @@ locale analysis_BV_backwards_may =
   assumes "finite (fst pg)"
   assumes "finite analysis_dom"
   assumes "d_init \<subseteq> analysis_dom"
+  assumes "\<forall>e. gen_set e \<subseteq> analysis_dom" (* Could be limited to just the edges in pg *)
+  assumes "\<forall>e. kill_set e \<subseteq> analysis_dom"
 begin
 
 lemma finite_d_init: "finite d_init"
@@ -2713,6 +2740,12 @@ thm summarizes_dl_BV_def[of \<rho>]
 
 lemma finite_pg_rev: "finite (fst pg_rev)"
   by (metis analysis_BV_backwards_may_axioms analysis_BV_backwards_may_def edge_set_def finite_imageI fst_conv pg_rev_def)
+
+lemma neccccccc: "(kill_set (rev_edge e)) \<subseteq> analysis_dom"
+  by (meson analysis_BV_backwards_may_axioms analysis_BV_backwards_may_def)
+
+lemma necccccccccccc: "(gen_set (rev_edge e)) \<subseteq> analysis_dom"
+  by (meson analysis_BV_backwards_may_axioms analysis_BV_backwards_may_def)
 
 interpretation fa: analysis_BV_forward_may pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
   using analysis_BV_forward_may_def finite_pg_rev by (metis analysis_BV_backwards_may_axioms analysis_BV_backwards_may_def) 
@@ -2858,7 +2891,7 @@ definition d_init_LV :: "'v set" where
 
 interpretation interpb: analysis_BV_backwards_may pg analysis_dom_LV kill_set_LV gen_set_LV d_init_LV
   using analysis_BV_backwards_may.intro analysis_LV_axioms analysis_LV_def
-  by (metis analysis_dom_LV_def bot.extremum d_init_LV_def finite_UNIV) 
+  by (metis (mono_tags) analysis_dom_LV_def finite_UNIV subset_UNIV)
 
 lemma use_edge_list_S_hat_edge_list: 
   assumes "use_edge_list \<pi> x"
