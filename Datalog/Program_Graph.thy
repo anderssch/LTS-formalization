@@ -2264,7 +2264,7 @@ proof (rule)
 qed
 
 lemma the_funny_invariant:
-  "d \<in> S_hat_path (ss,w) d_init \<Longrightarrow> d \<in> analyis_dom"
+  "d \<in> S_hat_path (ss,w) d_init \<Longrightarrow> d \<in> analysis_dom"
   sorry
 
 lemma sound_BV': 
@@ -3140,7 +3140,7 @@ qed
 
 lemma opposite_lemma2:
   assumes "d \<in> analysis_dom"
-  assumes "\<not>d \<in> a_may.S_hat_path \<pi> (anaylsis_dom - d_init)"
+  assumes "\<not>d \<in> a_may.S_hat_path \<pi> (analysis_dom - d_init)"
   shows "d \<in> S_hat_path \<pi> d_init"
   using S_hat_path_def a_may.S_hat_path_def assms opposite_lemma
   by (metis a_may.the_funny_invariant preds_lh.cases) 
