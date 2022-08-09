@@ -108,7 +108,7 @@ definition summarizes2 :: "('n,'v) analysis_assignment \<Rightarrow> ('n,'v) pro
 
 section \<open>Datalog programs and their solutions\<close>
 
-datatype ('x,'e) identifier = DLVar 'x | DLElement (the_elem: 'e)
+datatype ('x,'e) identifier = is_dlvar: DLVar 'x | is_elem: DLElement (the_elem: 'e)
 
 datatype (preds_rh: 'p,'x,'e) righthand = 
   Eql "('x,'e) identifier" "('x,'e) identifier" ("_ \<^bold>= _" [61, 61] 61)
@@ -168,6 +168,11 @@ fun meaning_query :: "('p,'x,'e) query \<Rightarrow> ('p,'e) pred_val \<Rightarr
 
 fun solves_query :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) query \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>q" 91) where
   "\<rho> \<Turnstile>\<^sub>q (p,ids) \<longleftrightarrow> (\<forall>\<sigma>. \<lbrakk>(p,ids)\<rbrakk>\<^sub>q \<rho> \<sigma>)"
+(* This one is a bit strange maybe.
+   We will get \<rho> \<Turnstile>\<^sub>q p(X). if all valuations of X make p(X) true.
+   But in a Prolog interpreter it will rather give us the set of evaluations that make p(X) true.
+   (And (you can say that) \<rho> will be fixed to the least model.)
+ *)
 
 
 section \<open>Substitutions (not in the book?)\<close> (* Introduce \<cdot> notation !!! *)
@@ -3227,13 +3232,13 @@ lemma S_hat_path_mono:
   shows "S_hat_path \<pi> d1 \<subseteq> S_hat_path \<pi> d2"
   unfolding S_hat_path_def using assms S_hat_edge_list_mono by auto
 
-term Encode_Elem_BV
-
 fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
   "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
-     (\<forall>\<pi>_end d.
+     (\<forall>\<pi>_end d \<sigma>.
         \<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>. \<longrightarrow>
-          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = Decode_Node_BV \<pi>_end \<longrightarrow> (Decode_Elem_BV d) \<in> S_hat_path \<pi> d_init))"
+          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = the_node (\<lbrakk>\<pi>_end\<rbrakk>\<^sub>i\<^sub>d \<sigma>) \<longrightarrow> (the_bv_elem (\<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>)) \<in> S_hat_path \<pi> d_init))"
+
+
 
 interpretation a_may: analysis_BV_forward_may pg analysis_dom "\<lambda>e. analysis_dom - (kill_set e)" "(\<lambda>e. analysis_dom - gen_set e)" "analysis_dom - d_init"
   using analysis_BV_forward_may.intro analysis_BV_forwards_must_axioms analysis_BV_forwards_must_def
@@ -3489,6 +3494,277 @@ proof -
     using not_CBV[of q d \<rho>] assms(1) by auto
 qed
 
+thm Program_Graph.analysis_BV_forward_may.not_kill
+
+lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf'''''': (* Copy paste adapted from not_kill *)
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Node_BV q]\<rangle>."
+  shows "False"
+proof -
+  have "[BV_Node q] \<in> (\<rho> \\s_BV\\ 0) the_init"
+    using assms(2) by auto
+
+  have "finite ana_pg_BV"
+    using a_may.ana_pg_BV_finite by auto
+  then have "least_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
+    using downward_solution2[of ana_pg_BV s_BV \<rho> 0] assms(2)
+    using a_may.ana_pg_BV_stratified assms(1) by blast 
+  then have "minimal_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
+    using least_is_minimal[of]
+    using downward_strat2  \<open>finite ana_pg_BV\<close> xxasjkdfaskl
+    by (smt (verit) a_may.ana_pg_BV_stratified) 
+  moreover
+
+  define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_init then ((\<rho> \\s_BV\\ 0) the_init) - {[BV_Node q]} else (\<rho> \\s_BV\\ 0) p))"
+
+  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (ana_pg_BV --s_BV-- 0)"
+    unfolding solves_program_def
+  proof
+    fix c
+    assume a: "c \<in> (ana_pg_BV --s_BV-- 0)"
+    then obtain p ids rhs where c_def: "c = Cls p ids rhs"
+      by (cases c) auto
+
+    have "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
+      unfolding solves_cls_def
+    proof
+      fix \<eta>
+      show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<eta>"
+      proof (cases "p = the_init \<and> ids = [Encode_Node_BV q]")
+        case True
+        then show ?thesis
+          using a c_def assms(1)
+          apply auto
+          unfolding a_may.ana_pg_BV_def
+          apply auto
+          unfolding a_may.ana_CBV_def 
+             apply (auto simp add: a_may.ana_init_BV_def)
+           apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
+           apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+          using a_may.ana_entry_node_BV_def apply blast
+          done
+      next
+        case False
+        have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \\s_BV\\ 0) \<eta>"
+          using \<open>least_solution (\<rho> \s_BV\ 0) (ana_pg_BV --s_BV-- 0) s_BV\<close> a c_def least_solution_def solves_cls_def solves_program_def by blast
+        then
+        show ?thesis
+          using False unfolding \<rho>'_def
+          using a c_def
+          apply auto
+          unfolding a_may.ana_pg_BV_def
+              apply auto
+                              apply (auto simp add: a_may.ana_init_BV_def a_may.ana_CBV_def)
+                        apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
+                       apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+                      apply (use a_may.ana_entry_node_BV_def in force)
+                     apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
+                    apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+                   apply (use a_may.ana_entry_node_BV_def in blast)
+                  apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
+                 apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+                apply (use a_may.ana_entry_node_BV_def in blast)
+               apply (use a_may.ana_kill_BV_edge_def in auto)[]
+              apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+             apply (use a_may.ana_entry_node_BV_def in fastforce)
+            apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
+           apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+          apply(use a_may.ana_entry_node_BV_def in blast)
+          done
+      qed
+    qed
+    then show "solves_cls \<rho>' c"
+      using c_def by blast
+  qed
+  moreover
+  have "\<rho>' \<sqsubset>s_BV\<sqsubset> (\<rho> \\s_BV\\ 0)"
+  proof -
+    have "\<rho>' the_init \<subset> (\<rho> \\s_BV\\ 0) the_init"
+      unfolding \<rho>'_def
+      using \<open>[BV_Node q] \<in> (\<rho> \s_BV\ 0) the_init\<close> by auto 
+    moreover
+    have "\<forall>p'. s_BV p' = s_BV the_kill \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \\s_BV\\ 0) p'"
+      unfolding \<rho>'_def by auto
+    moreover
+    have "\<forall>p'. s_BV p' < s_BV the_kill \<longrightarrow> \<rho>' p' = (\<rho> \\s_BV\\ 0) p'"
+      unfolding \<rho>'_def by auto
+    ultimately
+    show "\<rho>' \<sqsubset>s_BV\<sqsubset> (\<rho> \\s_BV\\ 0)"
+      unfolding lt_def by auto
+  qed
+  ultimately
+  show False
+    unfolding minimal_solution_def by auto
+qed
+
+lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsd1111111f'''''': (* Copy paste adapt from jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf'''''' *)
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Action_BV q]\<rangle>."
+  shows "False"
+proof -
+  have "[BV_Action q] \<in> (\<rho> \\s_BV\\ 0) the_init"
+    using assms(2) by auto
+
+  have "finite ana_pg_BV"
+    using a_may.ana_pg_BV_finite by auto
+  then have "least_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
+    using downward_solution2[of ana_pg_BV s_BV \<rho> 0] assms(2)
+    using a_may.ana_pg_BV_stratified assms(1) by blast 
+  then have "minimal_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
+    using least_is_minimal[of]
+    using downward_strat2  \<open>finite ana_pg_BV\<close> xxasjkdfaskl
+    by (smt (verit) a_may.ana_pg_BV_stratified) 
+  moreover
+
+  define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_init then ((\<rho> \\s_BV\\ 0) the_init) - {[BV_Action q]} else (\<rho> \\s_BV\\ 0) p))"
+
+  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (ana_pg_BV --s_BV-- 0)"
+    unfolding solves_program_def
+  proof
+    fix c
+    assume a: "c \<in> (ana_pg_BV --s_BV-- 0)"
+    then obtain p ids rhs where c_def: "c = Cls p ids rhs"
+      by (cases c) auto
+
+    have "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
+      unfolding solves_cls_def
+    proof
+      fix \<eta>
+      show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<eta>"
+      proof (cases "p = the_init \<and> ids = [Encode_Action_BV q]")
+        case True
+        then show ?thesis
+          using a c_def assms(1)
+          apply auto
+          unfolding a_may.ana_pg_BV_def
+          apply auto
+          unfolding a_may.ana_CBV_def 
+             apply (auto simp add: a_may.ana_init_BV_def)
+           apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
+           apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+          using a_may.ana_entry_node_BV_def apply blast
+          done
+      next
+        case False
+        have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \\s_BV\\ 0) \<eta>"
+          using \<open>least_solution (\<rho> \s_BV\ 0) (ana_pg_BV --s_BV-- 0) s_BV\<close> a c_def least_solution_def solves_cls_def solves_program_def by blast
+        then
+        show ?thesis
+          using False unfolding \<rho>'_def
+          using a c_def
+          apply auto
+          unfolding a_may.ana_pg_BV_def
+              apply auto
+                              apply (auto simp add: a_may.ana_init_BV_def a_may.ana_CBV_def)
+                        apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
+                       apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+                      apply (use a_may.ana_entry_node_BV_def in force)
+                     apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
+                    apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+                   apply (use a_may.ana_entry_node_BV_def in blast)
+                  apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
+                 apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+                apply (use a_may.ana_entry_node_BV_def in blast)
+               apply (use a_may.ana_kill_BV_edge_def in auto)[]
+              apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+             apply (use a_may.ana_entry_node_BV_def in fastforce)
+            apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
+           apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+          apply(use a_may.ana_entry_node_BV_def in blast)
+          done
+      qed
+    qed
+    then show "solves_cls \<rho>' c"
+      using c_def by blast
+  qed
+  moreover
+  have "\<rho>' \<sqsubset>s_BV\<sqsubset> (\<rho> \\s_BV\\ 0)"
+  proof -
+    have "\<rho>' the_init \<subset> (\<rho> \\s_BV\\ 0) the_init"
+      unfolding \<rho>'_def
+      using \<open>[BV_Action q] \<in> (\<rho> \s_BV\ 0) the_init\<close> by auto 
+    moreover
+    have "\<forall>p'. s_BV p' = s_BV the_kill \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \\s_BV\\ 0) p'"
+      unfolding \<rho>'_def by auto
+    moreover
+    have "\<forall>p'. s_BV p' < s_BV the_kill \<longrightarrow> \<rho>' p' = (\<rho> \\s_BV\\ 0) p'"
+      unfolding \<rho>'_def by auto
+    ultimately
+    show "\<rho>' \<sqsubset>s_BV\<sqsubset> (\<rho> \\s_BV\\ 0)"
+      unfolding lt_def by auto
+  qed
+  ultimately
+  show False
+    unfolding minimal_solution_def by auto
+qed
+
+lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf':
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
+  shows "is_elem d"
+proof (cases d)
+  case (DLVar x)
+  then have "\<rho> \<Turnstile>\<^sub>q init\<langle>[DLVar x]\<rangle>."
+    using DLVar assms(2) by auto
+  then have "\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Node_BV undefined]\<rangle>."
+    by auto
+  then have "False"
+    using assms(1) jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf'''''' by blast
+  then show ?thesis 
+    by metis
+next
+  case (DLElement e)
+  then show ?thesis 
+    by auto
+qed
+  (* Why? Well, if it were a variable then we could make an instantiation for which it doesn't hold. *)
+
+lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf''''''''''':
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
+  shows "\<exists>d'. (\<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>) = BV_Elem d'"
+proof (cases "d")
+  case (DLVar x)
+  then have "\<not>is_elem d"
+    by simp
+  then show ?thesis 
+    using jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf' assms by metis
+next
+  case (DLElement e)
+  show ?thesis
+  proof (cases e)
+    case (BV_Node x1)
+    then show ?thesis
+      using DLElement assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf'''''' by blast
+  next
+    case (BV_Elem x2)
+    then show ?thesis
+      by (simp add: DLElement)
+  next
+    case (BV_Action x3)
+    then show ?thesis
+      using DLElement assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsd1111111f'''''' by blast
+  qed
+qed
+
+lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf'':
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
+  shows "Decode_Elem_BV d \<in> analysis_dom"
+  sorry
+
+lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf:
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
+  shows "\<exists>d'. d = Encode_Elem_BV d'"
+  sorry
+
+lemma jaksldfjklsdf:
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
+  shows "Decode_Elem_BV d \<in> analysis_dom"
+  sorry
+
 lemma sound_BV_must':
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
@@ -3695,9 +3971,9 @@ definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set
 
 fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where (* Ny *)
   "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
-     (\<forall>\<pi>_start d.
+     (\<forall>\<pi>_start d \<sigma>.
         \<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_start, d]\<rangle>. \<longrightarrow>
-          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> LTS.get_start \<pi> = Decode_Node_BV \<pi>_start \<longrightarrow> Decode_Elem_BV d \<in> S_hat_path \<pi> d_init))"
+          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> LTS.get_start \<pi> = the_node (\<lbrakk>\<pi>_start\<rbrakk>\<^sub>i\<^sub>d \<sigma>) \<longrightarrow> (the_bv_elem (\<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>)) \<in> S_hat_path \<pi> d_init))"
 
 lemma finite_pg_rev: "finite (fst pg_rev)" (* Copy paste *)
   by (metis analysis_BV_backwards_must_axioms analysis_BV_backwards_must_def edge_set_def finite_imageI fst_conv pg_rev_def)
