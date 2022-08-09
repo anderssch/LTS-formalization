@@ -329,7 +329,7 @@ proof -
 qed
 
 
-section \<open>Stratification\<close>
+section \<open>Stratification and solutions to stratified datalog programs\<close>
 type_synonym 'p strat = "'p \<Rightarrow> nat"
   (* Maybe it should also mention the arity *)
 
@@ -1972,7 +1972,7 @@ abbreviation init_Query :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred,
 
 datatype ('n,'v,'elem) BV_elem =
   BV_Node (the_node: 'n)
-  | BV_Elem (the_bv_elem: 'elem)
+  | is_bv_elem: BV_Elem (the_bv_elem: 'elem)
   | BV_Action "'v action"
 
 abbreviation \<uu> :: "(BV_var, 'a) identifier" where
@@ -3747,17 +3747,170 @@ next
   qed
 qed
 
+lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsjajkfkjjjdfdjfdjfjdfeeeeuugndf':
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[DLElement d]\<rangle>."
+  shows "is_bv_elem d"
+proof (cases "d")
+  case (BV_Node x1)
+  then show ?thesis
+    using assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf'''''' by blast
+next
+  case (BV_Elem x2)
+  then show ?thesis
+    by simp
+next
+  case (BV_Action x3)
+  then show ?thesis
+    using assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsd1111111f'''''' by blast
+qed
+
+lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdfuggugugugugu'''tvtvtvtvt''''':
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[DLElement (BV_Elem d)]\<rangle>."
+  assumes "\<not>d \<in> analysis_dom"
+  shows False
+proof - (* Proof copy paste and adapted from jaksldfjklsdfjaksldfjklsdfjaksldfjklsd1111111f'''''' *)
+  have "[BV_Elem d] \<in> (\<rho> \\s_BV\\ 0) the_init"
+    using assms(2) by auto
+
+  have "finite ana_pg_BV"
+    using a_may.ana_pg_BV_finite by auto
+  then have "least_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
+    using downward_solution2[of ana_pg_BV s_BV \<rho> 0] assms(2)
+    using a_may.ana_pg_BV_stratified assms(1) by blast 
+  then have "minimal_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
+    using least_is_minimal[of]
+    using downward_strat2  \<open>finite ana_pg_BV\<close> xxasjkdfaskl
+    by (smt (verit) a_may.ana_pg_BV_stratified) 
+  moreover
+
+  define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_init then ((\<rho> \\s_BV\\ 0) the_init) - {[BV_Elem d]} else (\<rho> \\s_BV\\ 0) p))"
+
+  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (ana_pg_BV --s_BV-- 0)"
+    unfolding solves_program_def
+  proof
+    fix c
+    assume a: "c \<in> (ana_pg_BV --s_BV-- 0)"
+    then obtain p ids rhs where c_def: "c = Cls p ids rhs"
+      by (cases c) auto
+
+    have "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
+      unfolding solves_cls_def
+    proof
+      fix \<eta>
+      show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<eta>"
+      proof (cases "p = the_init \<and> ids = [Encode_Action_BV q]")
+        case True
+        then show ?thesis
+          using a c_def assms(1)
+          apply auto
+          unfolding a_may.ana_pg_BV_def
+          apply auto
+          unfolding a_may.ana_CBV_def 
+             apply (auto simp add: a_may.ana_init_BV_def)
+           apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
+           apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+          using a_may.ana_entry_node_BV_def apply blast
+          done
+      next
+        case False
+        have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \\s_BV\\ 0) \<eta>"
+          using \<open>least_solution (\<rho> \s_BV\ 0) (ana_pg_BV --s_BV-- 0) s_BV\<close> a c_def least_solution_def solves_cls_def solves_program_def by blast
+        then
+        show ?thesis
+          using False unfolding \<rho>'_def
+          using a c_def
+          apply auto
+          unfolding a_may.ana_pg_BV_def
+              apply auto
+                              apply (auto simp add: a_may.ana_init_BV_def a_may.ana_CBV_def)
+                         apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
+                        apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+                       apply (use a_may.ana_entry_node_BV_def in force)
+                      apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
+                     apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+                    apply (use a_may.ana_entry_node_BV_def in blast)
+                   apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
+                  apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+                 apply (use a_may.ana_entry_node_BV_def in blast)
+                apply (use a_may.ana_kill_BV_edge_def in auto)[]
+               apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+              apply (use a_may.ana_entry_node_BV_def in fastforce)
+             apply (use assms(3) in force)
+            apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
+           apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
+          apply (use a_may.ana_entry_node_BV_def in blast)
+          done
+      qed
+    qed
+    then show "solves_cls \<rho>' c"
+      using c_def by blast
+  qed
+  moreover
+  have "\<rho>' \<sqsubset>s_BV\<sqsubset> (\<rho> \\s_BV\\ 0)"
+  proof -
+    have "\<rho>' the_init \<subset> (\<rho> \\s_BV\\ 0) the_init"
+      unfolding \<rho>'_def
+      using \<open>[BV_Elem d] \<in> (\<rho> \s_BV\ 0) the_init\<close> by auto 
+    moreover
+    have "\<forall>p'. s_BV p' = s_BV the_kill \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \\s_BV\\ 0) p'"
+      unfolding \<rho>'_def by auto
+    moreover
+    have "\<forall>p'. s_BV p' < s_BV the_kill \<longrightarrow> \<rho>' p' = (\<rho> \\s_BV\\ 0) p'"
+      unfolding \<rho>'_def by auto
+    ultimately
+    show "\<rho>' \<sqsubset>s_BV\<sqsubset> (\<rho> \\s_BV\\ 0)"
+      unfolding lt_def by auto
+  qed
+  ultimately
+  show False
+    unfolding minimal_solution_def by auto
+qed
+
+lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdfuggugugugugu'':
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[DLElement (BV_Elem d)]\<rangle>."
+  shows "d \<in> analysis_dom"
+  using assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsdfuggugugugugu'''tvtvtvtvt''''' by blast
+
 lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf'':
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
   shows "Decode_Elem_BV d \<in> analysis_dom"
+proof -
+  have "is_elem d"
+    using assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf' by blast
+  then obtain d' where "d = DLElement d'"
+    by (meson is_elem_def)
+  then obtain d'' where "d' = BV_Elem d''"
+    using jaksldfjklsdfjaksldfjklsdfjaksldfjklsjajkfkjjjdfdjfdjfjdfeeeeuugndf'[OF assms(1)] assms(2)
+    apply (cases d')
+    apply auto
+    using assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf'''''' apply blast
+    using assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsd1111111f'''''' apply blast
+    done
+
+  show ?thesis
+    using \<open>d = DLElement d'\<close> \<open>d' = BV_Elem d''\<close> assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsdfuggugugugugu'' by auto
+qed
+
+lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdftototototottoto:
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
+  shows "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
   sorry
 
 lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf:
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
   shows "\<exists>d'. d = Encode_Elem_BV d'"
-  sorry
+proof -
+  have "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
+    using assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsdftototototottoto by blast
+  show ?thesis
+    by (metis BV_elem.exhaust \<open>\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>.\<close> assms(1) is_elem_def jaksldfjklsdfjaksldfjklsdfjaksldfjklsd1111111f'''''' jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf' jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf'''''')
+qed
 
 lemma jaksldfjklsdf:
   assumes "least_solution \<rho> ana_pg_BV s_BV"
