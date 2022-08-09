@@ -8,6 +8,7 @@ datatype (fv_arith: 'v) arith =
   | Var 'v
   | Arith_Op "'v arith" "int \<Rightarrow> int \<Rightarrow> int" "'v arith"
   | Minus "'v arith"
+(* Typical notation: a *)
 
 datatype (fv_boolean: 'v) boolean =
   true
@@ -15,16 +16,19 @@ datatype (fv_boolean: 'v) boolean =
   | Rel_Op "'v arith" "int \<Rightarrow> int \<Rightarrow> bool" "'v arith"
   | Bool_Op "'v boolean" "bool \<Rightarrow> bool \<Rightarrow> bool" "'v boolean"
   | Neg "'v boolean"
+(* Typical notation: b *)
 
 datatype 'v action =
   Asg 'v "'v arith" ("_ ::= _" [1000, 61] 61)
   | Bool "'v boolean"
   | Skip
+(* Typical notation: \<alpha> *)
 
 
 section \<open>Memories\<close>
 
 type_synonym 'v memory = "'v \<Rightarrow> int"
+(* Typical notation: \<sigma> *)
 
 
 section \<open>Semantics\<close>
@@ -60,14 +64,14 @@ section \<open>Execution Sequences\<close>
 
 type_synonym ('n,'v) config = "'n * 'v memory"
 
-fun initial_config_of where
-  "initial_config_of (n,\<sigma>) (es,start,end) \<longleftrightarrow> n = start"
+fun initial_config_of :: "('n,'v) config \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
+  "initial_config_of (q,\<sigma>) (es,start,end) \<longleftrightarrow> q = start"
 
-fun final_config_of where
-  "final_config_of (n,\<sigma>) (es,start,end) \<longleftrightarrow> n = end"
+fun final_config_of :: "('n,'v) config \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
+  "final_config_of (q,\<sigma>) (es,start,end) \<longleftrightarrow> q = end"
 
 inductive exe_step :: "('n,'v) program_graph \<Rightarrow> ('n,'v) config \<Rightarrow> 'v action \<Rightarrow> ('n,'v) config \<Rightarrow> bool" where
-  "(q1, a, q2) \<in> es \<Longrightarrow> sem_action a \<sigma> = Some \<sigma>' \<Longrightarrow> exe_step (es,start,end) (q1,\<sigma>) a (q2,\<sigma>')"
+  "(q1, \<alpha>, q2) \<in> es \<Longrightarrow> sem_action \<alpha> \<sigma> = Some \<sigma>' \<Longrightarrow> exe_step (es,start,end) (q1,\<sigma>) \<alpha> (q2,\<sigma>')"
 
 
 section \<open>Reaching Definitions\<close>
@@ -85,10 +89,10 @@ fun def_action :: "'v action \<Rightarrow> 'v set" where
 | "def_action Skip = {}"
 
 abbreviation def_edge :: "('n,'v) edge \<Rightarrow> 'v set" where
-  "def_edge == \<lambda>(q1, a, q2). def_action a"
+  "def_edge == \<lambda>(q1, \<alpha>, q2). def_action \<alpha>"
 
 definition triple_of :: "'v \<Rightarrow> ('n,'v) edge \<Rightarrow> ('n,'v) triple" where
-  "triple_of == (\<lambda>x (q1, a, q2). (x, Some q1, q2))"
+  "triple_of == (\<lambda>x (q1, \<alpha>, q2). (x, Some q1, q2))"
 
 definition def_var :: "('n,'v) edge list \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> ('n,'v) triple" where
   "def_var \<pi> x start = (if (\<exists>e \<in> set \<pi>. x \<in> def_edge e)
@@ -180,20 +184,20 @@ section \<open>Substitutions (not in the book?)\<close> (* Introduce \<cdot> not
 type_synonym ('x,'e) subst = "'x \<Rightarrow> ('x,'e) identifier"
 
 fun subst_id :: "('x,'e) subst \<Rightarrow> ('x,'e) identifier \<Rightarrow> ('x,'e) identifier" where
-  "subst_id \<sigma> (DLVar x) = \<sigma> x"
-| "subst_id \<sigma> (DLElement e) = (DLElement e)"
+  "subst_id \<eta> (DLVar x) = \<eta> x"
+| "subst_id \<eta> (DLElement e) = (DLElement e)"
 
 fun subst_rh :: "('x,'e) subst \<Rightarrow> ('p,'x,'e) righthand \<Rightarrow>  ('p,'x,'e) righthand" where
-  "subst_rh \<sigma> (a \<^bold>= a') = (subst_id \<sigma> a \<^bold>= subst_id \<sigma> a')"
-| "subst_rh \<sigma> (a \<^bold>\<noteq> a') = (subst_id \<sigma> a \<^bold>\<noteq> subst_id \<sigma> a')"
-| "subst_rh \<sigma> (PosRh p ids) = (PosRh p (map (subst_id \<sigma>) ids))"
-| "subst_rh \<sigma> (\<^bold>\<not> p ids) = (\<^bold>\<not> p (map (subst_id \<sigma>) ids))"
+  "subst_rh \<eta> (a \<^bold>= a') = (subst_id \<eta> a \<^bold>= subst_id \<eta> a')"
+| "subst_rh \<eta> (a \<^bold>\<noteq> a') = (subst_id \<eta> a \<^bold>\<noteq> subst_id \<eta> a')"
+| "subst_rh \<eta> (PosRh p ids) = (PosRh p (map (subst_id \<eta>) ids))"
+| "subst_rh \<eta> (\<^bold>\<not> p ids) = (\<^bold>\<not> p (map (subst_id \<eta>) ids))"
 
 fun subst_cls :: "('x,'e) subst \<Rightarrow> ('p,'x,'e) clause \<Rightarrow> ('p,'x,'e) clause" where
-  "subst_cls \<sigma> (Cls p ids rhs) = Cls p (map (subst_id \<sigma>) ids) (map (subst_rh \<sigma>) rhs)"
+  "subst_cls \<eta> (Cls p ids rhs) = Cls p (map (subst_id \<eta>) ids) (map (subst_rh \<eta>) rhs)"
 
 definition compose :: "('x,'e) subst \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('x,'e) var_val" where
-  "compose \<mu> \<sigma> x = \<lbrakk>(\<mu> x)\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
+  "compose \<eta> \<sigma> x = \<lbrakk>(\<eta> x)\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
 
 
 section \<open>Datalog lemmas\<close>
@@ -227,6 +231,7 @@ lemma resolution_last_from_cls_query_to_cls:
   using assms by (force simp add: solves_cls_def)
 
 lemmas resolution_last = resolution_last_from_cls_rh_to_cls resolution_last_from_cls_query_to_cls
+
 
 subsubsection \<open>Of only right hand\<close>
 
@@ -267,45 +272,45 @@ lemmas resolution = resolution_last resolution_only resolution_all
 
 subsection \<open>Substitution\<close>
 
-lemma substitution_lemma_id: "\<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d (compose \<mu> \<sigma>) = \<lbrakk>subst_id \<mu> a\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
+lemma substitution_lemma_id: "\<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d (compose \<eta> \<sigma>) = \<lbrakk>subst_id \<eta> a\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
   by (cases a) (auto simp add: compose_def)
 
-lemma substitution_lemma_ids: "map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d (compose \<mu> \<sigma>)) ids = map ((\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) \<circ> subst_id \<mu>) ids"
+lemma substitution_lemma_ids: "map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d (compose \<eta> \<sigma>)) ids = map ((\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) \<circ> subst_id \<eta>) ids"
   using substitution_lemma_id by auto
 
-lemma substitution_lemma_lh: "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> (compose \<mu> \<sigma>) \<longleftrightarrow> \<lbrakk>(p, map (subst_id \<mu>) ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+lemma substitution_lemma_lh: "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> (compose \<eta> \<sigma>) \<longleftrightarrow> \<lbrakk>(p, map (subst_id \<eta>) ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
   by (simp add: substitution_lemma_ids)
 
 
-lemma substitution_lemma_rh:"\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> (compose \<mu> \<sigma>) \<longleftrightarrow> \<lbrakk>subst_rh \<mu> rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+lemma substitution_lemma_rh:"\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> (compose \<eta> \<sigma>) \<longleftrightarrow> \<lbrakk>subst_rh \<eta> rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
 proof (induction rh)
-  case (Eql x1 x2)
+  case (Eql a a')
   then show ?case
     by (simp add: substitution_lemma_id)
 next
-  case (Neql x1 x2)
+  case (Neql a a')
   then show ?case
     by (simp add: substitution_lemma_id)
 next
-  case (PosRh x1 x2)
+  case (PosRh p ids)
   then show ?case
     using substitution_lemma_lh by fastforce
 next
-  case (NegRh x1 x2)
+  case (NegRh p ids)
   then show ?case
     using substitution_lemma_lh by fastforce
 qed
 
-lemma substitution_lemma_rhs: "(\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> (compose \<mu> \<sigma>)) \<longleftrightarrow> (\<forall>rh\<in>set (map (subst_rh \<mu>) rhs). \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
+lemma substitution_lemma_rhs: "(\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> (compose \<eta> \<sigma>)) \<longleftrightarrow> (\<forall>rh\<in>set (map (subst_rh \<eta>) rhs). \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
   by (simp add: substitution_lemma_rh) 
 
 lemma substitution_lemma_cls:
-  "meaning_cls c \<rho> (compose \<mu> \<sigma>) \<longleftrightarrow> meaning_cls (subst_cls \<mu> c) \<rho> \<sigma>"
+  "meaning_cls c \<rho> (compose \<eta> \<sigma>) \<longleftrightarrow> meaning_cls (subst_cls \<eta> c) \<rho> \<sigma>"
 proof (induction c)
   case (Cls p ids rhs)
-  have a: "(\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> (compose \<mu> \<sigma>)) = (\<forall>rh\<in>set (map (subst_rh \<mu>) rhs). \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
+  have a: "(\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> (compose \<eta> \<sigma>)) = (\<forall>rh\<in>set (map (subst_rh \<eta>) rhs). \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
     using substitution_lemma_rhs by blast
-  have b: "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> (compose \<mu> \<sigma>) = \<lbrakk>(p, map (subst_id \<mu>) ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+  have b: "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> (compose \<eta> \<sigma>) = \<lbrakk>(p, map (subst_id \<eta>) ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
     using substitution_lemma_lh by metis
   show ?case
     unfolding meaning_cls.simps
@@ -314,16 +319,15 @@ qed
 
 lemma substitution_rule:
   assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
-  shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s subst_cls (\<mu>::('x,'e) subst) c"
+  shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s subst_cls (\<eta>::('x,'e) subst) c"
 proof -
   show ?thesis
     unfolding solves_cls_def
   proof
     fix \<sigma> :: "'x \<Rightarrow> 'e"
-    term "\<mu> :: 'x \<Rightarrow> ('x, 'e) identifier"
-    from assms have "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> (compose \<mu> \<sigma>)"
+    from assms have "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> (compose \<eta> \<sigma>)"
       using solves_cls_def by auto
-    then show "\<lbrakk>subst_cls \<mu> c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
+    then show "\<lbrakk>subst_cls \<eta> c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
       using substitution_lemma_cls by blast
   qed
 qed
@@ -1483,7 +1487,7 @@ proof (rule ccontr)
           by (simp add: \<sigma>''_def)
       qed
     qed
-    then show " \<sigma>'' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
+    then show "\<sigma>'' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
       using c_def by blast
   qed
   ultimately
@@ -1619,10 +1623,10 @@ datatype RD_pred =
   | the_VAR
 
 abbreviation Encode_Node :: "'n \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where
-  "Encode_Node n == DLElement (RD_Node n)"
+  "Encode_Node q == DLElement (RD_Node q)"
 
 fun Encode_Node_Q :: "'n option \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where
-  "Encode_Node_Q (Some n) = DLElement (RD_Node n)"
+  "Encode_Node_Q (Some q) = DLElement (RD_Node q)"
 | "Encode_Node_Q None = DLElement Questionmark"
 
 abbreviation Encode_Var :: "'v \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where
@@ -1719,31 +1723,31 @@ lemma def_var_x: "fst (def_var ts x start) = x"
 
 lemma last_def_transition:
   assumes "length ss = length w"
-  assumes "x \<in> def_action l"
-  assumes "(x, q1, q2) \<in> def_path (ss @ [s, s'], w @ [l]) start"
+  assumes "x \<in> def_action \<alpha>"
+  assumes "(x, q1, q2) \<in> def_path (ss @ [s, s'], w @ [\<alpha>]) start"
   shows "Some s = q1 \<and> s' = q2"
 proof -
-  obtain xa where xa_p: "(x, q1, q2) = def_var (transition_list (ss @ [s], w) @ [(s, l, s')]) xa start"
+  obtain y where y_p: "(x, q1, q2) = def_var (transition_list (ss @ [s], w) @ [(s, \<alpha>, s')]) y start"
     by (metis (no_types, lifting) assms(1) assms(3) def_path_def imageE transition_list_reversed_simp)
   show ?thesis
-  proof (cases "xa = x")
+  proof (cases "y = x")
     case True
     then show ?thesis 
-      using assms xa_p unfolding def_var_def triple_of_def by auto
+      using assms y_p unfolding def_var_def triple_of_def by auto
   next
     case False
     then show ?thesis
-      by (metis xa_p def_var_x fst_conv)
+      by (metis y_p def_var_x fst_conv)
   qed
 qed
 
 lemma not_last_def_transition:
   assumes "length ss = length w"
-  assumes "x \<notin> def_action l"
-  assumes "(x, q1, q2) \<in> def_path (ss @ [s, s'], w @ [l]) start"
+  assumes "x \<notin> def_action \<alpha>"
+  assumes "(x, q1, q2) \<in> def_path (ss @ [s, s'], w @ [\<alpha>]) start"
   shows "(x, q1, q2) \<in> def_path (ss @ [s], w) start"
 proof -
-  obtain y where y_p: "(x, q1, q2) = def_var (transition_list (ss @ [s], w) @ [(s, l, s')]) y start"
+  obtain y where y_p: "(x, q1, q2) = def_var (transition_list (ss @ [s], w) @ [(s, \<alpha>, s')]) y start"
     by (metis (no_types, lifting) assms(1) assms(3) def_path_def imageE transition_list_reversed_simp)
   have " (x, q1, q2) \<in> range (\<lambda>x. def_var (transition_list (ss @ [s], w)) x start)"
   proof (cases "y = x")
@@ -1796,17 +1800,17 @@ proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   from this 1 show ?case
     unfolding LTS.LTS.get_end_def def_path_def def_var_def LTS.get_start_def by auto
 next
-  case (2 ss s w l s')
+  case (2 ss s w \<alpha> s')
   from 2(1) have len: "length ss = length w"
     using LTS.path_with_word_length by force
   show ?case 
-  proof(cases "x \<in> def_action l")
+  proof(cases "x \<in> def_action \<alpha>")
     case True
     then have sq: "Some s = q1 \<and> s' = q2" using 2(7)
         (* otherwise (x, q1, q2) would have been "overwritten" by (x, s, s') *)
-      using last_def_transition[of ss w x l q1 q2 s s'] len by auto
+      using last_def_transition[of ss w x \<alpha> q1 q2 s s'] len by auto
     from True have "\<exists>e. (s,x ::= e,s') \<in> es"
-      using "2.hyps"(2) by (cases l) auto
+      using "2.hyps"(2) by (cases \<alpha>) auto
     then have "RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- []. \<in> ana_pg (es, start, end)"
       using True ana_pg.simps sq by fastforce
     then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [] ."
@@ -1839,9 +1843,9 @@ next
     qed
     then have ind: "\<rho> \<Turnstile>\<^sub>q RD1\<langle>[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
       by (simp add: LTS.get_end_def)
-    define \<sigma> where "\<sigma> = undefined(the_\<u> := Encode_Var x, the_\<v> := Encode_Node_Q q1, the_\<w> := Encode_Node q2)"
+    define \<mu> where "\<mu> = undefined(the_\<u> := Encode_Var x, the_\<v> := Encode_Node_Q q1, the_\<w> := Encode_Node q2)"
     show ?thesis
-    proof (cases l)
+    proof (cases \<alpha>)
       case (Asg y e)
       have xy: "x \<noteq> y"
         using False Asg by auto
@@ -1857,12 +1861,12 @@ next
         unfolding ana_pg.simps by force
       from this False have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>], \<u> \<^bold>\<noteq> Encode_Var y] ."
         by (meson "2.prems"(2) UnCI solves_program_def)
-      moreover have "subst_cls \<sigma> (RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :-
+      moreover have "subst_cls \<mu> (RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :-
           [
             RD1[Encode_Node s, \<u>, \<v>, \<w>],
             \<u> \<^bold>\<noteq> (Encode_Var y)
           ].) = RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1 [Encode_Node s,  Encode_Var x, Encode_Node_Q q1, Encode_Node q2], Encode_Var x \<^bold>\<noteq> Encode_Var y] ."
-        unfolding \<sigma>_def by auto
+        unfolding \<mu>_def by auto
       ultimately
       have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>
                     :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2], Encode_Var x \<^bold>\<noteq> Encode_Var y] ."
@@ -1887,9 +1891,9 @@ next
         unfolding ana_pg.simps by force
       then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>]] ."
         by (meson "2.prems"(2) UnCI solves_program_def)
-      moreover have "subst_cls \<sigma> (RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1[Encode_Node s, \<u>, \<v>, \<w>]].) =
+      moreover have "subst_cls \<mu> (RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1[Encode_Node s, \<u>, \<v>, \<w>]].) =
                      RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]]."
-        unfolding \<sigma>_def by auto
+        unfolding \<mu>_def by auto
       ultimately have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> 
                                :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]] ."
         by (metis substitution_rule)
@@ -1910,9 +1914,9 @@ next
       then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>]] ."
         by (meson "2.prems"(2) UnCI solves_program_def)
       moreover
-      have "subst_cls \<sigma> (RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>]] .) =
+      have "subst_cls \<mu> (RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>]] .) =
             RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>  :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]]."
-        unfolding \<sigma>_def by auto
+        unfolding \<mu>_def by auto
       ultimately 
       have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> 
                     :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]] ."
@@ -1995,7 +1999,7 @@ abbreviation \<vv> :: "(BV_var, 'a) identifier" where
   "\<vv> == DLVar the_\<vv>"
 
 abbreviation Encode_Node_BV :: "'n \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) identifier" where
-  "Encode_Node_BV n == DLElement (BV_Node n)"
+  "Encode_Node_BV q == DLElement (BV_Node q)"
 
 abbreviation Decode_Node_BV :: "(BV_var, ('n, 'v, 'elem) BV_elem) identifier \<Rightarrow> 'n" where
   "Decode_Node_BV ident == the_node (the_elem ident)"
@@ -2128,11 +2132,11 @@ lemma ana_entry_node_BV_meta_var:
   assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s BV\<langle>[Encode_Node_BV start,\<uu>]\<rangle> :- [init[\<uu>]]."
   shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s BV\<langle>[Encode_Node_BV start,u]\<rangle> :- [init[u]]."
 proof -
-  define \<sigma> where "\<sigma> = DLVar(the_\<uu> := u)"
-  have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s subst_cls \<sigma> BV\<langle>[Encode_Node_BV start,\<uu>]\<rangle> :- [init[\<uu>]]."
+  define \<mu> where "\<mu> = DLVar(the_\<uu> := u)"
+  have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s subst_cls \<mu> BV\<langle>[Encode_Node_BV start,\<uu>]\<rangle> :- [init[\<uu>]]."
     using assms substitution_rule by blast
   then show ?thesis
-    unfolding \<sigma>_def by auto
+    unfolding \<mu>_def by auto
 qed
 
 fun ana_edge_BV :: "('n, 'v) edge \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
@@ -2154,11 +2158,11 @@ lemma ana_CBV_meta_var:
   assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s CBV\<langle>[\<uu>,\<vv>]\<rangle> :- [\<^bold>\<not>BV[\<uu>,\<vv>], init[\<vv>]]."
   shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s CBV\<langle>[u,v]\<rangle> :- [\<^bold>\<not>BV[u,v], init[v]]."
 proof -
-  define \<sigma> where "\<sigma> = DLVar(the_\<uu> := u, the_\<vv> := v)"
-  have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s subst_cls \<sigma> CBV\<langle>[\<uu>,\<vv>]\<rangle> :- [\<^bold>\<not>BV[\<uu>,\<vv>], init[\<vv>]]."
+  define \<mu> where "\<mu> = DLVar(the_\<uu> := u, the_\<vv> := v)"
+  have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s subst_cls \<mu> CBV\<langle>[\<uu>,\<vv>]\<rangle> :- [\<^bold>\<not>BV[\<uu>,\<vv>], init[\<vv>]]."
     using assms substitution_rule by blast
   then show ?thesis
-    unfolding \<sigma>_def by auto
+    unfolding \<mu>_def by auto
 qed
 
 definition ana_pg_BV :: "(BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
@@ -2176,22 +2180,22 @@ fun summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> 
 
 lemma S_hat_path_append:
   assumes "length qs = length w"                               
-  shows "S_hat_path (qs @ [qnminus1, qn], w @ [l]) d_init =
-    S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
+  shows "S_hat_path (qs @ [qnminus1, qn], w @ [\<alpha>]) d_init =
+    S_hat (qnminus1, \<alpha>, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
 proof -
-  have "S_hat_path (qs @ [qnminus1, qn], w @ [l]) d_init = S_hat_edge_list (transition_list (qs @ [qnminus1, qn], w @ [l])) d_init"
+  have "S_hat_path (qs @ [qnminus1, qn], w @ [\<alpha>]) d_init = S_hat_edge_list (transition_list (qs @ [qnminus1, qn], w @ [\<alpha>])) d_init"
     unfolding S_hat_path_def by auto
   moreover
-  have "S_hat_edge_list (transition_list (qs @ [qnminus1, qn], w @ [l])) d_init =
-        S_hat_edge_list (transition_list (qs @ [qnminus1], w) @ [(qnminus1, l, qn)]) d_init"
+  have "S_hat_edge_list (transition_list (qs @ [qnminus1, qn], w @ [\<alpha>])) d_init =
+        S_hat_edge_list (transition_list (qs @ [qnminus1], w) @ [(qnminus1, \<alpha>, qn)]) d_init"
     using transition_list_reversed_simp[of qs w] assms
     by auto
   moreover
-  have "... = S_hat_edge_list [(qnminus1, l, qn)] (S_hat_edge_list (transition_list (qs @ [qnminus1], w)) d_init)"
-    using S_hat_edge_list_append[of "transition_list (qs @ [qnminus1], w)" " [(qnminus1, l, qn)]" d_init]
+  have "... = S_hat_edge_list [(qnminus1, \<alpha>, qn)] (S_hat_edge_list (transition_list (qs @ [qnminus1], w)) d_init)"
+    using S_hat_edge_list_append[of "transition_list (qs @ [qnminus1], w)" " [(qnminus1, \<alpha>, qn)]" d_init]
     by auto
   moreover
-  have "... = S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
+  have "... = S_hat (qnminus1, \<alpha>, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
     unfolding S_hat_path_def by auto
   ultimately show ?thesis
     by blast
@@ -2415,75 +2419,75 @@ proof (induction arbitrary: d rule: LTS.path_with_word_induct_reverse[OF assms(1
   then show ?case
     using start_end solves_fact_query by metis
 next
-  case (2 qs qnminus1 w l qn)
+  case (2 qs qnminus1 w \<alpha> qn)
   have "S_hat_path (qs @ [qnminus1], w) d_init \<subseteq>
         {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_end (qs @ [qnminus1], w)), Encode_Elem_BV d]\<rangle>.}"
     using 2
     by (metis (no_types, lifting) LTS.get_start_def hd_append2 list.sel(1) mem_Collect_eq prod.sel(1) self_append_conv2 subsetI) 
-  then have f: "S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init) \<subseteq>
-             S_hat (qnminus1, l, qn) {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_end (qs @ [qnminus1], w)), Encode_Elem_BV d]\<rangle>.}"
+  then have f: "S_hat (qnminus1, \<alpha>, qn) (S_hat_path (qs @ [qnminus1], w) d_init) \<subseteq>
+             S_hat (qnminus1, \<alpha>, qn) {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_end (qs @ [qnminus1], w)), Encode_Elem_BV d]\<rangle>.}"
     by (simp add: S_hat_mono)
   have "length qs = length w"
     using 2(1) LTS.path_with_word_lengths by metis
-  then have "S_hat_path (qs @ [qnminus1, qn], w @ [l]) d_init = S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
+  then have "S_hat_path (qs @ [qnminus1, qn], w @ [\<alpha>]) d_init = S_hat (qnminus1, \<alpha>, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
     using S_hat_path_append[of qs w] by auto
   moreover 
-  have "... = S_hat (qnminus1, l, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
+  have "... = S_hat (qnminus1, \<alpha>, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
     by simp
   moreover 
-  have "... \<subseteq> S_hat (qnminus1, l, qn) {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
+  have "... \<subseteq> S_hat (qnminus1, \<alpha>, qn) {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
     by (metis f LTS.get_end_def last_snoc prod.sel(1))
   ultimately 
-  have "S_hat_path (qs @ [qnminus1, qn], w @ [l]) d_init \<subseteq> S_hat (qnminus1, l, qn) {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
+  have "S_hat_path (qs @ [qnminus1, qn], w @ [\<alpha>]) d_init \<subseteq> S_hat (qnminus1, \<alpha>, qn) {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
     by auto
-  then have "d \<in> S_hat (qnminus1, l, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
+  then have "d \<in> S_hat (qnminus1, \<alpha>, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
     using 2(7) by auto
-  then have "  d \<in> {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.} - kill_set (qnminus1, l, qn)
-             \<or> d \<in> gen_set (qnminus1, l, qn)"
+  then have "  d \<in> {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.} - kill_set (qnminus1, \<alpha>, qn)
+             \<or> d \<in> gen_set (qnminus1, \<alpha>, qn)"
     unfolding S_hat_def by auto
   then have "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
   proof
-    assume a: "d \<in> {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.} - kill_set (qnminus1, l, qn)"
+    assume a: "d \<in> {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.} - kill_set (qnminus1, \<alpha>, qn)"
     from a have a_1: "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>."
       by auto
     moreover
-    have e_in_pg: "(qnminus1, l, qn) \<in> edge_set"
+    have e_in_pg: "(qnminus1, \<alpha>, qn) \<in> edge_set"
       using "2.hyps"(2) by blast
 
-    have "\<forall>c\<in>ana_edge_BV (qnminus1, l, qn). \<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
+    have "\<forall>c\<in>ana_edge_BV (qnminus1, \<alpha>, qn). \<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
       using 2(5) e_in_pg unfolding ana_pg_BV_def solves_program_def least_solution_def by blast
-    then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s BV\<langle>[Encode_Node_BV qn, \<uu>]\<rangle> :- [BV [Encode_Node_BV qnminus1, \<uu>], \<^bold>\<not>kill [Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, \<uu>]] ."
+    then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s BV\<langle>[Encode_Node_BV qn, \<uu>]\<rangle> :- [BV [Encode_Node_BV qnminus1, \<uu>], \<^bold>\<not>kill [Encode_Node_BV qnminus1, Encode_Action_BV \<alpha>, Encode_Node_BV qn, \<uu>]] ."
       by auto
     then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> 
                        :- [BV [Encode_Node_BV qnminus1, Encode_Elem_BV d],
-                          \<^bold>\<not>kill [Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]]."
+                          \<^bold>\<not>kill [Encode_Node_BV qnminus1, Encode_Action_BV \<alpha>, Encode_Node_BV qn, Encode_Elem_BV d]]."
       using substitution_rule[of \<rho> _ "\<lambda>u. Encode_Elem_BV d"]
       by force
     moreover
-    from a have a_2: "d \<notin> kill_set (qnminus1, l, qn)"
+    from a have a_2: "d \<notin> kill_set (qnminus1, \<alpha>, qn)"
       by auto
 (*    have "\<forall>c\<in>\<Union>(ana_kill_BV ` (edge_set \<times> UNIV)). solves_cls \<rho> c"
       using 2(5) unfolding ana_pg_BV_def solves_program_def least_solution_def by auto
     then have "\<forall>c\<in>ana_kill_BV ((qnminus1, l, qn),d). solves_cls \<rho> c"
       using e_in_pg by blast *)
-    have "[BV_Node qnminus1, BV_Action l, BV_Node qn, BV_Elem d] \<notin> \<rho> the_kill"
-      using a_2 not_kill[of d qnminus1 l qn \<rho>] 2(5) by auto
-    then have "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>kill [Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]" (* Could maybe be phrased better *)
+    have "[BV_Node qnminus1, BV_Action \<alpha>, BV_Node qn, BV_Elem d] \<notin> \<rho> the_kill"
+      using a_2 not_kill[of d qnminus1 \<alpha> qn \<rho>] 2(5) by auto
+    then have "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>kill [Encode_Node_BV qnminus1, Encode_Action_BV \<alpha>, Encode_Node_BV qn, Encode_Elem_BV d]" (* Could maybe be phrased better *)
       by auto
     ultimately
     show "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
       using resolution_only_from_cls_query_to_query by (metis (no_types, lifting) Cons_eq_appendI resolution_last_from_cls_rh_to_cls resolution_only_from_cls_query_to_query self_append_conv2)
 
   next
-    assume a: "d \<in> gen_set (qnminus1, l, qn)"
-    have e_in_pg: "(qnminus1, l, qn) \<in> edge_set"
+    assume a: "d \<in> gen_set (qnminus1, \<alpha>, qn)"
+    have e_in_pg: "(qnminus1, \<alpha>, qn) \<in> edge_set"
       using "2.hyps"(2) by blast
 
-    have "\<forall>c\<in>ana_edge_BV (qnminus1, l, qn). \<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
+    have "\<forall>c\<in>ana_edge_BV (qnminus1, \<alpha>, qn). \<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
       using 2(5) e_in_pg unfolding ana_pg_BV_def solves_program_def least_solution_def by blast
-    then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s BV\<langle>[Encode_Node_BV qn, \<uu>]\<rangle> :- [gen [Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, \<uu>]] ."
+    then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s BV\<langle>[Encode_Node_BV qn, \<uu>]\<rangle> :- [gen [Encode_Node_BV qnminus1, Encode_Action_BV \<alpha>, Encode_Node_BV qn, \<uu>]] ."
       by auto
-    then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- [gen [Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]] ."
+    then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- [gen [Encode_Node_BV qnminus1, Encode_Action_BV \<alpha>, Encode_Node_BV qn, Encode_Elem_BV d]] ."
       using substitution_rule[of \<rho> _ "\<lambda>u. Encode_Elem_BV d" ]
       by force
     moreover
@@ -2491,9 +2495,9 @@ next
       using "2.prems"(4) the_funny_invariant by blast
     have "\<forall>c\<in>\<Union>(ana_gen_BV_edge ` edge_set). \<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
       using 2(5) unfolding ana_pg_BV_def solves_program_def least_solution_def by auto
-    then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s (ana_gen_BV_edge_d (qnminus1, l, qn) d)"
+    then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s (ana_gen_BV_edge_d (qnminus1, \<alpha>, qn) d)"
       using e_in_pg a ana_gen_BV_edge_def dan by auto
-    then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s gen\<langle>[Encode_Node_BV qnminus1, Encode_Action_BV l, Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- [] ."
+    then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s gen\<langle>[Encode_Node_BV qnminus1, Encode_Action_BV \<alpha>, Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- [] ."
       by auto
     ultimately
     show "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
@@ -2655,7 +2659,7 @@ proof -
     .
 qed
 
-lemma S_hat_edge_list_last: "interp.S_hat_edge_list (\<pi> @ [a]) d_init_RD = interp.S_hat a (interp.S_hat_edge_list \<pi> d_init_RD)"
+lemma S_hat_edge_list_last: "interp.S_hat_edge_list (\<pi> @ [e]) d_init_RD = interp.S_hat e (interp.S_hat_edge_list \<pi> d_init_RD)"
   using interp.S_hat_edge_list_def2 foldl_conv_foldr by simp
 
 lemma gugugug: "(x,q1,q2) \<in> interp.S_hat_edge_list \<pi> d_init_RD \<Longrightarrow> (x,q1,q2) = (def_var \<pi>) x start"
@@ -2664,26 +2668,26 @@ proof (induction \<pi> rule: rev_induct)
   then show ?case
     by (metis append_is_Nil_conv d_init_RD_def def_var_def in_set_conv_decomp interp.S_hat_edge_list.simps(1) list.distinct(1) mem_Sigma_iff singletonD)
 next
-  case (snoc a \<pi>)
+  case (snoc e \<pi>)
 
-  from snoc(2) have "(x, q1, q2) \<in> interp.S_hat a (interp.S_hat_edge_list \<pi> d_init_RD)"
+  from snoc(2) have "(x, q1, q2) \<in> interp.S_hat e (interp.S_hat_edge_list \<pi> d_init_RD)"
     using S_hat_edge_list_last by blast     
 
-  then have "(x, q1, q2) \<in> interp.S_hat_edge_list \<pi> d_init_RD - kill_set_RD a \<or> (x, q1, q2) \<in> gen_set_RD a"
+  then have "(x, q1, q2) \<in> interp.S_hat_edge_list \<pi> d_init_RD - kill_set_RD e \<or> (x, q1, q2) \<in> gen_set_RD e"
     unfolding interp.S_hat_def by auto
   then show ?case
   proof
-    assume a: "(x, q1, q2) \<in> interp.S_hat_edge_list \<pi> d_init_RD - kill_set_RD a"
+    assume a: "(x, q1, q2) \<in> interp.S_hat_edge_list \<pi> d_init_RD - kill_set_RD e"
     then have "(x, q1, q2) = def_var \<pi> x start"
       using snoc by auto
     moreover
-    from a have "(x, q1, q2) \<notin> kill_set_RD a"
+    from a have "(x, q1, q2) \<notin> kill_set_RD e"
       by auto
-    then have "def_var (\<pi> @ [a]) x start = def_var \<pi> x start"
+    then have "def_var (\<pi> @ [e]) x start = def_var \<pi> x start"
     proof -
-      assume a: "(x, q1, q2) \<notin> kill_set_RD a"
-      then have "x \<notin> def_edge a"
-        apply (cases a)
+      assume a: "(x, q1, q2) \<notin> kill_set_RD e"
+      then have "x \<notin> def_edge e"
+        apply (cases e)
         apply auto
         subgoal for q1' c q2'
           apply (cases c)
@@ -2706,11 +2710,11 @@ next
     show ?case
       by auto
   next
-    assume "(x, q1, q2) \<in> gen_set_RD a"
-    then have "\<exists>exp theq1. a = (theq1, x ::= exp, q2) \<and> q1 = Some theq1"
-      apply (cases a)
-      subgoal for q1' a' q2'
-        apply (cases a')
+    assume "(x, q1, q2) \<in> gen_set_RD e"
+    then have "\<exists>exp theq1. e = (theq1, x ::= exp, q2) \<and> q1 = Some theq1"
+      apply (cases e)
+      subgoal for q1' e' q2'
+        apply (cases e')
         subgoal for y exp
           apply auto
           done
@@ -2722,7 +2726,7 @@ next
           done
         done
       done
-    then obtain exp theq1 where exp_theq1_p: "a = (theq1, x ::= exp, q2) \<and> q1 = Some theq1"
+    then obtain exp theq1 where exp_theq1_p: "e = (theq1, x ::= exp, q2) \<and> q1 = Some theq1"
       by auto
     then have "(x, q1, q2) = def_var (\<pi> @ [(theq1, x ::= exp, q2)]) x start"
       using last_overwrites[of \<pi> theq1 x exp q2] by auto
@@ -2872,7 +2876,7 @@ proof (induction ss)
   then show ?case
     unfolding rev_edge_list_def by auto
 next
-  case (Cons a ss)
+  case (Cons e es)
   show ?case
     unfolding rev_edge_list_def
     unfolding fa.S_hat_edge_list_def2
@@ -2907,13 +2911,13 @@ lemma summarizes_dl_BV_forwards_backwards':
   assumes "fa.summarizes_dl_BV \<rho>"
   shows "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_start (ss, w)), Encode_Elem_BV d]\<rangle>."
 proof -
-  have rev_in_edge_set: "(rev (ss), rev (w)) \<in> LTS.path_with_word fa.edge_set"
+  have rev_in_edge_set: "(rev ss, rev w) \<in> LTS.path_with_word fa.edge_set"
     using assms(1) rev_path_in_rev_pg[of ss w] fa.edge_set_def pg_rev_def by auto 
   moreover
-  have "LTS.get_start (rev (ss), rev (w)) = fa.start"
+  have "LTS.get_start (rev ss, rev w) = fa.start"
     using assms(1,2) rev_end_is_start by (metis LTS.path_with_word_not_empty)
   moreover
-  have "d \<in> fa.S_hat_path (rev (ss), rev (w)) d_init"
+  have "d \<in> fa.S_hat_path (rev ss, rev w) d_init"
     using assms(3)
     using assms(1) S_hat_path_forwards_backwards by auto
   ultimately
@@ -3008,46 +3012,46 @@ proof (induction \<pi>)
   then show ?case
     by metis
 next
-  case (Cons a \<pi>)
+  case (Cons e \<pi>)
   note Cons_inner = Cons
-  from Cons(2) have "\<exists>\<pi>1 \<pi>2 e. a # \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and> x \<in> use_edge e \<and> \<not> (\<exists>e'\<in>set \<pi>1. x \<in> def_edge e')"
+  from Cons(2) have "\<exists>\<pi>1 \<pi>2 e'. e # \<pi> = \<pi>1 @ [e'] @ \<pi>2 \<and> x \<in> use_edge e' \<and> \<not> (\<exists>e''\<in>set \<pi>1. x \<in> def_edge e'')"
     unfolding use_edge_list_def by auto
-  then obtain \<pi>1 \<pi>2 e where \<pi>1_\<pi>2_e_p:
-    "a # \<pi> = \<pi>1 @ [e] @ \<pi>2"
-    "x \<in> use_edge e"
-    "\<not>(\<exists>e'\<in>set \<pi>1. x \<in> def_edge e')"
+  then obtain \<pi>1 \<pi>2 e' where \<pi>1_\<pi>2_e'_p:
+    "e # \<pi> = \<pi>1 @ [e'] @ \<pi>2"
+    "x \<in> use_edge e'"
+    "\<not>(\<exists>e''\<in>set \<pi>1. x \<in> def_edge e'')"
     by auto
   then show ?case
   proof (cases \<pi>1)
     case Nil
-    have "a = e"
-      using \<pi>1_\<pi>2_e_p(1) Nil by auto
-    then have x_used_a: "x \<in> use_edge a"
-      using \<pi>1_\<pi>2_e_p(2) by auto
-    obtain p \<alpha> q where a_split: "a = (p, \<alpha>, q)"
-      by (cases a)
+    have "e = e'"
+      using \<pi>1_\<pi>2_e'_p(1) Nil by auto
+    then have x_used_a: "x \<in> use_edge e"
+      using \<pi>1_\<pi>2_e'_p(2) by auto
+    obtain p \<alpha> q where a_split: "e = (p, \<alpha>, q)"
+      by (cases e)
     show ?thesis
       using x_used_a interpb.S_hat_def a_split by (cases \<alpha>) auto
   next
     case (Cons hd_\<pi>1 tl_\<pi>1)
-    obtain p \<alpha> q where e_split: "e = (p, \<alpha>, q)"
-      by (cases e)
+    obtain p \<alpha> q where e_split: "e' = (p, \<alpha>, q)"
+      by (cases e')
     have "(\<pi> = tl_\<pi>1 @ (p, \<alpha>, q) # \<pi>2) \<and> x \<in> use_action \<alpha> \<and> (\<forall>e'\<in>set tl_\<pi>1. x \<notin> def_edge e')"
-      using Cons \<pi>1_\<pi>2_e_p e_split by auto
+      using Cons \<pi>1_\<pi>2_e'_p e_split by auto
     then have "use_edge_list \<pi> x"
       unfolding use_edge_list_def by force
     then have x_in_S_hat_\<pi>: "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV"
       using Cons_inner by auto
-    have "a \<in> set \<pi>1"
-      using \<pi>1_\<pi>2_e_p(1) Cons(1) by auto
-    then have x_not_def_a: "\<not>x \<in> def_edge a"
-      using \<pi>1_\<pi>2_e_p(3) by auto
+    have "e \<in> set \<pi>1"
+      using \<pi>1_\<pi>2_e'_p(1) Cons(1) by auto
+    then have x_not_def_a: "\<not>x \<in> def_edge e"
+      using \<pi>1_\<pi>2_e'_p(3) by auto
 
-    obtain p' \<alpha>' q' where a_split: "a = (p', \<alpha>', q')"
-      by (cases a)
+    obtain p' \<alpha>' q' where a_split: "e = (p', \<alpha>', q')"
+      by (cases e)
 
     show ?thesis
-    proof (cases "x \<in> kill_set_LV a")
+    proof (cases "x \<in> kill_set_LV e")
       case True
       show ?thesis
         using True a_split x_not_def_a by (cases \<alpha>'; force)
@@ -3070,26 +3074,26 @@ proof (induction \<pi>)
   then show ?case
     by metis
 next
-  case (Cons a \<pi>)
-  from Cons(2) have "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV - kill_set_LV a \<union> gen_set_LV a"
+  case (Cons e \<pi>)
+  from Cons(2) have "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV - kill_set_LV e \<union> gen_set_LV e"
     unfolding interpb.S_hat_edge_list.simps unfolding interpb.S_hat_def by auto
   then show ?case
   proof
-    assume a: "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV - kill_set_LV a"
+    assume a: "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV - kill_set_LV e"
     then have "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV"
       by auto
     then have "use_edge_list \<pi> x"
       using Cons by auto
-    then have "\<exists>\<pi>1 \<pi>2 e. \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and> x \<in> use_edge e \<and> \<not>(\<exists>e'\<in>set \<pi>1. x \<in> def_edge e')"
+    then have "\<exists>\<pi>1 \<pi>2 e'. \<pi> = \<pi>1 @ [e'] @ \<pi>2 \<and> x \<in> use_edge e' \<and> \<not>(\<exists>e''\<in>set \<pi>1. x \<in> def_edge e'')"
       unfolding use_edge_list_def by auto
-    then obtain \<pi>1 \<pi>2 e where \<pi>1_\<pi>2_e_p:
-      "\<pi> = \<pi>1 @ [e] @ \<pi>2"
-      "x \<in> use_edge e"
-      "\<not>(\<exists>e'\<in>set \<pi>1. x \<in> def_edge e')"
+    then obtain \<pi>1 \<pi>2 e' where \<pi>1_\<pi>2_e'_p:
+      "\<pi> = \<pi>1 @ [e'] @ \<pi>2"
+      "x \<in> use_edge e'"
+      "\<not>(\<exists>e''\<in>set \<pi>1. x \<in> def_edge e'')"
       by auto
-    obtain q1 \<alpha> q2 where a_split: "a = (q1, \<alpha>, q2)"
-      by (cases a) auto
-    from a have "x \<notin> kill_set_LV a"
+    obtain q1 \<alpha> q2 where a_split: "e = (q1, \<alpha>, q2)"
+      by (cases e) auto
+    from a have "x \<notin> kill_set_LV e"
       by auto
     then have x_not_killed: "x \<notin> kill_set_LV (q1, \<alpha>, q2)"
       using a_split by auto
@@ -3100,50 +3104,50 @@ next
         using x_not_killed by auto
       then have x_not_y: "x \<noteq> y"
         by auto
-      have "(q1, y ::= exp, q2) # \<pi> = ((q1, y ::= exp, q2) # \<pi>1) @ [e] @ \<pi>2"
-        using \<pi>1_\<pi>2_e_p by force
+      have "(q1, y ::= exp, q2) # \<pi> = ((q1, y ::= exp, q2) # \<pi>1) @ [e'] @ \<pi>2"
+        using \<pi>1_\<pi>2_e'_p by force
       moreover
       have "\<not> (\<exists>e'\<in>set ((q1, y ::= exp, q2) # \<pi>1). x \<in> def_edge e')"
-        using \<pi>1_\<pi>2_e_p x_not_y by force
+        using \<pi>1_\<pi>2_e'_p x_not_y by force
       ultimately
       have "use_edge_list ((q1, y ::= exp, q2) # \<pi>) x"
-        unfolding use_edge_list_def using \<pi>1_\<pi>2_e_p x_not_y by metis
+        unfolding use_edge_list_def using \<pi>1_\<pi>2_e'_p x_not_y by metis
       then show ?thesis
         by (simp add: Asg)
     next
       case (Bool b)
-      have "(q1, Bool b, q2) # \<pi> = ((q1, Bool b, q2) # \<pi>1) @ [e] @ \<pi>2"
-        using \<pi>1_\<pi>2_e_p unfolding use_edge_list_def by auto
+      have "(q1, Bool b, q2) # \<pi> = ((q1, Bool b, q2) # \<pi>1) @ [e'] @ \<pi>2"
+        using \<pi>1_\<pi>2_e'_p unfolding use_edge_list_def by auto
       moreover
       have "\<not> (\<exists>e'\<in>set ((q1, Bool b, q2) # \<pi>1). x \<in> def_edge e')"
-        using \<pi>1_\<pi>2_e_p unfolding use_edge_list_def by auto
+        using \<pi>1_\<pi>2_e'_p unfolding use_edge_list_def by auto
       ultimately
       have "use_edge_list ((q1, Bool b, q2) # \<pi>) x"
-        unfolding use_edge_list_def using \<pi>1_\<pi>2_e_p by metis
+        unfolding use_edge_list_def using \<pi>1_\<pi>2_e'_p by metis
       then show ?thesis
         using Bool by auto
     next
       case Skip
-      have "(q1, Skip, q2) # \<pi> = ((q1, Skip, q2) # \<pi>1) @ [e] @ \<pi>2"
-        using \<pi>1_\<pi>2_e_p unfolding use_edge_list_def by auto
+      have "(q1, Skip, q2) # \<pi> = ((q1, Skip, q2) # \<pi>1) @ [e'] @ \<pi>2"
+        using \<pi>1_\<pi>2_e'_p unfolding use_edge_list_def by auto
       moreover
       have "\<not> (\<exists>e'\<in>set ((q1, Skip, q2) # \<pi>1). x \<in> def_edge e')"
-        using \<pi>1_\<pi>2_e_p unfolding use_edge_list_def by auto
+        using \<pi>1_\<pi>2_e'_p unfolding use_edge_list_def by auto
       ultimately
       have "use_edge_list ((q1, Skip, q2) # \<pi>) x"
-        unfolding use_edge_list_def using \<pi>1_\<pi>2_e_p by metis
+        unfolding use_edge_list_def using \<pi>1_\<pi>2_e'_p by metis
       then show ?thesis
         using Skip by auto
     qed
-    then show "use_edge_list (a # \<pi>) x"
+    then show "use_edge_list (e # \<pi>) x"
       using a_split by auto
   next
-    assume a: "x \<in> gen_set_LV a"
-    obtain p \<alpha> q where a_split: "a = (p, \<alpha>, q)"
-      by (cases a)
+    assume a: "x \<in> gen_set_LV e"
+    obtain p \<alpha> q where a_split: "e = (p, \<alpha>, q)"
+      by (cases e)
     have "use_edge_list ((p, \<alpha>, q) # \<pi>) x"
       using a a_split unfolding use_edge_list_def by (cases \<alpha>; force)
-    then show "use_edge_list (a # \<pi>) x"
+    then show "use_edge_list (e # \<pi>) x"
       using a_split by auto
   qed
 qed
@@ -3506,8 +3510,6 @@ proof -
   show "False"
     using not_CBV[of q d \<rho>] assms(1) by auto
 qed
-
-thm Program_Graph.analysis_BV_forward_may.not_kill
 
 lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf'''''': (* Copy paste adapted from not_kill *)
   assumes "least_solution \<rho> ana_pg_BV s_BV"
