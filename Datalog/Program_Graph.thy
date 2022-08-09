@@ -406,12 +406,8 @@ lemma unique_minimal:
   sorry
 *)
 
-lemma an_antisymmetry_lamma:
-  assumes "\<forall>a b. r a b \<and> r b a \<longrightarrow> a = b"
-  assumes "r y x \<and> x \<noteq> y"
-  shows "\<not>r x y"
-  using assms
-  by blast 
+subsection \<open>Solving lower strata\<close>
+(* Can we call it monotonicity? *)
 
 lemma downward_strat:
   assumes "n > m"
@@ -517,7 +513,9 @@ proof
     using c_def by auto
 qed
 
+subsection \<open>Least solutions\<close>
 
+subsubsection \<open>Existence of least solutions\<close>
 
 definition Inter' ("\<^bold>\<Inter>") where 
   "(\<^bold>\<Inter> \<rho>s) = (\<lambda>p. \<Inter>{m. \<exists>\<rho> \<in> \<rho>s. m = \<rho> p})"
@@ -1362,6 +1360,7 @@ proof -
 qed
 
 
+subsubsection \<open>Equality of least and minimal solution\<close>
 
 (* René se her *)
 (* Her er linket til det vi så på på nettet https://www.physicsforums.com/threads/difference-between-least-minimal-element.380114/ *)
@@ -1387,6 +1386,8 @@ next
   show "least_solution \<sigma> dl s"
     by (metis \<open>\<exists>\<sigma>'. least_solution \<sigma>' dl s\<close> \<open>minimal_solution \<sigma> dl s\<close> least_solution_def lte_def minimal_solution_def)
 qed
+
+subsubsection \<open>Least solution on lower strata\<close>
 
 lemma jklsakljaeafdsjkhdfsdfhjka:
   "(dl --s-- n) \<subseteq> dl"
@@ -1587,6 +1588,18 @@ proof (rule ccontr)
   then show "False"
     using assms by auto
 qed
+
+
+subsubsection \<open>Solved queries follow from clauses\<close>
+
+lemma xx12311x:
+  assumes "least_solution \<sigma> dl s"
+  assumes "\<sigma> \<Turnstile>\<^sub>q (p,ids)"
+  shows "\<exists>c \<in> dl. \<exists>\<sigma>. True "
+  sorry
+
+
+
 
 
 section \<open>Reaching Definitions in Datalog\<close>
