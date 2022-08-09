@@ -2664,16 +2664,16 @@ lemma d_init_RD_subset_analysis_dom_RD:
   "d_init_RD \<subseteq> analysis_dom_RD"
   unfolding d_init_RD_def analysis_dom_RD_def by auto
 
-lemma neccccccc: "gen_set_RD e \<subseteq> analysis_dom_RD"
+lemma gen_RD_subset_analysis_dom: "gen_set_RD e \<subseteq> analysis_dom_RD"
   unfolding analysis_dom_RD_def by auto
 
-lemma necccccccccccc: "kill_set_RD e \<subseteq> analysis_dom_RD"
+lemma kill_RD_subset_analysis_dom: "kill_set_RD e \<subseteq> analysis_dom_RD"
   unfolding analysis_dom_RD_def by auto
 
 
 interpretation interp: analysis_BV_forward_may pg analysis_dom_RD kill_set_RD gen_set_RD d_init_RD 
   using analysis_BV_forward_may_def analysis_RD_axioms analysis_RD_def
-  using d_init_RD_subset_analysis_dom_RD finite_analysis_dom_RD neccccccc necccccccccccc
+  using d_init_RD_subset_analysis_dom_RD finite_analysis_dom_RD gen_RD_subset_analysis_dom kill_RD_subset_analysis_dom
   by blast 
 
 lemma def_var_def_edge_S_hat:
@@ -2958,10 +2958,10 @@ thm summarizes_dl_BV_def[of \<rho>]
 lemma finite_pg_rev: "finite (fst pg_rev)"
   by (metis analysis_BV_backwards_may_axioms analysis_BV_backwards_may_def edge_set_def finite_imageI fst_conv pg_rev_def)
 
-lemma neccccccc: "(kill_set (rev_edge e)) \<subseteq> analysis_dom"
+lemma new_gen_subs_analysis_dom: "(kill_set (rev_edge e)) \<subseteq> analysis_dom"
   by (meson analysis_BV_backwards_may_axioms analysis_BV_backwards_may_def)
 
-lemma necccccccccccc: "(gen_set (rev_edge e)) \<subseteq> analysis_dom"
+lemma new_kill_subs_analysis_dom: "(gen_set (rev_edge e)) \<subseteq> analysis_dom"
   by (meson analysis_BV_backwards_may_axioms analysis_BV_backwards_may_def)
 
 interpretation fa: analysis_BV_forward_may pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
@@ -3822,7 +3822,7 @@ proof -
     unfolding minimal_solution_def by auto
 qed
 
-lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf':
+lemma is_elem_if_init:
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
   shows "is_elem d"
@@ -3843,6 +3843,7 @@ next
 qed
   (* Why? Well, if it were a variable then we could make an instantiation for which it doesn't hold. *)
 
+(*
 lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf''''''''''':
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
@@ -3870,8 +3871,9 @@ next
       using DLElement assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsd1111111f'''''' by blast
   qed
 qed
+*)
 
-lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsjajkfkjjjdfdjfdjfjdfeeeeuugndf':
+lemma is_bv_elem_if_init:
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[DLElement d]\<rangle>."
   shows "is_bv_elem d"
@@ -3889,12 +3891,12 @@ next
     using assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsd1111111f'''''' by blast
 qed
 
-lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdfuggugugugugu'''tvtvtvtvt''''':
+lemma in_analysis_dom_if_init':
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Elem_BV d]\<rangle>."
-  assumes "\<not>d \<in> analysis_dom"
-  shows False
-proof - (* Proof copy paste and adapted from jaksldfjklsdfjaksldfjklsdfjaksldfjklsd1111111f'''''' *)
+  shows "d \<in> analysis_dom"
+proof (rule ccontr) (* Proof copy paste and adapted from jaksldfjklsdfjaksldfjklsdfjaksldfjklsd1111111f'''''' *)
+  assume asm: "\<not>d \<in> analysis_dom"
   have "[BV_Elem d] \<in> (\<rho> \\s_BV\\ 0) the_init"
     using assms(2) by auto
 
@@ -3935,7 +3937,7 @@ proof - (* Proof copy paste and adapted from jaksldfjklsdfjaksldfjklsdfjaksldfjk
               apply (auto simp add: a_may.ana_init_BV_def)
              apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
              apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-          using assms(3) apply force
+          using asm apply force
             apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
            apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
           using a_may.ana_entry_node_BV_def apply blast
@@ -3994,13 +3996,7 @@ proof - (* Proof copy paste and adapted from jaksldfjklsdfjaksldfjklsdfjaksldfjk
     unfolding minimal_solution_def by auto
 qed
 
-lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdfuggugugugugu'':
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
-  assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Elem_BV d]\<rangle>."
-  shows "d \<in> analysis_dom"
-  using assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsdfuggugugugugu'''tvtvtvtvt''''' by blast
-
-lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf'':
+lemma in_analysis_dom_if_init:
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
   shows "Decode_Elem_BV d \<in> analysis_dom"
@@ -4010,7 +4006,7 @@ proof -
   then obtain d' where "d = DLElement d'"
     by (meson is_elem_def)
   then obtain d'' where "d' = BV_Elem d''"
-    using jaksldfjklsdfjaksldfjklsdfjaksldfjklsjajkfkjjjdfdjfdjfjdfeeeeuugndf'[OF assms(1)] assms(2)
+    using is_bv_elem_if_init[OF assms(1)] assms(2)
     apply (cases d')
     apply auto
     using assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf'''''' apply blast
@@ -4018,10 +4014,10 @@ proof -
     done
 
   show ?thesis
-    using \<open>d = DLElement d'\<close> \<open>d' = BV_Elem d''\<close> assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsdfuggugugugugu'' by auto
+    using \<open>d = DLElement d'\<close> \<open>d' = BV_Elem d''\<close> assms(1) assms(2) in_analysis_dom_if_init' by auto
 qed
 
-lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdftototototottoto:
+lemma init_if_CBV:
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
   shows "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
@@ -4260,18 +4256,18 @@ lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf:
   shows "\<exists>d'. d = Encode_Elem_BV d'"
 proof -
   have "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
-    using assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsdftototototottoto[of \<rho> \<pi>_end d] by fastforce
+    using assms(1) assms(2) init_if_CBV[of \<rho> \<pi>_end d] by fastforce
   show ?thesis
     by (metis BV_elem.exhaust \<open>\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>.\<close> assms(1) is_elem_def jaksldfjklsdfjaksldfjklsdfjaksldfjklsd1111111f'''''' jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf' jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf'''''')
 qed
 
-lemma jaksldfjklsdf:
+lemma in_analysis_dom_if_CBV:
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
   shows "Decode_Elem_BV d \<in> analysis_dom"
-  using jaksldfjklsdfjaksldfjklsdfjaksldfjklsdftototototottoto
+  using init_if_CBV
     jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf
-  using assms(1) assms(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf'' by blast
+  using assms(1) assms(2) in_analysis_dom_if_init by blast
 
 lemma sound_BV_must':
   assumes "least_solution \<rho> ana_pg_BV s_BV"
@@ -4282,7 +4278,7 @@ lemma sound_BV_must':
   shows "Decode_Elem_BV d \<in> S_hat_path \<pi> d_init"
 proof -
   have d_ana: "Decode_Elem_BV d \<in> analysis_dom"
-    using assms(1) assms(2) jaksldfjklsdf by auto
+    using assms(1) assms(2) in_analysis_dom_if_CBV by auto
   (* 
     Jeg tror ikke vi kan konkludere dette.
     Problemet er at skøre ting som
@@ -4299,7 +4295,6 @@ proof -
   *)
 
   have \<pi>e: "\<pi>_end = Encode_Node_BV (LTS.get_end \<pi>)"
-    (* Her skal jeg gøre noget i stil med d_ana *)
     sorry
 
   have d_encdec: "d = Encode_Elem_BV (Decode_Elem_BV d)"
@@ -4540,7 +4535,7 @@ lemma summarizes_dl_BV_forwards_backwards':
   assumes "LTS.get_start \<pi> = Decode_Node_BV \<pi>_start"
   shows "Decode_Elem_BV d \<in> S_hat_path \<pi> d_init"
   using LTS.get_end_def LTS.get_start_def S_hat_path_forwards_backwards analysis_BV_backwards_must.finite_pg_rev analysis_BV_backwards_must_axioms analysis_BV_forwards_must.edge_set_def analysis_BV_forwards_must_def assms(1) assms(2) assms(3) assms(4) fa.start_def fa.summarizes_dl_BV_must.simps fst_conv hd_rev last_rev pg_rev_def rev_path_in_rev_pg snd_conv
-  by (metis (no_types, lifting) assms(5) fa.edge_set_def prod.collapse)
+  assms(5) fa.edge_set_def prod.collapse by (metis (no_types, lifting) )
     (* TODO? Expand proof into something coherent? *)
 
 lemma summarizes_dl_BV_forwards_backwards: (* Copy paste statement by adapted proof *)
