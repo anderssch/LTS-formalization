@@ -762,26 +762,27 @@ next
     by (simp add: NegRh)
 qed
 
-lemma uiohvaryuibweafbyvuib:
+lemma solve_pg_two_agree_above_on_lh:
   assumes "s p \<le> n"
   assumes "s p \<le> m"
   shows "\<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl m) \<sigma> \<longleftrightarrow> \<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl n) \<sigma>"
-  by (metis assms less_imp_le_nat meaning_lh.simps solve_pg_two_agree_above)
+  by (metis assms meaning_lh.simps solve_pg_two_agree_above)
 
-lemma uiaerhuivrsaivrfhweaof:
+(* same_meaning_cls_solve_pg_above_clause *)
+lemma solve_pg_two_agree_above_on_cls:
   assumes "strat_wf s dl"
   assumes "Cls p ids rhs \<in> dl"
   assumes "s p \<le> n"
   assumes "s p \<le> m"
   shows "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl n) \<sigma> \<longleftrightarrow> \<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl m) \<sigma>"
-  by (meson assms meaning_cls.simps solve_pg_two_agree_above_on_rh uiohvaryuibweafbyvuib)
+  by (meson assms meaning_cls.simps solve_pg_two_agree_above_on_rh solve_pg_two_agree_above_on_lh)
 
-lemma uiaerhuivrsaivrfhweaof_Suc:
+lemma solve_pg_two_agree_above_on_cls_Suc:
   assumes "strat_wf s dl"
   assumes "Cls p ids rhs \<in> dl"
   assumes "s p \<le> n"
   shows "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl (Suc n)) \<sigma> \<longleftrightarrow> \<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl n) \<sigma>"
-  using uiaerhuivrsaivrfhweaof[OF assms(1,2,3), of "Suc n" \<sigma>] assms(3) by auto
+  using solve_pg_two_agree_above_on_cls[OF assms(1,2,3), of "Suc n" \<sigma>] assms(3) by auto
 
 lemma strata0_no_neg':
   assumes "strat_wf s dl"
@@ -942,7 +943,7 @@ next
       using Suc by auto
     find_theorems n
     then show ?thesis (* For clauses under Suc n er (solve_pg s dl (Suc n)) og (solve_pg s dl n) enige  *)
-      unfolding meaning_cls.simps[symmetric] using False' using uiaerhuivrsaivrfhweaof_Suc[OF assms(1) cls_in \<open>s p \<le> n\<close>] by metis
+      unfolding meaning_cls.simps[symmetric] using False' using solve_pg_two_agree_above_on_cls_Suc[OF assms(1) cls_in \<open>s p \<le> n\<close>] by metis
   qed
 qed
 
@@ -991,8 +992,6 @@ proof -
     using solves_program_def by blast
 qed
 
-
-
 lemma disjE3:
   assumes major: "P \<or> Q \<or> Z"
     and minorP: "P \<Longrightarrow> R"
@@ -1000,7 +999,6 @@ lemma disjE3:
     and minorZ: "Z \<Longrightarrow> R"
   shows R
   using assms by auto
-
 
 lemma solve_pg_subset: 
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
@@ -1066,7 +1064,7 @@ proof -
 qed
 *)
 
-lemma asdfsaddbvbfbfjfj1:
+lemma least_disagreement_proper_subset:
   assumes "\<rho>''n \<sqsubset>s\<sqsubset> \<rho>"
   assumes "least_rank_p_st (\<lambda>p. \<rho>''n p \<noteq> \<rho> p) p s"
   shows "\<rho>''n p \<subset> \<rho> p" 
@@ -1084,7 +1082,7 @@ proof -
     by (metis (mono_tags, lifting) assms(2) least_rank_p_st_def psubsetI)
 qed
 
-lemma asdfsaddbvbfbfjfj2:
+lemma subset_on_least_disagreement:
   assumes "\<rho>''n \<sqsubset>s\<sqsubset> \<rho>"
   assumes "least_rank_p_st (\<lambda>p. \<rho>''n p \<noteq> \<rho> p) p s"
   shows "\<forall>p'. s p' = s p \<longrightarrow> \<rho>''n p' \<subseteq> \<rho> p'"
@@ -1102,7 +1100,7 @@ proof -
     by (metis (mono_tags, lifting))
 qed
 
-lemma asdfsaddbvbfbfjfj3:
+lemma agree_below_least_disagreement:
   assumes "\<rho>''n \<sqsubset>s\<sqsubset> \<rho>"
   assumes "least_rank_p_st (\<lambda>p. \<rho>''n p \<noteq> \<rho> p) p s"
   shows "(\<forall>p'. s p' < s p \<longrightarrow> \<rho>''n p' = \<rho> p')"
@@ -1120,33 +1118,33 @@ proof -
     by metis
 qed
 
-lemma huafuihauihluihlfaw:
+lemma intersection_valuation_subset_valuation:
   assumes "P \<rho>"
   shows "\<^bold>\<Inter> {\<rho>'. P  \<rho>'} p \<subseteq> \<rho> p"
   by (metis (mono_tags, lifting) CollectI Inf_lower Inter'_def assms)
 
-lemma jklaeasfdfsjlfsdajl:
+lemma model_on_subset_model_below:
   "(dl ==s== n) \<subseteq> (dl --s-- n)"
   by fastforce
 
-lemma fiofihawfhiofkndd:
+lemma solves_program_mono:
   assumes "dl2 \<subseteq> dl1"
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l dl1"
   shows "\<rho> \<Turnstile>\<^sub>d\<^sub>l dl2"
   by (meson assms(1) assms(2) in_mono solves_program_def)
 
-lemma uhasfhfusdiafsdahu:
+lemma model_on_if_model_below:
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
   shows  "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl ==s== n)"
-  by (meson assms fiofihawfhiofkndd jklaeasfdfsjlfsdajl)
+  by (meson assms solves_program_mono model_on_subset_model_below)
 
-lemma jklakjlfdjhkasdfjhkfjfd: (* Kan "Suc n" genereliseres *)
+lemma solve_pg_subset_model: (* Kan "Suc n" genereliseres? *)
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n)"
   assumes "(\<rho> \\s\\ n) = solve_pg s dl n"
   shows "solve_pg s dl (Suc n) p \<subseteq> \<rho> p"
   unfolding solve_pg.simps
-  apply (rule huafuihauihluihlfaw)
-  using assms uhasfhfusdiafsdahu by auto
+  apply (rule intersection_valuation_subset_valuation)
+  using assms model_on_if_model_below by auto
 
 lemma solve_pg_below_model:
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
@@ -1210,7 +1208,7 @@ next
       have "\<rho>''n p \<subset> \<rho> p \<and>
            (\<forall>p'. s p' = s p \<longrightarrow> \<rho>''n(p') \<subseteq> \<rho>(p')) \<and>
            (\<forall>p'. s p' < s p \<longrightarrow> \<rho>''n(p') = \<rho>(p'))"
-        using asdfsaddbvbfbfjfj1[of \<rho>''n s \<rho> p] asdfsaddbvbfbfjfj2[of \<rho>''n s \<rho> p] asdfsaddbvbfbfjfj3[of \<rho>''n s \<rho> p] by metis
+        using least_disagreement_proper_subset[of \<rho>''n s \<rho> p] subset_on_least_disagreement[of \<rho>''n s \<rho> p] agree_below_least_disagreement[of \<rho>''n s \<rho> p] by metis
       then have "\<rho>''n1 p \<subset> \<rho> p \<and>
            (\<forall>p'. s p' = s p \<longrightarrow> \<rho>''n1(p') \<subseteq> \<rho>(p')) \<and>
            (\<forall>p'. s p' < s p \<longrightarrow> \<rho>''n1(p') = \<rho>(p'))"
@@ -1242,13 +1240,13 @@ next
       have "\<rho> \<in> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<and> (\<rho>' \\s\\ n) = solve_pg s dl n}"
         by auto
       then have "\<rho>''n1 p \<subseteq> \<rho> p"
-        using jklakjlfdjhkasdfjhkfjfd
+        using solve_pg_subset_model
         using \<rho>''n1_def by fastforce 
       then have "\<rho>''n1 p \<subset> \<rho> p"
         using dis by auto
       moreover
       have "\<forall>p'. s p' = s p \<longrightarrow> \<rho>''n1 p' \<subseteq> \<rho> p'"
-        using \<open>\<rho> \<in> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<and> (\<rho>' \s\ n) = solve_pg s dl n}\<close> \<rho>''n1_def jklakjlfdjhkasdfjhkfjfd by fastforce
+        using \<open>\<rho> \<in> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<and> (\<rho>' \s\ n) = solve_pg s dl n}\<close> \<rho>''n1_def solve_pg_subset_model by fastforce
       moreover
       have "\<forall>p'. s p' < s p \<longrightarrow> \<rho>''n1 p' = \<rho> p'"
         using below_least_rank_p_st p_p by fastforce
@@ -1353,17 +1351,17 @@ next
     by (metis \<open>\<exists>\<sigma>'. least_solution \<sigma>' dl s\<close> \<open>minimal_solution \<sigma> dl s\<close> least_solution_def lte_def minimal_solution_def)
 qed
 
+
 subsubsection \<open>Least solution on lower strata\<close>
 
-lemma jklsakljaeafdsjkhdfsdfhjka:
+lemma below_subset:
   "(dl --s-- n) \<subseteq> dl"
   by auto
 
-lemma xxasjkdfaskl:
+lemma finite_below_finite:
   assumes "finite dl"
   shows "finite (dl --s-- n)"
-  using assms finite_subset jklsakljaeafdsjkhdfsdfhjka by metis
-
+  using assms finite_subset below_subset by metis
 
 lemma downward_solution:
   assumes "finite dl"
@@ -1378,7 +1376,7 @@ proof (rule ccontr)
   have strrrr: "strat_wf s (dl --s-- n)"
     using assms downward_strat2 by auto
   from a have "\<not> minimal_solution  (\<sigma> \\s\\ m) (dl --s-- m) s"
-    using least_is_minimal strrr assms(1) xxasjkdfaskl by metis
+    using least_is_minimal strrr assms(1) finite_below_finite by metis
   moreover 
   have "(\<sigma> \\s\\ m) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
     using assms downward_solves least_solution_def by blast
@@ -1456,7 +1454,7 @@ proof (rule ccontr)
   have "\<not>minimal_solution \<sigma> (dl --s-- n) s"
     unfolding minimal_solution_def by auto
   then have "\<not>least_solution \<sigma> (dl --s-- n) s" 
-    using least_is_minimal strrrr xxasjkdfaskl assms by metis
+    using least_is_minimal strrrr finite_below_finite assms by metis
   then show "False"
     using assms by auto
 qed
@@ -1471,7 +1469,7 @@ proof (rule ccontr)
   have strrr: "strat_wf s (dl --s-- m)"
     using assms downward_strat2 by auto
   from a have "\<not> minimal_solution  (\<sigma> \\s\\ m) (dl --s-- m) s"
-    using least_is_minimal strrr xxasjkdfaskl assms by metis  
+    using least_is_minimal strrr finite_below_finite assms by metis  
   moreover 
   have "(\<sigma> \\s\\ m) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
     using assms downward_solves2 least_solution_def by blast
@@ -1925,7 +1923,7 @@ abbreviation init_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, B
 abbreviation kill_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("kill\<langle>_\<rangle> :- _ .") where 
   "kill\<langle>args\<rangle> :- ls. \<equiv> Cls the_kill args ls"
 
-abbreviation genn_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("gen\<langle>_\<rangle> :- _ .") where 
+abbreviation gen_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("gen\<langle>_\<rangle> :- _ .") where 
   "gen\<langle>args\<rangle> :- ls. \<equiv> Cls the_gen args ls"
 
 abbreviation BV_Query :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) query" ("BV\<langle>_\<rangle>.") where 
@@ -2204,7 +2202,7 @@ proof (rule)
     using downward_solution2[of ana_pg_BV s_BV \<sigma> 0] assms(2) using ana_pg_BV_stratified by linarith
   then have "minimal_solution (\<sigma> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
     using least_is_minimal[of]
-    using ana_pg_BV_stratified downward_strat2 by (smt (verit) \<open>finite ana_pg_BV\<close> xxasjkdfaskl) 
+    using ana_pg_BV_stratified downward_strat2 by (smt (verit) \<open>finite ana_pg_BV\<close> finite_below_finite) 
   moreover
   define \<sigma>' where "\<sigma>' = (\<lambda>p. (if p = the_kill then ((\<sigma> \\s_BV\\ 0) the_kill) - {[BV_Node q\<^sub>o, BV_Action \<alpha>, BV_Node q\<^sub>s, BV_Elem d]} else (\<sigma> \\s_BV\\ 0) p))"
 
@@ -3641,7 +3639,7 @@ proof
     using a_may.ana_pg_BV_stratified assms(1) by blast 
   then have "minimal_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
     using least_is_minimal[of]
-    using downward_strat2  \<open>finite ana_pg_BV\<close> xxasjkdfaskl
+    using downward_strat2  \<open>finite ana_pg_BV\<close> finite_below_finite
     by (smt (verit) a_may.ana_pg_BV_stratified) 
   moreover
 
@@ -3742,7 +3740,7 @@ proof
     using a_may.ana_pg_BV_stratified assms(1) by blast 
   then have "minimal_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
     using least_is_minimal[of]
-    using downward_strat2  \<open>finite ana_pg_BV\<close> xxasjkdfaskl
+    using downward_strat2  \<open>finite ana_pg_BV\<close> finite_below_finite
     by (smt (verit) a_may.ana_pg_BV_stratified) 
   moreover
 
@@ -3913,7 +3911,7 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
     using a_may.ana_pg_BV_stratified assms(1) by blast 
   then have "minimal_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
     using least_is_minimal[of]
-    using downward_strat2  \<open>finite ana_pg_BV\<close> xxasjkdfaskl
+    using downward_strat2  \<open>finite ana_pg_BV\<close> finite_below_finite
     by (smt (verit) a_may.ana_pg_BV_stratified) 
   moreover
 
@@ -4041,7 +4039,7 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
     using a_may.ana_pg_BV_stratified assms(1) by blast 
   then have "minimal_solution \<rho> ana_pg_BV s_BV"
     using least_is_minimal[of]
-    using downward_strat2  \<open>finite ana_pg_BV\<close> xxasjkdfaskl
+    using downward_strat2  \<open>finite ana_pg_BV\<close> finite_below_finite
     by (smt (verit) a_may.ana_pg_BV_stratified) 
   moreover
 
@@ -4277,7 +4275,7 @@ proof
     using a_may.ana_pg_BV_stratified assms(1) by blast 
   then have "minimal_solution \<rho> ana_pg_BV s_BV"
     using least_is_minimal[of]
-    using downward_strat2  \<open>finite ana_pg_BV\<close> xxasjkdfaskl
+    using downward_strat2  \<open>finite ana_pg_BV\<close> finite_below_finite
     by (smt (verit) a_may.ana_pg_BV_stratified) 
   moreover
 
@@ -4508,7 +4506,7 @@ proof
     using a_may.ana_pg_BV_stratified assms(1) by blast 
   then have "minimal_solution \<rho> ana_pg_BV s_BV"
     using least_is_minimal[of]
-    using downward_strat2  \<open>finite ana_pg_BV\<close> xxasjkdfaskl
+    using downward_strat2  \<open>finite ana_pg_BV\<close> finite_below_finite
     by (smt (verit) a_may.ana_pg_BV_stratified) 
   moreover
 
