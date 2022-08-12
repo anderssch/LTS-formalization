@@ -3360,10 +3360,10 @@ lemma S_hat_path_mono:
   unfolding S_hat_path_def using assms S_hat_edge_list_mono by auto
 
 fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
-  "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
-     (\<forall>\<pi>_end d \<sigma>.
-        \<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>. \<longrightarrow>
-          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = the_node (\<lbrakk>\<pi>_end\<rbrakk>\<^sub>i\<^sub>d \<sigma>) \<longrightarrow> (the_bv_elem (\<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>)) \<in> S_hat_path \<pi> d_init))"
+   "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
+     (\<forall>\<pi>_end d.
+         \<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>. \<longrightarrow>
+          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = Decode_Node_BV \<pi>_end \<longrightarrow> (Decode_Elem_BV d) \<in> S_hat_path \<pi> d_init))"
 
 
 
@@ -5106,7 +5106,7 @@ end
 section \<open>Backward must-analysis\<close>
 
 locale analysis_BV_backwards_must =
-  fixes pg :: "('n,'v) program_graph"
+  fixes pg :: "('n::finite,'v) program_graph"
   fixes analysis_dom :: "'d set"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set" (* Is it OK to insists 'd finite? *)
   fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
@@ -5176,10 +5176,11 @@ definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set
   "S_hat_path \<pi> = S_hat_edge_list (LTS.transition_list \<pi>)"
 
 fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where (* Ny *)
-  "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
-     (\<forall>\<pi>_start d \<sigma>.
-        \<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_start, d]\<rangle>. \<longrightarrow>
-          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> LTS.get_start \<pi> = the_node (\<lbrakk>\<pi>_start\<rbrakk>\<^sub>i\<^sub>d \<sigma>) \<longrightarrow> (the_bv_elem (\<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>)) \<in> S_hat_path \<pi> d_init))"
+   "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
+     (\<forall>\<pi>_start d.
+         \<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_start, d]\<rangle>. \<longrightarrow>
+          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> LTS.get_start \<pi> = Decode_Node_BV \<pi>_start \<longrightarrow> Decode_Elem_BV d \<in> S_hat_path \<pi> d_init))"
+
 
 lemma finite_pg_rev: "finite (fst pg_rev)" (* Copy paste *)
   by (metis analysis_BV_backwards_must_axioms analysis_BV_backwards_must_def edge_set_def finite_imageI fst_conv pg_rev_def)
