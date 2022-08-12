@@ -5018,7 +5018,7 @@ qed
 lemma sound_CBV:
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   shows "summarizes_dl_BV_must \<rho>"
-  using assms unfolding summarizes_dl_BV_must.simps using sound_BV_must' sorry
+  using assms unfolding summarizes_dl_BV_must.simps using sound_BV_must' by auto
   (* Den gælder "by auto" hvis jeg retter summarizes tilbage til den gamle definition. *)
 
 end
@@ -5330,6 +5330,6 @@ Backward betyder at vi bruger kravet LTS.get_end \<pi> = end, og at vi har start
 
 end
 
-section \<open>TODO: Canonical example of backwards must\<close>
+section \<open>TODO: Very Busy Expressions\<close>
 
 end
