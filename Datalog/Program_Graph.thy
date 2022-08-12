@@ -5033,6 +5033,11 @@ fun ae_arith :: "'v arith \<Rightarrow> 'v arith set" where
 | "ae_arith (Arith_Op a1 opr a2) = ae_arith a1 \<union> ae_arith a1 \<union> {Arith_Op a1 opr a2}"
 | "ae_arith (Minus a) = ae_arith a"
 
+lemma finite_ae_arith: "finite (ae_arith a)"
+  apply (induction a)
+     apply auto
+  done
+
 fun ae_boolean :: "'v boolean \<Rightarrow> 'v arith set" where
   "ae_boolean true = {}"
 | "ae_boolean false = {}"
@@ -5040,13 +5045,30 @@ fun ae_boolean :: "'v boolean \<Rightarrow> 'v arith set" where
 | "ae_boolean (Bool_Op b1 opr b2) = ae_boolean b1 \<union> ae_boolean b2"
 | "ae_boolean (Neg b) = ae_boolean b"
 
+lemma finite_ae_boolean: "finite (ae_boolean b)"
+  apply (induction b)
+  using finite_ae_arith
+      apply auto
+  done
+
 fun aexp_action :: "'v action \<Rightarrow> 'v arith set" where (* Maybe avexp would be a better name. *)
   "aexp_action (x ::= a) = ae_arith a"
 | "aexp_action (Bool b) = ae_boolean b"
 | "aexp_action Skip = {}"
 
+lemma finite_aexp_action: "finite (aexp_action \<alpha>)"
+  apply (cases \<alpha>)
+  using finite_ae_arith finite_ae_boolean
+    apply auto
+  done
+
 fun aexp_edge :: "('n,'v) edge \<Rightarrow> 'v arith set" where
   "aexp_edge (q1, \<alpha>, q2) = aexp_action \<alpha>"
+
+lemma finite_aexp_edge: "finite (aexp_edge (q1, \<alpha>, q2))"
+  using finite_aexp_action 
+  apply auto
+  done
 
 fun aexp_pg :: "('n,'v) program_graph \<Rightarrow> 'v arith set" where
   "aexp_pg pg = \<Union>(aexp_edge ` (fst pg))"
@@ -5075,7 +5097,9 @@ definition analysis_dom_AE :: "'v arith set" where
   "analysis_dom_AE = aexp_pg pg"
 
 lemma finite_analysis_dom_AE: "finite analysis_dom_AE"
-  sorry (* Den ser ikke svær ud at bevise *)
+  unfolding analysis_dom_AE_def
+  apply auto
+  by (metis aexp_edge.elims analysis_AE_axioms analysis_AE_def finite_UN_I finite_aexp_action)
 
 fun kill_set_AE :: "('n,'v) edge \<Rightarrow> 'v arith set" where
   "kill_set_AE (q\<^sub>o, x ::= a, q\<^sub>s) = {a'. x \<in> fv_arith a'}"
@@ -5099,7 +5123,7 @@ interpretation interpb: analysis_BV_forwards_must pg analysis_dom_AE kill_set_AE
 lemma aexp_edge_list_S_hat_edge_list: 
   assumes "aexp_edge_list \<pi> a"
   shows "a \<in> interpb.S_hat_edge_list \<pi> d_init_AE"
-  using assms sorry (* TODO: *)
+  using assms oops (* TODO: *)
 
 end
 
@@ -5303,7 +5327,6 @@ Forward betyder at vi bruger kravet LTS.get_start \<pi> = start, og at vi har sl
 Backward betyder at vi bruger kravet LTS.get_end \<pi> = end, og at vi har start knuden i vores prædikat.
 
 *)
-
 
 end
 
