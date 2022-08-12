@@ -104,11 +104,7 @@ definition def_path :: "('n list \<times> 'v action list) \<Rightarrow> 'n \<Rig
 
 fun summarizes :: "('n,'v) analysis_assignment \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
   "summarizes RD (es,start,end) \<longleftrightarrow> (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word es \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> def_path \<pi> start \<subseteq> RD (LTS.get_end \<pi>))"
-
-(*
-definition summarizes2 :: "('n,'v) analysis_assignment \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
-  "summarizes2 RD pg \<longleftrightarrow> (\<forall>\<pi> a b c. \<pi> \<in> LTS.path_with_word pg \<longrightarrow> LTS.get_start \<pi> = Start \<longrightarrow> (a, b, c) \<in> def_path \<pi> \<longrightarrow> (a, b, c) \<in> RD (LTS.get_end \<pi>))"
-*) 
+ 
 
 section \<open>Datalog programs and their solutions\<close>
 
@@ -176,29 +172,24 @@ fun meaning_query :: "('p,'x,'e) query \<Rightarrow> ('p,'e) pred_val \<Rightarr
 
 fun solves_query :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) query \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>q" 91) where
   "\<rho> \<Turnstile>\<^sub>q (p,ids) \<longleftrightarrow> (\<forall>\<sigma>. \<lbrakk>(p,ids)\<rbrakk>\<^sub>q \<rho> \<sigma>)"
-(* This one is a bit strange maybe.
-   We will get \<rho> \<Turnstile>\<^sub>q p(X). if all valuations of X make p(X) true.
-   But in a Prolog interpreter it will rather give us the set of evaluations that make p(X) true.
-   (And (you can say that) \<rho> will be fixed to the least model.)
- *)
 
 
 section \<open>Substitutions (not in the book?)\<close> (* Introduce \<cdot> notation !!! *)
 
 type_synonym ('x,'e) subst = "'x \<Rightarrow> ('x,'e) identifier"
 
-fun subst_id :: "('x,'e) subst \<Rightarrow> ('x,'e) identifier \<Rightarrow> ('x,'e) identifier" where
-  "subst_id \<eta> (DLVar x) = \<eta> x"
-| "subst_id \<eta> (DLElement e) = (DLElement e)"
+fun subst_id :: "('x,'e) identifier \<Rightarrow> ('x,'e) subst \<Rightarrow> ('x,'e) identifier" (infix "\<cdot>\<^sub>i\<^sub>d" 70) where
+  "(DLVar x) \<cdot>\<^sub>i\<^sub>d \<eta>  = \<eta> x"
+| "(DLElement e) \<cdot>\<^sub>i\<^sub>d \<eta> = (DLElement e)"
 
-fun subst_rh :: "('x,'e) subst \<Rightarrow> ('p,'x,'e) righthand \<Rightarrow>  ('p,'x,'e) righthand" where
-  "subst_rh \<eta> (a \<^bold>= a') = (subst_id \<eta> a \<^bold>= subst_id \<eta> a')"
-| "subst_rh \<eta> (a \<^bold>\<noteq> a') = (subst_id \<eta> a \<^bold>\<noteq> subst_id \<eta> a')"
-| "subst_rh \<eta> (PosRh p ids) = (PosRh p (map (subst_id \<eta>) ids))"
-| "subst_rh \<eta> (\<^bold>\<not> p ids) = (\<^bold>\<not> p (map (subst_id \<eta>) ids))"
+fun subst_rh :: "('p,'x,'e) righthand \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) righthand" (infix "\<cdot>\<^sub>r\<^sub>h" 50) where
+  "(a \<^bold>= a') \<cdot>\<^sub>r\<^sub>h \<eta> = (a \<cdot>\<^sub>i\<^sub>d \<eta> \<^bold>= a' \<cdot>\<^sub>i\<^sub>d \<eta>)"
+| "(a \<^bold>\<noteq> a') \<cdot>\<^sub>r\<^sub>h \<eta> = (a \<cdot>\<^sub>i\<^sub>d \<eta> \<^bold>\<noteq> a' \<cdot>\<^sub>i\<^sub>d \<eta>)"
+| "(PosRh p ids) \<cdot>\<^sub>r\<^sub>h \<eta> = (PosRh p (map (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>) ids))"
+| "(\<^bold>\<not> p ids) \<cdot>\<^sub>r\<^sub>h \<eta> = (\<^bold>\<not> p (map (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>) ids))"
 
-fun subst_cls :: "('x,'e) subst \<Rightarrow> ('p,'x,'e) clause \<Rightarrow> ('p,'x,'e) clause" where
-  "subst_cls \<eta> (Cls p ids rhs) = Cls p (map (subst_id \<eta>) ids) (map (subst_rh \<eta>) rhs)"
+fun subst_cls :: "('p,'x,'e) clause \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) clause" (infix "\<cdot>\<^sub>c\<^sub>l\<^sub>s" 50) where
+  "(Cls p ids rhs) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<eta>  = Cls p (map (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>) ids) (map (\<lambda>rh. rh \<cdot>\<^sub>r\<^sub>h \<eta>) rhs)"
 
 definition compose :: "('x,'e) subst \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('x,'e) var_val" where
   "compose \<eta> \<sigma> x = \<lbrakk>(\<eta> x)\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
@@ -276,17 +267,17 @@ lemmas resolution = resolution_last resolution_only resolution_all
 
 subsection \<open>Substitution\<close>
 
-lemma substitution_lemma_id: "\<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d (compose \<eta> \<sigma>) = \<lbrakk>subst_id \<eta> a\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
+lemma substitution_lemma_id: "\<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d (compose \<eta> \<sigma>) = \<lbrakk>a \<cdot>\<^sub>i\<^sub>d \<eta> \<rbrakk>\<^sub>i\<^sub>d \<sigma>"
   by (cases a) (auto simp add: compose_def)
 
-lemma substitution_lemma_ids: "map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d (compose \<eta> \<sigma>)) ids = map ((\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) \<circ> subst_id \<eta>) ids"
+lemma substitution_lemma_ids: "map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d (compose \<eta> \<sigma>)) ids = map ((\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) \<circ> (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>)) ids"
   using substitution_lemma_id by auto
 
-lemma substitution_lemma_lh: "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> (compose \<eta> \<sigma>) \<longleftrightarrow> \<lbrakk>(p, map (subst_id \<eta>) ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+lemma substitution_lemma_lh: "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> (compose \<eta> \<sigma>) \<longleftrightarrow> \<lbrakk>(p, map (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>) ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
   by (simp add: substitution_lemma_ids)
 
 
-lemma substitution_lemma_rh:"\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> (compose \<eta> \<sigma>) \<longleftrightarrow> \<lbrakk>subst_rh \<eta> rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+lemma substitution_lemma_rh:"\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> (compose \<eta> \<sigma>) \<longleftrightarrow> \<lbrakk>rh \<cdot>\<^sub>r\<^sub>h \<eta>\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
 proof (induction rh)
   case (Eql a a')
   then show ?case
@@ -305,16 +296,16 @@ next
     using substitution_lemma_lh by fastforce
 qed
 
-lemma substitution_lemma_rhs: "(\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> (compose \<eta> \<sigma>)) \<longleftrightarrow> (\<forall>rh\<in>set (map (subst_rh \<eta>) rhs). \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
+lemma substitution_lemma_rhs: "(\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> (compose \<eta> \<sigma>)) \<longleftrightarrow> (\<forall>rh\<in>set (map (\<lambda>rh. rh \<cdot>\<^sub>r\<^sub>h \<eta>) rhs). \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
   by (simp add: substitution_lemma_rh) 
 
 lemma substitution_lemma_cls:
-  "meaning_cls c \<rho> (compose \<eta> \<sigma>) \<longleftrightarrow> meaning_cls (subst_cls \<eta> c) \<rho> \<sigma>"
+  "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> (compose \<eta> \<sigma>) = \<lbrakk>c \<cdot>\<^sub>c\<^sub>l\<^sub>s \<eta>\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
 proof (induction c)
   case (Cls p ids rhs)
-  have a: "(\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> (compose \<eta> \<sigma>)) = (\<forall>rh\<in>set (map (subst_rh \<eta>) rhs). \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
+  have a: "(\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> (compose \<eta> \<sigma>)) = (\<forall>rh\<in>set (map (\<lambda>rh. rh \<cdot>\<^sub>r\<^sub>h \<eta>) rhs). \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
     using substitution_lemma_rhs by blast
-  have b: "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> (compose \<eta> \<sigma>) = \<lbrakk>(p, map (subst_id \<eta>) ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+  have b: "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> (compose \<eta> \<sigma>) = \<lbrakk>(p, map (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>) ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
     using substitution_lemma_lh by metis
   show ?case
     unfolding meaning_cls.simps
@@ -323,7 +314,7 @@ qed
 
 lemma substitution_rule:
   assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
-  shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s subst_cls (\<eta>::('x,'e) subst) c"
+  shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s (c \<cdot>\<^sub>c\<^sub>l\<^sub>s (\<eta>::('x,'e) subst))"
 proof -
   show ?thesis
     unfolding solves_cls_def
@@ -331,15 +322,15 @@ proof -
     fix \<sigma> :: "'x \<Rightarrow> 'e"
     from assms have "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> (compose \<eta> \<sigma>)"
       using solves_cls_def by auto
-    then show "\<lbrakk>subst_cls \<eta> c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
+    then show "\<lbrakk>c \<cdot>\<^sub>c\<^sub>l\<^sub>s \<eta> \<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
       using substitution_lemma_cls by blast
   qed
 qed
 
 
 section \<open>Stratification and solutions to stratified datalog programs\<close>
+
 type_synonym 'p strat = "'p \<Rightarrow> nat"
-  (* Maybe it should also mention the arity *)
 
 fun rnk :: "'p strat \<Rightarrow> ('p,'x,'e) righthand \<Rightarrow> nat" where
   "rnk s (a \<^bold>= a') = 0"
@@ -1809,11 +1800,11 @@ next
         unfolding ana_pg.simps by force
       from this False have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>], \<u> \<^bold>\<noteq> Encode_Var y] ."
         by (meson "2.prems"(2) UnCI solves_program_def)
-      moreover have "subst_cls \<mu> (RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :-
+      moreover have "(RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :-
           [
             RD1[Encode_Node s, \<u>, \<v>, \<w>],
             \<u> \<^bold>\<noteq> (Encode_Var y)
-          ].) = RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1 [Encode_Node s,  Encode_Var x, Encode_Node_Q q1, Encode_Node q2], Encode_Var x \<^bold>\<noteq> Encode_Var y] ."
+          ].) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<mu> = RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1 [Encode_Node s,  Encode_Var x, Encode_Node_Q q1, Encode_Node q2], Encode_Var x \<^bold>\<noteq> Encode_Var y] ."
         unfolding \<mu>_def by auto
       ultimately
       have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>
@@ -1839,7 +1830,7 @@ next
         unfolding ana_pg.simps by force
       then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>]] ."
         by (meson "2.prems"(2) UnCI solves_program_def)
-      moreover have "subst_cls \<mu> (RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1[Encode_Node s, \<u>, \<v>, \<w>]].) =
+      moreover have "(RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1[Encode_Node s, \<u>, \<v>, \<w>]].) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<mu> =
                      RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]]."
         unfolding \<mu>_def by auto
       ultimately have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> 
@@ -1862,7 +1853,7 @@ next
       then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>]] ."
         by (meson "2.prems"(2) UnCI solves_program_def)
       moreover
-      have "subst_cls \<mu> (RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>]] .) =
+      have "(RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>]] .) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<mu> =
             RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>  :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]]."
         unfolding \<mu>_def by auto
       ultimately 
@@ -2093,7 +2084,7 @@ lemma ana_CBV_meta_var:
   shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s CBV\<langle>[Encode_Node_BV q,v]\<rangle> :- [\<^bold>\<not>BV[Encode_Node_BV q,v], init[v]]."
 proof -
   define \<mu> where "\<mu> = DLVar(the_\<uu> := v)"
-  have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s subst_cls \<mu> CBV\<langle>[Encode_Node_BV q,\<uu>]\<rangle> :- [\<^bold>\<not>BV[Encode_Node_BV q,\<uu>], init[\<uu>]]."
+  have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s ((CBV\<langle>[Encode_Node_BV q,\<uu>]\<rangle> :- [\<^bold>\<not>BV[Encode_Node_BV q,\<uu>], init[\<uu>]].) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<mu>)"
     using assms substitution_rule by blast
   then show ?thesis
     unfolding \<mu>_def by auto
@@ -2112,7 +2103,7 @@ lemma ana_entry_node_BV_meta_var:
   shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s BV\<langle>[Encode_Node_BV start,u]\<rangle> :- [init[u]]."
 proof -
   define \<mu> where "\<mu> = DLVar(the_\<uu> := u)"
-  have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s subst_cls \<mu> BV\<langle>[Encode_Node_BV start,\<uu>]\<rangle> :- [init[\<uu>]]."
+  have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s ((BV\<langle>[Encode_Node_BV start,\<uu>]\<rangle> :- [init[\<uu>]].) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<mu>)"
     using assms substitution_rule by blast
   then show ?thesis
     unfolding \<mu>_def by auto
