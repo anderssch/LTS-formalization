@@ -1895,7 +1895,7 @@ datatype BV_pred =
   | the_init
 
 datatype BV_var =
-  the_\<uu> | the_\<vv>
+  the_\<uu>
 
 abbreviation "BV == PosRh the_BV"
 abbreviation NegRh_BV ("\<^bold>\<not>BV") where
@@ -1944,9 +1944,6 @@ datatype ('n,'v,'elem) BV_elem =
 
 abbreviation \<uu> :: "(BV_var, 'a) identifier" where
   "\<uu> == DLVar the_\<uu>"
-
-abbreviation \<vv> :: "(BV_var, 'a) identifier" where
-  "\<vv> == DLVar the_\<vv>"
 
 abbreviation Encode_Node_BV :: "'n \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) identifier" where
   "Encode_Node_BV q == DLElement (BV_Node q)"
@@ -2091,14 +2088,14 @@ fun ana_edge_BV :: "('n, 'v) edge \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) B
      }"
 
 definition ana_CBV :: "'n \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause" where
-  "ana_CBV q = CBV\<langle>[Encode_Node_BV q,\<vv>]\<rangle> :- [\<^bold>\<not>BV[Encode_Node_BV q,\<vv>], init[\<vv>]]."
+  "ana_CBV q = CBV\<langle>[Encode_Node_BV q,\<uu>]\<rangle> :- [\<^bold>\<not>BV[Encode_Node_BV q,\<uu>], init[\<uu>]]."
 
 lemma ana_CBV_meta_var:
-  assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s CBV\<langle>[Encode_Node_BV q,\<vv>]\<rangle> :- [\<^bold>\<not>BV[Encode_Node_BV q,\<vv>], init[\<vv>]]."
+  assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s CBV\<langle>[Encode_Node_BV q,\<uu>]\<rangle> :- [\<^bold>\<not>BV[Encode_Node_BV q,\<uu>], init[\<uu>]]."
   shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s CBV\<langle>[Encode_Node_BV q,v]\<rangle> :- [\<^bold>\<not>BV[Encode_Node_BV q,v], init[v]]."
 proof -
-  define \<mu> where "\<mu> = DLVar(the_\<vv> := v)"
-  have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s subst_cls \<mu> CBV\<langle>[Encode_Node_BV q,\<vv>]\<rangle> :- [\<^bold>\<not>BV[Encode_Node_BV q,\<vv>], init[\<vv>]]."
+  define \<mu> where "\<mu> = DLVar(the_\<uu> := v)"
+  have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s subst_cls \<mu> CBV\<langle>[Encode_Node_BV q,\<uu>]\<rangle> :- [\<^bold>\<not>BV[Encode_Node_BV q,\<uu>], init[\<uu>]]."
     using assms substitution_rule by blast
   then show ?thesis
     unfolding \<mu>_def by auto
@@ -2177,33 +2174,18 @@ lemma ana_pg_BV_stratified: "strat_wf s_BV ana_pg_BV"
     done
   done
 
-lemma jklfdsjkla1: "finite (\<Union> (ana_edge_BV ` edge_set))"
+lemma finite_ana_init_BV:
+  "finite (ana_init_BV x)"
+  using ana_init_BV_def by force
+
+lemma finite_ana_init_BV_edgeset: "finite (\<Union> (ana_edge_BV ` edge_set))"
   by (smt (verit, best) analysis_BV_forward_may.ana_edge_BV.elims analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def finite.emptyI finite.intros(2) finite_UN)
-
-
-lemma jklfdsjkla2:
-  assumes "x \<in> d_init"
-  shows "finite (ana_init_BV x)"
-  using assms using ana_init_BV_def by force
-
-lemma yeees:
-  assumes "finite X"
-  assumes "\<forall>Y \<in> X. finite Y"
-  shows "finite (\<Union> X)"
-  using assms(1) assms(2) by blast
-
-
-lemma infinite_image:
-  assumes "inj_on f X"
-  assumes "infinite X"
-  shows "infinite (f ` X)"
-  by (simp add: assms(1) assms(2) finite_image_iff)
 
 lemma ana_pg_BV_finite: "finite ana_pg_BV"
   unfolding ana_pg_BV_def
   apply auto
-  using jklfdsjkla1 apply blast
-  using finite_d_init jklfdsjkla2 apply blast
+  using finite_ana_init_BV_edgeset apply blast
+  using finite_d_init finite_ana_init_BV apply blast
    apply (metis analysis_BV_forward_may.ana_kill_BV_edge_def analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def finite_Int finite_UN finite_imageI)
   apply (metis analysis_BV_forward_may.ana_gen_BV_edge_def analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def finite_Int finite_UN finite_imageI)
   apply (simp add: ana_entry_node_BV_def)
@@ -2613,7 +2595,7 @@ qed
 lemma S_hat_edge_list_last: "interp.S_hat_edge_list (\<pi> @ [e]) d_init_RD = interp.S_hat e (interp.S_hat_edge_list \<pi> d_init_RD)"
   using interp.S_hat_edge_list_def2 foldl_conv_foldr by simp
 
-lemma gugugug: "(x,q1,q2) \<in> interp.S_hat_edge_list \<pi> d_init_RD \<Longrightarrow> (x,q1,q2) = (def_var \<pi>) x start"
+lemma def_var_if_S_hat: "(x,q1,q2) \<in> interp.S_hat_edge_list \<pi> d_init_RD \<Longrightarrow> (x,q1,q2) = (def_var \<pi>) x start"
 proof (induction \<pi> rule: rev_induct)
   case Nil
   then show ?case
@@ -2696,7 +2678,7 @@ next
   fix x
   assume "x \<in> interp.S_hat_edge_list \<pi> d_init_RD"
   then show "x \<in> range (\<lambda>x. def_var \<pi> x start)"
-    by (metis gugugug prod.collapse range_eqI)
+    by (metis def_var_if_S_hat prod.collapse range_eqI)
 qed
 
 lemma def_path_S_hat_path: "def_path \<pi> start = interp.S_hat_path \<pi> d_init_RD"
@@ -3369,37 +3351,37 @@ proof -
 
   define \<rho>' where  "\<rho>' = (\<lambda>p. (if p = the_CBV then (\<rho> the_CBV) - {[BV_Node q, BV_Elem d]} else \<rho> p))"
 
-  have CBV_solves: "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s CBV\<langle>[Encode_Node_BV q, \<vv>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q, \<vv>], init[\<vv>]] ."
+  have CBV_solves: "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s CBV\<langle>[Encode_Node_BV q, \<uu>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q, \<uu>], init[\<uu>]] ."
     unfolding solves_cls_def
   proof 
     fix \<sigma>
-    show "\<lbrakk>CBV\<langle>[Encode_Node_BV q, \<vv>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q, \<vv>], init[\<vv>]].\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
-    proof (cases "\<sigma> the_\<vv> = BV_Elem d")
+    show "\<lbrakk>CBV\<langle>[Encode_Node_BV q, \<uu>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q, \<uu>], init[\<uu>]].\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
+    proof (cases "\<sigma> the_\<uu> = BV_Elem d")
       case True
-      then have "\<not> \<lbrakk>\<^bold>\<not>BV [Encode_Node_BV q, \<vv>]\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>"
+      then have "\<not> \<lbrakk>\<^bold>\<not>BV [Encode_Node_BV q, \<uu>]\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>"
         unfolding \<rho>'_def using a by auto
       then show ?thesis
         unfolding meaning_cls.simps by auto
     next
       case False
-      then have "\<lbrakk>\<^bold>\<not>BV [Encode_Node_BV q, \<vv>]\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma> \<longleftrightarrow> \<lbrakk>\<^bold>\<not>BV [Encode_Node_BV q, \<vv>]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+      then have "\<lbrakk>\<^bold>\<not>BV [Encode_Node_BV q, \<uu>]\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma> \<longleftrightarrow> \<lbrakk>\<^bold>\<not>BV [Encode_Node_BV q, \<uu>]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
         by (simp add: \<rho>'_def)
       moreover
-      from False have "\<lbrakk>CBV\<langle>[Encode_Node_BV q, \<vv>]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma> \<longleftrightarrow> \<lbrakk>CBV\<langle>[Encode_Node_BV q, \<vv>]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+      from False have "\<lbrakk>CBV\<langle>[Encode_Node_BV q, \<uu>]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma> \<longleftrightarrow> \<lbrakk>CBV\<langle>[Encode_Node_BV q, \<uu>]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
         unfolding \<rho>'_def by auto
       moreover
-      have "\<lbrakk>init\<langle>[Encode_Node_BV q, \<vv>]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma> \<longleftrightarrow> \<lbrakk>init\<langle>[Encode_Node_BV q, \<vv>]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+      have "\<lbrakk>init\<langle>[Encode_Node_BV q, \<uu>]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma> \<longleftrightarrow> \<lbrakk>init\<langle>[Encode_Node_BV q, \<uu>]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
         using \<rho>'_def by force
       moreover
-      have "(\<forall>rh\<in>set [\<^bold>\<not>BV [Encode_Node_BV q, \<vv>], init[\<vv>]]. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>) \<longrightarrow> \<lbrakk>CBV\<langle>[Encode_Node_BV q, \<vv>]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+      have "(\<forall>rh\<in>set [\<^bold>\<not>BV [Encode_Node_BV q, \<uu>], init[\<uu>]]. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>) \<longrightarrow> \<lbrakk>CBV\<langle>[Encode_Node_BV q, \<uu>]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
       proof -
-        have "CBV\<langle>[Encode_Node_BV q, \<vv>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q, \<vv>], init[\<vv>]] . \<in> ana_pg_BV"
+        have "CBV\<langle>[Encode_Node_BV q, \<uu>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q, \<uu>], init[\<uu>]] . \<in> ana_pg_BV"
           unfolding a_may.ana_pg_BV_def a_may.ana_CBV_def by auto
-        then have "solves_cls \<rho> (CBV\<langle>[Encode_Node_BV q,\<vv>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q,\<vv>], init[\<vv>]].)"
+        then have "solves_cls \<rho> (CBV\<langle>[Encode_Node_BV q,\<uu>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q,\<uu>], init[\<uu>]].)"
           using assms(2) unfolding least_solution_def
           unfolding solves_program_def
           by auto
-        then show "(\<forall>rh\<in>set [\<^bold>\<not>BV [Encode_Node_BV q, \<vv>], init[\<vv>]]. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>) \<longrightarrow> \<lbrakk>CBV\<langle>[Encode_Node_BV q, \<vv>]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+        then show "(\<forall>rh\<in>set [\<^bold>\<not>BV [Encode_Node_BV q, \<uu>], init[\<uu>]]. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>) \<longrightarrow> \<lbrakk>CBV\<langle>[Encode_Node_BV q, \<uu>]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
           unfolding solves_cls_def meaning_cls.simps by auto
       qed
       ultimately
@@ -3488,23 +3470,23 @@ proof -
       moreover
       {
         assume "Cls p ids rhs \<in> range a_may.ana_CBV - {a_may.ana_CBV q}"
-        then have "\<exists>q'. p = the_CBV \<and> ids = [Encode_Node_BV q', \<vv>] \<and> q' \<noteq> q"
+        then have "\<exists>q'. p = the_CBV \<and> ids = [Encode_Node_BV q', \<uu>] \<and> q' \<noteq> q"
           unfolding a_may.ana_CBV_def by auto
-        then obtain q' where yah: "p = the_CBV \<and> ids = [Encode_Node_BV q', \<vv>] \<and> q' \<noteq> q"
+        then obtain q' where yah: "p = the_CBV \<and> ids = [Encode_Node_BV q', \<uu>] \<and> q' \<noteq> q"
           by auto
         have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
-        proof (cases "\<sigma>' the_\<vv> = BV_Elem d")
+        proof (cases "\<sigma>' the_\<uu> = BV_Elem d")
           case True
-          then have "p = the_CBV \<and> ids = [Encode_Node_BV q', \<vv>] \<and> \<sigma>' the_\<vv> = BV_Elem d"
+          then have "p = the_CBV \<and> ids = [Encode_Node_BV q', \<uu>] \<and> \<sigma>' the_\<uu> = BV_Elem d"
             using yah by auto
           then have p_def: "p = the_CBV"
             by auto
-          from yah have ids_def: "ids = [Encode_Node_BV q', \<vv>]"
+          from yah have ids_def: "ids = [Encode_Node_BV q', \<uu>]"
             by auto
-          from True have \<eta>v: "\<sigma>' the_\<vv> = BV_Elem d"
+          from True have \<eta>v: "\<sigma>' the_\<uu> = BV_Elem d"
             by auto
 
-          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>],init[\<vv>]]"
+          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>],init[\<uu>]]"
             using a c_def apply auto unfolding a_may.ana_pg_BV_def
             apply auto
             unfolding a_may.ana_CBV_def
@@ -3512,7 +3494,7 @@ proof -
             using p_def apply auto
             using a_may.ana_init_BV_def  apply auto[1]
             using a_may.ana_init_BV_def apply blast
-            using \<open>Cls p ids rhs \<in> range a_may.ana_CBV - {a_may.ana_CBV q}\<close> \<open>p = the_CBV \<and> ids = [Encode_Node_BV q', \<vv>] \<and> \<sigma>' the_\<vv> = BV_Elem d\<close> a_may.ana_CBV_def apply force
+            using \<open>Cls p ids rhs \<in> range a_may.ana_CBV - {a_may.ana_CBV q}\<close> \<open>p = the_CBV \<and> ids = [Encode_Node_BV q', \<uu>] \<and> \<sigma>' the_\<uu> = BV_Elem d\<close> a_may.ana_CBV_def apply force
             using a_may.ana_kill_BV_edge_def apply auto[1]
                 apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
                apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
@@ -3534,13 +3516,13 @@ proof -
             using assms(3) by blast
         next
           case False
-          then have False': "\<sigma>' the_\<vv> \<noteq> BV_Elem d"
+          then have False': "\<sigma>' the_\<uu> \<noteq> BV_Elem d"
             by auto
           from yah have p_def: "p = the_CBV"
             by auto
-          from yah have ids_def: "ids = [Encode_Node_BV q', \<vv>]"
+          from yah have ids_def: "ids = [Encode_Node_BV q', \<uu>]"
             by auto
-          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>],init[\<vv>]]"
+          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>],init[\<uu>]]"
             using a c_def apply auto unfolding a_may.ana_pg_BV_def
             apply auto
             unfolding a_may.ana_CBV_def
@@ -3557,7 +3539,7 @@ proof -
             using a_may.ana_entry_node_BV_def apply blast
             done
 
-          have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<vv>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>], init [\<vv>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
+          have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<uu>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>], init [\<uu>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
             using \<open>Cls p ids rhs \<in> range a_may.ana_CBV - {a_may.ana_CBV q}\<close>
             unfolding p_def[symmetric] rhs_def[symmetric] 
             unfolding ids_def[symmetric]
@@ -3565,7 +3547,7 @@ proof -
             unfolding least_solution_def
             unfolding a_may.ana_pg_BV_def
             by (metis \<open>\<rho> \<Turnstile>\<^sub>d\<^sub>l (ana_pg_BV - {a_may.ana_CBV q})\<close> a c_def solves_cls_def solves_program_def)
-          then have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<vv>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>], init [\<vv>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
+          then have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<uu>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>], init [\<uu>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
             unfolding \<rho>'_def 
             apply auto
             using False'
@@ -4143,23 +4125,23 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
       moreover
       {
         assume "Cls p ids rhs \<in> a_may.ana_CBV ` UNIV"
-        then have "\<exists>q'. p = the_CBV \<and> ids = [Encode_Node_BV q', \<vv>]"
+        then have "\<exists>q'. p = the_CBV \<and> ids = [Encode_Node_BV q', \<uu>]"
           unfolding a_may.ana_CBV_def by blast
-        then obtain q' where yah: "p = the_CBV \<and> ids = [Encode_Node_BV q', \<vv>]"
+        then obtain q' where yah: "p = the_CBV \<and> ids = [Encode_Node_BV q', \<uu>]"
           by auto
         have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
-        proof (cases "\<sigma>' the_\<vv> = \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>")
+        proof (cases "\<sigma>' the_\<uu> = \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>")
           case True
-          then have "p = the_CBV \<and> ids = [Encode_Node_BV q', \<vv>] \<and> \<sigma>' the_\<vv> = \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
+          then have "p = the_CBV \<and> ids = [Encode_Node_BV q', \<uu>] \<and> \<sigma>' the_\<uu> = \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
             using yah by auto
           then have p_def: "p = the_CBV"
             by auto
-          from yah have ids_def: "ids = [Encode_Node_BV q', \<vv>]"
+          from yah have ids_def: "ids = [Encode_Node_BV q', \<uu>]"
             by auto
-          from True have \<eta>v: "\<sigma>' the_\<vv> = \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
+          from True have \<eta>v: "\<sigma>' the_\<uu> = \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
             by auto
 
-          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>],init[\<vv>]]"
+          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>],init[\<uu>]]"
             using a c_def apply auto unfolding a_may.ana_pg_BV_def
             apply auto
             unfolding a_may.ana_CBV_def
@@ -4184,13 +4166,13 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
             done
         next
           case False
-          then have False': "\<not>\<sigma>' the_\<vv> = \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
+          then have False': "\<not>\<sigma>' the_\<uu> = \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
             by auto
           from yah have p_def: "p = the_CBV"
             by auto
-          from yah have ids_def: "ids = [Encode_Node_BV q', \<vv>]"
+          from yah have ids_def: "ids = [Encode_Node_BV q', \<uu>]"
             by auto
-          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>],init[\<vv>]]"
+          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>],init[\<uu>]]"
             using a c_def apply auto unfolding a_may.ana_pg_BV_def
             apply auto
             unfolding a_may.ana_CBV_def
@@ -4203,7 +4185,7 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
             using a_may.ana_entry_node_BV_def apply blast
             done
 
-          have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<vv>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>], init [\<vv>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
+          have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<uu>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>], init [\<uu>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
             using \<open>Cls p ids rhs \<in> a_may.ana_CBV ` UNIV\<close>
             unfolding p_def[symmetric] rhs_def[symmetric] 
             unfolding ids_def[symmetric]
@@ -4212,7 +4194,7 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
             unfolding a_may.ana_pg_BV_def
             apply (metis a a_may.ana_pg_BV_def c_def solves_cls_def solves_program_def)
             done
-          then have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<vv>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>], init [\<vv>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
+          then have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<uu>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>], init [\<uu>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
             unfolding \<rho>'_def 
             apply auto
             using False'
@@ -4380,23 +4362,23 @@ proof
       moreover
       {
         assume "Cls p ids rhs \<in> a_may.ana_CBV ` UNIV"
-        then have "\<exists>q'. p = the_CBV \<and> ids = [Encode_Node_BV q', \<vv>]"
+        then have "\<exists>q'. p = the_CBV \<and> ids = [Encode_Node_BV q', \<uu>]"
           unfolding a_may.ana_CBV_def by blast
-        then obtain q' where yah: "p = the_CBV \<and> ids = [Encode_Node_BV q', \<vv>]"
+        then obtain q' where yah: "p = the_CBV \<and> ids = [Encode_Node_BV q', \<uu>]"
           by auto
         have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
-        proof (cases "\<sigma>' the_\<vv> = the_elem d")
+        proof (cases "\<sigma>' the_\<uu> = the_elem d")
           case True
-          then have "p = the_CBV \<and> ids = [Encode_Node_BV q', \<vv>] \<and> \<sigma>' the_\<vv> = the_elem d"
+          then have "p = the_CBV \<and> ids = [Encode_Node_BV q', \<uu>] \<and> \<sigma>' the_\<uu> = the_elem d"
             using yah by auto
           then have p_def: "p = the_CBV"
             by auto
-          from yah have ids_def: "ids = [Encode_Node_BV q', \<vv>]"
+          from yah have ids_def: "ids = [Encode_Node_BV q', \<uu>]"
             by auto
-          from True have \<eta>v: "\<sigma>' the_\<vv> = the_elem d"
+          from True have \<eta>v: "\<sigma>' the_\<uu> = the_elem d"
             by auto
 
-          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>],init[\<vv>]]"
+          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>],init[\<uu>]]"
             using a c_def apply auto unfolding a_may.ana_pg_BV_def
             apply auto
             unfolding a_may.ana_CBV_def
@@ -4422,13 +4404,13 @@ proof
             done
         next
           case False
-          then have False': "\<not>\<sigma>' the_\<vv> = the_elem d"
+          then have False': "\<not>\<sigma>' the_\<uu> = the_elem d"
             by auto
           from yah have p_def: "p = the_CBV"
             by auto
-          from yah have ids_def: "ids = [Encode_Node_BV q', \<vv>]"
+          from yah have ids_def: "ids = [Encode_Node_BV q', \<uu>]"
             by auto
-          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>],init[\<vv>]]"
+          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>],init[\<uu>]]"
             using a c_def apply auto unfolding a_may.ana_pg_BV_def
             apply auto
             unfolding a_may.ana_CBV_def
@@ -4442,7 +4424,7 @@ proof
             using a_may.ana_entry_node_BV_def apply blast 
             done
 
-          have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<vv>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>], init [\<vv>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
+          have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<uu>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>], init [\<uu>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
             using \<open>Cls p ids rhs \<in> a_may.ana_CBV ` UNIV\<close>
             unfolding p_def[symmetric] rhs_def[symmetric] 
             unfolding ids_def[symmetric]
@@ -4450,7 +4432,7 @@ proof
             unfolding least_solution_def
             unfolding a_may.ana_pg_BV_def
             by (meson Un_iff solves_cls_def solves_program_def)
-          then have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<vv>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>], init [\<vv>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
+          then have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<uu>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>], init [\<uu>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
             unfolding \<rho>'_def 
             apply auto
             done
@@ -4500,7 +4482,7 @@ proof
     unfolding minimal_solution_def by auto
 qed
 
-lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf:
+lemma is_encode_elem_if_CBV_right_arg:
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
   shows "\<exists>d'. d = Encode_Elem_BV d'"
@@ -4611,23 +4593,23 @@ proof
       moreover
       {
         assume "Cls p ids rhs \<in> a_may.ana_CBV ` UNIV"
-        then have "\<exists>q'. p = the_CBV \<and> ids = [Encode_Node_BV q', \<vv>]"
+        then have "\<exists>q'. p = the_CBV \<and> ids = [Encode_Node_BV q', \<uu>]"
           unfolding a_may.ana_CBV_def by blast
-        then obtain q' where yah: "p = the_CBV \<and> ids = [Encode_Node_BV q', \<vv>]"
+        then obtain q' where yah: "p = the_CBV \<and> ids = [Encode_Node_BV q', \<uu>]"
           by auto
         have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
-        proof (cases "\<sigma>' the_\<vv> = the_elem d")
+        proof (cases "\<sigma>' the_\<uu> = the_elem d")
           case True
-          then have "p = the_CBV \<and> ids = [Encode_Node_BV q', \<vv>] \<and> \<sigma>' the_\<vv> = the_elem d"
+          then have "p = the_CBV \<and> ids = [Encode_Node_BV q', \<uu>] \<and> \<sigma>' the_\<uu> = the_elem d"
             using yah by auto
           then have p_def: "p = the_CBV"
             by auto
-          from yah have ids_def: "ids = [Encode_Node_BV q', \<vv>]"
+          from yah have ids_def: "ids = [Encode_Node_BV q', \<uu>]"
             by auto
-          from True have \<eta>v: "\<sigma>' the_\<vv> = the_elem d"
+          from True have \<eta>v: "\<sigma>' the_\<uu> = the_elem d"
             by auto
 
-          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>],init[\<vv>]]"
+          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>],init[\<uu>]]"
             using a c_def apply auto unfolding a_may.ana_pg_BV_def
             apply auto
             unfolding a_may.ana_CBV_def
@@ -4653,13 +4635,13 @@ proof
             done
         next
           case False
-          then have False': "\<not>\<sigma>' the_\<vv> = the_elem d"
+          then have False': "\<not>\<sigma>' the_\<uu> = the_elem d"
             by auto
           from yah have p_def: "p = the_CBV"
             by auto
-          from yah have ids_def: "ids = [Encode_Node_BV q', \<vv>]"
+          from yah have ids_def: "ids = [Encode_Node_BV q', \<uu>]"
             by auto
-          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>],init[\<vv>]]"
+          have rhs_def: "rhs = [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>],init[\<uu>]]"
             using a c_def apply auto unfolding a_may.ana_pg_BV_def
             apply auto
             unfolding a_may.ana_CBV_def
@@ -4673,7 +4655,7 @@ proof
             using a_may.ana_entry_node_BV_def apply blast 
             done
 
-          have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<vv>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>], init [\<vv>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
+          have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<uu>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>], init [\<uu>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
             using \<open>Cls p ids rhs \<in> a_may.ana_CBV ` UNIV\<close>
             unfolding p_def[symmetric] rhs_def[symmetric] 
             unfolding ids_def[symmetric]
@@ -4681,7 +4663,7 @@ proof
             unfolding least_solution_def
             unfolding a_may.ana_pg_BV_def
             by (meson Un_iff solves_cls_def solves_program_def)
-          then have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<vv>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<vv>], init [\<vv>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
+          then have "\<lbrakk>CBV\<langle>[Encode_Node_BV q', \<uu>]\<rangle> :- [\<^bold>\<not>BV [Encode_Node_BV q', \<uu>], init [\<uu>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
             unfolding \<rho>'_def 
             apply auto
             done
@@ -4741,7 +4723,7 @@ lemma is_elem_if_CBV_left_arg:
 proof (cases q)
   case (DLVar x)
   obtain d' where "d = Encode_Elem_BV d'"
-    using jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf using assms by metis
+    using assms is_encode_elem_if_CBV_right_arg by blast 
 
   then have "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[DLVar x, Encode_Elem_BV d']\<rangle>."
     using DLVar assms(2) by auto
@@ -4770,7 +4752,7 @@ next
     by auto
 qed
 
-lemma jaksldfjklsdfjaksldfjklsdfjaksldfjklsdaaaaaaaaaaaaaaaf:
+lemma is_encode_node_if_CBV_left_arg:
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[q, d]\<rangle>."
   shows "\<exists>q'. q = Encode_Node_BV q'"
@@ -4806,8 +4788,7 @@ lemma in_analysis_dom_if_CBV:
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
   shows "Decode_Elem_BV d \<in> analysis_dom"
   using init_if_CBV
-    jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf
-  using assms(1) assms(2) in_analysis_dom_if_init by blast
+  using assms in_analysis_dom_if_init by blast
 
 lemma sound_BV_must':
   assumes "least_solution \<rho> ana_pg_BV s_BV"
@@ -4835,10 +4816,10 @@ proof -
   *)
 
   have \<pi>e: "\<pi>_end = Encode_Node_BV (LTS.get_end \<pi>)"
-    by (smt (verit, best) BV_elem.collapse(1) BV_elem.collapse(3) BV_elem.disc(6) BV_elem.distinct(1) BV_elem.distinct(3) BV_elem.expand assms(1) assms(2) assms(5) identifier.sel(2) is_bv_elem_def jaksldfjklsdfjaksldfjklsdfjaksldfjklsdaaaaaaaaaaaaaaaf)
+    by (smt (verit, best) BV_elem.collapse(1) BV_elem.collapse(3) BV_elem.disc(6) BV_elem.distinct(1) BV_elem.distinct(3) BV_elem.expand assms(1) assms(2) assms(5) identifier.sel(2) is_bv_elem_def is_encode_node_if_CBV_left_arg)
 
   have d_encdec: "d = Encode_Elem_BV (Decode_Elem_BV d)"
-    by (metis BV_elem.sel(2) assms(1) assms(2) identifier.sel(2) jaksldfjklsdfjaksldfjklsdfjaksldfjklsdf)
+    by (metis BV_elem.sel(2) assms(1) assms(2) identifier.sel(2) is_encode_elem_if_CBV_right_arg)
 
   have m: "\<not> \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), d]\<rangle>."
     using not_CBV2[OF assms(1), of "(LTS.get_end \<pi>)" "Decode_Elem_BV d"] assms(2) \<pi>e d_encdec by force
