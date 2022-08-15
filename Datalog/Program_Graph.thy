@@ -147,6 +147,8 @@ fun meaning_rh :: "('p,'x,'e) righthand \<Rightarrow> ('p,'e) pred_val \<Rightar
 | "\<lbrakk>PosRh p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) ids \<in> \<rho> p"
 | "\<lbrakk>\<^bold>\<not> p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<not> map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) ids \<in> \<rho> p"
 
+find_theorems meaning_rh
+
 fun meaning_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>l\<^sub>h") where
   "\<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma> \<longleftrightarrow> map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) ids \<in> \<rho> p"
 
@@ -239,7 +241,7 @@ proof -
   from assms(2) have "\<forall>\<sigma>. \<lbrakk>PosRh p' ids'\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
     by fastforce
   then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids []"
-    using assms(1) self_append_conv2 solves_rh.elims(3) by (metis resolution_last_from_cls_rh_to_cls) 
+    using assms(1) self_append_conv2 solves_rh.elims(3) resolution_last_from_cls_rh_to_cls by metis 
   then show "\<rho> \<Turnstile>\<^sub>q (p, ids)"
     by (meson solves_fact_query)
 qed
@@ -248,7 +250,7 @@ lemma resolution_only_from_cls_cls_to_cls:
   assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids [PosRh p' ids']"
   assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p' ids' []"
   shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids []"
-  by (metis append_self_conv2 assms(1) assms(2) resolution_last_from_cls_rh_to_cls solves_fast_iff_solves_lh)
+  by (metis append_self_conv2 assms resolution_last_from_cls_rh_to_cls solves_fast_iff_solves_lh)
 
 lemmas resolution_only = resolution_only_from_cls_query_to_query resolution_only_from_cls_cls_to_cls
 
@@ -258,8 +260,7 @@ lemma resolution_all_from_cls_rhs_to_query:
   assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
   assumes "\<forall>rh\<in>set rhs. \<rho> \<Turnstile>\<^sub>r\<^sub>h rh"
   shows "\<rho> \<Turnstile>\<^sub>q (p, ids)"
-  using assms
-  by (metis (full_types) meaning_cls.simps meaning_lh.simps meaning_query.simps solves_cls_def solves_query.elims(1) solves_rh.elims(2))
+  using assms unfolding solves_cls_def meaning_query.simps by force
 
 lemmas resolution_all = resolution_all_from_cls_rhs_to_query
 
@@ -307,8 +308,7 @@ proof (induction c)
   have b: "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) = \<lbrakk>(p, map (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>) ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
     using substitution_lemma_lh by metis
   show ?case
-    unfolding meaning_cls.simps
-    using a b by auto
+    unfolding meaning_cls.simps using a b by auto
 qed
 
 lemma substitution_rule:
@@ -346,13 +346,13 @@ definition strat_wf :: "'p strat \<Rightarrow> ('p,'x,'e) dl_program \<Rightarro
 definition max_strata :: "'p strat \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> nat" where
   "max_strata s dl = Max {s p | p ids rhs. Cls p ids rhs \<in> dl}"
 
-fun pred_val_mod_strata :: "('p,'e) pred_val \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'e) pred_val"  ("_ \\_\\ _" 0) where 
+fun pred_val_mod_strata :: "('p,'e) pred_val \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'e) pred_val" ("_ \\_\\ _" 0) where 
   "(\<rho> \\s\\ n) p = (if s p \<le> n then \<rho> p else {})"
 
-fun dl_program_mod_strata :: "('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'e) dl_program"  ("_ --_-- _" 0) where 
+fun dl_program_mod_strata :: "('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'e) dl_program" ("_ --_-- _" 0) where 
   "(dl -- s -- n) = {(Cls p ids rhs)| p ids rhs . (Cls p ids rhs) \<in> dl \<and> s p \<le> n}"
 
-fun dl_program_on_strata :: "('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'e) dl_program"  ("_ ==_== _" 0) where 
+fun dl_program_on_strata :: "('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'e) dl_program" ("_ ==_== _" 0) where 
   "(dl == s == n) = {(Cls p ids rhs)| p ids rhs . (Cls p ids rhs) \<in> dl \<and> s p = n}"
 
 definition lt :: "('p,'e) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'e) pred_val \<Rightarrow> bool" ("_ \<sqsubset>_\<sqsubset> _") where
@@ -383,53 +383,71 @@ lemma downward_strat2:
   shows "strat_wf s (dl --s-- m)"
   using assms unfolding strat_wf_def by auto
 
+lemma downward_solves_cls:
+  assumes "n > m"
+  assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
+  assumes "strat_wf_cls s (Cls p ids rhs)"
+  assumes "s p \<le> m"
+  shows "(\<rho> \\s\\ m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
+  unfolding solves_cls_def
+proof
+  fix \<sigma>
+  have an: "s p \<le> n"
+    using assms(1) assms(4) by fastforce
+
+  have cls_meaning: "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
+    using assms solves_cls_def solves_program_def an by blast
+  have p_leq_m: "s p \<le> m"
+    using assms by fastforce
+  have rh_leq_m: "\<forall>rh \<in> set rhs. rnk s rh \<le> m"
+    using assms assms(2) dual_order.trans by (metis (no_types, lifting) p_leq_m strat_wf_cls.simps)
+
+  show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \\s\\ m) \<sigma>"
+    unfolding meaning_cls.simps
+  proof
+    assume b: "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ m) \<sigma>"
+    have "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+    proof 
+      fix rh
+      assume "rh \<in> set rhs"
+      then have "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ m) \<sigma>"
+        using b by auto
+      then show "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+        using rh_leq_m  \<open>rh \<in> set rhs\<close> by (cases rh) fastforce+
+    qed
+    then have "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+      using cls_meaning by auto
+    then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (\<rho> \\s\\ m) \<sigma>"
+      using p_leq_m by auto
+  qed
+qed
+
 lemma downward_solves:
   assumes "n > m"
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
   assumes "strat_wf s dl"
-  shows " (\<rho> \\s\\ m) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
+  shows "(\<rho> \\s\\ m) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
   unfolding solves_program_def
 proof
   fix c
   assume a: "c \<in> (dl --s-- m)"
-  then obtain p ids rhs where c_def: "c = Cls p ids rhs"
+  obtain p ids rhs where c_split: "c = Cls p ids rhs"
     by (cases c) auto
 
-  have "c \<in> (dl --s-- n)"
-    using a assms(1) by auto
-
-  have "strat_wf s (dl --s-- m)"
-    using assms(3) downward_strat2 by blast
-
-  have "(\<rho> \\s\\ m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
-    unfolding solves_cls_def
-  proof 
-    fix \<eta>
-    have mm: "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<eta>"
-      using \<open>c \<in> (dl --s-- n)\<close> assms(2) c_def solves_cls_def solves_program_def by blast
-    have "s p \<le> m"
-      using \<open>c \<in> (dl --s-- m)\<close> c_def by fastforce
-    moreover
-    have "\<forall>rh \<in> set rhs. rnk s rh \<le> m"
-      using \<open>c \<in> (dl --s-- m)\<close> assms(2) c_def dual_order.trans strat_wf_def
-      by (metis (no_types, lifting) \<open>strat_wf s (dl --s-- m)\<close> calculation strat_wf_cls.simps)
-    ultimately
-    show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \\s\\ m) \<eta>"
-      apply auto
-      subgoal
-        using mm
-        apply auto
-        subgoal for rh
-          apply (cases rh)
-             apply auto
-           apply fastforce
-          apply fastforce
-          done
-        done
-      done
-  qed
-  then show "(\<rho> \\s\\ m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
-    using c_def by auto
+  have "m < n"
+    using assms(1) by blast
+  moreover
+  have "strat_wf_cls s (Cls p ids rhs)"
+    using a assms(3) c_split downward_strat2 strat_wf_def by blast
+  moreover
+  have "s p \<le> m"
+    using a c_split by force
+  moreover
+  have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
+    using c_split assms a unfolding solves_program_def by force  
+  ultimately
+  show "(\<rho> \\s\\ m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
+    using downward_solves_cls[of m n \<rho> p ids rhs s] c_split by auto
 qed
 
 lemma downward_solves2:
