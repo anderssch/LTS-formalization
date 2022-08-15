@@ -174,7 +174,7 @@ fun solves_query :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) query \<Rightarro
   "\<rho> \<Turnstile>\<^sub>q (p,ids) \<longleftrightarrow> (\<forall>\<sigma>. \<lbrakk>(p,ids)\<rbrakk>\<^sub>q \<rho> \<sigma>)"
 
 
-section \<open>Substitutions (not in the book?)\<close> (* Introduce \<cdot> notation !!! *)
+section \<open>Substitutions (not in the book?)\<close>
 
 type_synonym ('x,'e) subst = "'x \<Rightarrow> ('x,'e) identifier"
 
@@ -370,25 +370,6 @@ definition least_solution :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_progr
 definition minimal_solution :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> bool" where
   "minimal_solution \<sigma> dl s \<longleftrightarrow> (\<sigma> \<Turnstile>\<^sub>d\<^sub>l dl \<and> (\<nexists>\<sigma>'. \<sigma>' \<Turnstile>\<^sub>d\<^sub>l dl \<and> \<sigma>' \<sqsubset>s\<sqsubset> \<sigma>))"
 
-(*
-  Noter fra møde:
-  Lattice
-
-Partielt ordnet mængde
-
-mængden:
-  L løsningerne til datalog dl
-
-ordning:
-  \<sqsubseteq>
-
-
-ordningen er partiel
-
-for alle a \in L, b \in L.
-  exists lub(a,b)
-  exists glb(a,b)
-*)
 
 subsection \<open>Solving lower strata\<close>
 (* Can we call it monotonicity? *)
