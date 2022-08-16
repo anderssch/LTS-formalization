@@ -201,7 +201,7 @@ section \<open>Datalog lemmas\<close>
 
 subsection \<open>Solve facts\<close>
 
-lemma solves_fast_iff_solves_lh: "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids [] \<longleftrightarrow> \<rho> \<Turnstile>\<^sub>r\<^sub>h PosRh p ids"
+lemma solves_fact_iff_solves_lh: "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids [] \<longleftrightarrow> \<rho> \<Turnstile>\<^sub>r\<^sub>h PosRh p ids"
   using solves_cls_def by force
 
 lemma solves_fact_query:
@@ -209,7 +209,7 @@ lemma solves_fact_query:
   shows "\<rho> \<Turnstile>\<^sub>q (p, args)"
   using assms unfolding solves_cls_def by auto
 
-lemmas solve_facts = solves_fast_iff_solves_lh solves_fact_query
+lemmas solve_facts = solves_fact_iff_solves_lh solves_fact_query
 
 subsection \<open>Resolution\<close>
 
@@ -250,7 +250,7 @@ lemma resolution_only_from_cls_cls_to_cls:
   assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids [PosRh p' ids']"
   assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p' ids' []"
   shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids []"
-  by (metis append_self_conv2 assms resolution_last_from_cls_rh_to_cls solves_fast_iff_solves_lh)
+  by (metis append_self_conv2 assms resolution_last_from_cls_rh_to_cls solves_fact_iff_solves_lh)
 
 lemmas resolution_only = resolution_only_from_cls_query_to_query resolution_only_from_cls_cls_to_cls
 
@@ -383,45 +383,36 @@ lemma downward_strat2:
   shows "strat_wf s (dl --s-- m)"
   using assms unfolding strat_wf_def by auto
 
-lemma downward_solves_cls:
-  assumes "n > m"
-  assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
+lemma downward_meaning_rh:
+  assumes "rnk s rh \<le> m"
+  shows "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ m) \<sigma> \<longleftrightarrow> \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+  using assms equals0D meaning_rh.elims(3) pred_val_mod_strata.simps by fastforce
+
+lemma downward_meaning_lh:
+  assumes "s p \<le> m"
+  shows "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (\<rho> \\s\\ m) \<sigma> \<longleftrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+  using assms by auto
+
+lemma meaning_mod_m_iff_meaning_cls:
   assumes "strat_wf_cls s (Cls p ids rhs)"
   assumes "s p \<le> m"
-  shows "(\<rho> \\s\\ m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
-  unfolding solves_cls_def
-proof
-  fix \<sigma>
-  have an: "s p \<le> n"
-    using assms(1) assms(4) by fastforce
-
-  have cls_meaning: "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
-    using assms solves_cls_def solves_program_def an by blast
+  shows "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \\s\\ m) \<sigma> \<longleftrightarrow> \<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
+proof -
   have p_leq_m: "s p \<le> m"
     using assms by fastforce
   have rh_leq_m: "\<forall>rh \<in> set rhs. rnk s rh \<le> m"
     using assms assms(2) dual_order.trans by (metis (no_types, lifting) p_leq_m strat_wf_cls.simps)
 
-  show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \\s\\ m) \<sigma>"
-    unfolding meaning_cls.simps
-  proof
-    assume b: "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ m) \<sigma>"
-    have "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
-    proof 
-      fix rh
-      assume "rh \<in> set rhs"
-      then have "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ m) \<sigma>"
-        using b by auto
-      then show "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
-        using rh_leq_m  \<open>rh \<in> set rhs\<close> by (cases rh) fastforce+
-    qed
-    then have "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
-      using cls_meaning by auto
-    then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (\<rho> \\s\\ m) \<sigma>"
-      using p_leq_m by auto
-  qed
+  show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \\s\\ m) \<sigma> \<longleftrightarrow> \<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
+    using downward_meaning_rh[of s _ m \<rho> \<sigma>] p_leq_m rh_leq_m assms(2) by force
 qed
 
+lemma solves_mod_m_iff_solves_cls:
+  assumes "strat_wf_cls s (Cls p ids rhs)"
+  assumes "s p \<le> m"
+  shows "(\<rho> \\s\\ m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs \<longleftrightarrow> \<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
+  by (meson assms meaning_mod_m_iff_meaning_cls solves_cls_def)
+                                          
 lemma downward_solves:
   assumes "n > m"
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
@@ -447,7 +438,7 @@ proof
     using c_split assms a unfolding solves_program_def by force  
   ultimately
   show "(\<rho> \\s\\ m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
-    using downward_solves_cls[of m n \<rho> p ids rhs s] c_split by auto
+    using c_split by (simp add: solves_mod_m_iff_solves_cls)
 qed
 
 lemma downward_solves2:
@@ -948,13 +939,13 @@ lemma solve_pg_Suc_meaning_cls:
   shows "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl (Suc n)) \<sigma>"
   using assms solve_pg_Suc_meaning_cls'[of s dl] by (cases c) metis
 
-lemma solve_pg_0_models_cls:
+lemma solve_pg_0_solves_cls:
   assumes "strat_wf s dl"
   assumes "c \<in> (dl --s-- 0)"
   shows "(solve_pg s dl 0) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
   unfolding solves_cls_def using solve_pg_0_meaning_cls assms by blast
 
-lemma solve_pg_Suc_models_cls:
+lemma solve_pg_Suc_solves_cls:
   assumes "strat_wf s dl"
   assumes "c \<in> (dl --s-- Suc n)"
   shows "(solve_pg s dl (Suc n)) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
@@ -965,7 +956,7 @@ lemma solve_pg_0_solves_dl:
   shows "(solve_pg s dl 0) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
 proof -
   have "\<forall>c \<in> (dl --s-- 0). (solve_pg s dl 0) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
-    using assms solve_pg_0_models_cls[of s dl] by auto
+    using assms solve_pg_0_solves_cls[of s dl] by auto
   then show "(solve_pg s dl 0) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
     using solves_program_def by blast
 qed
@@ -975,7 +966,7 @@ lemma solve_pg_Suc_solves_dl:
   shows "(solve_pg s dl (Suc n)) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- (Suc n))"
 proof -
   have "\<forall>c \<in> (dl --s-- Suc n). (solve_pg s dl (Suc n)) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
-    using assms solve_pg_Suc_models_cls[of s dl] by auto
+    using assms solve_pg_Suc_solves_cls[of s dl] by auto
   then show "(solve_pg s dl (Suc n)) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n)"
     using solves_program_def by blast
 qed
@@ -1004,7 +995,7 @@ next
 
   then show ?case oops
 
-lemma solve_pg_0_below_model:
+lemma solve_pg_0_below_solution:
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
   shows "(solve_pg s dl 0) \<sqsubseteq>s\<sqsubseteq> \<rho>"
 proof -
@@ -1111,7 +1102,7 @@ lemma intersection_valuation_subset_valuation:
   shows "\<^bold>\<Inter> {\<rho>'. P  \<rho>'} p \<subseteq> \<rho> p"
   by (metis (mono_tags, lifting) CollectI Inf_lower Inter'_def assms)
 
-lemma model_on_subset_model_below:
+lemma solution_on_subset_solution_below:
   "(dl ==s== n) \<subseteq> (dl --s-- n)"
   by fastforce
 
@@ -1121,27 +1112,27 @@ lemma solves_program_mono:
   shows "\<rho> \<Turnstile>\<^sub>d\<^sub>l dl2"
   by (meson assms(1) assms(2) in_mono solves_program_def)
 
-lemma model_on_if_model_below:
+lemma solution_on_if_solution_below:
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
   shows  "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl ==s== n)"
-  by (meson assms solves_program_mono model_on_subset_model_below)
+  by (meson assms solves_program_mono solution_on_subset_solution_below)
 
-lemma solve_pg_subset_model: (* Kan "Suc n" genereliseres? *)
+lemma solve_pg_subset_solution: (* Kan "Suc n" genereliseres? *)
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n)"
   assumes "(\<rho> \\s\\ n) = solve_pg s dl n"
   shows "solve_pg s dl (Suc n) p \<subseteq> \<rho> p"
   unfolding solve_pg.simps
   apply (rule intersection_valuation_subset_valuation)
-  using assms model_on_if_model_below by auto
+  using assms solution_on_if_solution_below by auto
 
-lemma solve_pg_below_model:
+lemma solve_pg_below_solution:
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
   shows "(solve_pg s dl n) \<sqsubseteq>s\<sqsubseteq> \<rho>"
   using assms
 proof (induction n arbitrary: \<rho>)
   case 0
   then show ?case
-    using solve_pg_0_below_model by blast
+    using solve_pg_0_below_solution by blast
 next
   case (Suc n)
   define \<rho>''n :: "'a \<Rightarrow> 'b list set" where "\<rho>''n = solve_pg s dl n"
@@ -1228,13 +1219,13 @@ next
       have "\<rho> \<in> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<and> (\<rho>' \\s\\ n) = solve_pg s dl n}"
         by auto
       then have "\<rho>''n1 p \<subseteq> \<rho> p"
-        using solve_pg_subset_model
+        using solve_pg_subset_solution
         using \<rho>''n1_def by fastforce 
       then have "\<rho>''n1 p \<subset> \<rho> p"
         using dis by auto
       moreover
       have "\<forall>p'. s p' = s p \<longrightarrow> \<rho>''n1 p' \<subseteq> \<rho> p'"
-        using \<open>\<rho> \<in> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<and> (\<rho>' \s\ n) = solve_pg s dl n}\<close> \<rho>''n1_def solve_pg_subset_model by fastforce
+        using \<open>\<rho> \<in> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<and> (\<rho>' \s\ n) = solve_pg s dl n}\<close> \<rho>''n1_def solve_pg_subset_solution by fastforce
       moreover
       have "\<forall>p'. s p' < s p \<longrightarrow> \<rho>''n1 p' = \<rho> p'"
         using below_least_rank_p_st p_p by fastforce
@@ -1252,12 +1243,12 @@ qed
 lemma solve_pg_0_least_solution:
   assumes "strat_wf s dl"
   shows "least_solution (solve_pg s dl 0) (dl --s-- 0) s"
-  using assms least_solution_def solve_pg_0_below_model solve_pg_0_solves_dl by blast 
+  using assms least_solution_def solve_pg_0_below_solution solve_pg_0_solves_dl by blast 
 
 lemma solve_pg_Suc_least_solution:
   assumes "strat_wf s dl"
   shows "least_solution (solve_pg s dl (Suc n)) (dl --s-- (Suc n)) s"
-  using assms least_solution_def solve_pg_Suc_solves_dl solve_pg_below_model by blast (* Man kunne styrke dette til least og ikke kun "slår \<rho>". Nok en god idé tbh. Meh. Du har nogle beviser på papir som nok er bedre *)
+  using assms least_solution_def solve_pg_Suc_solves_dl solve_pg_below_solution by blast (* Man kunne styrke dette til least og ikke kun "slår \<rho>". Nok en god idé tbh. Meh. Du har nogle beviser på papir som nok er bedre *)
 
 lemma solve_pg_least_solution':
   assumes "strat_wf s dl"
