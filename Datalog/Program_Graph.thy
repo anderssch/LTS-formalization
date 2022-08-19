@@ -144,19 +144,23 @@ fun eval_id :: "('x,'e) identifier \<Rightarrow> ('x,'e) var_val \<Rightarrow> '
   "\<lbrakk>DLVar x\<rbrakk>\<^sub>i\<^sub>d \<sigma> = \<sigma> x"
 | "\<lbrakk>DLElement e\<rbrakk>\<^sub>i\<^sub>d \<sigma> = e"
 
+fun eval_ids :: "('x,'e) identifier list \<Rightarrow> ('x,'e) var_val \<Rightarrow> 'e list" ("\<lbrakk>_\<rbrakk>\<^sub>i\<^sub>d\<^sub>s") where
+  "\<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> = map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) ids"
+
 fun meaning_rh :: "('p,'x,'e) righthand \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>r\<^sub>h") where
   "\<lbrakk>a \<^bold>= a'\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma> = \<lbrakk>a'\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
 | "\<lbrakk>a \<^bold>\<noteq> a'\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>  \<noteq> \<lbrakk>a'\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
-| "\<lbrakk>PosRh p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) ids \<in> \<rho> p"
-| "\<lbrakk>\<^bold>\<not> p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<not> map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) ids \<in> \<rho> p"
+| "\<lbrakk>PosRh p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<in> \<rho> p"
+| "\<lbrakk>\<^bold>\<not> p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<not> \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<in> \<rho> p"
 
-find_theorems meaning_rh
+fun meaning_rhs :: "('p,'x,'e) righthand list \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>r\<^sub>h\<^sub>s") where
+  "\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma> \<longleftrightarrow> (\<forall>rh \<in> set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
 
 fun meaning_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>l\<^sub>h") where
-  "\<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma> \<longleftrightarrow> map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) ids \<in> \<rho> p"
+  "\<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<in> \<rho> p"
 
 fun meaning_cls :: "('p,'x,'e) clause \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>c\<^sub>l\<^sub>s") where
-  "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma> \<longleftrightarrow> ((\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>) \<longrightarrow> \<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>)"
+  "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma> \<longleftrightarrow> (\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma> \<longrightarrow> \<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>)" (* use meaning_rhs *)
 
 fun solves_rh :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) righthand \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>r\<^sub>h" 91) where (* Not in the book *)
   "\<rho> \<Turnstile>\<^sub>r\<^sub>h rh \<longleftrightarrow> (\<forall>\<sigma>. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
@@ -173,7 +177,7 @@ section \<open>Queries (not in the book?)\<close>
 type_synonym ('p,'x,'e) query = "'p * ('x,'e) identifier list" (* The query type is the same as the lh type... *)
 
 fun meaning_query :: "('p,'x,'e) query \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>q") where
-  "\<lbrakk>(p,ids)\<rbrakk>\<^sub>q \<rho> \<sigma> \<longleftrightarrow> map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) ids \<in> \<rho> p"
+  "\<lbrakk>(p,ids)\<rbrakk>\<^sub>q \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<in> \<rho> p"
 
 fun solves_query :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) query \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>q" 91) where
   "\<rho> \<Turnstile>\<^sub>q (p,ids) \<longleftrightarrow> (\<forall>\<sigma>. \<lbrakk>(p,ids)\<rbrakk>\<^sub>q \<rho> \<sigma>)"
@@ -187,20 +191,56 @@ fun subst_id :: "('x,'e) identifier \<Rightarrow> ('x,'e) subst \<Rightarrow> ('
   "(DLVar x) \<cdot>\<^sub>i\<^sub>d \<eta>  = \<eta> x"
 | "(DLElement e) \<cdot>\<^sub>i\<^sub>d \<eta> = (DLElement e)"
 
+fun subst_ids :: "('x,'e) identifier list \<Rightarrow> ('x,'e) subst \<Rightarrow> ('x,'e) identifier list" (infix "\<cdot>\<^sub>i\<^sub>d\<^sub>s" 50) where
+  "ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta> = map (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>) ids"
+
 fun subst_rh :: "('p,'x,'e) righthand \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) righthand" (infix "\<cdot>\<^sub>r\<^sub>h" 50) where
   "(a \<^bold>= a') \<cdot>\<^sub>r\<^sub>h \<eta> = (a \<cdot>\<^sub>i\<^sub>d \<eta> \<^bold>= a' \<cdot>\<^sub>i\<^sub>d \<eta>)"
 | "(a \<^bold>\<noteq> a') \<cdot>\<^sub>r\<^sub>h \<eta> = (a \<cdot>\<^sub>i\<^sub>d \<eta> \<^bold>\<noteq> a' \<cdot>\<^sub>i\<^sub>d \<eta>)"
-| "(PosRh p ids) \<cdot>\<^sub>r\<^sub>h \<eta> = (PosRh p (map (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>) ids))"
-| "(\<^bold>\<not> p ids) \<cdot>\<^sub>r\<^sub>h \<eta> = (\<^bold>\<not> p (map (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>) ids))"
+| "(PosRh p ids) \<cdot>\<^sub>r\<^sub>h \<eta> = (PosRh p (ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>))"
+| "(\<^bold>\<not> p ids) \<cdot>\<^sub>r\<^sub>h \<eta> = (\<^bold>\<not> p ( ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>))"
+
+fun subst_rhs :: "('p,'x,'e) righthand list \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) righthand list" (infix "\<cdot>\<^sub>r\<^sub>h\<^sub>s" 50) where
+  "rhs \<cdot>\<^sub>r\<^sub>h\<^sub>s \<eta> = map (\<lambda>a. a \<cdot>\<^sub>r\<^sub>h \<eta>) rhs"
+
+fun subst_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) lefthand" (infix "\<cdot>\<^sub>l\<^sub>h" 50) where
+  "(p,ids) \<cdot>\<^sub>l\<^sub>h \<eta> = (p, ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>)"
 
 fun subst_cls :: "('p,'x,'e) clause \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) clause" (infix "\<cdot>\<^sub>c\<^sub>l\<^sub>s" 50) where
-  "(Cls p ids rhs) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<eta>  = Cls p (map (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>) ids) (map (\<lambda>rh. rh \<cdot>\<^sub>r\<^sub>h \<eta>) rhs)"
+  "(Cls p ids rhs) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<eta>  = Cls p (ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>) (rhs \<cdot>\<^sub>r\<^sub>h\<^sub>s \<eta>)"
 
 fun subst_query :: "('p,'x,'e) query \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) query" (infix "\<cdot>\<^sub>q" 50) where
-  "(p,ids) \<cdot>\<^sub>q \<eta>  = (p, (map (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>) ids))"
+  "(p,ids) \<cdot>\<^sub>q \<eta>  = (p, (ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>))"
 
 definition compose :: "('x,'e) subst \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('x,'e) var_val" (infix "\<circ>\<^sub>s\<^sub>v" 50) where
   "(\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) x = \<lbrakk>(\<eta> x)\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
+
+section \<open>Substiting variable valuations (not in the book?)\<close>
+
+fun substv_id :: "('x,'e) identifier \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('x,'e) identifier" (infix "\<cdot>\<^sub>v\<^sub>i\<^sub>d" 70) where
+  "(DLVar x) \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma> = DLElement (\<sigma> x)"
+| "(DLElement e) \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma> = (DLElement e)"
+
+fun substv_ids :: "('x,'e) identifier list \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('x,'e) identifier list" (infix "\<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s" 50) where
+  "rhs \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma> = map (\<lambda>a. a \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>) rhs"
+
+fun substv_rh :: "('p,'x,'e) righthand \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) righthand" (infix "\<cdot>\<^sub>v\<^sub>r\<^sub>h" 50) where
+  "(a \<^bold>= a') \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma> = (a \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma> \<^bold>= a' \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>)"
+| "(a \<^bold>\<noteq> a') \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma> = (a \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma> \<^bold>\<noteq> a' \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>)"
+| "(PosRh p ids) \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma> = (PosRh p (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>))"
+| "(\<^bold>\<not> p ids) \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma> = (\<^bold>\<not> p (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>))"
+
+definition substv_rhs :: "('p,'x,'e) righthand list \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) righthand list" (infix "\<cdot>\<^sub>v\<^sub>r\<^sub>h\<^sub>s" 50) where
+  "rhs \<cdot>\<^sub>v\<^sub>r\<^sub>h\<^sub>s \<sigma> = map (\<lambda>a. a \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma>) rhs"
+
+fun substv_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) lefthand" (infix "\<cdot>\<^sub>v\<^sub>l\<^sub>h" 50) where
+  "(p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma> = (p,  ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>)"
+
+fun substv_cls :: "('p,'x,'e) clause \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) clause" (infix "\<cdot>\<^sub>v\<^sub>c\<^sub>l\<^sub>s" 50) where
+  "(Cls p ids rhs) \<cdot>\<^sub>v\<^sub>c\<^sub>l\<^sub>s \<sigma>  = Cls p (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>) (rhs \<cdot>\<^sub>v\<^sub>r\<^sub>h\<^sub>s \<sigma>)"
+
+fun substv_query :: "('p,'x,'e) query \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) query" (infix "\<cdot>\<^sub>v\<^sub>q" 50) where
+  "(p,ids) \<cdot>\<^sub>v\<^sub>q \<sigma>  = (p,  ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>)"
 
 
 section \<open>Datalog lemmas\<close>
@@ -277,11 +317,11 @@ subsection \<open>Substitution\<close>
 lemma substitution_lemma_id: "\<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) = \<lbrakk>a \<cdot>\<^sub>i\<^sub>d \<eta>\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
   by (cases a) (auto simp add: compose_def)
 
-lemma substitution_lemma_ids: "map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>)) ids = map ((\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) \<circ> (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>)) ids"
+lemma substitution_lemma_ids: "\<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) = \<lbrakk>ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma>"
   using substitution_lemma_id by auto
 
-lemma substitution_lemma_lh: "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) \<longleftrightarrow> \<lbrakk>(p, map (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>) ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
-  by (simp add: substitution_lemma_ids)
+lemma substitution_lemma_lh: "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) \<longleftrightarrow> \<lbrakk>(p, ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta> )\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+  by (metis meaning_lh.simps substitution_lemma_ids)
 
 lemma substitution_lemma_rh:"\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) \<longleftrightarrow> \<lbrakk>rh \<cdot>\<^sub>r\<^sub>h \<eta>\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
 proof (induction rh)
@@ -302,16 +342,16 @@ next
     using substitution_lemma_lh by fastforce
 qed
 
-lemma substitution_lemma_rhs: "(\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>)) \<longleftrightarrow> (\<forall>rh\<in>set (map (\<lambda>rh. rh \<cdot>\<^sub>r\<^sub>h \<eta>) rhs). \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
+lemma substitution_lemma_rhs: "\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) \<longleftrightarrow> \<lbrakk>rhs \<cdot>\<^sub>r\<^sub>h\<^sub>s \<eta>\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>"
   by (simp add: substitution_lemma_rh) 
 
 lemma substitution_lemma_cls:
   "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) = \<lbrakk>c \<cdot>\<^sub>c\<^sub>l\<^sub>s \<eta>\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
 proof (induction c)
   case (Cls p ids rhs)
-  have a: "(\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>)) = (\<forall>rh\<in>set (map (\<lambda>rh. rh \<cdot>\<^sub>r\<^sub>h \<eta>) rhs). \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
+  have a: "\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) = \<lbrakk>rhs \<cdot>\<^sub>r\<^sub>h\<^sub>s \<eta>\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>"
     using substitution_lemma_rhs by blast
-  have b: "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) = \<lbrakk>(p, map (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>) ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+  have b: "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) = \<lbrakk>(p, ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
     using substitution_lemma_lh by metis
   show ?case
     unfolding meaning_cls.simps using a b by auto
@@ -577,7 +617,7 @@ proof -
     have "\<lbrakk>Cls p' ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
       unfolding meaning_cls.simps
     proof (rule) 
-      assume "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>"
+      assume "\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho>' \<sigma>"
       show "\<lbrakk>(p', ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
         using \<rho>'_def sp'0 by force
     qed
@@ -618,7 +658,7 @@ next
     have "\<lbrakk>Cls p' ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
       unfolding meaning_cls.simps
     proof (rule)
-      assume "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>"
+      assume "\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho>' \<sigma>"
       show "\<lbrakk>(p', ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
         using \<rho>'_def sp'Sucn by auto[]
     qed
@@ -762,7 +802,7 @@ lemma solve_pg_two_agree_above_on_cls:
   assumes "s p \<le> n"
   assumes "s p \<le> m"
   shows "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl n) \<sigma> \<longleftrightarrow> \<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl m) \<sigma>"
-  by (meson assms meaning_cls.simps solve_pg_two_agree_above_on_rh solve_pg_two_agree_above_on_lh)
+  by (meson assms meaning_rhs.simps meaning_cls.simps solve_pg_two_agree_above_on_rh solve_pg_two_agree_above_on_lh)
 
 lemma solve_pg_two_agree_above_on_cls_Suc:
   assumes "strat_wf s dl"
@@ -893,12 +933,12 @@ lemma solve_pg_0_meaning_cls':
   unfolding meaning_cls.simps
 proof
   define \<rho>'' :: "'a \<Rightarrow> 'c list set" where "\<rho>'' = (solve_pg s dl 0)"
-  assume "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl 0) \<sigma>"
+  assume "\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s (solve_pg s dl 0) \<sigma>"
   then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0) \<longrightarrow> (\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>)"
     using all_meaning_rh_if_solve_pg_0[OF assms(1), of _ \<sigma> _ rhs p ids, OF _ _ _ assms(2)] 
     by auto
   then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h  \<rho>' \<sigma>"
-    by (metis assms(2) meaning_cls.simps solves_cls_def solves_program_def)
+    by (metis assms(2) meaning_cls.simps solves_cls_def solves_program_def meaning_rhs.simps)
   then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl 0) \<sigma>"
     using solve_pg_0_if_all_meaning_lh by auto
 qed
@@ -929,12 +969,12 @@ next
     show ?thesis
     proof
       define \<rho>'' :: "'a \<Rightarrow> 'c list set" where "\<rho>'' = (solve_pg s dl (Suc n))"
-      assume "\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
+      assume "\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s (solve_pg s dl (Suc n)) \<sigma>"
       then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \\s\\ n) = solve_pg s dl n \<longrightarrow> (\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>)"
         using all_meaning_rh_if_solve_pg_Suc[OF assms(1) _ _ _ _ Suc(3), of _ \<sigma>] 
         by auto
       then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \\s\\ n) = solve_pg s dl n \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
-        using meaning_cls.simps solves_cls_def solves_program_def cls_in_Suc by metis
+        using meaning_cls.simps solves_cls_def solves_program_def cls_in_Suc meaning_rhs.simps by metis
       then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
         using solve_pg_Suc_if_all_meaning_lh[of dl s n p ids \<sigma>] by auto
     qed
@@ -949,7 +989,7 @@ next
     then have "(\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl n) \<sigma>) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl n) \<sigma>"
       using Suc by auto
     then show ?thesis
-      using False' using meaning_cls.simps solve_pg_two_agree_above_on_cls_Suc assms cls_in s_p_n by metis
+      using False' meaning_cls.simps solve_pg_two_agree_above_on_cls_Suc assms cls_in s_p_n meaning_rhs.simps by metis
   qed
 qed
 
@@ -1606,6 +1646,156 @@ proof (rule ccontr)
     using assms by auto
 qed
 
+subsection \<open>Negation\<close>
+
+lemma iiiiiii3:
+  "\<lbrakk>ids'\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma>' = \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<longleftrightarrow> (ids' \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>') = (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>)"
+  apply (induction ids' arbitrary: ids)
+  apply auto
+  apply (metis (no_types, opaque_lifting) eval_id.simps(1) eval_id.simps(2) substv_id.elims)
+  apply blast
+  apply (smt (verit, del_insts) eval_id.simps(1) eval_id.simps(2) substv_id.elims)
+  done
+
+lemma uuuuuuuuh_aaa:
+  assumes "finite dl"
+  assumes "least_solution \<rho> dl s"
+  assumes "strat_wf s dl"
+  assumes "\<lbrakk>PosRh p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+  shows "\<exists>c \<in> (dl --s-- s p). \<exists>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<and> (\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>')" (* We can strengthen it to say that \<sigma>' and \<sigma> agree on the variables in ids! *)
+proof (rule ccontr)
+  assume "\<not>(\<exists>c \<in> (dl --s-- s p). \<exists>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<and> (\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'))"
+  then have a: "\<forall>c \<in> (dl --s-- s p). \<forall>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<longrightarrow> \<not>(\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>')"
+    by metis
+
+  define \<rho>' where "\<rho>' = (\<rho> \\s\\ s p)"
+  define dl' where "dl' = (dl --s-- s p)"
+
+  have \<rho>'_least: "least_solution \<rho>' dl' s"
+    using downward_solves[of \<rho> dl s] assms downward_least_solution2 unfolding \<rho>'_def dl'_def by blast
+  moreover
+  have no_match: "\<forall>c \<in> dl'. \<forall>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<longrightarrow> \<not>(\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho>' \<sigma>')"
+    using a
+    unfolding dl'_def \<rho>'_def
+    apply auto
+    subgoal for idsa rhs \<sigma>'
+      apply (erule allE[of _ "Cls p idsa rhs"])
+      apply auto
+      apply (erule allE[of _ \<sigma>'])
+      apply auto
+      subgoal for rh
+        apply (rule bexI[of _ rh])
+        subgoal
+          apply auto
+          apply (meson assms(3) meaning_mod_m_iff_meaning_rh strat_wf_cls.simps strat_wf_def)
+          done
+        subgoal
+          apply auto
+          done
+        done
+      done
+    done
+
+  define \<rho>'' where "\<rho>'' = (\<lambda>p'. if p' = p then \<rho>' p - {\<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma>} else \<rho>' p')"
+
+  have "\<rho>'' \<Turnstile>\<^sub>d\<^sub>l dl'"
+    unfolding solves_program_def
+  proof
+    fix c
+    assume c_dl': "c \<in> dl'"
+    obtain p' ids' rhs' where c_split: "c = Cls p' ids' rhs'"
+      by (cases c)
+    show "\<rho>'' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
+      unfolding solves_cls_def
+    proof
+      fix \<sigma>'
+      have "\<lbrakk>Cls p' ids' rhs'\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>'' \<sigma>'"
+        unfolding meaning_cls.simps
+      proof
+        assume a: "\<lbrakk>rhs'\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho>'' \<sigma>'"
+        moreover
+        have "\<forall>rh' \<in> set rhs'. s p' \<ge> rnk s rh'"
+          using assms(3) below_subset c_dl' c_split dl'_def strat_wf_def by fastforce
+        ultimately 
+        have rhs'_true: "\<lbrakk>rhs'\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho>' \<sigma>'" (* The only difference is that \<rho>' makes p(ids\<sigma>) true, but \<rho>'' makes it false.
+                                      That atom can only occur as a positive literal rhs'.
+                                      Therefore some other literal in rhs' must have made rhs' true
+                                      and that literal must still be true when we change from \<rho>'' to \<rho>'. *)
+          
+          apply (induction rhs')
+           apply simp
+          subgoal for a rhs'
+            apply (induction a)
+            subgoal
+              apply simp
+              done
+            subgoal
+              apply auto
+              done
+            subgoal for p'' ids''
+              unfolding \<rho>''_def
+              apply (cases "p'' = p")
+              subgoal
+                apply auto
+                done
+              subgoal
+                apply auto
+                done
+              done
+            subgoal for p'' ids''
+              apply (subgoal_tac "p'' \<noteq> p")
+              subgoal
+                apply (simp add: \<rho>''_def)
+                done
+              subgoal
+                apply auto
+                using c_dl' c_split clause.inject dl'_def dl_program_mod_strata.simps mem_Collect_eq not_less_eq_eq apply auto
+                done
+              done
+            done
+          done
+        have "\<lbrakk>(p',ids')\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>'"
+          by (metis rhs'_true c_split c_dl' \<rho>'_least clause.inject least_solution_def meaning_cls.elims(2) solves_cls_def solves_program_def)
+        moreover
+        have "((p', ids') \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') \<noteq> ((p, ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
+          using no_match rhs'_true c_split c_dl' by fastforce
+        ultimately
+        show "\<lbrakk>(p', ids')\<rbrakk>\<^sub>l\<^sub>h \<rho>'' \<sigma>'"
+          using  \<rho>''_def iiiiiii3 by auto
+      qed
+      then show "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>'' \<sigma>'"
+        unfolding c_split by auto
+    qed
+  qed
+  moreover
+  have "\<rho>'' \<sqsubset>s\<sqsubset> \<rho>'"
+  proof -
+    have "\<rho>'' p \<subset> \<rho>' p"
+      unfolding \<rho>'_def
+      using DiffD2 \<open>\<lbrakk>PosRh p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>\<close> \<rho>''_def \<rho>'_def by auto
+    moreover
+    have "\<forall>p'. s p' = s p \<longrightarrow> \<rho>'' p' \<subseteq> \<rho>' p'"
+      unfolding \<rho>'_def
+      by (simp add: \<rho>''_def \<rho>'_def)
+    moreover
+    have "\<forall>p'. s p' < s p \<longrightarrow> \<rho>'' p' = \<rho>' p'"
+      using \<rho>''_def by force
+    ultimately
+    show "\<rho>'' \<sqsubset>s\<sqsubset> \<rho>'"
+      unfolding lt_def by auto
+  qed
+  ultimately
+  show "False"
+    by (metis assms(1,3) dl'_def finite_below_finite least_is_minimal minimal_solution_def strat_wf_mod_if_strat_wf)
+qed
+
+lemma meaning_neg_rh:
+  assumes "finite dl"
+  assumes "least_solution \<rho> dl s"
+  assumes "strat_wf s dl"
+  assumes "\<forall>c \<in> (dl --s-- s p). \<forall>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<longrightarrow> \<not>(\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>')"
+  shows "\<lbrakk>\<^bold>\<not> p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+  by (metis assms meaning_rh.simps(3,4) uuuuuuuuh_aaa)
 
 section \<open>Reaching Definitions in Datalog\<close>
 
@@ -1939,6 +2129,7 @@ datatype BV_var =
   the_\<uu>
 
 abbreviation "BV == PosRh the_BV"
+abbreviation "CBV == PosRh the_CBV"
 abbreviation NegRh_BV ("\<^bold>\<not>BV") where
   "\<^bold>\<not>BV \<equiv> NegRh the_BV"
 abbreviation "kill == PosRh the_kill"
@@ -2227,204 +2418,48 @@ fun vars_ids :: "('a, 'b) identifier list \<Rightarrow> 'a set" where
 fun vars_query :: "('p,'x,'e) query \<Rightarrow> 'x set" where
   "vars_query (p,ids) = vars_ids ids"
 
-find_consts name: pred name: rh
-(* 
-lemma
-  assumes "\<nexists>ids rhs. Cls p ids rhs \<in> dl \<and> (\<exists>\<sigma>. map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) ids = es)"
-  assumes "\<nexists>p ids rhs. Cls p ids rhs \<in> dl \<and> (\<exists>rh \<in> set rhs. p \<in> preds_rh rh)"
-  assumes "least_solution \<rho> dl s"
-  assumes "s p = 0"
-  assumes "strat_wf s dl"
-  assumes "finite dl"
-  shows "es \<notin> \<rho> p"
-proof
-  assume "es \<in> \<rho> p"
-
-  define \<rho>' where "\<rho>' = (\<lambda>p'. (if p' = p then ((\<rho> \\s\\ 0) p) - {es} else (\<rho> \\s\\ 0) p'))"
-
-  have "minimal_solution (\<rho> \\s\\ 0) (dl --s-- 0) s"
-    by (meson assms downward_least_solution2 finite_below_finite least_is_minimal strat_wf_mod_if_strat_wf)
-  moreover
-  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
-    unfolding solves_program_def
-  proof
-    fix c
-    assume "c \<in> (dl --s-- 0)"
-    obtain p' ids' rhs' where
-      "c = Cls p' ids' rhs'"
-      by (cases c) auto
-    have "Cls p' ids' rhs' \<in> (dl --s-- 0)"
-      using \<open>c = Cls p' ids' rhs'\<close> \<open>c \<in> (dl --s-- 0)\<close> by blast
-    then have c_dl: "Cls p' ids' rhs' \<in> dl"
-      using below_subset by blast
-
-    have "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p' ids' rhs'"
-      unfolding solves_cls_def
-    proof 
-      fix \<sigma>
-      have uu: "\<lbrakk>Cls p' ids' rhs'\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \\s\\ 0) \<sigma>"
-        using \<open>c = Cls p' ids' rhs'\<close> \<open>c \<in> (dl --s-- 0)\<close> calculation minimal_solution_def solves_cls_def solves_program_def by blast
-      have "(p' \<noteq> p) \<or> (p' = p \<and> map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) ids' \<noteq> es)"
-        using assms(1) c_dl by auto
-      then have "\<rho>' p' = (\<rho> \\s\\ 0) p'"
-        apply rule
-        subgoal
-          unfolding \<rho>'_def
-          apply (auto simp del: pred_val_mod_strata.simps)
-          done
-        subgoal
-          unfolding \<rho>'_def
-          apply auto
-
-
-
-        sorry
-
-      have abab: "\<lbrakk>(p', ids')\<rbrakk>\<^sub>l\<^sub>h (\<rho> \\s\\ 0) \<sigma> \<longrightarrow> \<lbrakk>(p', ids')\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
-        by (simp add: \<open>\<rho>' p' = \<rho> p'\<close>)
-      have baba: "(\<forall>rh\<in>set rhs'. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>) \<longrightarrow> (\<forall>rh\<in>set rhs'. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ 0) \<sigma>)"
-        apply auto
-        sorry
-
-      show "\<lbrakk>Cls p' ids' rhs'\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
-        using abab baba uu by force
-    qed
-    show "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
-      sorry
-  qed
-  moreover
-  have "\<rho>' \<sqsubset>s\<sqsubset> \<rho> \\s\\ 0"
-    sorry
-  ultimately
-  show "False"
-    unfolding minimal_solution_def by auto
-qed
-*)
-
 lemma not_kill:
+  fixes \<rho> :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val"
   assumes "d \<notin> kill_set(q\<^sub>o, \<alpha>, q\<^sub>s)"
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   shows "[BV_Node q\<^sub>o, BV_Action \<alpha>, BV_Node q\<^sub>s, BV_Elem d] \<notin> \<rho> the_kill"
-proof (rule)
-  assume a: "[BV_Node q\<^sub>o, BV_Action \<alpha>, BV_Node q\<^sub>s, BV_Elem d] \<in> \<rho> the_kill"
-  have "finite ana_pg_BV"
-    using ana_pg_BV_finite by auto
-
-  then have "least_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
-    using downward_least_solution2[of ana_pg_BV s_BV \<rho> 0] assms(2) using ana_pg_BV_stratified by linarith
-  then have "minimal_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
-    using least_is_minimal[of]
-    using ana_pg_BV_stratified strat_wf_mod_if_strat_wf by (smt (verit) \<open>finite ana_pg_BV\<close> finite_below_finite) 
-  moreover
-  define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_kill then ((\<rho> \\s_BV\\ 0) the_kill) - {[BV_Node q\<^sub>o, BV_Action \<alpha>, BV_Node q\<^sub>s, BV_Elem d]} else (\<rho> \\s_BV\\ 0) p))"
-
-  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (ana_pg_BV --s_BV-- 0)"
-    unfolding solves_program_def
+proof -
+  have "\<forall>\<sigma>. \<lbrakk>\<^bold>\<not>kill [Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
   proof
-    fix c
-    assume a: "c \<in> (ana_pg_BV --s_BV-- 0)"
-    then obtain p ids rhs where c_def: "c = Cls p ids rhs"
-      by (cases c) auto
-
-    have "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
-      unfolding solves_cls_def
-    proof
-      fix \<eta>
-      have rhs_is: "rhs = []"
-        using a
-        apply auto
-        unfolding ana_pg_BV_def
-        apply auto
-        using ana_init_BV_def
-        unfolding ana_CBV_def
-           apply auto
-        apply (simp add: ana_kill_BV_edge_def c_def image_iff)
-          apply (simp add: ana_gen_BV_edge_def c_def image_iff)
-        apply (simp add: ana_kill_BV_edge_def image_iff)
-         apply (simp add: ana_gen_BV_edge_def c_def image_iff)
-        apply (simp add: ana_entry_node_BV_def)
+    fix \<sigma>
+    have "finite ana_pg_BV"
+      by (simp add: ana_pg_BV_finite)
+    moreover
+    have "least_solution \<rho> ana_pg_BV s_BV"
+      using assms(2) by blast
+    moreover
+    have "strat_wf s_BV ana_pg_BV"
+      by (simp add: ana_pg_BV_stratified)
+    moreover
+    have "\<forall>c\<in>ana_pg_BV --s_BV-- s_BV the_kill. 
+           \<forall>\<sigma>'. 
+             (the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((the_kill, [Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) 
+               \<longrightarrow> \<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
+    proof (rule, rule, rule)
+      fix c \<sigma>'
+      assume c_dl: "c \<in> (ana_pg_BV --s_BV-- s_BV the_kill)"
+      assume "(the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((the_kill, [Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
+      moreover
+      from c_dl have "c \<in> (ana_pg_BV --s_BV-- 0)"
+        by auto
+      ultimately
+      show "\<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
+        unfolding ana_pg_BV_def ana_init_BV_def ana_kill_BV_edge_def ana_gen_BV_edge_def ana_CBV_def ana_entry_node_BV_def assms(1) apply auto 
+        using assms(1) apply fastforce
         done
-      show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<eta>"
-      proof (cases "p = the_kill \<and> ids = [Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]")
-        case True
-        show ?thesis
-          using a 
-          unfolding ana_pg_BV_def
-          apply auto
-          unfolding ana_CBV_def 
-              apply (auto simp add: ana_init_BV_def)
-          subgoal
-            using True c_def apply force
-            done
-          subgoal
-            using c_def  rhs_is
-            apply auto
-            using assms(1)
-            unfolding ana_kill_BV_edge_def
-            using True apply force
-            done
-          subgoal
-            using c_def
-            using True 
-            apply (simp add: ana_gen_BV_edge_def image_iff)
-            done
-          subgoal
-            using c_def
-            using True
-            using ana_entry_node_BV_def apply auto 
-            done
-          done
-      next
-        case False
-        have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \\s_BV\\ 0) \<eta>"
-          using \<open>least_solution (\<rho> \s_BV\ 0) (ana_pg_BV --s_BV-- 0) s_BV\<close> a c_def least_solution_def solves_cls_def solves_program_def by blast
-        moreover
-        have "rhs = []"
-          using rhs_is by auto
-        ultimately
-        show ?thesis
-          using False unfolding \<rho>'_def
-          using a c_def
-          apply auto
-          unfolding ana_pg_BV_def
-             apply auto
-                             apply (auto simp add: ana_init_BV_def ana_CBV_def)
-                     apply (simp add: ana_kill_BV_edge_def image_iff)
-                    apply (simp add: ana_gen_BV_edge_def image_iff)
-                   apply (use ana_entry_node_BV_def in blast)
-                  apply (simp add: ana_kill_BV_edge_def image_iff)
-                 apply (simp add: ana_gen_BV_edge_def image_iff)
-                apply (use ana_entry_node_BV_def in blast)
-               apply (simp add: ana_kill_BV_edge_def image_iff)
-              apply (simp add: ana_gen_BV_edge_def image_iff)
-             apply (use ana_entry_node_BV_def in blast)
-            apply (use ana_kill_BV_edge_def in auto)[]
-           apply (simp add: ana_gen_BV_edge_def image_iff)
-          apply (use ana_entry_node_BV_def in blast)
-          done
-      qed
     qed
-    then show "solves_cls \<rho>' c"
-      using c_def by blast
-  qed
-  moreover
-  have "\<rho>' \<sqsubset>s_BV\<sqsubset> (\<rho> \\s_BV\\ 0)"
-  proof -
-    have "\<rho>' the_kill \<subset> (\<rho> \\s_BV\\ 0) the_kill"
-      unfolding \<rho>'_def using a by auto
-    moreover
-    have "\<forall>p'. s_BV p' = s_BV the_kill \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \\s_BV\\ 0) p'"
-      unfolding \<rho>'_def by auto
-    moreover
-    have "\<forall>p'. s_BV p' < s_BV the_kill \<longrightarrow> \<rho>' p' = (\<rho> \\s_BV\\ 0) p'"
-      unfolding \<rho>'_def by auto
     ultimately
-    show "\<rho>' \<sqsubset>s_BV\<sqsubset> (\<rho> \\s_BV\\ 0)"
-      unfolding lt_def  by auto
+    show "\<lbrakk>\<^bold>\<not>kill [Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+      using meaning_neg_rh[of ana_pg_BV \<rho> s_BV the_kill "[Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]" \<sigma>]
+      by auto
   qed
-  ultimately
-  show False
-    unfolding minimal_solution_def by auto
+  then show ?thesis
+    by auto
 qed
 
 lemma the_funny_invariant':
@@ -3745,208 +3780,80 @@ qed
 
 thm analysis_BV_forward_may.not_kill
 
-lemma not_init_node: (* Copy paste adapted from not_kill *)
+lemma not_init_node:
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   shows "\<not>\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Node_BV q]\<rangle>."
-proof
-  assume asm_2: "\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Node_BV q]\<rangle>."
-  have "[BV_Node q] \<in> (\<rho> \\s_BV\\ 0) the_init"
-    using asm_2 by auto
-
-  have "finite ana_pg_BV"
-    using a_may.ana_pg_BV_finite by auto
-  then have "least_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
-    using downward_least_solution2[of ana_pg_BV s_BV \<rho> 0] asm_2
-    using a_may.ana_pg_BV_stratified assms(1) by blast 
-  then have "minimal_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
-    using least_is_minimal[of]
-    using strat_wf_mod_if_strat_wf  \<open>finite ana_pg_BV\<close> finite_below_finite
-    by (smt (verit) a_may.ana_pg_BV_stratified) 
-  moreover
-
-  define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_init then ((\<rho> \\s_BV\\ 0) the_init) - {[BV_Node q]} else (\<rho> \\s_BV\\ 0) p))"
-
-  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (ana_pg_BV --s_BV-- 0)"
-    unfolding solves_program_def
-  proof
-    fix c
-    assume a: "c \<in> (ana_pg_BV --s_BV-- 0)"
-    then obtain p ids rhs where c_def: "c = Cls p ids rhs"
-      by (cases c) auto
-
-    have "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
-      unfolding solves_cls_def
-    proof
-      fix \<eta>
-      show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<eta>"
-      proof (cases "p = the_init \<and> ids = [Encode_Node_BV q]")
-        case True
-        then show ?thesis
-          using a c_def assms(1)
-          apply auto
-          unfolding a_may.ana_pg_BV_def
-          apply auto
-          unfolding a_may.ana_CBV_def 
-             apply (auto simp add: a_may.ana_init_BV_def)
-           apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-           apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-          using a_may.ana_entry_node_BV_def apply blast
-          done
-      next
-        case False
-        have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \\s_BV\\ 0) \<eta>"
-          using \<open>least_solution (\<rho> \s_BV\ 0) (ana_pg_BV --s_BV-- 0) s_BV\<close> a c_def least_solution_def solves_cls_def solves_program_def by blast
-        then
-        show ?thesis
-          using False unfolding \<rho>'_def
-          using a c_def
-          apply auto
-          unfolding a_may.ana_pg_BV_def
-              apply auto
-                              apply (auto simp add: a_may.ana_init_BV_def a_may.ana_CBV_def)
-                        apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-                       apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-                      apply (use a_may.ana_entry_node_BV_def in force)
-                     apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-                    apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-                   apply (use a_may.ana_entry_node_BV_def in blast)
-                  apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-                 apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-                apply (use a_may.ana_entry_node_BV_def in blast)
-               apply (use a_may.ana_kill_BV_edge_def in auto)[]
-              apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-             apply (use a_may.ana_entry_node_BV_def in fastforce)
-            apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-           apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-          apply(use a_may.ana_entry_node_BV_def in blast)
-          done
-      qed
+proof -
+  have "\<forall>\<sigma>. \<lbrakk>\<^bold>\<not> the_init [Encode_Node_BV q]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+  proof 
+    fix \<sigma> 
+    have "finite ana_pg_BV"
+      using a_may.ana_pg_BV_finite by linarith
+    moreover
+    have "least_solution \<rho> ana_pg_BV s_BV"
+      using assms by blast
+    moreover
+    have "strat_wf s_BV ana_pg_BV"
+      using a_may.ana_pg_BV_stratified by blast
+    moreover
+    have "\<forall>c\<in>ana_pg_BV --s_BV-- s_BV the_init. 
+            \<forall>\<sigma>'. (the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (init\<langle>[Encode_Node_BV q]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<longrightarrow> \<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
+    proof (rule, rule, rule)
+      fix c \<sigma>'
+      assume "(the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (init\<langle>[Encode_Node_BV q]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
+      moreover
+      assume "c \<in> (ana_pg_BV --s_BV-- s_BV the_init)"
+      then have "c \<in> (ana_pg_BV --s_BV-- 0)"
+        by auto
+      ultimately
+      show "\<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
+        unfolding a_may.ana_pg_BV_def a_may.ana_init_BV_def a_may.ana_kill_BV_edge_def a_may.ana_gen_BV_edge_def a_may.ana_CBV_def a_may.ana_entry_node_BV_def
+        by auto
     qed
-    then show "solves_cls \<rho>' c"
-      using c_def by blast
-  qed
-  moreover
-  have "\<rho>' \<sqsubset>s_BV\<sqsubset> (\<rho> \\s_BV\\ 0)"
-  proof -
-    have "\<rho>' the_init \<subset> (\<rho> \\s_BV\\ 0) the_init"
-      unfolding \<rho>'_def
-      using \<open>[BV_Node q] \<in> (\<rho> \s_BV\ 0) the_init\<close> by auto 
-    moreover
-    have "\<forall>p'. s_BV p' = s_BV the_kill \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \\s_BV\\ 0) p'"
-      unfolding \<rho>'_def by auto
-    moreover
-    have "\<forall>p'. s_BV p' < s_BV the_kill \<longrightarrow> \<rho>' p' = (\<rho> \\s_BV\\ 0) p'"
-      unfolding \<rho>'_def by auto
     ultimately
-    show "\<rho>' \<sqsubset>s_BV\<sqsubset> (\<rho> \\s_BV\\ 0)"
-      unfolding lt_def by auto
+    show "\<lbrakk>\<^bold>\<not> the_init [Encode_Node_BV q]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+      using meaning_neg_rh[of ana_pg_BV \<rho> s_BV the_init "[Encode_Node_BV q]" \<sigma>] by auto
   qed
-  ultimately
-  show False
-    unfolding minimal_solution_def by auto
+  then show ?thesis
+    by auto
 qed
 
-thm not_init_node
-
-lemma not_init_action: (* Copy paste adapt from not_init_node *)
+lemma not_init_action: (* Copy paste adapt from not_init_node. They are kind of special cases of meaning_neg_rh because *)
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   shows "\<not>\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Action_BV q]\<rangle>."
-proof
-  assume asm_2: "\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Action_BV q]\<rangle>."
-  then have "[BV_Action q] \<in> (\<rho> \\s_BV\\ 0) the_init"
-    by auto
-
-  have "finite ana_pg_BV"
-    using a_may.ana_pg_BV_finite by auto
-  then have "least_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
-    using downward_least_solution2[of ana_pg_BV s_BV \<rho> 0] asm_2
-    using a_may.ana_pg_BV_stratified assms(1) by blast 
-  then have "minimal_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
-    using least_is_minimal[of]
-    using strat_wf_mod_if_strat_wf  \<open>finite ana_pg_BV\<close> finite_below_finite
-    by (smt (verit) a_may.ana_pg_BV_stratified) 
-  moreover
-
-  define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_init then ((\<rho> \\s_BV\\ 0) the_init) - {[BV_Action q]} else (\<rho> \\s_BV\\ 0) p))"
-
-  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (ana_pg_BV --s_BV-- 0)"
-    unfolding solves_program_def
-  proof
-    fix c
-    assume a: "c \<in> (ana_pg_BV --s_BV-- 0)"
-    then obtain p ids rhs where c_def: "c = Cls p ids rhs"
-      by (cases c) auto
-
-    have "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
-      unfolding solves_cls_def
-    proof
-      fix \<eta>
-      show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<eta>"
-      proof (cases "p = the_init \<and> ids = [Encode_Action_BV q]")
-        case True
-        then show ?thesis
-          using a c_def assms(1)
-          apply auto
-          unfolding a_may.ana_pg_BV_def
-          apply auto
-          unfolding a_may.ana_CBV_def 
-             apply (auto simp add: a_may.ana_init_BV_def)
-           apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-           apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-          using a_may.ana_entry_node_BV_def apply blast
-          done
-      next
-        case False
-        have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \\s_BV\\ 0) \<eta>"
-          using \<open>least_solution (\<rho> \s_BV\ 0) (ana_pg_BV --s_BV-- 0) s_BV\<close> a c_def least_solution_def solves_cls_def solves_program_def by blast
-        then
-        show ?thesis
-          using False unfolding \<rho>'_def
-          using a c_def
-          apply auto
-          unfolding a_may.ana_pg_BV_def
-              apply auto
-                              apply (auto simp add: a_may.ana_init_BV_def a_may.ana_CBV_def)
-                        apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-                       apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-                      apply (use a_may.ana_entry_node_BV_def in force)
-                     apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-                    apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-                   apply (use a_may.ana_entry_node_BV_def in blast)
-                  apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-                 apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-                apply (use a_may.ana_entry_node_BV_def in blast)
-               apply (use a_may.ana_kill_BV_edge_def in auto)[]
-              apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-             apply (use a_may.ana_entry_node_BV_def in fastforce)
-            apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-           apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-          apply(use a_may.ana_entry_node_BV_def in blast)
-          done
-      qed
+proof -
+  have "\<forall>\<sigma>. \<lbrakk>\<^bold>\<not> the_init [Encode_Action_BV q]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+  proof 
+    fix \<sigma> 
+    have "finite ana_pg_BV"
+      using a_may.ana_pg_BV_finite by linarith
+    moreover
+    have "least_solution \<rho> ana_pg_BV s_BV"
+      using assms by blast
+    moreover
+    have "strat_wf s_BV ana_pg_BV"
+      using a_may.ana_pg_BV_stratified by blast
+    moreover
+    have "\<forall>c\<in>ana_pg_BV --s_BV-- s_BV the_init. 
+            \<forall>\<sigma>'. (the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (init\<langle>[Encode_Action_BV q]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<longrightarrow> \<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
+    proof (rule, rule, rule)
+      fix c \<sigma>'
+      assume "(the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (init\<langle>[Encode_Action_BV q]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
+      moreover
+      assume "c \<in> (ana_pg_BV --s_BV-- s_BV the_init)"
+      then have "c \<in> (ana_pg_BV --s_BV-- 0)"
+        by auto
+      ultimately
+      show "\<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
+        unfolding a_may.ana_pg_BV_def a_may.ana_init_BV_def a_may.ana_kill_BV_edge_def a_may.ana_gen_BV_edge_def a_may.ana_CBV_def a_may.ana_entry_node_BV_def
+        by auto
     qed
-    then show "solves_cls \<rho>' c"
-      using c_def by blast
-  qed
-  moreover
-  have "\<rho>' \<sqsubset>s_BV\<sqsubset> (\<rho> \\s_BV\\ 0)"
-  proof -
-    have "\<rho>' the_init \<subset> (\<rho> \\s_BV\\ 0) the_init"
-      unfolding \<rho>'_def
-      using \<open>[BV_Action q] \<in> (\<rho> \s_BV\ 0) the_init\<close> by auto 
-    moreover
-    have "\<forall>p'. s_BV p' = s_BV the_kill \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \\s_BV\\ 0) p'"
-      unfolding \<rho>'_def by auto
-    moreover
-    have "\<forall>p'. s_BV p' < s_BV the_kill \<longrightarrow> \<rho>' p' = (\<rho> \\s_BV\\ 0) p'"
-      unfolding \<rho>'_def by auto
     ultimately
-    show "\<rho>' \<sqsubset>s_BV\<sqsubset> (\<rho> \\s_BV\\ 0)"
-      unfolding lt_def by auto
+    show " \<lbrakk>\<^bold>\<not> the_init [Encode_Action_BV q]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+      using meaning_neg_rh[of ana_pg_BV \<rho> s_BV the_init "[Encode_Action_BV q]" \<sigma>] by auto
   qed
-  ultimately
-  show False
-    unfolding minimal_solution_def by auto
+  then show ?thesis
+    by auto
 qed
 
 lemma is_elem_if_init:
@@ -3987,111 +3894,37 @@ next
     using assms(1) assms(2) not_init_action by blast
 qed
 
-thm not_init_action
-
-lemma in_analysis_dom_if_init':
+lemma in_analysis_dom_if_init': (* init, like kill and gen doesn't have righthandsides, so we could make a lemma like uuuuuuuuh_aaa for this case??? *)
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Elem_BV d]\<rangle>."
   shows "d \<in> analysis_dom"
-proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
-  assume asm: "\<not>d \<in> analysis_dom"
-  have "[BV_Elem d] \<in> (\<rho> \\s_BV\\ 0) the_init"
-    using assms(2) by auto
-
-  have "finite ana_pg_BV"
-    using a_may.ana_pg_BV_finite by auto
-  then have "least_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
-    using downward_least_solution2[of ana_pg_BV s_BV \<rho> 0] assms(2)
-    using a_may.ana_pg_BV_stratified assms(1) by blast 
-  then have "minimal_solution (\<rho> \\s_BV\\ 0) (ana_pg_BV --s_BV-- 0) s_BV"
-    using least_is_minimal[of]
-    using strat_wf_mod_if_strat_wf  \<open>finite ana_pg_BV\<close> finite_below_finite
-    by (smt (verit) a_may.ana_pg_BV_stratified) 
-  moreover
-
-  define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_init then ((\<rho> \\s_BV\\ 0) the_init) - {[BV_Elem d]} else (\<rho> \\s_BV\\ 0) p))"
-
-  have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (ana_pg_BV --s_BV-- 0)"
-    unfolding solves_program_def
+proof -
+  have "\<forall>\<sigma> :: BV_var \<Rightarrow> ('n, 'v, 'd) BV_elem. d \<in> analysis_dom"
   proof
-    fix c
-    assume a: "c \<in> (ana_pg_BV --s_BV-- 0)"
-    then obtain p ids rhs where c_def: "c = Cls p ids rhs"
-      by (cases c) auto
-
-    have "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
-      unfolding solves_cls_def
-    proof
-      fix \<eta>
-      show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<eta>"
-      proof (cases "p = the_init \<and> ids = [Encode_Elem_BV d]")
-        case True
-        then show ?thesis
-          using a c_def assms(1)
-          apply auto
-          unfolding a_may.ana_pg_BV_def
-          apply auto
-          unfolding a_may.ana_CBV_def 
-              apply (auto simp add: a_may.ana_init_BV_def)
-             apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-             apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-          using asm apply force
-            apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-           apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-          using a_may.ana_entry_node_BV_def apply blast
-          done
-      next
-        case False
-        have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \\s_BV\\ 0) \<eta>"
-          using \<open>least_solution (\<rho> \s_BV\ 0) (ana_pg_BV --s_BV-- 0) s_BV\<close> a c_def least_solution_def solves_cls_def solves_program_def by blast
-        then
-        show ?thesis
-          using False unfolding \<rho>'_def
-          using a c_def
-          apply auto
-          unfolding a_may.ana_pg_BV_def
-              apply auto
-                              apply (auto simp add: a_may.ana_init_BV_def a_may.ana_CBV_def)
-                         apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-                        apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-                       apply (use a_may.ana_entry_node_BV_def in force)
-                      apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-                     apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-                    apply (use a_may.ana_entry_node_BV_def in blast)
-                   apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-                  apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-                 apply (use a_may.ana_entry_node_BV_def in blast)
-                apply (use a_may.ana_kill_BV_edge_def in auto)[]
-               apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-              apply (use a_may.ana_entry_node_BV_def in fastforce)
-            apply (simp add: a_may.ana_kill_BV_edge_def image_iff)
-           apply (simp add: a_may.ana_gen_BV_edge_def image_iff)
-          apply (use a_may.ana_entry_node_BV_def in blast)
-          done
-      qed
-    qed
-    then show "solves_cls \<rho>' c"
-      using c_def by blast
-  qed
-  moreover
-  have "\<rho>' \<sqsubset>s_BV\<sqsubset> (\<rho> \\s_BV\\ 0)"
-  proof -
-    have "\<rho>' the_init \<subset> (\<rho> \\s_BV\\ 0) the_init"
-      unfolding \<rho>'_def
-      using \<open>[BV_Elem d] \<in> (\<rho> \s_BV\ 0) the_init\<close> by auto 
+    fix \<sigma>
+    have "finite ana_pg_BV"
+      using a_may.ana_pg_BV_finite by blast
     moreover
-    have "\<forall>p'. s_BV p' = s_BV the_kill \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \\s_BV\\ 0) p'"
-      unfolding \<rho>'_def by auto
+    have "least_solution \<rho> ana_pg_BV s_BV"
+      using assms(1) by blast
     moreover
-    have "\<forall>p'. s_BV p' < s_BV the_kill \<longrightarrow> \<rho>' p' = (\<rho> \\s_BV\\ 0) p'"
-      unfolding \<rho>'_def by auto
+    have "strat_wf s_BV ana_pg_BV"
+      using a_may.ana_pg_BV_stratified by blast
+    moreover
+    have "\<lbrakk>init [Encode_Elem_BV d]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+      using assms(2) by auto
     ultimately
-    show "\<rho>' \<sqsubset>s_BV\<sqsubset> (\<rho> \\s_BV\\ 0)"
-      unfolding lt_def by auto
+    have "\<exists>c\<in>ana_pg_BV --s_BV-- s_BV the_init. \<exists>\<sigma>'. (the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (init\<langle>[Encode_Elem_BV d]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<and> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
+      using uuuuuuuuh_aaa[of ana_pg_BV \<rho> s_BV the_init "[Encode_Elem_BV d]" \<sigma>] by auto
+    then have "d \<in> analysis_dom - d_init"
+      unfolding a_may.ana_pg_BV_def a_may.ana_init_BV_def a_may.ana_kill_BV_edge_def a_may.ana_gen_BV_edge_def a_may.ana_CBV_def
+        a_may.ana_entry_node_BV_def
+      by auto
+    then show "d \<in> analysis_dom"
+      by blast
   qed
-  ultimately
-  show False
-    unfolding minimal_solution_def by auto
+  then show "d \<in> analysis_dom"
+    by metis
 qed
 
 lemma in_analysis_dom_if_init:
@@ -4115,10 +3948,85 @@ proof -
     using \<open>d = DLElement d'\<close> \<open>d' = BV_Elem d''\<close> assms(1) assms(2) in_analysis_dom_if_init' by auto
 qed
 
+thm not_init_action
+
 lemma init_if_CBV:
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
   shows "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
+(* proof -
+  have "\<forall>\<sigma> :: BV_var \<Rightarrow> ('n, 'v, 'd) BV_elem. \<lbrakk>init\<langle>[d]\<rangle>.\<rbrakk>\<^sub>q \<rho> \<sigma>"
+  proof
+    fix \<sigma>
+    have "finite ana_pg_BV"
+      using a_may.ana_pg_BV_finite by blast
+    moreover
+    have "least_solution \<rho> ana_pg_BV s_BV"
+      using assms(1) by blast
+    moreover
+    have "strat_wf s_BV ana_pg_BV"
+      using a_may.ana_pg_BV_stratified by blast
+    moreover
+    have "\<lbrakk>CBV [\<pi>_end,d]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+      using assms by auto
+    ultimately
+    have "\<exists>c\<in>ana_pg_BV --s_BV-- s_BV the_CBV. \<exists>\<sigma>'. (the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (CBV\<langle>[\<pi>_end,d]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<and> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
+      using uuuuuuuuh_aaa[of ana_pg_BV \<rho> s_BV the_CBV "[\<pi>_end,d]" \<sigma>] by auto 
+     (* In uuuuuuuuh_aaa we can strengthen it to say that \<sigma>' and \<sigma> agree on the variables in ids!
+        Then it will solve the below problem\<And> *)
+    then have "\<exists>\<sigma>'. \<exists>q. \<lbrakk>[\<^bold>\<not>BV [Encode_Node_BV q, \<uu>], init [\<uu>]]\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>' \<and> \<sigma>' the_\<uu> = \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>'"
+      unfolding a_may.ana_pg_BV_def a_may.ana_CBV_def a_may.ana_init_BV_def a_may.ana_kill_BV_edge_def a_may.ana_gen_BV_edge_def a_may.ana_entry_node_BV_def
+      apply auto
+       apply (smt (verit, del_insts) BV_var.exhaust eval_id.elims eval_id.simps(2) substv_id.simps(2))
+      done
+    then show "\<lbrakk>init\<langle>[d]\<rangle>.\<rbrakk>\<^sub>q \<rho> \<sigma>"
+      by auto (* See comment above *)
+  qed
+  then show "d \<in> analysis_dom"
+    by metis
+qed
+
+
+
+proof (rule ccontr)
+  assume a: "\<not> \<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
+
+  have "\<forall>\<sigma>. \<lbrakk>\<^bold>\<not> the_CBV [\<pi>_end, d]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+  proof 
+    fix \<sigma> 
+    have "finite ana_pg_BV"
+      using a_may.ana_pg_BV_finite by linarith
+    moreover
+    have "least_solution \<rho> ana_pg_BV s_BV"
+      using assms by blast
+    moreover
+    have "strat_wf s_BV ana_pg_BV"
+      using a_may.ana_pg_BV_stratified by blast
+    moreover
+    have "\<forall>c\<in>ana_pg_BV --s_BV-- s_BV the_CBV. 
+            \<forall>\<sigma>'. (the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (CBV\<langle>[\<pi>_end, d]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<longrightarrow> \<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
+    proof (rule, rule, rule)
+      fix c \<sigma>'
+      assume "(the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (CBV\<langle>[\<pi>_end, d]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
+      moreover
+      assume "c \<in> (ana_pg_BV --s_BV-- s_BV the_CBV)"
+      ultimately
+      show "\<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
+        
+        unfolding a_may.ana_pg_BV_def a_may.ana_init_BV_def a_may.ana_kill_BV_edge_def a_may.ana_gen_BV_edge_def a_may.ana_CBV_def a_may.ana_entry_node_BV_def
+        apply auto
+        sorry
+
+    qed
+    ultimately
+    show " \<lbrakk>\<^bold>\<not> the_CBV [\<pi>_end, d]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+      using meaning_neg_rh[of ana_pg_BV \<rho> s_BV the_CBV ] by meson
+  qed
+  then show False
+    using assms by auto
+qed
+*)
+
 proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
   assume asm: "\<not> \<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
   then have "\<exists>\<sigma>. \<not>[\<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>] \<in> \<rho> the_init"
