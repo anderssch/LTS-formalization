@@ -1657,12 +1657,202 @@ lemma iiiiiii3:
   apply (smt (verit, del_insts) eval_id.simps(1) eval_id.simps(2) substv_id.elims)
   done
 
+definition agree_var_val :: "'x set \<Rightarrow> ('x, 'e) var_val \<Rightarrow> ('x, 'e) var_val \<Rightarrow> bool " where
+  "agree_var_val xs \<sigma> \<sigma>' \<longleftrightarrow> (\<forall>x \<in> xs. \<sigma> x = \<sigma>' x)"
+
+fun vars_ids :: "('a, 'b) identifier list \<Rightarrow> 'a set" where
+  "vars_ids ids = \<Union>(vars_id ` set ids)"
+
+fun vars_lh :: "('p,'x,'e) lefthand \<Rightarrow> 'x set" where
+  "vars_lh (p,ids) = vars_ids ids"
+
+(* 
+  Jeg tror ikke nedenstående er generelt nok.
+  For se på følgende eksempel:
+    Program:
+      p(Y) :- q(Y).
+      q(a).
+
+    Antag:
+    \<lbrakk>p(X)\<rbrakk> \<rho> [X \<turnstile>> a]
+
+    Vis:
+    \<lbrakk>q(X)\<rbrakk> \<rho> [X \<turnstile>> a]
+    
+  Til dette kan vi ikke bruge lemma'et.
+  Så det må være noget med at sige at der skal findes en
+  højreside som  
+
+
+  Her er en "fed" ide:
+  Der findes en clause som har en substitution instans og denne clause's rhs er sand under \<sigma>'.
+  
+  Hvordan beviser jeg at den findes? Jeg "unifier" den med p(ids).
+  Lad os kalde den "unifiede" clause c'.
+  Så finder jeg de resterende variable i rhs(c') og instantierer dem sådan at højresiden bliver sand.
+
+  Meeen hvad med følgende eksempel:
+    Program:
+      p(Y) :- q(Y,X).
+      q(a,Z).
+
+    Antag:
+    \<lbrakk>p(X)\<rbrakk> \<rho> [X \<turnstile>> a]
+
+    Vis:
+    \<exists>t. \<lbrakk>q(X,t)\<rbrakk> \<rho> [X \<turnstile>> a]
+
+    Det tror jeg godt min idé kan klare. Så måske er den fin nok.
+
+
+ *)
+
+(*
+fun get_unifier :: "" where
+  "get_unifier (p,ids) (p',ids') = undefined"
+
+lemma uuuuuuuuh_aaa2:
+  assumes "finite dl"
+  assumes "least_solution \<rho> dl s"
+  assumes "strat_wf s dl"
+  assumes "\<lbrakk>PosRh p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+  assumes "\<forall>c \<in> (dl --s-- s p). vars_lh (the_ls c) \<subseteq> vars_rhs (the_rhs c)"
+  shows "\<exists>c \<in> (dl --s-- s p). \<exists>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<and> (\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>')"
+  (* We can strengthen it to say that \<sigma>' and \<sigma> agree on the variables in ids! NO WE CANT DO THAT.... *)
+proof (rule ccontr)
+  assume "\<not>(\<exists>c \<in> (dl --s-- s p). \<exists>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<and> (\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'))"
+  then have a: "\<forall>c \<in> (dl --s-- s p). \<forall>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<longrightarrow> \<not>(\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>')"
+    by metis
+
+  define \<rho>' where "\<rho>' = (\<rho> \\s\\ s p)"
+  define dl' where "dl' = (dl --s-- s p)"
+
+  have \<rho>'_least: "least_solution \<rho>' dl' s"
+    using downward_solves[of \<rho> dl s] assms downward_least_solution2 unfolding \<rho>'_def dl'_def by blast
+  moreover
+  have no_match: "\<forall>c \<in> dl'. \<forall>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<longrightarrow> \<not>(\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho>' \<sigma>')"
+    using a
+    unfolding dl'_def \<rho>'_def
+    apply auto
+    subgoal for idsa rhs \<sigma>'
+      apply (erule allE[of _ "Cls p idsa rhs"])
+      apply auto
+      apply (erule allE[of _ \<sigma>'])
+      apply auto
+      subgoal for rh
+        apply (rule bexI[of _ rh])
+        subgoal
+          apply auto
+          apply (meson assms(3) meaning_mod_m_iff_meaning_rh strat_wf_cls.simps strat_wf_def)
+          done
+        subgoal
+          apply auto
+          done
+        done
+      done
+    done
+
+  define \<rho>'' where "\<rho>'' = (\<lambda>p'. if p' = p then \<rho>' p - {\<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma>} else \<rho>' p')"
+
+  have "\<rho>'' \<Turnstile>\<^sub>d\<^sub>l dl'"
+    unfolding solves_program_def
+  proof
+    fix c
+    assume c_dl': "c \<in> dl'"
+    obtain p' ids' rhs' where c_split: "c = Cls p' ids' rhs'"
+      by (cases c)
+    show "\<rho>'' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
+      unfolding solves_cls_def
+    proof
+      fix \<sigma>'
+      have "\<lbrakk>Cls p' ids' rhs'\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>'' \<sigma>'"
+        unfolding meaning_cls.simps
+      proof
+        assume a: "\<lbrakk>rhs'\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho>'' \<sigma>'"
+        moreover
+        have "\<forall>rh' \<in> set rhs'. s p' \<ge> rnk s rh'"
+          using assms(3) below_subset c_dl' c_split dl'_def strat_wf_def by fastforce
+        ultimately 
+        have rhs'_true: "\<lbrakk>rhs'\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho>' \<sigma>'" (* The only difference is that \<rho>' makes p(ids\<sigma>) true, but \<rho>'' makes it false.
+                                      That atom can only occur as a positive literal rhs'.
+                                      Therefore some other literal in rhs' must have made rhs' true
+                                      and that literal must still be true when we change from \<rho>'' to \<rho>'. *)
+          
+          apply (induction rhs')
+           apply simp
+          subgoal for a rhs'
+            apply (induction a)
+            subgoal
+              apply simp
+              done
+            subgoal
+              apply auto
+              done
+            subgoal for p'' ids''
+              unfolding \<rho>''_def
+              apply (cases "p'' = p")
+              subgoal
+                apply auto
+                done
+              subgoal
+                apply auto
+                done
+              done
+            subgoal for p'' ids''
+              apply (subgoal_tac "p'' \<noteq> p")
+              subgoal
+                apply (simp add: \<rho>''_def)
+                done
+              subgoal
+                apply auto
+                using c_dl' c_split clause.inject dl'_def dl_program_mod_strata.simps mem_Collect_eq not_less_eq_eq apply auto
+                done
+              done
+            done
+          done
+        have "\<lbrakk>(p',ids')\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>'"
+          by (metis rhs'_true c_split c_dl' \<rho>'_least clause.inject least_solution_def meaning_cls.elims(2) solves_cls_def solves_program_def)
+        moreover
+        have "((p', ids') \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') \<noteq> ((p, ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
+          using no_match rhs'_true c_split c_dl' by fastforce
+        ultimately
+        show "\<lbrakk>(p', ids')\<rbrakk>\<^sub>l\<^sub>h \<rho>'' \<sigma>'"
+          using  \<rho>''_def iiiiiii3 by auto
+      qed
+      then show "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>'' \<sigma>'"
+        unfolding c_split by auto
+    qed
+  qed
+  moreover
+  have "\<rho>'' \<sqsubset>s\<sqsubset> \<rho>'"
+  proof -
+    have "\<rho>'' p \<subset> \<rho>' p"
+      unfolding \<rho>'_def
+      using DiffD2 \<open>\<lbrakk>PosRh p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>\<close> \<rho>''_def \<rho>'_def by auto
+    moreover
+    have "\<forall>p'. s p' = s p \<longrightarrow> \<rho>'' p' \<subseteq> \<rho>' p'"
+      unfolding \<rho>'_def
+      by (simp add: \<rho>''_def \<rho>'_def)
+    moreover
+    have "\<forall>p'. s p' < s p \<longrightarrow> \<rho>'' p' = \<rho>' p'"
+      using \<rho>''_def by force
+    ultimately
+    show "\<rho>'' \<sqsubset>s\<sqsubset> \<rho>'"
+      unfolding lt_def by auto
+  qed
+  ultimately
+  show "False"
+    by (metis assms(1,3) dl'_def finite_below_finite least_is_minimal minimal_solution_def strat_wf_mod_if_strat_wf)
+qed
+*)
+
 lemma uuuuuuuuh_aaa:
   assumes "finite dl"
   assumes "least_solution \<rho> dl s"
   assumes "strat_wf s dl"
   assumes "\<lbrakk>PosRh p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
-  shows "\<exists>c \<in> (dl --s-- s p). \<exists>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<and> (\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>')" (* We can strengthen it to say that \<sigma>' and \<sigma> agree on the variables in ids! *)
+  shows "\<exists>c \<in> (dl --s-- s p). \<exists>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<and> (\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>')"
+  (* We can strengthen it to say that \<sigma>' and \<sigma> agree on the variables in ids! NO WE CANT DO THAT.... *)
 proof (rule ccontr)
   assume "\<not>(\<exists>c \<in> (dl --s-- s p). \<exists>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<and> (\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'))"
   then have a: "\<forall>c \<in> (dl --s-- s p). \<forall>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<longrightarrow> \<not>(\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>')"
@@ -2412,8 +2602,6 @@ lemma ana_pg_BV_finite: "finite ana_pg_BV"
   apply (simp add: ana_entry_node_BV_def)
   done
 
-fun vars_ids :: "('a, 'b) identifier list \<Rightarrow> 'a set" where
-  "vars_ids ids = \<Union>(vars_id ` set ids)"
 
 fun vars_query :: "('p,'x,'e) query \<Rightarrow> 'x set" where
   "vars_query (p,ids) = vars_ids ids"
@@ -3950,83 +4138,24 @@ qed
 
 thm not_init_action
 
+(*
+lemma init_if_CBV':
+  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<lbrakk>CBV\<langle>[\<pi>_end, d]\<rangle>.\<rbrakk>\<^sub>q \<rho> \<sigma>"
+  shows "\<lbrakk>init\<langle>[d]\<rangle>.\<rbrakk>\<^sub>q \<rho> \<sigma>"
+(* Okay, det kan da godt være men hvad hvis du man var i en situation hvor d'et i CBV og d'et i init havde forskellige variable.
+   I det tilfælde skal man måske sige "der er en renaming".
+
+ *)
+proof -
+
+  thm uuuuuuuuh_aaa[of ana_pg_BV \<rho> s_BV the_CBV "[\<pi>_end, d]" \<sigma>]
+*)
+
 lemma init_if_CBV:
   assumes "least_solution \<rho> ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
   shows "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
-(* proof -
-  have "\<forall>\<sigma> :: BV_var \<Rightarrow> ('n, 'v, 'd) BV_elem. \<lbrakk>init\<langle>[d]\<rangle>.\<rbrakk>\<^sub>q \<rho> \<sigma>"
-  proof
-    fix \<sigma>
-    have "finite ana_pg_BV"
-      using a_may.ana_pg_BV_finite by blast
-    moreover
-    have "least_solution \<rho> ana_pg_BV s_BV"
-      using assms(1) by blast
-    moreover
-    have "strat_wf s_BV ana_pg_BV"
-      using a_may.ana_pg_BV_stratified by blast
-    moreover
-    have "\<lbrakk>CBV [\<pi>_end,d]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
-      using assms by auto
-    ultimately
-    have "\<exists>c\<in>ana_pg_BV --s_BV-- s_BV the_CBV. \<exists>\<sigma>'. (the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (CBV\<langle>[\<pi>_end,d]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<and> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
-      using uuuuuuuuh_aaa[of ana_pg_BV \<rho> s_BV the_CBV "[\<pi>_end,d]" \<sigma>] by auto 
-     (* In uuuuuuuuh_aaa we can strengthen it to say that \<sigma>' and \<sigma> agree on the variables in ids!
-        Then it will solve the below problem\<And> *)
-    then have "\<exists>\<sigma>'. \<exists>q. \<lbrakk>[\<^bold>\<not>BV [Encode_Node_BV q, \<uu>], init [\<uu>]]\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>' \<and> \<sigma>' the_\<uu> = \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>'"
-      unfolding a_may.ana_pg_BV_def a_may.ana_CBV_def a_may.ana_init_BV_def a_may.ana_kill_BV_edge_def a_may.ana_gen_BV_edge_def a_may.ana_entry_node_BV_def
-      apply auto
-       apply (smt (verit, del_insts) BV_var.exhaust eval_id.elims eval_id.simps(2) substv_id.simps(2))
-      done
-    then show "\<lbrakk>init\<langle>[d]\<rangle>.\<rbrakk>\<^sub>q \<rho> \<sigma>"
-      by auto (* See comment above *)
-  qed
-  then show "d \<in> analysis_dom"
-    by metis
-qed
-
-
-
-proof (rule ccontr)
-  assume a: "\<not> \<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
-
-  have "\<forall>\<sigma>. \<lbrakk>\<^bold>\<not> the_CBV [\<pi>_end, d]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
-  proof 
-    fix \<sigma> 
-    have "finite ana_pg_BV"
-      using a_may.ana_pg_BV_finite by linarith
-    moreover
-    have "least_solution \<rho> ana_pg_BV s_BV"
-      using assms by blast
-    moreover
-    have "strat_wf s_BV ana_pg_BV"
-      using a_may.ana_pg_BV_stratified by blast
-    moreover
-    have "\<forall>c\<in>ana_pg_BV --s_BV-- s_BV the_CBV. 
-            \<forall>\<sigma>'. (the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (CBV\<langle>[\<pi>_end, d]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<longrightarrow> \<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
-    proof (rule, rule, rule)
-      fix c \<sigma>'
-      assume "(the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (CBV\<langle>[\<pi>_end, d]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
-      moreover
-      assume "c \<in> (ana_pg_BV --s_BV-- s_BV the_CBV)"
-      ultimately
-      show "\<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
-        
-        unfolding a_may.ana_pg_BV_def a_may.ana_init_BV_def a_may.ana_kill_BV_edge_def a_may.ana_gen_BV_edge_def a_may.ana_CBV_def a_may.ana_entry_node_BV_def
-        apply auto
-        sorry
-
-    qed
-    ultimately
-    show " \<lbrakk>\<^bold>\<not> the_CBV [\<pi>_end, d]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
-      using meaning_neg_rh[of ana_pg_BV \<rho> s_BV the_CBV ] by meson
-  qed
-  then show False
-    using assms by auto
-qed
-*)
-
 proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
   assume asm: "\<not> \<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
   then have "\<exists>\<sigma>. \<not>[\<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>] \<in> \<rho> the_init"
