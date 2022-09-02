@@ -2383,7 +2383,7 @@ abbreviation Encode_Action_BV :: "'v action \<Rightarrow> (BV_var, ('n, 'v, 'ele
   "Encode_Action_BV \<alpha> == DLElement (BV_Action \<alpha>)"
 
 
-section \<open>Forwards may-analysis\<close>
+section \<open>Forward may-analysis\<close>
 
 locale analysis_BV_forward_may =
   fixes pg :: "('n::finite,'v) program_graph"
@@ -3042,11 +3042,11 @@ lemma RD_sound_again:
 end
 
 
-section \<open>Backwards may-analysis\<close>
+section \<open>Backward may-analysis\<close>
 
 thm Program_Graph.analysis_BV_forward_may.edge_set.cong 
 
-locale analysis_BV_backwards_may =
+locale analysis_BV_backward_may =
   fixes pg :: "('n::finite,'v) program_graph"
   fixes analysis_dom :: "'d set"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
@@ -3060,7 +3060,7 @@ locale analysis_BV_backwards_may =
 begin
 
 lemma finite_d_init: "finite d_init"
-  by (meson analysis_BV_backwards_may_axioms analysis_BV_backwards_may_def finite_subset)
+  by (meson analysis_BV_backward_may_axioms analysis_BV_backward_may_def finite_subset)
 
 definition edge_set where
   "edge_set = fst pg"
@@ -3125,16 +3125,16 @@ definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Right
 thm summarizes_dl_BV_def[of \<rho>]
 
 lemma finite_pg_rev: "finite (fst pg_rev)"
-  by (metis analysis_BV_backwards_may_axioms analysis_BV_backwards_may_def edge_set_def finite_imageI fst_conv pg_rev_def)
+  by (metis analysis_BV_backward_may_axioms analysis_BV_backward_may_def edge_set_def finite_imageI fst_conv pg_rev_def)
 
 lemma new_gen_subs_analysis_dom: "(kill_set (rev_edge e)) \<subseteq> analysis_dom"
-  by (meson analysis_BV_backwards_may_axioms analysis_BV_backwards_may_def)
+  by (meson analysis_BV_backward_may_axioms analysis_BV_backward_may_def)
 
 lemma new_kill_subs_analysis_dom: "(gen_set (rev_edge e)) \<subseteq> analysis_dom"
-  by (meson analysis_BV_backwards_may_axioms analysis_BV_backwards_may_def)
+  by (meson analysis_BV_backward_may_axioms analysis_BV_backward_may_def)
 
 interpretation fa: analysis_BV_forward_may pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
-  using analysis_BV_forward_may_def finite_pg_rev by (metis analysis_BV_backwards_may_axioms analysis_BV_backwards_may_def) 
+  using analysis_BV_forward_may_def finite_pg_rev by (metis analysis_BV_backward_may_axioms analysis_BV_backward_may_def) 
 
 abbreviation ana_pg_BV where
   "ana_pg_BV == fa.ana_pg_BV"
@@ -3171,13 +3171,13 @@ next
     done
 qed
 
-lemma S_hat_path_forwards_backwards:
+lemma S_hat_path_forward_backward:
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
   shows "S_hat_path (ss, w) d_init = fa.S_hat_path (rev ss, rev w) d_init"
   using S_hat_edge_list_forward_backward unfolding S_hat_path_def fa.S_hat_path_def
   by (metis transition_list_rev_edge_list assms)
 
-lemma summarizes_dl_BV_forwards_backwards':
+lemma summarizes_dl_BV_forward_backward':
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
   assumes "LTS.get_end (ss,w) = end"
   assumes "d \<in> S_hat_path (ss,w) d_init"
@@ -3192,7 +3192,7 @@ proof -
   moreover
   have "d \<in> fa.S_hat_path (rev ss, rev w) d_init"
     using assms(3)
-    using assms(1) S_hat_path_forwards_backwards by auto
+    using assms(1) S_hat_path_forward_backward by auto
   ultimately
   have "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_end (rev ss, rev w)), Encode_Elem_BV d]\<rangle>."
     using assms(4) fa.summarizes_dl_BV.simps by blast
@@ -3200,7 +3200,7 @@ proof -
     by (metis LTS.get_end_def LTS.get_start_def fst_conv hd_rev rev_rev_ident)
 qed
 
-lemma summarizes_dl_BV_forwards_backwards:
+lemma summarizes_dl_BV_forward_backward:
   assumes "fa.summarizes_dl_BV \<rho>"
   shows "summarizes_dl_BV \<rho>"
   unfolding summarizes_dl_BV_def
@@ -3213,13 +3213,13 @@ proof(rule; rule ; rule ;rule ;rule)
   assume "d \<in> S_hat_path \<pi> d_init"
   ultimately
   show "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>."
-    using summarizes_dl_BV_forwards_backwards'[of "fst \<pi>" "snd \<pi>" d \<rho>] using assms by auto
+    using summarizes_dl_BV_forward_backward'[of "fst \<pi>" "snd \<pi>" d \<rho>] using assms by auto
 qed
 
 lemma sound_rev_BV:
   assumes "least_solution \<rho> fa.ana_pg_BV s_BV"
   shows "summarizes_dl_BV \<rho>"
-  using assms fa.sound_BV[of \<rho>] summarizes_dl_BV_forwards_backwards by metis
+  using assms fa.sound_BV[of \<rho>] summarizes_dl_BV_forward_backward by metis
 
 end
 
@@ -3270,8 +3270,8 @@ fun gen_set_LV :: "('n,'v) edge \<Rightarrow> 'v set" where
 definition d_init_LV :: "'v set" where
   "d_init_LV = {}"
 
-interpretation interpb: analysis_BV_backwards_may pg analysis_dom_LV kill_set_LV gen_set_LV d_init_LV
-  using analysis_BV_backwards_may.intro analysis_LV_axioms analysis_LV_def
+interpretation interpb: analysis_BV_backward_may pg analysis_dom_LV kill_set_LV gen_set_LV d_init_LV
+  using analysis_BV_backward_may.intro analysis_LV_axioms analysis_LV_def
   by (metis (mono_tags) analysis_dom_LV_def finite_UNIV subset_UNIV)
 
 lemma use_edge_list_S_hat_edge_list: 
@@ -3450,7 +3450,7 @@ end
 
 section \<open>Forward must-analysis\<close>
                                             
-locale analysis_BV_forwards_must =
+locale analysis_BV_forward_must =
   fixes pg :: "('n::finite,'v) program_graph"
   fixes analysis_dom :: "'d set"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
@@ -3462,7 +3462,7 @@ locale analysis_BV_forwards_must =
 begin
 
 lemma finite_d_init: "finite d_init"
-  by (meson analysis_BV_forwards_must_axioms analysis_BV_forwards_must_def finite_subset)
+  by (meson analysis_BV_forward_must_axioms analysis_BV_forward_must_def finite_subset)
 
 definition edge_set where
   "edge_set = fst pg"
@@ -3531,7 +3531,7 @@ fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightar
 
 
 interpretation a_may: analysis_BV_forward_may pg analysis_dom "\<lambda>e. analysis_dom - (kill_set e)" "(\<lambda>e. analysis_dom - gen_set e)" "analysis_dom - d_init"
-  using analysis_BV_forward_may.intro analysis_BV_forwards_must_axioms analysis_BV_forwards_must_def
+  using analysis_BV_forward_may.intro analysis_BV_forward_must_axioms analysis_BV_forward_must_def
   by (metis Diff_subset)
 
 abbreviation ana_pg_BV where (* Copy paste *)
@@ -5048,8 +5048,8 @@ definition d_init_AE :: "'v arith set" where
 
 (* Problem: 'v arith  er ikke en endelig type. *)
 
-interpretation interpb: analysis_BV_forwards_must pg analysis_dom_AE kill_set_AE gen_set_AE d_init_AE
-  using analysis_BV_forwards_must.intro analysis_AE_axioms analysis_AE_def
+interpretation interpb: analysis_BV_forward_must pg analysis_dom_AE kill_set_AE gen_set_AE d_init_AE
+  using analysis_BV_forward_must.intro analysis_AE_axioms analysis_AE_def
   by (metis d_init_AE_def empty_iff finite_analysis_dom_AE subsetI) 
 
 lemma aexp_edge_list_S_hat_edge_list: 
@@ -5061,7 +5061,7 @@ end
 
 section \<open>Backward must-analysis\<close>
 
-locale analysis_BV_backwards_must =
+locale analysis_BV_backward_must =
   fixes pg :: "('n::finite,'v) program_graph"
   fixes analysis_dom :: "'d set"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
@@ -5073,7 +5073,7 @@ locale analysis_BV_backwards_must =
 begin
 
 lemma finite_d_init: "finite d_init"
-  by (meson analysis_BV_backwards_must_axioms analysis_BV_backwards_must_def finite_subset)
+  by (meson analysis_BV_backward_must_axioms analysis_BV_backward_must_def finite_subset)
 
 definition edge_set where (* Copy paste *)
   "edge_set = fst pg"
@@ -5138,11 +5138,11 @@ fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightar
           (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> LTS.get_start \<pi> = Decode_Node_BV \<pi>_start \<longrightarrow> Decode_Elem_BV d \<in> S_hat_path \<pi> d_init))"
 
 lemma finite_pg_rev: "finite (fst pg_rev)" (* Copy paste *)
-  by (metis analysis_BV_backwards_must_axioms analysis_BV_backwards_must_def edge_set_def finite_imageI fst_conv pg_rev_def)
+  by (metis analysis_BV_backward_must_axioms analysis_BV_backward_must_def edge_set_def finite_imageI fst_conv pg_rev_def)
 
-interpretation fa: analysis_BV_forwards_must pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
-  using analysis_BV_forwards_must_def finite_pg_rev
-  by (metis analysis_BV_backwards_must_axioms analysis_BV_backwards_must_def) 
+interpretation fa: analysis_BV_forward_must pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
+  using analysis_BV_forward_must_def finite_pg_rev
+  by (metis analysis_BV_backward_must_axioms analysis_BV_backward_must_def) 
 
 abbreviation ana_pg_BV where (* Copy paste *)
   "ana_pg_BV == fa.ana_pg_BV"
@@ -5179,26 +5179,26 @@ next
     done
 qed
 
-lemma S_hat_path_forwards_backwards: (* Copy paste *)
+lemma S_hat_path_forward_backward: (* Copy paste *)
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
   shows "S_hat_path (ss, w) d_init = fa.S_hat_path (rev ss, rev w) d_init"
   using S_hat_edge_list_forward_backward unfolding S_hat_path_def fa.S_hat_path_def
   by (metis transition_list_rev_edge_list assms)
 
-lemma summarizes_dl_BV_forwards_backwards':
+lemma summarizes_dl_BV_forward_backward':
   assumes "fa.summarizes_dl_BV_must \<rho>"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_start, d]\<rangle>."
   assumes "\<pi> \<in> LTS.path_with_word edge_set"
   assumes "LTS.get_end \<pi> = end"
   assumes "LTS.get_start \<pi> = Decode_Node_BV \<pi>_start"
   shows "Decode_Elem_BV d \<in> S_hat_path \<pi> d_init"
-  using LTS.get_end_def LTS.get_start_def S_hat_path_forwards_backwards 
-    analysis_BV_backwards_must_axioms assms fa.start_def fa.summarizes_dl_BV_must.simps fst_conv 
+  using LTS.get_end_def LTS.get_start_def S_hat_path_forward_backward 
+    analysis_BV_backward_must_axioms assms fa.start_def fa.summarizes_dl_BV_must.simps fst_conv 
     hd_rev last_rev pg_rev_def rev_path_in_rev_pg snd_conv fa.edge_set_def prod.collapse 
   by (metis (no_types, lifting))
     (* TODO? Expand proof into something coherent? *)
 
-lemma summarizes_dl_BV_forwards_backwards: (* Copy paste statement by adapted proof *)
+lemma summarizes_dl_BV_forward_backward: (* Copy paste statement by adapted proof *)
   assumes "fa.summarizes_dl_BV_must \<rho>"
   shows "summarizes_dl_BV_must \<rho>"
   unfolding summarizes_dl_BV_must.simps
@@ -5213,13 +5213,13 @@ proof(rule; rule ; rule ;rule ;rule; rule; rule)
   assume "LTS.get_start \<pi> = Decode_Node_BV \<pi>_start"
   ultimately
   show "Decode_Elem_BV d \<in> S_hat_path \<pi> d_init"
-    by (metis assms summarizes_dl_BV_forwards_backwards')
+    by (metis assms summarizes_dl_BV_forward_backward')
 qed
 
 lemma sound_rev_BV:
   assumes "least_solution \<rho> fa.ana_pg_BV s_BV"
   shows "summarizes_dl_BV_must \<rho>"
-  using assms fa.sound_CBV[of \<rho>] summarizes_dl_BV_forwards_backwards by metis
+  using assms fa.sound_CBV[of \<rho>] summarizes_dl_BV_forward_backward by metis
 
 (* 
 
