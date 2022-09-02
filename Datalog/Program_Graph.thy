@@ -102,9 +102,10 @@ definition def_var :: "('n,'v) edge list \<Rightarrow> 'v \<Rightarrow> 'n \<Rig
 definition def_path :: "('n list \<times> 'v action list) \<Rightarrow> 'n \<Rightarrow> ('n,'v) triple set" where
   "def_path \<pi> start = ((\<lambda>x. def_var (LTS.transition_list \<pi>) x start) ` UNIV)"
 
-fun summarizes :: "('n,'v) analysis_assignment \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
-  "summarizes RD (es,start,end) \<longleftrightarrow> (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word es \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> def_path \<pi> start \<subseteq> RD (LTS.get_end \<pi>))"
- 
+(*
+fun summarizes_RD :: "('n,'v) analysis_assignment \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
+  "summarizes_RD RD (es,start,end) \<longleftrightarrow> (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word es \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> def_path \<pi> start \<subseteq> RD (LTS.get_end \<pi>))"
+*)
 
 section \<open>Datalog programs and their solutions\<close>
 
@@ -2082,13 +2083,13 @@ definition var_contraints :: "(RD_pred, RD_var, ('n,'v) RD_elem) clause set" whe
 
 type_synonym ('n,'v) quadruple = "'n *'v * 'n option * 'n"
 
-fun summarizes_dl :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
-  "summarizes_dl \<rho> (es, start, end) =
+fun summarizes_RD :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
+  "summarizes_RD \<rho> (es, start, end) =
     (\<forall>\<pi> x q1 q2.
-    \<pi> \<in> LTS.path_with_word es \<longrightarrow>
-    LTS.get_start \<pi> = start \<longrightarrow>
-    (x, q1, q2) \<in> def_path \<pi> start \<longrightarrow> 
-    \<rho> \<Turnstile>\<^sub>q RD1\<langle>[Encode_Node (LTS.get_end \<pi>), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
+       \<pi> \<in> LTS.path_with_word es \<longrightarrow>
+       LTS.get_start \<pi> = start \<longrightarrow>
+       (x, q1, q2) \<in> def_path \<pi> start \<longrightarrow> 
+       \<rho> \<Turnstile>\<^sub>q RD1\<langle>[Encode_Node (LTS.get_end \<pi>), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
 
 lemma def_var_x: "fst (def_var ts x start) = x"
   unfolding def_var_def by (simp add: case_prod_beta triple_of_def)
@@ -2302,7 +2303,7 @@ qed
 
 lemma RD_sound:
   assumes "solves_program \<rho> (var_contraints \<union> ana_pg pg)"
-  shows "summarizes_dl \<rho> pg"
+  shows "summarizes_RD \<rho> pg"
   using assms RD_sound' by (cases pg) force 
 
 
@@ -2532,8 +2533,8 @@ proof -
 qed
 
 
-fun summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
-  "summarizes_dl_BV \<rho> \<longleftrightarrow> 
+fun summarizes_fw_may :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+  "summarizes_fw_may \<rho> \<longleftrightarrow> 
      (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
         \<rho> \<Turnstile>\<^sub>q (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
@@ -2787,8 +2788,8 @@ qed
 
 lemma sound_BV:
   assumes "least_solution \<rho> ana_pg_BV s_BV"
-  shows "summarizes_dl_BV \<rho>"
-  using sound_BV' assms unfolding summarizes_dl_BV.simps by (cases pg) fastforce
+  shows "summarizes_fw_may \<rho>"
+  using sound_BV' assms unfolding summarizes_fw_may.simps by (cases pg) fastforce
 
 end
 
@@ -3036,7 +3037,7 @@ fun summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Right
 lemma RD_sound_again: 
   assumes "least_solution \<rho> (interp.ana_pg_BV) s_BV"
   shows "summarizes_RD \<rho>"
-  using assms def_path_S_hat_path interp.sound_BV unfolding interp.summarizes_dl_BV.simps summarizes_RD.simps
+  using assms def_path_S_hat_path interp.sound_BV unfolding interp.summarizes_fw_may.simps summarizes_RD.simps
   using edge_set_def in_mono interp.edge_set_def interp.start_def start_def by fastforce 
 
 end
@@ -3118,11 +3119,9 @@ qed
 definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" where
   "S_hat_path \<pi> = S_hat_edge_list (LTS.transition_list \<pi>)"
 
-definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
-  "summarizes_dl_BV \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
+definition summarizes_bw_may :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+  "summarizes_bw_may \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
                              \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.)"
-
-thm summarizes_dl_BV_def[of \<rho>]
 
 lemma finite_pg_rev: "finite (fst pg_rev)"
   by (metis analysis_BV_backward_may_axioms analysis_BV_backward_may_def edge_set_def finite_imageI fst_conv pg_rev_def)
@@ -3177,11 +3176,11 @@ lemma S_hat_path_forward_backward:
   using S_hat_edge_list_forward_backward unfolding S_hat_path_def fa.S_hat_path_def
   by (metis transition_list_rev_edge_list assms)
 
-lemma summarizes_dl_BV_forward_backward':
+lemma summarizes_bw_may_forward_backward':
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
   assumes "LTS.get_end (ss,w) = end"
   assumes "d \<in> S_hat_path (ss,w) d_init"
-  assumes "fa.summarizes_dl_BV \<rho>"
+  assumes "fa.summarizes_fw_may \<rho>"
   shows "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_start (ss, w)), Encode_Elem_BV d]\<rangle>."
 proof -
   have rev_in_edge_set: "(rev ss, rev w) \<in> LTS.path_with_word fa.edge_set"
@@ -3195,15 +3194,15 @@ proof -
     using assms(1) S_hat_path_forward_backward by auto
   ultimately
   have "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_end (rev ss, rev w)), Encode_Elem_BV d]\<rangle>."
-    using assms(4) fa.summarizes_dl_BV.simps by blast
+    using assms(4) fa.summarizes_fw_may.simps by blast
   then show ?thesis
     by (metis LTS.get_end_def LTS.get_start_def fst_conv hd_rev rev_rev_ident)
 qed
 
 lemma summarizes_dl_BV_forward_backward:
-  assumes "fa.summarizes_dl_BV \<rho>"
-  shows "summarizes_dl_BV \<rho>"
-  unfolding summarizes_dl_BV_def
+  assumes "fa.summarizes_fw_may \<rho>"
+  shows "summarizes_bw_may \<rho>"
+  unfolding summarizes_bw_may_def
 proof(rule; rule ; rule ;rule ;rule)
   fix \<pi> d
   assume "\<pi> \<in> LTS.path_with_word edge_set"
@@ -3213,12 +3212,12 @@ proof(rule; rule ; rule ;rule ;rule)
   assume "d \<in> S_hat_path \<pi> d_init"
   ultimately
   show "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>."
-    using summarizes_dl_BV_forward_backward'[of "fst \<pi>" "snd \<pi>" d \<rho>] using assms by auto
+    using summarizes_bw_may_forward_backward'[of "fst \<pi>" "snd \<pi>" d \<rho>] using assms by auto
 qed
 
 lemma sound_rev_BV:
   assumes "least_solution \<rho> fa.ana_pg_BV s_BV"
-  shows "summarizes_dl_BV \<rho>"
+  shows "summarizes_bw_may \<rho>"
   using assms fa.sound_BV[of \<rho>] summarizes_dl_BV_forward_backward by metis
 
 end
@@ -3439,10 +3438,10 @@ lemma LV_sound:
   assumes "least_solution \<rho> (interpb.ana_pg_BV) s_BV"
   shows "summarizes_LV \<rho>"
 proof -
-  from assms have "interpb.summarizes_dl_BV \<rho>"
+  from assms have "interpb.summarizes_bw_may \<rho>"
     using interpb.sound_rev_BV[of \<rho>] by auto
   then show ?thesis
-    unfolding summarizes_LV_def interpb.summarizes_dl_BV_def interpb.edge_set_def edge_set_def
+    unfolding summarizes_LV_def interpb.summarizes_bw_may_def interpb.edge_set_def edge_set_def
       interpb.end_def end_def use_path_S_hat_path by blast
 qed
 end
@@ -3522,8 +3521,8 @@ lemma S_hat_path_mono:
   shows "S_hat_path \<pi> d1 \<subseteq> S_hat_path \<pi> d2"
   unfolding S_hat_path_def using assms S_hat_edge_list_mono by auto
 
-fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
-   "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
+fun summarizes_FW_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+   "summarizes_FW_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_end d.
          \<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>. \<longrightarrow>
           (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = Decode_Node_BV \<pi>_end \<longrightarrow> (Decode_Elem_BV d) \<in> S_hat_path \<pi> d_init))"
@@ -4939,7 +4938,7 @@ proof -
     using not_CBV2[OF assms(1), of "(LTS.get_end \<pi>)" "Decode_Elem_BV d"] assms(2) \<pi>e d_encdec by force
   have "\<not>Decode_Elem_BV d \<in> a_may.S_hat_path \<pi> (analysis_dom - d_init)"
     using a_may.sound_BV assms(1)
-    unfolding a_may.summarizes_dl_BV.simps
+    unfolding a_may.summarizes_fw_may.simps
      a_may.edge_set_def a_may.start_def assms(2) assms(4) assms(5) edge_set_def m start_def
     by (metis assms(3) assms(4) d_encdec edge_set_def m start_def)
   then show "Decode_Elem_BV d \<in> S_hat_path \<pi> d_init"
@@ -4950,8 +4949,8 @@ qed
 
 lemma sound_CBV:
   assumes "least_solution \<rho> ana_pg_BV s_BV"
-  shows "summarizes_dl_BV_must \<rho>"
-  using assms unfolding summarizes_dl_BV_must.simps using sound_BV_must' by auto
+  shows "summarizes_FW_must \<rho>"
+  using assms unfolding summarizes_FW_must.simps using sound_BV_must' by auto
 
 end
 
@@ -5185,21 +5184,21 @@ lemma S_hat_path_forward_backward: (* Copy paste *)
   using S_hat_edge_list_forward_backward unfolding S_hat_path_def fa.S_hat_path_def
   by (metis transition_list_rev_edge_list assms)
 
-lemma summarizes_dl_BV_forward_backward':
-  assumes "fa.summarizes_dl_BV_must \<rho>"
+lemma summarizes_FW_must_forward_backward':
+  assumes "fa.summarizes_FW_must \<rho>"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_start, d]\<rangle>."
   assumes "\<pi> \<in> LTS.path_with_word edge_set"
   assumes "LTS.get_end \<pi> = end"
   assumes "LTS.get_start \<pi> = Decode_Node_BV \<pi>_start"
   shows "Decode_Elem_BV d \<in> S_hat_path \<pi> d_init"
   using LTS.get_end_def LTS.get_start_def S_hat_path_forward_backward 
-    analysis_BV_backward_must_axioms assms fa.start_def fa.summarizes_dl_BV_must.simps fst_conv 
+    analysis_BV_backward_must_axioms assms fa.start_def fa.summarizes_FW_must.simps fst_conv 
     hd_rev last_rev pg_rev_def rev_path_in_rev_pg snd_conv fa.edge_set_def prod.collapse 
   by (metis (no_types, lifting))
     (* TODO? Expand proof into something coherent? *)
 
 lemma summarizes_dl_BV_forward_backward: (* Copy paste statement by adapted proof *)
-  assumes "fa.summarizes_dl_BV_must \<rho>"
+  assumes "fa.summarizes_FW_must \<rho>"
   shows "summarizes_dl_BV_must \<rho>"
   unfolding summarizes_dl_BV_must.simps
 proof(rule; rule ; rule ;rule ;rule; rule; rule)
@@ -5213,7 +5212,7 @@ proof(rule; rule ; rule ;rule ;rule; rule; rule)
   assume "LTS.get_start \<pi> = Decode_Node_BV \<pi>_start"
   ultimately
   show "Decode_Elem_BV d \<in> S_hat_path \<pi> d_init"
-    by (metis assms summarizes_dl_BV_forward_backward')
+    by (metis assms summarizes_FW_must_forward_backward')
 qed
 
 lemma sound_rev_BV:
