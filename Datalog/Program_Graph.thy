@@ -173,16 +173,15 @@ definition solves_program :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_progr
   "\<rho> \<Turnstile>\<^sub>d\<^sub>l dl \<longleftrightarrow> (\<forall>c \<in> dl. \<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c)"
 
 
-section \<open>Queries (not in the book?)\<close>
+section \<open>Facts (not in the book?)\<close> (* TODO: get rid of these*)
 
-type_synonym ('p,'x,'e) query = "'p * ('x,'e) identifier list" (* The query type is the same as the lh type... *)
+type_synonym ('p,'x,'e) fact = "'p * ('x,'e) identifier list" (* The fact type is the same as the lh type... *)
 
-fun meaning_query :: "('p,'x,'e) query \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>q") where
-  "\<lbrakk>(p,ids)\<rbrakk>\<^sub>q \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<in> \<rho> p"
+fun meaning_fact :: "('p,'x,'e) fact \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>f") where
+  "\<lbrakk>(p,ids)\<rbrakk>\<^sub>f \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<in> \<rho> p"
 
-fun solves_query :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) query \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>q" 91) where
-  "\<rho> \<Turnstile>\<^sub>q (p,ids) \<longleftrightarrow> (\<forall>\<sigma>. \<lbrakk>(p,ids)\<rbrakk>\<^sub>q \<rho> \<sigma>)"
-
+fun solves_fact :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) fact \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>f" 91) where
+  "\<rho> \<Turnstile>\<^sub>f (p,ids) \<longleftrightarrow> (\<forall>\<sigma>. \<lbrakk>(p,ids)\<rbrakk>\<^sub>f \<rho> \<sigma>)"
 
 section \<open>Substitutions (not in the book?)\<close>
 
@@ -210,7 +209,7 @@ fun subst_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('x,'e) subst \<Rightarrow> (
 fun subst_cls :: "('p,'x,'e) clause \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) clause" (infix "\<cdot>\<^sub>c\<^sub>l\<^sub>s" 50) where
   "(Cls p ids rhs) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<eta>  = Cls p (ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>) (rhs \<cdot>\<^sub>r\<^sub>h\<^sub>s \<eta>)"
 
-fun subst_query :: "('p,'x,'e) query \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) query" (infix "\<cdot>\<^sub>q" 50) where
+fun subst_fact :: "('p,'x,'e) fact \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) fact" (infix "\<cdot>\<^sub>q" 50) where
   "(p,ids) \<cdot>\<^sub>q \<eta>  = (p, (ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>))"
 
 definition compose :: "('x,'e) subst \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('x,'e) var_val" (infix "\<circ>\<^sub>s\<^sub>v" 50) where
@@ -240,7 +239,7 @@ fun substv_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('x,'e) var_val \<Rightarrow
 fun substv_cls :: "('p,'x,'e) clause \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) clause" (infix "\<cdot>\<^sub>v\<^sub>c\<^sub>l\<^sub>s" 50) where
   "(Cls p ids rhs) \<cdot>\<^sub>v\<^sub>c\<^sub>l\<^sub>s \<sigma>  = Cls p (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>) (rhs \<cdot>\<^sub>v\<^sub>r\<^sub>h\<^sub>s \<sigma>)"
 
-fun substv_query :: "('p,'x,'e) query \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) query" (infix "\<cdot>\<^sub>v\<^sub>q" 50) where
+fun substv_fact :: "('p,'x,'e) fact \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) fact" (infix "\<cdot>\<^sub>v\<^sub>q" 50) where
   "(p,ids) \<cdot>\<^sub>v\<^sub>q \<sigma>  = (p,  ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>)"
 
 
@@ -251,12 +250,12 @@ subsection \<open>Solve facts\<close>
 lemma solves_fact_iff_solves_lh: "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids [] \<longleftrightarrow> \<rho> \<Turnstile>\<^sub>r\<^sub>h PosRh p ids"
   using solves_cls_def by force
 
-lemma solves_fact_query:
+lemma solves_fact_fact:
   assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p args []"
-  shows "\<rho> \<Turnstile>\<^sub>q (p, args)"
+  shows "\<rho> \<Turnstile>\<^sub>f (p, args)"
   using assms unfolding solves_cls_def by auto
 
-lemmas solve_facts = solves_fact_iff_solves_lh solves_fact_query
+lemmas solve_facts = solves_fact_iff_solves_lh solves_fact_fact
 
 subsection \<open>Resolution\<close>
 
@@ -268,29 +267,29 @@ lemma resolution_last_from_cls_rh_to_cls:
   shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p args rhs"
   using assms unfolding solves_cls_def by auto
 
-lemma resolution_last_from_cls_query_to_cls:
+lemma resolution_last_from_cls_fact_to_cls:
   assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p args (rhs @ [PosRh p ids])"
-  assumes "\<rho> \<Turnstile>\<^sub>q (p, ids)"
+  assumes "\<rho> \<Turnstile>\<^sub>f (p, ids)"
   shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p args rhs"
   using assms by (force simp add: solves_cls_def)
 
-lemmas resolution_last = resolution_last_from_cls_rh_to_cls resolution_last_from_cls_query_to_cls
+lemmas resolution_last = resolution_last_from_cls_rh_to_cls resolution_last_from_cls_fact_to_cls
 
 
 subsubsection \<open>Of only right hand\<close>
 
-lemma resolution_only_from_cls_query_to_query:
+lemma resolution_only_from_cls_fact_to_fact:
   assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids [PosRh p' ids']"
-  assumes "\<rho> \<Turnstile>\<^sub>q (p', ids')"
-  shows "\<rho> \<Turnstile>\<^sub>q (p, ids)"
+  assumes "\<rho> \<Turnstile>\<^sub>f (p', ids')"
+  shows "\<rho> \<Turnstile>\<^sub>f (p, ids)"
   using assms
 proof -
   from assms(2) have "\<forall>\<sigma>. \<lbrakk>PosRh p' ids'\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
     by fastforce
   then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids []"
     using assms(1) self_append_conv2 solves_rh.elims(3) resolution_last_from_cls_rh_to_cls by metis 
-  then show "\<rho> \<Turnstile>\<^sub>q (p, ids)"
-    by (meson solves_fact_query)
+  then show "\<rho> \<Turnstile>\<^sub>f (p, ids)"
+    by (meson solves_fact_fact)
 qed
 
 lemma resolution_only_from_cls_cls_to_cls:
@@ -299,17 +298,17 @@ lemma resolution_only_from_cls_cls_to_cls:
   shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids []"
   by (metis append_self_conv2 assms resolution_last_from_cls_rh_to_cls solves_fact_iff_solves_lh)
 
-lemmas resolution_only = resolution_only_from_cls_query_to_query resolution_only_from_cls_cls_to_cls
+lemmas resolution_only = resolution_only_from_cls_fact_to_fact resolution_only_from_cls_cls_to_cls
 
 subsubsection \<open>Of all right hands\<close>
 
-lemma resolution_all_from_cls_rhs_to_query:
+lemma resolution_all_from_cls_rhs_to_fact:
   assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
   assumes "\<forall>rh\<in>set rhs. \<rho> \<Turnstile>\<^sub>r\<^sub>h rh"
-  shows "\<rho> \<Turnstile>\<^sub>q (p, ids)"
-  using assms unfolding solves_cls_def meaning_query.simps by force
+  shows "\<rho> \<Turnstile>\<^sub>f (p, ids)"
+  using assms unfolding solves_cls_def meaning_fact.simps by force
 
-lemmas resolution_all = resolution_all_from_cls_rhs_to_query
+lemmas resolution_all = resolution_all_from_cls_rhs_to_fact
 
 lemmas resolution = resolution_last resolution_only resolution_all
 
@@ -2020,10 +2019,10 @@ abbreviation RD1_Cls :: "(RD_var, 'e) identifier list \<Rightarrow> (RD_pred, RD
 abbreviation VAR_Cls :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) clause" ("VAR\<langle>_\<rangle> :-.") where
   "VAR\<langle>x\<rangle> :-. == Cls the_VAR [Encode_Var x] []"
 
-abbreviation RD1_Query :: "(RD_var, 'e) identifier list \<Rightarrow> (RD_pred, RD_var, 'e) query" ("RD1\<langle>_\<rangle>.") where 
+abbreviation RD1_Fact :: "(RD_var, 'e) identifier list \<Rightarrow> (RD_pred, RD_var, 'e) fact" ("RD1\<langle>_\<rangle>.") where 
   "RD1\<langle>args\<rangle>. \<equiv> (the_RD1, args)"
 
-abbreviation VAR_Query :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) query" ("VAR\<langle>_\<rangle>.") where 
+abbreviation VAR_Fact :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) fact" ("VAR\<langle>_\<rangle>.") where 
   "VAR\<langle>x\<rangle>. \<equiv> (the_VAR, [Encode_Var x])"
 
 
@@ -2089,7 +2088,7 @@ fun summarizes_RD :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('n,'v) p
        \<pi> \<in> LTS.path_with_word es \<longrightarrow>
        LTS.get_start \<pi> = start \<longrightarrow>
        (x, q1, q2) \<in> def_path \<pi> start \<longrightarrow> 
-       \<rho> \<Turnstile>\<^sub>q RD1\<langle>[Encode_Node (LTS.get_end \<pi>), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
+       \<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node (LTS.get_end \<pi>), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
 
 lemma def_var_x: "fst (def_var ts x start) = x"
   unfolding def_var_def by (simp add: case_prod_beta triple_of_def)
@@ -2141,7 +2140,7 @@ lemma RD_sound':
   assumes "solves_program \<rho> (var_contraints \<union> ana_RD (es, start, end))"
   assumes "LTS.get_start (ss,w) = start"
   assumes "(x,q1,q2) \<in> def_path (ss,w) start"
-  shows "\<rho> \<Turnstile>\<^sub>q RD1\<langle>[Encode_Node (LTS.get_end (ss, w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+  shows "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node (LTS.get_end (ss, w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
   using assms 
 proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   case (1 s)
@@ -2187,15 +2186,15 @@ next
       using True ana_RD.simps sq by fastforce
     then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [] ."
       using 2(5) unfolding solves_program_def by auto
-    then have "\<rho> \<Turnstile>\<^sub>q RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
-      using solves_fact_query by metis 
+    then have "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+      using solves_fact_fact by metis 
     then show ?thesis
       by (simp add: LTS.get_end_def sq)
   next
     case False
     then have x_is_def: "(x, q1, q2) \<in> def_path (ss @ [s], w) start" using 2(7)
       using not_last_def_transition len by force
-    then have "\<rho> \<Turnstile>\<^sub>q RD1\<langle>[Encode_Node (LTS.get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+    then have "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node (LTS.get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
     proof -
       have "(ss @ [s], w) \<in> LTS.path_with_word es"
         using 2(1) by auto
@@ -2210,10 +2209,10 @@ next
       have "(x, q1, q2) \<in> def_path (ss @ [s], w) start"
         using x_is_def by auto
       ultimately
-      show "\<rho> \<Turnstile>\<^sub>q RD1\<langle>[Encode_Node (LTS.get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+      show "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node (LTS.get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
         using 2(3) by auto
     qed
-    then have ind: "\<rho> \<Turnstile>\<^sub>q RD1\<langle>[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+    then have ind: "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
       by (simp add: LTS.get_end_def)
     define \<mu> where "\<mu> = undefined(the_\<u> := Encode_Var x, the_\<v> := Encode_Node_Q q1, the_\<w> := Encode_Node q2)"
     show ?thesis
@@ -2247,9 +2246,9 @@ next
                          :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]] ."
         using xy' by (simp add: resolution_last_from_cls_rh_to_cls)
       then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [] ."
-        using ind using resolution_last_from_cls_query_to_cls[of \<rho> the_RD1 ] by (metis append.left_neutral) 
-      then have "\<rho> \<Turnstile>\<^sub>q RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
-        using solves_fact_query by metis
+        using ind using resolution_last_from_cls_fact_to_cls[of \<rho> the_RD1 ] by (metis append.left_neutral) 
+      then have "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+        using solves_fact_fact by metis
       then show ?thesis
         by (simp add: LTS.get_end_def)
     next
@@ -2269,7 +2268,7 @@ next
       ultimately have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> 
                                :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]] ."
         by (metis substitution_rule)
-      then have "\<rho> \<Turnstile>\<^sub>q RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+      then have "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
         using ind
         by (meson resolution_only)
       then show ?thesis
@@ -2293,7 +2292,7 @@ next
       have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> 
                     :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]] ."
         by (metis substitution_rule)
-      from resolution_only_from_cls_query_to_query[OF this ind] have "\<rho> \<Turnstile>\<^sub>q RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+      from resolution_only_from_cls_fact_to_fact[OF this ind] have "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
         .
       then show ?thesis
         by (simp add: LTS.get_end_def)
@@ -2351,13 +2350,13 @@ abbreviation kill_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, B
 abbreviation gen_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("gen\<langle>_\<rangle> :- _ .") where 
   "gen\<langle>args\<rangle> :- ls. \<equiv> Cls the_gen args ls"
 
-abbreviation BV_Query :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) query" ("BV\<langle>_\<rangle>.") where 
+abbreviation BV_Fact :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) fact" ("BV\<langle>_\<rangle>.") where 
   "BV\<langle>args\<rangle>. \<equiv> (the_BV, args)"
 
-abbreviation CBV_Query :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) query" ("CBV\<langle>_\<rangle>.") where 
+abbreviation CBV_Fact :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) fact" ("CBV\<langle>_\<rangle>.") where 
   "CBV\<langle>args\<rangle>. \<equiv> (the_CBV, args)"
 
-abbreviation init_Query :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) query" ("init\<langle>_\<rangle>.") where (* is this needed? *)
+abbreviation init_Fact :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) fact" ("init\<langle>_\<rangle>.") where (* is this needed? *)
   "init\<langle>args\<rangle>. \<equiv> (the_init, args)"
 
 datatype ('n,'v,'elem) BV_elem =
@@ -2535,7 +2534,7 @@ qed
 fun summarizes_fw_may :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
   "summarizes_fw_may \<rho> \<longleftrightarrow> 
      (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
-        \<rho> \<Turnstile>\<^sub>q (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
+        \<rho> \<Turnstile>\<^sub>f (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
 lemma S_hat_path_append:
   assumes "length qs = length w"                               
@@ -2603,8 +2602,8 @@ lemma ana_pg_fw_may_finite: "finite ana_pg_fw_may"
   done
 
 
-fun vars_query :: "('p,'x,'e) query \<Rightarrow> 'x set" where
-  "vars_query (p,ids) = vars_ids ids"
+fun vars_fact :: "('p,'x,'e) fact \<Rightarrow> 'x set" where
+  "vars_fact (p,ids) = vars_ids ids"
 
 lemma not_kill:
   fixes \<rho> :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val"
@@ -2674,7 +2673,7 @@ lemma sound_ana_pg_fw_may':
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_may s_BV"
   assumes "LTS.get_start (ss,w) = start"
   assumes "d \<in> S_hat_path (ss,w) d_init"
-  shows "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_end (ss, w)), Encode_Elem_BV d]\<rangle>."
+  shows "\<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV (LTS.get_end (ss, w)), Encode_Elem_BV d]\<rangle>."
   using assms 
 proof (induction arbitrary: d rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   case (1 s)
@@ -2699,15 +2698,15 @@ proof (induction arbitrary: d rule: LTS.path_with_word_induct_reverse[OF assms(1
   ultimately have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s BV\<langle>[Encode_Node_BV start, Encode_Elem_BV d]\<rangle> :- [] ."
     using resolution_only_from_cls_cls_to_cls by metis
   then show ?case
-    using start_end solves_fact_query by metis
+    using start_end solves_fact_fact by metis
 next
   case (2 qs qnminus1 w \<alpha> qn)
   have "S_hat_path (qs @ [qnminus1], w) d_init \<subseteq>
-        {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_end (qs @ [qnminus1], w)), Encode_Elem_BV d]\<rangle>.}"
+        {d. \<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV (LTS.get_end (qs @ [qnminus1], w)), Encode_Elem_BV d]\<rangle>.}"
     using 2
     by (metis (no_types, lifting) LTS.get_start_def hd_append2 list.sel(1) mem_Collect_eq prod.sel(1) self_append_conv2 subsetI) 
   then have f: "S_hat (qnminus1, \<alpha>, qn) (S_hat_path (qs @ [qnminus1], w) d_init) \<subseteq>
-             S_hat (qnminus1, \<alpha>, qn) {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_end (qs @ [qnminus1], w)), Encode_Elem_BV d]\<rangle>.}"
+             S_hat (qnminus1, \<alpha>, qn) {d. \<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV (LTS.get_end (qs @ [qnminus1], w)), Encode_Elem_BV d]\<rangle>.}"
     by (simp add: S_hat_mono)
   have "length qs = length w"
     using 2(1) LTS.path_with_word_lengths by metis
@@ -2717,20 +2716,20 @@ next
   have "... = S_hat (qnminus1, \<alpha>, qn) (S_hat_path (qs @ [qnminus1], w) d_init)"
     by simp
   moreover 
-  have "... \<subseteq> S_hat (qnminus1, \<alpha>, qn) {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
+  have "... \<subseteq> S_hat (qnminus1, \<alpha>, qn) {d. \<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
     by (metis f LTS.get_end_def last_snoc prod.sel(1))
   ultimately 
-  have "S_hat_path (qs @ [qnminus1, qn], w @ [\<alpha>]) d_init \<subseteq> S_hat (qnminus1, \<alpha>, qn) {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
+  have "S_hat_path (qs @ [qnminus1, qn], w @ [\<alpha>]) d_init \<subseteq> S_hat (qnminus1, \<alpha>, qn) {d. \<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
     by auto
-  then have "d \<in> S_hat (qnminus1, \<alpha>, qn) {d. solves_query \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
+  then have "d \<in> S_hat (qnminus1, \<alpha>, qn) {d. solves_fact \<rho> BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.}"
     using 2(7) by auto
-  then have "  d \<in> {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.} - kill_set (qnminus1, \<alpha>, qn)
+  then have "  d \<in> {d. \<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.} - kill_set (qnminus1, \<alpha>, qn)
              \<or> d \<in> gen_set (qnminus1, \<alpha>, qn)"
     unfolding S_hat_def by auto
-  then have "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
+  then have "\<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
   proof
-    assume a: "d \<in> {d. \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.} - kill_set (qnminus1, \<alpha>, qn)"
-    from a have a_1: "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>."
+    assume a: "d \<in> {d. \<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>.} - kill_set (qnminus1, \<alpha>, qn)"
+    from a have a_1: "\<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV qnminus1, Encode_Elem_BV d]\<rangle>."
       by auto
     moreover
     have e_in_pg: "(qnminus1, \<alpha>, qn) \<in> edge_set"
@@ -2753,8 +2752,8 @@ next
     then have "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>kill [Encode_Node_BV qnminus1, Encode_Action_BV \<alpha>, Encode_Node_BV qn, Encode_Elem_BV d]" (* Could maybe be phrased better *)
       by auto
     ultimately
-    show "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
-      using resolution_only_from_cls_query_to_query by (metis (no_types, lifting) Cons_eq_appendI resolution_last_from_cls_rh_to_cls resolution_only_from_cls_query_to_query self_append_conv2)
+    show "\<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
+      using resolution_only_from_cls_fact_to_fact by (metis (no_types, lifting) Cons_eq_appendI resolution_last_from_cls_rh_to_cls resolution_only_from_cls_fact_to_fact self_append_conv2)
 
   next
     assume a: "d \<in> gen_set (qnminus1, \<alpha>, qn)"
@@ -2778,8 +2777,8 @@ next
     then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s gen\<langle>[Encode_Node_BV qnminus1, Encode_Action_BV \<alpha>, Encode_Node_BV qn, Encode_Elem_BV d]\<rangle> :- [] ."
       by auto
     ultimately
-    show "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
-      by (meson resolution_only_from_cls_query_to_query solves_fact_query)
+    show "\<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV qn, Encode_Elem_BV d]\<rangle>."
+      by (meson resolution_only_from_cls_fact_to_fact solves_fact_fact)
   qed
   then show ?case
     by (simp add: LTS.get_end_def)
@@ -3031,7 +3030,7 @@ lemma def_path_S_hat_path: "def_path \<pi> start = interp.S_hat_path \<pi> d_ini
 
 fun summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Rightarrow> bool" where
   "summarizes_RD \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> def_path \<pi> start \<longrightarrow> 
-                        \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.)"
+                        \<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.)"
 
 lemma RD_sound_again: 
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (interp.ana_pg_fw_may) s_BV"
@@ -3120,7 +3119,7 @@ definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set
 
 definition summarizes_bw_may :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
   "summarizes_bw_may \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
-                             \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.)"
+                             \<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.)"
 
 lemma finite_pg_rev: "finite (fst pg_rev)"
   by (metis analysis_BV_backward_may_axioms analysis_BV_backward_may_def edge_set_def finite_imageI fst_conv pg_rev_def)
@@ -3180,7 +3179,7 @@ lemma summarizes_bw_may_forward_backward':
   assumes "LTS.get_end (ss,w) = end"
   assumes "d \<in> S_hat_path (ss,w) d_init"
   assumes "fa.summarizes_fw_may \<rho>"
-  shows "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_start (ss, w)), Encode_Elem_BV d]\<rangle>."
+  shows "\<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV (LTS.get_start (ss, w)), Encode_Elem_BV d]\<rangle>."
 proof -
   have rev_in_edge_set: "(rev ss, rev w) \<in> LTS.path_with_word fa.edge_set"
     using assms(1) rev_path_in_rev_pg[of ss w] fa.edge_set_def pg_rev_def by auto 
@@ -3192,7 +3191,7 @@ proof -
     using assms(3)
     using assms(1) S_hat_path_forward_backward by auto
   ultimately
-  have "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_end (rev ss, rev w)), Encode_Elem_BV d]\<rangle>."
+  have "\<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV (LTS.get_end (rev ss, rev w)), Encode_Elem_BV d]\<rangle>."
     using assms(4) fa.summarizes_fw_may.simps by blast
   then show ?thesis
     by (metis LTS.get_end_def LTS.get_start_def fst_conv hd_rev rev_rev_ident)
@@ -3210,7 +3209,7 @@ proof(rule; rule ; rule ;rule ;rule)
   moreover
   assume "d \<in> S_hat_path \<pi> d_init"
   ultimately
-  show "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>."
+  show "\<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>."
     using summarizes_bw_may_forward_backward'[of "fst \<pi>" "snd \<pi>" d \<rho>] using assms by auto
 qed
 
@@ -3431,7 +3430,7 @@ lemma use_path_S_hat_path: "use_path \<pi> = interpb.S_hat_path \<pi> d_init_LV"
 
 definition summarizes_LV :: "(BV_pred, ('n,'v,'v) BV_elem) pred_val \<Rightarrow> bool" where
   "summarizes_LV \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> use_path \<pi> \<longrightarrow> 
-                         \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.)"
+                         \<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.)"
 
 lemma LV_sound:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (interpb.ana_pg_bw_may) s_BV"
@@ -3523,7 +3522,7 @@ lemma S_hat_path_mono:
 fun summarizes_fw_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
    "summarizes_fw_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_end d.
-         \<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>. \<longrightarrow>
+         \<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>_end, d]\<rangle>. \<longrightarrow>
           (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = Decode_Node_BV \<pi>_end \<longrightarrow> (Decode_Elem_BV d) \<in> S_hat_path \<pi> d_init))"
 
 
@@ -3943,20 +3942,20 @@ qed
 
 lemma not_CBV2:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Node_BV q, Encode_Elem_BV d]\<rangle>."
-  assumes "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV q, Encode_Elem_BV d]\<rangle>."
+  assumes "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[Encode_Node_BV q, Encode_Elem_BV d]\<rangle>."
+  assumes "\<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV q, Encode_Elem_BV d]\<rangle>."
   shows "False"
 proof -
   have "[BV_Node q, BV_Elem d] \<in> \<rho> the_CBV"
     using assms(2)
-    unfolding solves_query.simps
-    unfolding meaning_query.simps
+    unfolding solves_fact.simps
+    unfolding meaning_fact.simps
     by auto
   moreover
   have "[BV_Node q, BV_Elem d] \<in> \<rho> the_BV"
     using assms(3)
-    unfolding solves_query.simps
-    unfolding meaning_query.simps
+    unfolding solves_fact.simps
+    unfolding meaning_fact.simps
     by auto
   ultimately
   show "False"
@@ -3967,7 +3966,7 @@ thm analysis_BV_forward_may.not_kill
 
 lemma not_init_node:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  shows "\<not>\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Node_BV q]\<rangle>."
+  shows "\<not>\<rho> \<Turnstile>\<^sub>f init\<langle>[Encode_Node_BV q]\<rangle>."
 proof -
   have "\<forall>\<sigma>. \<lbrakk>\<^bold>\<not> the_init [Encode_Node_BV q]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
   proof 
@@ -4005,7 +4004,7 @@ qed
 
 lemma not_init_action: (* Copy paste adapt from not_init_node. They are kind of special cases of meaning_neg_rh because *)
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  shows "\<not>\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Action_BV q]\<rangle>."
+  shows "\<not>\<rho> \<Turnstile>\<^sub>f init\<langle>[Encode_Action_BV q]\<rangle>."
 proof -
   have "\<forall>\<sigma>. \<lbrakk>\<^bold>\<not> the_init [Encode_Action_BV q]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
   proof 
@@ -4043,13 +4042,13 @@ qed
 
 lemma is_elem_if_init:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
+  assumes "\<rho> \<Turnstile>\<^sub>f init\<langle>[d]\<rangle>."
   shows "is_elem d"
 proof (cases d)
   case (DLVar x)
-  then have "\<rho> \<Turnstile>\<^sub>q init\<langle>[DLVar x]\<rangle>."
+  then have "\<rho> \<Turnstile>\<^sub>f init\<langle>[DLVar x]\<rangle>."
     using DLVar assms(2) by auto
-  then have "\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Node_BV undefined]\<rangle>."
+  then have "\<rho> \<Turnstile>\<^sub>f init\<langle>[Encode_Node_BV undefined]\<rangle>."
     by auto
   then have "False"
     using assms(1) not_init_node by blast
@@ -4063,7 +4062,7 @@ qed
 
 lemma is_bv_elem_if_init:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[DLElement d]\<rangle>."
+  assumes "\<rho> \<Turnstile>\<^sub>f init\<langle>[DLElement d]\<rangle>."
   shows "is_bv_elem d"
 proof (cases "d")
   case (BV_Node x1)
@@ -4081,7 +4080,7 @@ qed
 
 lemma in_analysis_dom_if_init': (* init, like kill and gen doesn't have righthandsides, so we could make a lemma like uuuuuuuuh_aaa for this case??? *)
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Elem_BV d]\<rangle>."
+  assumes "\<rho> \<Turnstile>\<^sub>f init\<langle>[Encode_Elem_BV d]\<rangle>."
   shows "d \<in> analysis_dom"
 proof -
   have "\<forall>\<sigma> :: BV_var \<Rightarrow> ('n, 'v, 'd) BV_elem. d \<in> analysis_dom"
@@ -4114,7 +4113,7 @@ qed
 
 lemma in_analysis_dom_if_init:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
+  assumes "\<rho> \<Turnstile>\<^sub>f init\<langle>[d]\<rangle>."
   shows "Decode_Elem_BV d \<in> analysis_dom"
 proof -
   have "is_elem d"
@@ -4138,8 +4137,8 @@ thm not_init_action
 (*
 lemma init_if_CBV':
   assumes "least_solution \<rho> ana_pg_BV s_BV"
-  assumes "\<lbrakk>CBV\<langle>[\<pi>_end, d]\<rangle>.\<rbrakk>\<^sub>q \<rho> \<sigma>"
-  shows "\<lbrakk>init\<langle>[d]\<rangle>.\<rbrakk>\<^sub>q \<rho> \<sigma>"
+  assumes "\<lbrakk>CBV\<langle>[\<pi>_end, d]\<rangle>.\<rbrakk>\<^sub>f \<rho> \<sigma>"
+  shows "\<lbrakk>init\<langle>[d]\<rangle>.\<rbrakk>\<^sub>f \<rho> \<sigma>"
 (* Okay, det kan da godt være men hvad hvis du man var i en situation hvor d'et i CBV og d'et i init havde forskellige variable.
    I det tilfælde skal man måske sige "der er en renaming".
 
@@ -4151,10 +4150,10 @@ proof -
 
 lemma init_if_CBV:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
-  shows "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
+  assumes "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>_end, d]\<rangle>."
+  shows "\<rho> \<Turnstile>\<^sub>f init\<langle>[d]\<rangle>."
 proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
-  assume asm: "\<not> \<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
+  assume asm: "\<not> \<rho> \<Turnstile>\<^sub>f init\<langle>[d]\<rangle>."
   then have "\<exists>\<sigma>. \<not>[\<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>] \<in> \<rho> the_init"
     by auto
   then obtain \<sigma> where asm': "\<not>[\<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>] \<in> \<rho> the_init"
@@ -4356,7 +4355,7 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
   moreover
   have "[\<lbrakk>\<pi>_end\<rbrakk>\<^sub>i\<^sub>d \<sigma>, \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>] \<in> \<rho> the_CBV"
     using assms(2)
-    unfolding solves_query.simps
+    unfolding solves_fact.simps
     apply auto
     done
   have "\<rho>' \<sqsubset>s_BV\<sqsubset> \<rho>"
@@ -4385,15 +4384,15 @@ qed
 
 lemma is_elem_if_CBV:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>, d]\<rangle>."
+  assumes "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>, d]\<rangle>."
   shows "is_elem d"
   using is_elem_if_init init_if_CBV assms by metis
 
 lemma not_CBV_action: (* Copy paste adapt from not_init_node *)
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  shows "\<not>\<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Action_BV q,d]\<rangle>."
+  shows "\<not>\<rho> \<Turnstile>\<^sub>f CBV\<langle>[Encode_Action_BV q,d]\<rangle>."
 proof
-  assume asm_2: "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Action_BV q,d]\<rangle>."
+  assume asm_2: "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[Encode_Action_BV q,d]\<rangle>."
   then have "[BV_Action q, the_elem d] \<in> \<rho> the_CBV"
     using is_elem_if_CBV[OF assms(1)] by (cases d) auto
 
@@ -4611,20 +4610,20 @@ qed
 
 lemma is_encode_elem_if_CBV_right_arg:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
+  assumes "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>_end, d]\<rangle>."
   shows "\<exists>d'. d = Encode_Elem_BV d'"
 proof -
-  have "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
+  have "\<rho> \<Turnstile>\<^sub>f init\<langle>[d]\<rangle>."
     using assms(1) assms(2) init_if_CBV[of \<rho> \<pi>_end d] by fastforce
   show ?thesis
-    by (metis BV_elem.exhaust \<open>\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>.\<close> assms(1) is_elem_def not_init_action is_elem_if_init not_init_node)
+    by (metis BV_elem.exhaust \<open>\<rho> \<Turnstile>\<^sub>f init\<langle>[d]\<rangle>.\<close> assms(1) is_elem_def not_init_action is_elem_if_init not_init_node)
 qed
 
 lemma not_CBV_elem: (* Copy paste adapt from not_init_node *)
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  shows "\<not>\<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Elem_BV q,d]\<rangle>."
+  shows "\<not>\<rho> \<Turnstile>\<^sub>f CBV\<langle>[Encode_Elem_BV q,d]\<rangle>."
 proof
-  assume asm_2: "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Elem_BV q,d]\<rangle>."
+  assume asm_2: "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[Encode_Elem_BV q,d]\<rangle>."
   then have "[BV_Elem q, the_elem d] \<in> \<rho> the_CBV"
     using is_elem_if_CBV[OF assms(1)] by (cases d) auto
 
@@ -4844,25 +4843,25 @@ thm not_CBV_elem
 
 lemma is_elem_if_CBV_left_arg:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[q,d]\<rangle>."
+  assumes "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[q,d]\<rangle>."
   shows "is_elem q"
 proof (cases q)
   case (DLVar x)
   obtain d' where "d = Encode_Elem_BV d'"
     using assms is_encode_elem_if_CBV_right_arg by blast 
 
-  then have "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[DLVar x, Encode_Elem_BV d']\<rangle>."
+  then have "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[DLVar x, Encode_Elem_BV d']\<rangle>."
     using DLVar assms(2) by auto
-  then have "\<forall>\<sigma>. \<lbrakk>CBV\<langle>[DLVar x, Encode_Elem_BV d']\<rangle>.\<rbrakk>\<^sub>q \<rho> \<sigma>"
-    unfolding solves_query.simps by auto
-  have "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Elem_BV undefined,Encode_Elem_BV d']\<rangle>."
-    unfolding solves_query.simps 
+  then have "\<forall>\<sigma>. \<lbrakk>CBV\<langle>[DLVar x, Encode_Elem_BV d']\<rangle>.\<rbrakk>\<^sub>f \<rho> \<sigma>"
+    unfolding solves_fact.simps by auto
+  have "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[Encode_Elem_BV undefined,Encode_Elem_BV d']\<rangle>."
+    unfolding solves_fact.simps 
   proof 
     fix \<sigma> :: "BV_var \<Rightarrow> ('n, 'v, 'd) BV_elem"
     define \<sigma>' where "\<sigma>' = (\<lambda>y. if y = x then BV_Elem undefined else \<sigma> y)"
-    have "\<lbrakk>CBV\<langle>[DLVar x, Encode_Elem_BV d']\<rangle>.\<rbrakk>\<^sub>q \<rho> \<sigma>'"
-      using \<open>\<forall>\<sigma>. \<lbrakk>CBV\<langle>[DLVar x, Encode_Elem_BV d']\<rangle>.\<rbrakk>\<^sub>q \<rho> \<sigma>\<close> by blast
-    then show "\<lbrakk>CBV\<langle>[Encode_Elem_BV undefined, Encode_Elem_BV d']\<rangle>.\<rbrakk>\<^sub>q \<rho> \<sigma>"
+    have "\<lbrakk>CBV\<langle>[DLVar x, Encode_Elem_BV d']\<rangle>.\<rbrakk>\<^sub>f \<rho> \<sigma>'"
+      using \<open>\<forall>\<sigma>. \<lbrakk>CBV\<langle>[DLVar x, Encode_Elem_BV d']\<rangle>.\<rbrakk>\<^sub>f \<rho> \<sigma>\<close> by blast
+    then show "\<lbrakk>CBV\<langle>[Encode_Elem_BV undefined, Encode_Elem_BV d']\<rangle>.\<rbrakk>\<^sub>f \<rho> \<sigma>"
       apply auto
       unfolding \<sigma>'_def
       apply auto
@@ -4880,7 +4879,7 @@ qed
 
 lemma is_encode_node_if_CBV_left_arg:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[q, d]\<rangle>."
+  assumes "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[q, d]\<rangle>."
   shows "\<exists>q'. q = Encode_Node_BV q'"
 proof -
   show ?thesis
@@ -4911,14 +4910,14 @@ qed
 
 lemma in_analysis_dom_if_CBV:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
+  assumes "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>_end, d]\<rangle>."
   shows "Decode_Elem_BV d \<in> analysis_dom"
   using init_if_CBV
   using assms in_analysis_dom_if_init by blast
 
 lemma sound_BV_must':
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
+  assumes "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>_end, d]\<rangle>."
   assumes "\<pi> \<in> LTS.path_with_word edge_set"
   assumes "LTS.get_start \<pi> = start"
   assumes "LTS.get_end \<pi> = Decode_Node_BV \<pi>_end"
@@ -4933,7 +4932,7 @@ proof -
   have d_encdec: "d = Encode_Elem_BV (Decode_Elem_BV d)"
     by (metis BV_elem.sel(2) assms(1) assms(2) identifier.sel(2) is_encode_elem_if_CBV_right_arg)
 
-  have m: "\<not> \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), d]\<rangle>."
+  have m: "\<not> \<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), d]\<rangle>."
     using not_CBV2[OF assms(1), of "(LTS.get_end \<pi>)" "Decode_Elem_BV d"] assms(2) \<pi>e d_encdec by force
   have "\<not>Decode_Elem_BV d \<in> a_may.S_hat_path \<pi> (analysis_dom - d_init)"
     using a_may.sound_ana_pg_fw_may assms(1)
@@ -5132,7 +5131,7 @@ definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set
 fun summarizes_bw_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where (* Ny *)
    "summarizes_bw_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_start d.
-         \<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_start, d]\<rangle>. \<longrightarrow>
+         \<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>_start, d]\<rangle>. \<longrightarrow>
           (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> LTS.get_start \<pi> = Decode_Node_BV \<pi>_start \<longrightarrow> Decode_Elem_BV d \<in> S_hat_path \<pi> d_init))"
 
 lemma finite_pg_rev: "finite (fst pg_rev)" (* Copy paste *)
@@ -5185,7 +5184,7 @@ lemma S_hat_path_forward_backward: (* Copy paste *)
 
 lemma summarizes_fw_must_forward_backward':
   assumes "fa.summarizes_fw_must \<rho>"
-  assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_start, d]\<rangle>."
+  assumes "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>_start, d]\<rangle>."
   assumes "\<pi> \<in> LTS.path_with_word edge_set"
   assumes "LTS.get_end \<pi> = end"
   assumes "LTS.get_start \<pi> = Decode_Node_BV \<pi>_start"
@@ -5202,7 +5201,7 @@ lemma summarizes_bw_must_forward_backward: (* Copy paste statement by adapted pr
   unfolding summarizes_bw_must.simps
 proof(rule; rule ; rule ;rule ;rule; rule; rule)
   fix \<pi>_start d \<pi>
-  assume "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_start, d]\<rangle>."
+  assume "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>_start, d]\<rangle>."
   moreover
   assume "\<pi> \<in> LTS.path_with_word edge_set"
   moreover
@@ -5228,27 +5227,27 @@ FORWARD MAY:
 fun summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
   "summarizes_dl_BV \<rho> \<longleftrightarrow> 
      (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
-        \<rho> \<Turnstile>\<^sub>q (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
+        \<rho> \<Turnstile>\<^sub>f (BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.))"
 
 
 BACKWARD MAY:
 definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
   "summarizes_dl_BV \<rho> \<longleftrightarrow> 
      (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> S_hat_path \<pi> d_init \<longrightarrow> 
-                             \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.)"
+                             \<rho> \<Turnstile>\<^sub>f BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.)"
 
 FORWARD MUST:
 fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
   "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_end d.
-        \<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Node_BV \<pi>_end, Encode_Elem_BV d]\<rangle>. \<longrightarrow>
+        \<rho> \<Turnstile>\<^sub>f CBV\<langle>[Encode_Node_BV \<pi>_end, Encode_Elem_BV d]\<rangle>. \<longrightarrow>
           (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = \<pi>_end \<longrightarrow> d \<in> S_hat_path \<pi> d_init))"
 
 BACKWARD MUST:
 fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
   "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_start d.
-        \<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Node_BV \<pi>_start, Encode_Elem_BV d]\<rangle>. \<longrightarrow>
+        \<rho> \<Turnstile>\<^sub>f CBV\<langle>[Encode_Node_BV \<pi>_start, Encode_Elem_BV d]\<rangle>. \<longrightarrow>
           (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> LTS.get_start \<pi> = \<pi>_start \<longrightarrow> d \<in> S_hat_path \<pi> d_init))"
 
 MAY  betyder \<Turnstile> på højresiden og BV.
