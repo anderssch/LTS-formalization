@@ -410,11 +410,11 @@ definition lt :: "('p,'e) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'e) 
 definition lte :: "('p,'e) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'e) pred_val \<Rightarrow> bool" ("_ \<sqsubseteq>_\<sqsubseteq> _") where
   "(\<rho> \<sqsubseteq>s\<sqsubseteq> \<rho>') \<longleftrightarrow> \<rho> = \<rho>' \<or> (\<rho> \<sqsubset>s\<sqsubset> \<rho>')"
 
-definition least_solution :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> bool" where
-  "least_solution \<rho> dl s \<longleftrightarrow> (\<rho> \<Turnstile>\<^sub>d\<^sub>l dl \<and> (\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l dl \<longrightarrow> \<rho> \<sqsubseteq>s\<sqsubseteq> \<rho>'))"
+definition least_solution :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> bool" ("_ \<Turnstile>\<^sub>l\<^sub>s\<^sub>t") where
+  "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s \<longleftrightarrow> (\<rho> \<Turnstile>\<^sub>d\<^sub>l dl \<and> (\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l dl \<longrightarrow> \<rho> \<sqsubseteq>s\<sqsubseteq> \<rho>'))"
 
-definition minimal_solution :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> bool" where
-  "minimal_solution \<rho> dl s \<longleftrightarrow> (\<rho> \<Turnstile>\<^sub>d\<^sub>l dl \<and> (\<nexists>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l dl \<and> \<rho>' \<sqsubset>s\<sqsubset> \<rho>))"
+definition minimal_solution :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> bool"  ("_ \<Turnstile>\<^sub>m\<^sub>i\<^sub>n") where
+  "\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n dl s \<longleftrightarrow> (\<rho> \<Turnstile>\<^sub>d\<^sub>l dl \<and> (\<nexists>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l dl \<and> \<rho>' \<sqsubset>s\<sqsubset> \<rho>))"
 
 lemma lte_def2:
   "(\<rho> \<sqsubseteq>s\<sqsubseteq> \<rho>') \<longleftrightarrow> \<rho> \<noteq> \<rho>' \<longrightarrow> (\<rho> \<sqsubset>s\<sqsubset> \<rho>')"
@@ -1359,17 +1359,17 @@ qed
 
 lemma solve_pg_0_least_solution:
   assumes "strat_wf s dl"
-  shows "least_solution (solve_pg s dl 0) (dl --s-- 0) s"
+  shows "(solve_pg s dl 0) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- 0) s"
   using assms least_solution_def solve_pg_0_below_solution solve_pg_0_solves_dl by blast 
 
 lemma solve_pg_Suc_least_solution:
   assumes "strat_wf s dl"
-  shows "least_solution (solve_pg s dl (Suc n)) (dl --s-- (Suc n)) s"
+  shows "(solve_pg s dl (Suc n)) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- (Suc n)) s"
   using assms least_solution_def solve_pg_Suc_solves_dl solve_pg_below_solution by blast (* Man kunne styrke dette til least og ikke kun "slår \<rho>". Nok en god idé tbh. Meh. Du har nogle beviser på papir som nok er bedre *)
 
 lemma solve_pg_least_solution':
   assumes "strat_wf s dl"
-  shows "least_solution (solve_pg s dl n) (dl --s-- n) s"
+  shows "(solve_pg s dl n) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- n) s"
   using assms solve_pg_0_least_solution solve_pg_Suc_least_solution by (cases n) auto
 
 lemma strata_less_eq_max_strata:
@@ -1415,9 +1415,9 @@ qed
 lemma solve_pg_least_solution:
   assumes "finite dl"
   assumes "strat_wf s dl"
-  shows "least_solution (solve_pg s dl (max_strata s dl)) dl s"
+  shows "(solve_pg s dl (max_strata s dl)) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
 proof -
-  have "least_solution (solve_pg s dl (max_strata s dl)) (dl --s-- (max_strata s dl)) s"
+  have "(solve_pg s dl (max_strata s dl)) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- (max_strata s dl)) s"
     using solve_pg_least_solution' assms by auto
   then show ?thesis
     using finite_max_strata assms by metis
@@ -1429,9 +1429,9 @@ subsubsection \<open>Equality of least and minimal solution\<close>
 lemma least_is_minimal:
   assumes "finite dl"
   assumes "strat_wf s dl"
-  shows "least_solution \<rho> dl s \<longleftrightarrow> minimal_solution \<rho> dl s"
+  shows "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s \<longleftrightarrow> \<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n dl s"
 proof
-  assume "least_solution \<rho> dl s"
+  assume "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
   then have \<sigma>_least: "\<rho> \<Turnstile>\<^sub>d\<^sub>l dl" "(\<forall>\<sigma>'. \<sigma>' \<Turnstile>\<^sub>d\<^sub>l dl \<longrightarrow> \<rho> \<sqsubseteq>s\<sqsubseteq> \<sigma>')"
     unfolding least_solution_def by auto
   then have "(\<nexists>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l dl \<and> \<rho>' \<sqsubset>s\<sqsubset> \<rho>)"
@@ -1439,10 +1439,10 @@ proof
   then show "minimal_solution \<rho> dl s"
     unfolding minimal_solution_def using \<sigma>_least by metis
 next
-  assume min: "minimal_solution \<rho> dl s"
-  have "\<exists>\<rho>'. least_solution \<rho>' dl s"
+  assume min: "\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n dl s"
+  have "\<exists>\<rho>'. \<rho>' \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
     using solve_pg_least_solution assms by metis
-  then show "least_solution \<rho> dl s"
+  then show "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
     by (metis min least_solution_def lte_def minimal_solution_def)
 qed
 
@@ -1462,15 +1462,15 @@ lemma downward_least_solution:
   assumes "finite dl"
   assumes "n > m"
   assumes "strat_wf s dl"
-  assumes "least_solution \<rho> (dl --s-- n) s"
-  shows "least_solution (\<rho> \\s\\ m) (dl --s-- m) s"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- n) s"
+  shows "(\<rho> \\s\\ m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- m) s"
 proof (rule ccontr)
-  assume a: "\<not> least_solution (\<rho> \\s\\ m) (dl --s-- m) s"
+  assume a: "\<not> (\<rho> \\s\\ m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- m) s"
   have strrr: "strat_wf s (dl --s-- m)"
     using assms strat_wf_mod_if_strat_wf by auto
   have strrrr: "strat_wf s (dl --s-- n)"
     using assms strat_wf_mod_if_strat_wf by auto
-  from a have "\<not> minimal_solution  (\<rho> \\s\\ m) (dl --s-- m) s"
+  from a have "\<not> (\<rho> \\s\\ m) \<Turnstile>\<^sub>m\<^sub>i\<^sub>n (dl --s-- m) s"
     using least_is_minimal strrr assms(1) finite_below_finite by metis
   moreover 
   have "(\<rho> \\s\\ m) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
@@ -1546,9 +1546,9 @@ proof (rule ccontr)
       using c_def by blast
   qed
   ultimately
-  have "\<not>minimal_solution \<rho> (dl --s-- n) s"
+  have "\<not>\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n (dl --s-- n) s"
     unfolding minimal_solution_def by auto
-  then have "\<not>least_solution \<rho> (dl --s-- n) s" 
+  then have "\<not>\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- n) s" 
     using least_is_minimal strrrr finite_below_finite assms by metis
   then show "False"
     using assms by auto
@@ -1557,13 +1557,13 @@ qed
 lemma downward_least_solution2:
   assumes "finite dl"
   assumes "strat_wf s dl"
-  assumes "least_solution \<rho> dl s"
-  shows "least_solution (\<rho> \\s\\ m) (dl --s-- m) s"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
+  shows "(\<rho> \\s\\ m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- m) s"
 proof (rule ccontr)
-  assume a: "\<not> least_solution (\<rho> \\s\\ m) (dl --s-- m) s"
+  assume a: "\<not> (\<rho> \\s\\ m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- m) s"
   have strrr: "strat_wf s (dl --s-- m)"
     using assms strat_wf_mod_if_strat_wf by auto
-  from a have "\<not> minimal_solution  (\<rho> \\s\\ m) (dl --s-- m) s"
+  from a have "\<not> (\<rho> \\s\\ m) \<Turnstile>\<^sub>m\<^sub>i\<^sub>n (dl --s-- m) s"
     using least_is_minimal strrr finite_below_finite assms by metis  
   moreover 
   have "(\<rho> \\s\\ m) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
@@ -1639,9 +1639,9 @@ proof (rule ccontr)
       using c_def by blast
   qed
   ultimately
-  have "\<not>minimal_solution \<rho> dl s"
+  have "\<not> \<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n dl s"
     unfolding minimal_solution_def by auto
-  then have "\<not>least_solution \<rho> dl s" 
+  then have "\<not>\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s" 
     using least_is_minimal[OF assms(1) assms(2)] by metis
   then show "False"
     using assms by auto
@@ -1849,7 +1849,7 @@ qed
 
 lemma uuuuuuuuh_aaa:
   assumes "finite dl"
-  assumes "least_solution \<rho> dl s"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
   assumes "strat_wf s dl"
   assumes "\<lbrakk>PosRh p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
   shows "\<exists>c \<in> (dl --s-- s p). \<exists>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<and> (\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>')"
@@ -1862,7 +1862,7 @@ proof (rule ccontr)
   define \<rho>' where "\<rho>' = (\<rho> \\s\\ s p)"
   define dl' where "dl' = (dl --s-- s p)"
 
-  have \<rho>'_least: "least_solution \<rho>' dl' s"
+  have \<rho>'_least: "\<rho>' \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl' s"
     using downward_solves[of \<rho> dl s] assms downward_least_solution2 unfolding \<rho>'_def dl'_def by blast
   moreover
   have no_match: "\<forall>c \<in> dl'. \<forall>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<longrightarrow> \<not>(\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho>' \<sigma>')"
@@ -1982,7 +1982,7 @@ qed
 
 lemma meaning_neg_rh:
   assumes "finite dl"
-  assumes "least_solution \<rho> dl s"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
   assumes "strat_wf s dl"
   assumes "\<forall>c \<in> (dl --s-- s p). \<forall>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<longrightarrow> \<not>(\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>')"
   shows "\<lbrakk>\<^bold>\<not> p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
@@ -2610,7 +2610,7 @@ fun vars_query :: "('p,'x,'e) query \<Rightarrow> 'x set" where
 lemma not_kill:
   fixes \<rho> :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val"
   assumes "d \<notin> kill_set(q\<^sub>o, \<alpha>, q\<^sub>s)"
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   shows "[BV_Node q\<^sub>o, BV_Action \<alpha>, BV_Node q\<^sub>s, BV_Elem d] \<notin> \<rho> the_kill"
 proof -
   have "\<forall>\<sigma>. \<lbrakk>\<^bold>\<not>kill [Encode_Node_BV q\<^sub>o, Encode_Action_BV \<alpha>, Encode_Node_BV q\<^sub>s, Encode_Elem_BV d]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
@@ -2619,7 +2619,7 @@ proof -
     have "finite ana_pg_BV"
       by (simp add: ana_pg_BV_finite)
     moreover
-    have "least_solution \<rho> ana_pg_BV s_BV"
+    have "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
       using assms(2) by blast
     moreover
     have "strat_wf s_BV ana_pg_BV"
@@ -2672,7 +2672,7 @@ lemma the_funny_invariant:
 
 lemma sound_BV': 
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   assumes "LTS.get_start (ss,w) = start"
   assumes "d \<in> S_hat_path (ss,w) d_init"
   shows "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_end (ss, w)), Encode_Elem_BV d]\<rangle>."
@@ -2787,7 +2787,7 @@ next
 qed
 
 lemma sound_BV:
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   shows "summarizes_fw_may \<rho>"
   using sound_BV' assms unfolding summarizes_fw_may.simps by (cases pg) fastforce
 
@@ -3035,7 +3035,7 @@ fun summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Right
                         \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_end \<pi>), Encode_Elem_BV d]\<rangle>.)"
 
 lemma RD_sound_again: 
-  assumes "least_solution \<rho> (interp.ana_pg_BV) s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (interp.ana_pg_BV) s_BV"
   shows "summarizes_RD \<rho>"
   using assms def_path_S_hat_path interp.sound_BV unfolding interp.summarizes_fw_may.simps summarizes_RD.simps
   using edge_set_def in_mono interp.edge_set_def interp.start_def start_def by fastforce 
@@ -3216,7 +3216,7 @@ proof(rule; rule ; rule ;rule ;rule)
 qed
 
 lemma sound_rev_BV:
-  assumes "least_solution \<rho> fa.ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t fa.ana_pg_BV s_BV"
   shows "summarizes_bw_may \<rho>"
   using assms fa.sound_BV[of \<rho>] summarizes_dl_BV_forward_backward by metis
 
@@ -3435,7 +3435,7 @@ definition summarizes_LV :: "(BV_pred, ('n,'v,'v) BV_elem) pred_val \<Rightarrow
                          \<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV (LTS.get_start \<pi>), Encode_Elem_BV d]\<rangle>.)"
 
 lemma LV_sound:
-  assumes "least_solution \<rho> (interpb.ana_pg_BV) s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (interpb.ana_pg_BV) s_BV"
   shows "summarizes_LV \<rho>"
 proof -
   from assms have "interpb.summarizes_bw_may \<rho>"
@@ -3521,8 +3521,8 @@ lemma S_hat_path_mono:
   shows "S_hat_path \<pi> d1 \<subseteq> S_hat_path \<pi> d2"
   unfolding S_hat_path_def using assms S_hat_edge_list_mono by auto
 
-fun summarizes_FW_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
-   "summarizes_FW_must \<rho> \<longleftrightarrow>
+fun summarizes_fw_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+   "summarizes_fw_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_end d.
          \<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>. \<longrightarrow>
           (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = Decode_Node_BV \<pi>_end \<longrightarrow> (Decode_Elem_BV d) \<in> S_hat_path \<pi> d_init))"
@@ -3673,16 +3673,16 @@ qed
 
 lemma not_CBV:
   assumes "[BV_Node q, BV_Elem d] \<in> \<rho> the_CBV"
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   assumes a: "[BV_Node q, BV_Elem d] \<in> \<rho> the_BV"                  
   shows False
 proof -
   have fin: "finite ana_pg_BV"
     using a_may.ana_pg_BV_finite by auto
 
-  have "least_solution \<rho> ana_pg_BV s_BV"
+  have "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
     using assms(2) by force
-  then have "minimal_solution \<rho> ana_pg_BV s_BV"
+  then have "\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n ana_pg_BV s_BV"
     using a_may.ana_pg_BV_stratified least_is_minimal[of ana_pg_BV s_BV \<rho>] fin by auto
   then have \<rho>_sol: "\<rho> \<Turnstile>\<^sub>d\<^sub>l ana_pg_BV"
     using assms(2) least_solution_def by blast
@@ -3939,12 +3939,12 @@ proof -
   qed
   ultimately
   show "False"
-    using \<open>minimal_solution \<rho> ana_pg_BV s_BV\<close> minimal_solution_def
+    using \<open>\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n ana_pg_BV s_BV\<close> minimal_solution_def
     by blast 
 qed
 
 lemma not_CBV2:
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Node_BV q, Encode_Elem_BV d]\<rangle>."
   assumes "\<rho> \<Turnstile>\<^sub>q BV\<langle>[Encode_Node_BV q, Encode_Elem_BV d]\<rangle>."
   shows "False"
@@ -3968,7 +3968,7 @@ qed
 thm analysis_BV_forward_may.not_kill
 
 lemma not_init_node:
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   shows "\<not>\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Node_BV q]\<rangle>."
 proof -
   have "\<forall>\<sigma>. \<lbrakk>\<^bold>\<not> the_init [Encode_Node_BV q]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
@@ -4006,7 +4006,7 @@ proof -
 qed
 
 lemma not_init_action: (* Copy paste adapt from not_init_node. They are kind of special cases of meaning_neg_rh because *)
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   shows "\<not>\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Action_BV q]\<rangle>."
 proof -
   have "\<forall>\<sigma>. \<lbrakk>\<^bold>\<not> the_init [Encode_Action_BV q]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
@@ -4015,7 +4015,7 @@ proof -
     have "finite ana_pg_BV"
       using a_may.ana_pg_BV_finite by linarith
     moreover
-    have "least_solution \<rho> ana_pg_BV s_BV"
+    have "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
       using assms by blast
     moreover
     have "strat_wf s_BV ana_pg_BV"
@@ -4044,7 +4044,7 @@ proof -
 qed
 
 lemma is_elem_if_init:
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
   shows "is_elem d"
 proof (cases d)
@@ -4064,7 +4064,7 @@ next
 qed
 
 lemma is_bv_elem_if_init:
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[DLElement d]\<rangle>."
   shows "is_bv_elem d"
 proof (cases "d")
@@ -4082,7 +4082,7 @@ next
 qed
 
 lemma in_analysis_dom_if_init': (* init, like kill and gen doesn't have righthandsides, so we could make a lemma like uuuuuuuuh_aaa for this case??? *)
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[Encode_Elem_BV d]\<rangle>."
   shows "d \<in> analysis_dom"
 proof -
@@ -4092,7 +4092,7 @@ proof -
     have "finite ana_pg_BV"
       using a_may.ana_pg_BV_finite by blast
     moreover
-    have "least_solution \<rho> ana_pg_BV s_BV"
+    have "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
       using assms(1) by blast
     moreover
     have "strat_wf s_BV ana_pg_BV"
@@ -4115,7 +4115,7 @@ proof -
 qed
 
 lemma in_analysis_dom_if_init:
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
   shows "Decode_Elem_BV d \<in> analysis_dom"
 proof -
@@ -4152,7 +4152,7 @@ proof -
 *)
 
 lemma init_if_CBV:
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
   shows "\<rho> \<Turnstile>\<^sub>q init\<langle>[d]\<rangle>."
 proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
@@ -4164,10 +4164,10 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
 
   have "finite ana_pg_BV"
     using a_may.ana_pg_BV_finite by auto
-  then have "least_solution \<rho> ana_pg_BV s_BV"
+  then have "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
     using downward_least_solution2[of ana_pg_BV s_BV \<rho> 2] assms(2)
     using a_may.ana_pg_BV_stratified assms(1) by blast 
-  then have "minimal_solution \<rho> ana_pg_BV s_BV"
+  then have "\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n ana_pg_BV s_BV"
     using least_is_minimal[of]
     using strat_wf_mod_if_strat_wf  \<open>finite ana_pg_BV\<close> finite_below_finite
     by (smt (verit) a_may.ana_pg_BV_stratified) 
@@ -4385,13 +4385,13 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
 qed
 
 lemma is_elem_if_CBV:
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>, d]\<rangle>."
   shows "is_elem d"
   using is_elem_if_init init_if_CBV assms by metis
 
 lemma not_CBV_action: (* Copy paste adapt from not_init_node *)
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   shows "\<not>\<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Action_BV q,d]\<rangle>."
 proof
   assume asm_2: "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Action_BV q,d]\<rangle>."
@@ -4400,10 +4400,10 @@ proof
 
   have "finite ana_pg_BV"
     using a_may.ana_pg_BV_finite by auto
-  then have "least_solution \<rho> ana_pg_BV s_BV"
+  then have "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
     using downward_least_solution2[of ana_pg_BV s_BV \<rho> 0] asm_2
     using a_may.ana_pg_BV_stratified assms(1) by blast 
-  then have "minimal_solution \<rho> ana_pg_BV s_BV"
+  then have "\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n ana_pg_BV s_BV"
     using least_is_minimal[of]
     using strat_wf_mod_if_strat_wf  \<open>finite ana_pg_BV\<close> finite_below_finite
     by (smt (verit) a_may.ana_pg_BV_stratified) 
@@ -4611,7 +4611,7 @@ proof
 qed
 
 lemma is_encode_elem_if_CBV_right_arg:
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
   shows "\<exists>d'. d = Encode_Elem_BV d'"
 proof -
@@ -4622,7 +4622,7 @@ proof -
 qed
 
 lemma not_CBV_elem: (* Copy paste adapt from not_init_node *)
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   shows "\<not>\<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Elem_BV q,d]\<rangle>."
 proof
   assume asm_2: "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[Encode_Elem_BV q,d]\<rangle>."
@@ -4631,10 +4631,10 @@ proof
 
   have "finite ana_pg_BV"
     using a_may.ana_pg_BV_finite by auto
-  then have "least_solution \<rho> ana_pg_BV s_BV"
+  then have "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
     using downward_least_solution2[of ana_pg_BV s_BV \<rho> 0] asm_2
     using a_may.ana_pg_BV_stratified assms(1) by blast 
-  then have "minimal_solution \<rho> ana_pg_BV s_BV"
+  then have "\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n ana_pg_BV s_BV"
     using least_is_minimal[of]
     using strat_wf_mod_if_strat_wf  \<open>finite ana_pg_BV\<close> finite_below_finite
     by (smt (verit) a_may.ana_pg_BV_stratified) 
@@ -4844,7 +4844,7 @@ thm not_CBV_action
 thm not_CBV_elem
 
 lemma is_elem_if_CBV_left_arg:
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[q,d]\<rangle>."
   shows "is_elem q"
 proof (cases q)
@@ -4880,7 +4880,7 @@ next
 qed
 
 lemma is_encode_node_if_CBV_left_arg:
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[q, d]\<rangle>."
   shows "\<exists>q'. q = Encode_Node_BV q'"
 proof -
@@ -4911,14 +4911,14 @@ proof -
 qed
 
 lemma in_analysis_dom_if_CBV:
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
   shows "Decode_Elem_BV d \<in> analysis_dom"
   using init_if_CBV
   using assms in_analysis_dom_if_init by blast
 
 lemma sound_BV_must':
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_end, d]\<rangle>."
   assumes "\<pi> \<in> LTS.path_with_word edge_set"
   assumes "LTS.get_start \<pi> = start"
@@ -4948,9 +4948,9 @@ proof -
 qed
 
 lemma sound_CBV:
-  assumes "least_solution \<rho> ana_pg_BV s_BV"
-  shows "summarizes_FW_must \<rho>"
-  using assms unfolding summarizes_FW_must.simps using sound_BV_must' by auto
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_BV s_BV"
+  shows "summarizes_fw_must \<rho>"
+  using assms unfolding summarizes_fw_must.simps using sound_BV_must' by auto
 
 end
 
@@ -5130,8 +5130,8 @@ qed
 definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" where (* Copy paste *)
   "S_hat_path \<pi> = S_hat_edge_list (LTS.transition_list \<pi>)"
 
-fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where (* Ny *)
-   "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
+fun summarizes_bw_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where (* Ny *)
+   "summarizes_bw_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_start d.
          \<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_start, d]\<rangle>. \<longrightarrow>
           (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> LTS.get_start \<pi> = Decode_Node_BV \<pi>_start \<longrightarrow> Decode_Elem_BV d \<in> S_hat_path \<pi> d_init))"
@@ -5184,23 +5184,23 @@ lemma S_hat_path_forward_backward: (* Copy paste *)
   using S_hat_edge_list_forward_backward unfolding S_hat_path_def fa.S_hat_path_def
   by (metis transition_list_rev_edge_list assms)
 
-lemma summarizes_FW_must_forward_backward':
-  assumes "fa.summarizes_FW_must \<rho>"
+lemma summarizes_fw_must_forward_backward':
+  assumes "fa.summarizes_fw_must \<rho>"
   assumes "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_start, d]\<rangle>."
   assumes "\<pi> \<in> LTS.path_with_word edge_set"
   assumes "LTS.get_end \<pi> = end"
   assumes "LTS.get_start \<pi> = Decode_Node_BV \<pi>_start"
   shows "Decode_Elem_BV d \<in> S_hat_path \<pi> d_init"
   using LTS.get_end_def LTS.get_start_def S_hat_path_forward_backward 
-    analysis_BV_backward_must_axioms assms fa.start_def fa.summarizes_FW_must.simps fst_conv 
+    analysis_BV_backward_must_axioms assms fa.start_def fa.summarizes_fw_must.simps fst_conv 
     hd_rev last_rev pg_rev_def rev_path_in_rev_pg snd_conv fa.edge_set_def prod.collapse 
   by (metis (no_types, lifting))
     (* TODO? Expand proof into something coherent? *)
 
-lemma summarizes_dl_BV_forward_backward: (* Copy paste statement by adapted proof *)
-  assumes "fa.summarizes_FW_must \<rho>"
-  shows "summarizes_dl_BV_must \<rho>"
-  unfolding summarizes_dl_BV_must.simps
+lemma summarizes_bw_must_forward_backward: (* Copy paste statement by adapted proof *)
+  assumes "fa.summarizes_fw_must \<rho>"
+  shows "summarizes_bw_must \<rho>"
+  unfolding summarizes_bw_must.simps
 proof(rule; rule ; rule ;rule ;rule; rule; rule)
   fix \<pi>_start d \<pi>
   assume "\<rho> \<Turnstile>\<^sub>q CBV\<langle>[\<pi>_start, d]\<rangle>."
@@ -5212,13 +5212,13 @@ proof(rule; rule ; rule ;rule ;rule; rule; rule)
   assume "LTS.get_start \<pi> = Decode_Node_BV \<pi>_start"
   ultimately
   show "Decode_Elem_BV d \<in> S_hat_path \<pi> d_init"
-    by (metis assms summarizes_FW_must_forward_backward')
+    by (metis assms summarizes_fw_must_forward_backward')
 qed
 
 lemma sound_rev_BV:
-  assumes "least_solution \<rho> fa.ana_pg_BV s_BV"
-  shows "summarizes_dl_BV_must \<rho>"
-  using assms fa.sound_CBV[of \<rho>] summarizes_dl_BV_forward_backward by metis
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t fa.ana_pg_BV s_BV"
+  shows "summarizes_bw_must \<rho>"
+  using assms fa.sound_CBV[of \<rho>] summarizes_bw_must_forward_backward by metis
 
 (* 
 
