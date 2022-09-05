@@ -2335,34 +2335,34 @@ fun s_BV :: "BV_pred \<Rightarrow> nat" where
 | "s_BV the_BV = 1"
 | "s_BV the_CBV = 2"
 
-abbreviation BV_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("BV\<langle>_\<rangle> :- _ .") where 
-  "BV\<langle>args\<rangle> :- ls. \<equiv> Cls the_BV args ls"
-
-abbreviation CBV_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("CBV\<langle>_\<rangle> :- _ .") where
-  "CBV\<langle>args\<rangle> :- ls. \<equiv> Cls the_CBV args ls"
-
-abbreviation init_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("init\<langle>_\<rangle> :- _ .") where 
-  "init\<langle>args\<rangle> :- ls. \<equiv> Cls the_init args ls"
-
-abbreviation kill_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("kill\<langle>_\<rangle> :- _ .") where 
-  "kill\<langle>args\<rangle> :- ls. \<equiv> Cls the_kill args ls"
-
-abbreviation gen_Cls :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) righthand list \<Rightarrow> (BV_pred, BV_var, 'e) clause" ("gen\<langle>_\<rangle> :- _ .") where 
-  "gen\<langle>args\<rangle> :- ls. \<equiv> Cls the_gen args ls"
-
-abbreviation BV_Fact :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) fact" ("BV\<langle>_\<rangle>.") where 
-  "BV\<langle>args\<rangle>. \<equiv> (the_BV, args)"
-
-abbreviation CBV_Fact :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) fact" ("CBV\<langle>_\<rangle>.") where 
-  "CBV\<langle>args\<rangle>. \<equiv> (the_CBV, args)"
-
-abbreviation init_Fact :: "(BV_var, 'e) identifier list \<Rightarrow> (BV_pred, BV_var, 'e) fact" ("init\<langle>_\<rangle>.") where (* is this needed? *)
-  "init\<langle>args\<rangle>. \<equiv> (the_init, args)"
-
 datatype ('n,'v,'elem) BV_elem =
   BV_Node (the_node: 'n)
   | is_bv_elem: BV_Elem (the_bv_elem: 'elem)
   | BV_Action "'v action"
+
+abbreviation BV_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) righthand list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("BV\<langle>_\<rangle> :- _ .") where 
+   "BV\<langle>args\<rangle> :- ls. \<equiv> Cls the_BV args ls"
+
+abbreviation CBV_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) righthand list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("CBV\<langle>_\<rangle> :- _ .") where
+  "CBV\<langle>args\<rangle> :- ls. \<equiv> Cls the_CBV args ls"
+
+abbreviation init_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) righthand list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("init\<langle>_\<rangle> :- _ .") where 
+  "init\<langle>args\<rangle> :- ls. \<equiv> Cls the_init args ls"
+
+abbreviation kill_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) righthand list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("kill\<langle>_\<rangle> :- _ .") where 
+  "kill\<langle>args\<rangle> :- ls. \<equiv> Cls the_kill args ls"
+
+abbreviation gen_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) righthand list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("gen\<langle>_\<rangle> :- _ .") where 
+  "gen\<langle>args\<rangle> :- ls. \<equiv> Cls the_gen args ls"
+
+abbreviation BV_Fact :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) fact" ("BV\<langle>_\<rangle>.") where  
+  "BV\<langle>args\<rangle>. \<equiv> (the_BV, args)"
+
+abbreviation CBV_Fact :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) fact" ("CBV\<langle>_\<rangle>.") where 
+  "CBV\<langle>args\<rangle>. \<equiv> (the_CBV, args)"
+
+abbreviation init_Fact :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) fact" ("init\<langle>_\<rangle>.") where (* is this needed? *)
+  "init\<langle>args\<rangle>. \<equiv> (the_init, args)"
 
 abbreviation \<uu> :: "(BV_var, 'a) identifier" where
   "\<uu> == DLVar the_\<uu>"
