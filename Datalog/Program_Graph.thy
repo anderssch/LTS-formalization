@@ -2086,8 +2086,7 @@ type_synonym ('n,'v) quadruple = "'n *'v * 'n option * 'n"
 fun summarizes_RD :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
   "summarizes_RD \<rho> (es, start, end) =
     (\<forall>\<pi> x q1 q2.
-       \<pi> \<in> LTS.path_with_word es \<longrightarrow>
-       LTS.get_start \<pi> = start \<longrightarrow>
+       \<pi> \<in> LTS.path_with_word_from es start \<longrightarrow>
        (x, q1, q2) \<in> def_path \<pi> start \<longrightarrow> 
        \<rho> \<Turnstile>\<^sub>f RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N (LTS.get_end \<pi>), Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]\<rangle>.)"
 
