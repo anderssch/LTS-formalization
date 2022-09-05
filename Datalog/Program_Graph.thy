@@ -2003,23 +2003,23 @@ datatype RD_pred =
   the_RD1
   | the_VAR
 
-abbreviation Encode_Node :: "'n \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where
-  "Encode_Node q == DLElement (RD_Node q)"
+abbreviation Encode_RD_Node :: "'n \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where
+  "Encode_RD_Node q == DLElement (RD_Node q)"
 
-fun Encode_Node_Q :: "'n option \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where
-  "Encode_Node_Q (Some q) = DLElement (RD_Node q)"
-| "Encode_Node_Q None = DLElement Questionmark"
+fun Encode_RD_Node_Q :: "'n option \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where
+  "Encode_RD_Node_Q (Some q) = DLElement (RD_Node q)"
+| "Encode_RD_Node_Q None = DLElement Questionmark"
 
 abbreviation Encode_Var :: "'v \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where
   "Encode_Var v == DLElement (RD_Var v)"
 
-abbreviation RD1_Cls :: "(RD_var, 'e) identifier list \<Rightarrow> (RD_pred, RD_var, 'e) righthand list \<Rightarrow> (RD_pred, RD_var, 'e) clause" ("RD1\<langle>_\<rangle> :- _ .") where 
+abbreviation RD1_Cls :: "(RD_var, ('n, 'v) RD_elem) identifier list \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) righthand list \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) clause" ("RD1\<langle>_\<rangle> :- _ .") where 
   "RD1\<langle>args\<rangle> :- ls. \<equiv> Cls the_RD1 args ls"
 
 abbreviation VAR_Cls :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) clause" ("VAR\<langle>_\<rangle> :-.") where
   "VAR\<langle>x\<rangle> :-. == Cls the_VAR [Encode_Var x] []"
 
-abbreviation RD1_Fact :: "(RD_var, 'e) identifier list \<Rightarrow> (RD_pred, RD_var, 'e) fact" ("RD1\<langle>_\<rangle>.") where 
+abbreviation RD1_Fact :: "(RD_var, ('n, 'v) RD_elem) identifier list \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) fact" ("RD1\<langle>_\<rangle>.") where 
   "RD1\<langle>args\<rangle>. \<equiv> (the_RD1, args)"
 
 abbreviation VAR_Fact :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) fact" ("VAR\<langle>_\<rangle>.") where 
@@ -2041,33 +2041,33 @@ abbreviation \<w> :: "(RD_var, 'a) identifier" where
 fun ana_edge :: "('n, 'v) edge \<Rightarrow> (RD_pred, RD_var, ('n,'v) RD_elem) clause set" where
   "ana_edge (q\<^sub>o, x ::= a, q\<^sub>s) =
      {
-        RD1\<langle>[Encode_Node q\<^sub>s, \<u>, \<v>, \<w>]\<rangle> :-
+        RD1\<langle>[Encode_RD_Node q\<^sub>s, \<u>, \<v>, \<w>]\<rangle> :-
           [
-            RD1[Encode_Node q\<^sub>o, \<u>, \<v>, \<w>],
+            RD1[Encode_RD_Node q\<^sub>o, \<u>, \<v>, \<w>],
             \<u> \<^bold>\<noteq> (Encode_Var x)
           ].
         ,
-        RD1\<langle>[Encode_Node q\<^sub>s, Encode_Var x, Encode_Node q\<^sub>o, Encode_Node q\<^sub>s]\<rangle> :- [].
+        RD1\<langle>[Encode_RD_Node q\<^sub>s, Encode_Var x, Encode_RD_Node q\<^sub>o, Encode_RD_Node q\<^sub>s]\<rangle> :- [].
      }"
 | "ana_edge (q\<^sub>o, Bool b, q\<^sub>s) =
      {
-       RD1\<langle>[Encode_Node q\<^sub>s, \<u>, \<v>, \<w>]\<rangle> :-
+       RD1\<langle>[Encode_RD_Node q\<^sub>s, \<u>, \<v>, \<w>]\<rangle> :-
          [
-           RD1[Encode_Node q\<^sub>o, \<u>, \<v>, \<w>]
+           RD1[Encode_RD_Node q\<^sub>o, \<u>, \<v>, \<w>]
          ].
      }"
 | "ana_edge (q\<^sub>o, Skip, q\<^sub>s) =
      {
-       RD1\<langle>[Encode_Node q\<^sub>s, \<u>, \<v>, \<w>]\<rangle> :-
+       RD1\<langle>[Encode_RD_Node q\<^sub>s, \<u>, \<v>, \<w>]\<rangle> :-
          [
-           RD1[Encode_Node q\<^sub>o, \<u>, \<v>, \<w>]
+           RD1[Encode_RD_Node q\<^sub>o, \<u>, \<v>, \<w>]
          ].
      }"
 
 definition ana_entry_node :: "'n \<Rightarrow> (RD_pred, RD_var, ('n,'v) RD_elem) clause set" where
   "ana_entry_node start = 
      {
-       RD1\<langle>[Encode_Node start, \<u>, DLElement Questionmark, Encode_Node start]\<rangle> :-
+       RD1\<langle>[Encode_RD_Node start, \<u>, DLElement Questionmark, Encode_RD_Node start]\<rangle> :-
          [
            VAR[\<u>]
          ].
@@ -2088,7 +2088,7 @@ fun summarizes_RD :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('n,'v) p
        \<pi> \<in> LTS.path_with_word es \<longrightarrow>
        LTS.get_start \<pi> = start \<longrightarrow>
        (x, q1, q2) \<in> def_path \<pi> start \<longrightarrow> 
-       \<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node (LTS.get_end \<pi>), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>.)"
+       \<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_RD_Node (LTS.get_end \<pi>), Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle>.)"
 
 lemma def_var_x: "fst (def_var ts x start) = x"
   unfolding def_var_def by (simp add: case_prod_beta triple_of_def)
@@ -2140,7 +2140,7 @@ lemma RD_sound':
   assumes "solves_program \<rho> (var_contraints \<union> ana_RD (es, start, end))"
   assumes "LTS.get_start (ss,w) = start"
   assumes "(x,q1,q2) \<in> def_path (ss,w) start"
-  shows "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node (LTS.get_end (ss, w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+  shows "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_RD_Node (LTS.get_end (ss, w)), Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle>."
   using assms 
 proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   case (1 s)
@@ -2153,16 +2153,16 @@ proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
   then have x_sat: "[RD_Var x] \<in> \<rho> the_VAR"
     by auto
 
-  have "RD1\<langle>[Encode_Node start, \<u>, DLElement Questionmark, Encode_Node start]\<rangle> :-
+  have "RD1\<langle>[Encode_RD_Node start, \<u>, DLElement Questionmark, Encode_RD_Node start]\<rangle> :-
          [
            VAR[\<u>]
          ]. \<in> ana_RD (es, start, end)"
     by (simp add: ana_entry_node_def)
-  then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node start, \<u>, DLElement Questionmark, Encode_Node start]\<rangle> :- [VAR [\<u>]] ."
+  then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_RD_Node start, \<u>, DLElement Questionmark, Encode_RD_Node start]\<rangle> :- [VAR [\<u>]] ."
     using assms(2) unfolding solves_program_def by auto 
-  then have "\<forall>\<sigma>. \<lbrakk>RD1\<langle>[Encode_Node start, \<u>, DLElement Questionmark, Encode_Node start]\<rangle> :- [VAR [\<u>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
+  then have "\<forall>\<sigma>. \<lbrakk>RD1\<langle>[Encode_RD_Node start, \<u>, DLElement Questionmark, Encode_RD_Node start]\<rangle> :- [VAR [\<u>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
     unfolding solves_cls_def by metis
-  then have "\<lbrakk>RD1\<langle>[Encode_Node start, \<u>, DLElement Questionmark, Encode_Node start]\<rangle> :- [VAR [\<u>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> (\<lambda>v. RD_Var x)"
+  then have "\<lbrakk>RD1\<langle>[Encode_RD_Node start, \<u>, DLElement Questionmark, Encode_RD_Node start]\<rangle> :- [VAR [\<u>]] .\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> (\<lambda>v. RD_Var x)"
     by presburger
   then have "[RD_Var x] \<in> \<rho> the_VAR \<longrightarrow> [RD_Node start, RD_Var x, Questionmark, RD_Node start] \<in> \<rho> the_RD1"
     by simp
@@ -2182,11 +2182,11 @@ next
       using last_def_transition[of ss w x \<alpha> q1 q2 s s'] len by auto
     from True have "\<exists>e. (s,x ::= e,s') \<in> es"
       using "2.hyps"(2) by (cases \<alpha>) auto
-    then have "RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- []. \<in> ana_RD (es, start, end)"
+    then have "RD1\<langle>[Encode_RD_Node q2, Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle> :- []. \<in> ana_RD (es, start, end)"
       using True ana_RD.simps sq by fastforce
-    then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [] ."
+    then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_RD_Node q2, Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle> :- [] ."
       using 2(5) unfolding solves_program_def by auto
-    then have "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node q2, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+    then have "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_RD_Node q2, Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle>."
       using solves_fact_fact by metis 
     then show ?thesis
       by (simp add: LTS.get_end_def sq)
@@ -2194,7 +2194,7 @@ next
     case False
     then have x_is_def: "(x, q1, q2) \<in> def_path (ss @ [s], w) start" using 2(7)
       using not_last_def_transition len by force
-    then have "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node (LTS.get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+    then have "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_RD_Node (LTS.get_end (ss @ [s], w)), Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle>."
     proof -
       have "(ss @ [s], w) \<in> LTS.path_with_word es"
         using 2(1) by auto
@@ -2209,12 +2209,12 @@ next
       have "(x, q1, q2) \<in> def_path (ss @ [s], w) start"
         using x_is_def by auto
       ultimately
-      show "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node (LTS.get_end (ss @ [s], w)), Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+      show "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_RD_Node (LTS.get_end (ss @ [s], w)), Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle>."
         using 2(3) by auto
     qed
-    then have ind: "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+    then have ind: "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_RD_Node s, Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle>."
       by (simp add: LTS.get_end_def)
-    define \<mu> where "\<mu> = undefined(the_\<u> := Encode_Var x, the_\<v> := Encode_Node_Q q1, the_\<w> := Encode_Node q2)"
+    define \<mu> where "\<mu> = undefined(the_\<u> := Encode_Var x, the_\<v> := Encode_RD_Node_Q q1, the_\<w> := Encode_RD_Node q2)"
     show ?thesis
     proof (cases \<alpha>)
       case (Asg y e)
@@ -2224,30 +2224,30 @@ next
         by auto
       have "(s, y ::= e, s') \<in> es"
         using "2.hyps"(2) Asg by auto
-      then have "RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :-
+      then have "RD1\<langle>[Encode_RD_Node s', \<u>, \<v>, \<w>]\<rangle> :-
           [
-            RD1[Encode_Node s, \<u>, \<v>, \<w>],
+            RD1[Encode_RD_Node s, \<u>, \<v>, \<w>],
             \<u> \<^bold>\<noteq> (Encode_Var y)
           ]. \<in> ana_RD (es,start,end)"
         unfolding ana_RD.simps by force
-      from this False have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>], \<u> \<^bold>\<noteq> Encode_Var y] ."
+      from this False have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_RD_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_RD_Node s, \<u>, \<v>, \<w>], \<u> \<^bold>\<noteq> Encode_Var y] ."
         by (meson "2.prems"(2) UnCI solves_program_def)
-      moreover have "(RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :-
+      moreover have "(RD1\<langle>[Encode_RD_Node s', \<u>, \<v>, \<w>]\<rangle> :-
           [
-            RD1[Encode_Node s, \<u>, \<v>, \<w>],
+            RD1[Encode_RD_Node s, \<u>, \<v>, \<w>],
             \<u> \<^bold>\<noteq> (Encode_Var y)
-          ].) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<mu> = RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1 [Encode_Node s,  Encode_Var x, Encode_Node_Q q1, Encode_Node q2], Encode_Var x \<^bold>\<noteq> Encode_Var y] ."
+          ].) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<mu> = RD1\<langle>[Encode_RD_Node s', Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle> :- [RD1 [Encode_RD_Node s,  Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2], Encode_Var x \<^bold>\<noteq> Encode_Var y] ."
         unfolding \<mu>_def by auto
       ultimately
-      have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>
-                    :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2], Encode_Var x \<^bold>\<noteq> Encode_Var y] ."
+      have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_RD_Node s', Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle>
+                    :- [RD1 [Encode_RD_Node s, Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2], Encode_Var x \<^bold>\<noteq> Encode_Var y] ."
         unfolding solves_cls_def by (metis substitution_lemma_cls)
-      then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> 
-                         :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]] ."
+      then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_RD_Node s', Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle> 
+                         :- [RD1 [Encode_RD_Node s, Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]] ."
         using xy' by (simp add: resolution_last_from_cls_rh_to_cls)
-      then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [] ."
+      then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_RD_Node s', Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle> :- [] ."
         using ind using resolution_last_from_cls_fact_to_cls[of \<rho> the_RD1 ] by (metis append.left_neutral) 
-      then have "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+      then have "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_RD_Node s', Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle>."
         using solves_fact_fact by metis
       then show ?thesis
         by (simp add: LTS.get_end_def)
@@ -2255,20 +2255,20 @@ next
       case (Bool b)
       have "(s, Bool b, s') \<in> es"
         using "2.hyps"(2) Bool by auto
-      then have "RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :-
+      then have "RD1\<langle>[Encode_RD_Node s', \<u>, \<v>, \<w>]\<rangle> :-
          [
-           RD1[Encode_Node s, \<u>, \<v>, \<w>]
+           RD1[Encode_RD_Node s, \<u>, \<v>, \<w>]
          ]. \<in> ana_RD (es,start,end)"
         unfolding ana_RD.simps by force
-      then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>]] ."
+      then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_RD_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_RD_Node s, \<u>, \<v>, \<w>]] ."
         by (meson "2.prems"(2) UnCI solves_program_def)
-      moreover have "(RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1[Encode_Node s, \<u>, \<v>, \<w>]].) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<mu> =
-                     RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> :- [RD1[Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]]."
+      moreover have "(RD1\<langle>[Encode_RD_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1[Encode_RD_Node s, \<u>, \<v>, \<w>]].) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<mu> =
+                     RD1\<langle>[Encode_RD_Node s', Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle> :- [RD1[Encode_RD_Node s, Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]]."
         unfolding \<mu>_def by auto
-      ultimately have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> 
-                               :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]] ."
+      ultimately have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_RD_Node s', Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle> 
+                               :- [RD1 [Encode_RD_Node s, Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]] ."
         by (metis substitution_rule)
-      then have "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+      then have "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_RD_Node s', Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle>."
         using ind
         by (meson resolution_only)
       then show ?thesis
@@ -2277,22 +2277,22 @@ next
       case Skip
       have "(s, Skip, s') \<in> es"
         using "2.hyps"(2) Skip by auto
-      then have "RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :-
+      then have "RD1\<langle>[Encode_RD_Node s', \<u>, \<v>, \<w>]\<rangle> :-
          [
-           RD1[Encode_Node s, \<u>, \<v>, \<w>]
+           RD1[Encode_RD_Node s, \<u>, \<v>, \<w>]
          ]. \<in> ana_RD (es,start,end)"
         unfolding ana_RD.simps by force
-      then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>]] ."
+      then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_RD_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_RD_Node s, \<u>, \<v>, \<w>]] ."
         by (meson "2.prems"(2) UnCI solves_program_def)
       moreover
-      have "(RD1\<langle>[Encode_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_Node s, \<u>, \<v>, \<w>]] .) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<mu> =
-            RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>  :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]]."
+      have "(RD1\<langle>[Encode_RD_Node s', \<u>, \<v>, \<w>]\<rangle> :- [RD1 [Encode_RD_Node s, \<u>, \<v>, \<w>]] .) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<mu> =
+            RD1\<langle>[Encode_RD_Node s', Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle>  :- [RD1 [Encode_RD_Node s, Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]]."
         unfolding \<mu>_def by auto
       ultimately 
-      have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle> 
-                    :- [RD1 [Encode_Node s, Encode_Var x, Encode_Node_Q q1, Encode_Node q2]] ."
+      have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD1\<langle>[Encode_RD_Node s', Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle> 
+                    :- [RD1 [Encode_RD_Node s, Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]] ."
         by (metis substitution_rule)
-      from resolution_only_from_cls_fact_to_fact[OF this ind] have "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_Node s', Encode_Var x, Encode_Node_Q q1, Encode_Node q2]\<rangle>."
+      from resolution_only_from_cls_fact_to_fact[OF this ind] have "\<rho> \<Turnstile>\<^sub>f RD1\<langle>[Encode_RD_Node s', Encode_Var x, Encode_RD_Node_Q q1, Encode_RD_Node q2]\<rangle>."
         .
       then show ?thesis
         by (simp add: LTS.get_end_def)
