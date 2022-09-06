@@ -60,6 +60,7 @@ type_synonym ('n,'v) program_graph = "(('n,'v) edge set \<times> 'n \<times> 'n)
 
 term "LTS.path_with_word :: ('n,'v) edge set \<Rightarrow> ('n list \<times> 'v action list) set"
 
+
 section \<open>Execution Sequences\<close>
 
 type_synonym ('n,'v) config = "'n * 'v memory"
@@ -2135,7 +2136,7 @@ proof -
     by (simp add: def_path_def)
 qed
 
-lemma RD_sound': 
+theorem RD_sound': 
   assumes "(ss,w) \<in> LTS.path_with_word_from es start"
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (var_contraints \<union> ana_RD (es, start, end))"
   assumes "(x,q1,q2) \<in> def_path (ss,w) start"
@@ -2298,7 +2299,7 @@ next
   qed
 qed
 
-lemma RD_sound:
+theorem RD_sound:
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (var_contraints \<union> ana_RD pg)"
   shows "summarizes_RD \<rho> pg"
   using assms RD_sound' by (cases pg) force 
@@ -2784,7 +2785,7 @@ next
     by (simp add: LTS.get_end_def)
 qed
 
-lemma sound_ana_pg_fw_may:
+theorem sound_ana_pg_fw_may:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_may s_BV"
   shows "summarizes_fw_may \<rho>"
   using sound_ana_pg_fw_may' assms unfolding summarizes_fw_may_def by (cases pg) fastforce
@@ -3028,15 +3029,15 @@ qed
 lemma def_path_S_hat_path: "def_path \<pi> start = interp.S_hat_path \<pi> d_init_RD"
   using interp.S_hat_path_def def_path_def def_var_UNIV_S_hat_edge_list by metis
 
-fun summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Rightarrow> bool" where
+definition summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Rightarrow> bool" where
   "summarizes_RD \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> def_path \<pi> start \<longrightarrow> 
                         \<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_end \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
-lemma RD_sound_again: 
+theorem RD_sound_again: 
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (interp.ana_pg_fw_may) s_BV"
   shows "summarizes_RD \<rho>"
   using assms def_path_S_hat_path interp.sound_ana_pg_fw_may unfolding interp.summarizes_fw_may_def summarizes_RD.simps
-  using edge_set_def in_mono interp.edge_set_def interp.start_def start_def by fastforce 
+  using edge_set_def in_mono interp.edge_set_def interp.start_def start_def summarizes_RD_def by fastforce 
 
 end
 
@@ -3213,7 +3214,7 @@ proof(rule; rule ; rule ;rule ;rule)
     using summarizes_bw_may_forward_backward'[of "fst \<pi>" "snd \<pi>" d \<rho>] using assms by auto
 qed
 
-lemma sound_rev_BV:
+theorem sound_ana_pg_bw_may:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_bw_may s_BV"
   shows "summarizes_bw_may \<rho>"
   using assms fa.sound_ana_pg_fw_may[of \<rho>] summarizes_dl_BV_forward_backward by metis
@@ -3432,16 +3433,17 @@ definition summarizes_LV :: "(BV_pred, ('n,'v,'v) BV_elem) pred_val \<Rightarrow
   "summarizes_LV \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> use_path \<pi> \<longrightarrow> 
                          \<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_start \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
-lemma LV_sound:
+theorem LV_sound:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (interpb.ana_pg_bw_may) s_BV"
   shows "summarizes_LV \<rho>"
 proof -
   from assms have "interpb.summarizes_bw_may \<rho>"
-    using interpb.sound_rev_BV[of \<rho>] by auto
+    using interpb.sound_ana_pg_bw_may[of \<rho>] by auto
   then show ?thesis
     unfolding summarizes_LV_def interpb.summarizes_bw_may_def interpb.edge_set_def edge_set_def
       interpb.end_def end_def use_path_S_hat_path by blast
 qed
+
 end
 
 
@@ -4941,7 +4943,7 @@ proof -
     using d_ana by blast 
 qed
 
-lemma sound_CBV:
+theorem sound_CBV:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   shows "summarizes_fw_must \<rho>"
   using assms unfolding summarizes_fw_must.simps using sound_BV_must' by auto
@@ -5209,7 +5211,7 @@ proof(rule; rule ; rule ;rule ;rule; rule; rule)
     by (metis assms summarizes_fw_must_forward_backward')
 qed
 
-lemma sound_rev_BV:
+theorem sound_ana_pg_bw_must:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_bw_must s_BV"
   shows "summarizes_bw_must \<rho>"
   using assms fa.sound_CBV[of \<rho>] summarizes_bw_must_forward_backward by metis
