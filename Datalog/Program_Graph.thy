@@ -2136,13 +2136,12 @@ proof -
 qed
 
 lemma RD_sound': 
-  assumes "(ss,w) \<in> LTS.path_with_word es"
+  assumes "(ss,w) \<in> LTS.path_with_word_from es start"
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (var_contraints \<union> ana_RD (es, start, end))"
-  assumes "LTS.get_start (ss,w) = start"
   assumes "(x,q1,q2) \<in> def_path (ss,w) start"
   shows "\<rho> \<Turnstile>\<^sub>f RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N (LTS.get_end (ss, w)), Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]\<rangle>."
   using assms 
-proof (induction rule: LTS.path_with_word_induct_reverse[OF assms(1)])
+proof (induction rule: LTS.path_with_word_from_induct_reverse[OF assms(1)])
   case (1 s)
   have "VAR\<langle>x\<rangle> :-. \<in> var_contraints"
     unfolding var_contraints_def by auto
@@ -2178,7 +2177,7 @@ next
   show ?case 
   proof(cases "x \<in> def_action \<alpha>")
     case True
-    then have sq: "Some s = q1 \<and> s' = q2" using 2(7)
+    then have sq: "Some s = q1 \<and> s' = q2" using 2(6)
       using last_def_transition[of ss w x \<alpha> q1 q2 s s'] len by auto
     from True have "\<exists>e. (s,x ::= e,s') \<in> es"
       using "2.hyps"(2) by (cases \<alpha>) auto
@@ -2192,7 +2191,7 @@ next
       by (simp add: LTS.get_end_def sq)
   next
     case False
-    then have x_is_def: "(x, q1, q2) \<in> def_path (ss @ [s], w) start" using 2(7)
+    then have x_is_def: "(x, q1, q2) \<in> def_path (ss @ [s], w) start" using 2(6)
       using not_last_def_transition len by force
     then have "\<rho> \<Turnstile>\<^sub>f RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N (LTS.get_end (ss @ [s], w)), Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]\<rangle>."
     proof -
@@ -2203,8 +2202,7 @@ next
         using 2(5) by auto
       moreover
       have "LTS.get_start (ss @ [s], w) = start"
-        using 2(6)
-        by (metis append_self_conv2 fst_conv LTS.get_start_def hd_append2 list.sel(1)) 
+        using "2.hyps"(1) by auto
       moreover
       have "(x, q1, q2) \<in> def_path (ss @ [s], w) start"
         using x_is_def by auto
@@ -2410,6 +2408,9 @@ definition start where
 definition "end" where
   "end = snd (snd pg)"
 
+interpretation lts: LTS edge_set
+  .
+
 definition "S_hat" :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>E\<lbrakk>_\<rbrakk> _") where
   "Ŝ\<^sub>E\<lbrakk>e\<rbrakk> R = (R - kill_set e) \<union> gen_set e"
 
@@ -2531,9 +2532,9 @@ proof -
     unfolding \<mu>_def by auto
 qed
 
-fun summarizes_fw_may :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+definition summarizes_fw_may :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
   "summarizes_fw_may \<rho> \<longleftrightarrow> 
-     (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init \<longrightarrow> 
+     (\<forall>\<pi> d. \<pi> \<in> lts.path_with_word_from start \<longrightarrow> d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init \<longrightarrow> 
         \<rho> \<Turnstile>\<^sub>f (BV\<langle>[Cst\<^sub>N (LTS.get_end \<pi>), Cst\<^sub>E d]\<rangle>.))"
 
 lemma S_hat_path_append:
@@ -2669,24 +2670,23 @@ lemma the_funny_invariant:
   using S_hat_path_def the_funny_invariant' by auto
 
 lemma sound_ana_pg_fw_may': 
-  assumes "(ss,w) \<in> LTS.path_with_word edge_set"
+  assumes "(ss,w) \<in> lts.path_with_word_from start"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_may s_BV"
-  assumes "LTS.get_start (ss,w) = start"
   assumes "d \<in> Ŝ\<^sub>P\<lbrakk>(ss,w)\<rbrakk> d_init"
   shows "\<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_end (ss, w)), Cst\<^sub>E d]\<rangle>."
   using assms 
-proof (induction arbitrary: d rule: LTS.path_with_word_induct_reverse[OF assms(1)])
+proof (induction arbitrary: d rule: LTS.path_with_word_from_induct_reverse[OF assms(1)])
   case (1 s)
   have assms_2: "\<rho> \<Turnstile>\<^sub>d\<^sub>l ana_pg_fw_may"
     using assms(2) unfolding least_solution_def by auto
 
-  from 1(1,3) have start_end: "LTS.get_end ([s], []) = start"
-    using LTS.singleton_path_start_end[of s edge_set, OF 1(1)] by (metis LTS.get_end_def prod.sel(1))
+  from 1(1) have start_end: "LTS.get_end ([s], []) = start"
+    by (simp add: LTS.get_end_def LTS.get_start_def)
 
   from 1 have "Ŝ\<^sub>P\<lbrakk>([s], [])\<rbrakk> d_init = d_init"
     unfolding S_hat_path_def by auto
   then have "d \<in> d_init"
-    using 1(4) by auto
+    using 1(3) by auto
   moreover
   from assms_2 have "\<forall>d\<in>d_init. \<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s init\<langle>[Cst\<^sub>E d]\<rangle> :- [] ."
     unfolding ana_pg_fw_may_def ana_init_BV_def solves_program_def by auto
@@ -2709,7 +2709,7 @@ next
              Ŝ\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> {d. \<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_end (qs @ [qnminus1], w)), Cst\<^sub>E d]\<rangle>.}"
     by (simp add: S_hat_mono)
   have "length qs = length w"
-    using 2(1) LTS.path_with_word_lengths by metis
+    using "2.hyps"(1) LTS.path_with_word_lengths by fastforce
   then have "Ŝ\<^sub>P\<lbrakk>(qs @ [qnminus1, qn], w @ [\<alpha>])\<rbrakk> d_init = Ŝ\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> (Ŝ\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init)"
     using S_hat_path_append[of qs w] by auto
   moreover 
@@ -2722,7 +2722,7 @@ next
   have "Ŝ\<^sub>P\<lbrakk>(qs @ [qnminus1, qn], w @ [\<alpha>])\<rbrakk> d_init \<subseteq> Ŝ\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> {d. \<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N qnminus1, Cst\<^sub>E d]\<rangle>.}"
     by auto
   then have "d \<in> Ŝ\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> {d. \<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N qnminus1, Cst\<^sub>E d]\<rangle>.}"
-    using 2(7) by auto
+    using 2(6) by auto
   then have "  d \<in> {d. \<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N qnminus1, Cst\<^sub>E d]\<rangle>.} - kill_set (qnminus1, \<alpha>, qn)
              \<or> d \<in> gen_set (qnminus1, \<alpha>, qn)"
     unfolding S_hat_def by auto
@@ -2769,7 +2769,7 @@ next
       by force
     moreover
     have dan: "d \<in> analysis_dom"
-      using "2.prems"(4) the_funny_invariant by blast
+      using "2.prems"(3) the_funny_invariant by blast
     have "\<forall>c\<in>\<Union>(ana_gen_BV_edge ` edge_set). \<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
       using 2(5) unfolding ana_pg_fw_may_def solves_program_def least_solution_def by auto
     then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s (ana_gen_BV_edge_d (qnminus1, \<alpha>, qn) d)"
@@ -2787,7 +2787,7 @@ qed
 lemma sound_ana_pg_fw_may:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_may s_BV"
   shows "summarizes_fw_may \<rho>"
-  using sound_ana_pg_fw_may' assms unfolding summarizes_fw_may.simps by (cases pg) fastforce
+  using sound_ana_pg_fw_may' assms unfolding summarizes_fw_may_def by (cases pg) fastforce
 
 end
 
@@ -3035,7 +3035,7 @@ fun summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Right
 lemma RD_sound_again: 
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (interp.ana_pg_fw_may) s_BV"
   shows "summarizes_RD \<rho>"
-  using assms def_path_S_hat_path interp.sound_ana_pg_fw_may unfolding interp.summarizes_fw_may.simps summarizes_RD.simps
+  using assms def_path_S_hat_path interp.sound_ana_pg_fw_may unfolding interp.summarizes_fw_may_def summarizes_RD.simps
   using edge_set_def in_mono interp.edge_set_def interp.start_def start_def by fastforce 
 
 end
@@ -3192,7 +3192,7 @@ proof -
     using assms(1) S_hat_path_forward_backward by auto
   ultimately
   have "\<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_end (rev ss, rev w)), Cst\<^sub>E d]\<rangle>."
-    using assms(4) fa.summarizes_fw_may.simps by blast
+    using assms(4) fa.summarizes_fw_may_def by blast
   then show ?thesis
     by (metis LTS.get_end_def LTS.get_start_def fst_conv hd_rev rev_rev_ident)
 qed
@@ -4932,13 +4932,13 @@ proof -
     using not_CBV2[OF assms(1), of "(LTS.get_end \<pi>)" "Decode_Elem d"] assms(2) \<pi>e d_encdec by force
   have "\<not>Decode_Elem d \<in> a_may.S_hat_path \<pi> (analysis_dom - d_init)"
     using a_may.sound_ana_pg_fw_may assms(1)
-    unfolding a_may.summarizes_fw_may.simps
+    unfolding a_may.summarizes_fw_may_def
      a_may.edge_set_def a_may.start_def assms(2) assms(4) assms(5) edge_set_def m start_def
-    by (metis assms(3) assms(4) d_encdec edge_set_def m start_def)
+    using assms(3) assms(4) d_encdec edge_set_def m start_def by (metis (mono_tags) mem_Collect_eq) 
   then show "Decode_Elem d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
     using opposite_lemma2
     using assms(1)
-    using \<open>Decode_Elem d \<in> analysis_dom\<close> by blast 
+    using d_ana by blast 
 qed
 
 lemma sound_CBV:

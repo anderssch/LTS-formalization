@@ -224,6 +224,64 @@ next
   qed
 qed
 
+lemma path_with_word_from_induct_reverse: 
+  "(ss, w) \<in> path_with_word_from start \<Longrightarrow>
+   (\<And>s. P [s] []) \<Longrightarrow>
+   (\<And>ss s w l s'. (ss @ [s], w) \<in> path_with_word_from start \<Longrightarrow> P (ss @ [s]) w \<Longrightarrow> (s, l, s') \<in> transition_relation \<Longrightarrow> P (ss @ [s, s']) (w @ [l])) \<Longrightarrow>
+   P ss w"
+proof (induction "length ss" arbitrary: ss w)
+  case 0
+  then show ?case
+    by (metis (no_types, lifting) Suc_eq_plus1 mem_Collect_eq nat.simps(3) path_with_word_length)
+next
+  case (Suc n)
+
+  show ?case
+  proof (cases "n = 0")
+    case True
+    then show ?thesis
+      using  Suc.prems(1,2) length_0_conv list.distinct(1) path_with_word.cases
+      by (metis (no_types, lifting) Suc.hyps(2) length_Suc_conv list.inject mem_Collect_eq)
+  next
+    case False
+    define ss' where "ss' = butlast (butlast ss)"
+    define s where "s = last (butlast ss)"
+    define s' where "s' = last ss"
+    define w' where "w' = butlast w"
+    define l where "l = last w"
+
+    have len_ss: "length ss \<ge> 2"
+      using False Suc.hyps(2) by linarith
+
+    then have s_split: "ss' @ [s, s'] = ss"
+      by (metis One_nat_def Suc_1 Suc_le_mono Zero_not_Suc append.assoc append.simps(1) append_Cons append_butlast_last_id le_less length_append_singleton list.size(3) s'_def s_def ss'_def zero_order(3))
+
+    have w_split: "w' @ [l] = w"
+      by (metis (no_types, lifting) False LTS.path_with_word_length One_nat_def Suc.hyps(2) Suc.prems(1) Suc_inject add.right_neutral add_Suc_right l_def list.size(3) mem_Collect_eq snoc_eq_iff_butlast w'_def)
+
+    have ss'w'_path: "(ss' @ [s], w') \<in> path_with_word"
+      using Suc(3) path_with_word_butlast len_ss
+      by (metis (no_types, lifting) butlast.simps(2) butlast_append list.discI mem_Collect_eq not_Cons_self2 s_split w'_def)
+
+    have ss'w'_path_from: "(ss' @ [s], w') \<in> path_with_word_from start"
+      using Suc(3) butlast.simps(2) get_start_def list.sel(1) list.simps(3) mem_Collect_eq path_with_word.simps prod.sel(1) s_def snoc_eq_iff_butlast ss'_def ss'w'_path w_split by (metis (no_types, lifting) hd_append)
+
+    have tr: "(s, l, s') \<in> transition_relation"
+      using Suc(3) s'_def s_def l_def transition_butlast len_ss by blast
+
+    have nl: "n = length (ss' @ [s])"
+      using False Suc.hyps(2) ss'_def by force
+
+    have "P (ss' @ [s]) w'"
+      using Suc(1)[of "ss' @ [s]" w', OF nl ss'w'_path_from Suc(4) ] Suc(5) by fastforce
+
+    then have "P (ss' @ [s, s']) (w' @ [l])"
+      using Suc(5)[of ss' s w' l s'] tr ss'w'_path_from by blast
+    then show ?thesis
+      using s_split w_split by auto
+  qed
+qed
+
 inductive transition_of :: "('state, 'label) transition \<Rightarrow> 'state list * 'label list \<Rightarrow> bool" where
   "transition_of (s1,\<gamma>,s2) (s1#s2#ss, \<gamma>#w)"
 | "transition_of (s1,\<gamma>,s2) (ss, w) \<Longrightarrow> transition_of (s1,\<gamma>,s2) (s#ss, \<mu>#w)"
