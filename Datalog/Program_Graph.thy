@@ -111,15 +111,15 @@ fun summarizes_RD :: "('n,'v) analysis_assignment \<Rightarrow> ('n,'v) program_
 
 section \<open>Datalog programs and their solutions\<close>
 
-datatype (vars_id: 'x,'e) identifier = is_Var: Var 'x | is_Cst: Cst (the_Cst: 'e)
+datatype (vars_id: 'x,'e) id = is_Var: Var 'x | is_Cst: Cst (the_Cst: 'e)
 
-datatype (preds_rh: 'p,'x,'e) righthand = 
-  Eql "('x,'e) identifier" "('x,'e) identifier" ("_ \<^bold>= _" [61, 61] 61)
-  | Neql "('x,'e) identifier" "('x,'e) identifier" ("_ \<^bold>\<noteq> _" [61, 61] 61)
-  | PosRh 'p "('x,'e) identifier list" ("\<^bold>+ _ _" [61, 61] 61)
-  | NegRh 'p "('x,'e) identifier list" ("\<^bold>\<not> _ _" [61, 61] 61)
+datatype (preds_rh: 'p,'x,'e) rh = 
+  Eql "('x,'e) id" "('x,'e) id" ("_ \<^bold>= _" [61, 61] 61)
+  | Neql "('x,'e) id" "('x,'e) id" ("_ \<^bold>\<noteq> _" [61, 61] 61)
+  | PosRh 'p "('x,'e) id list" ("\<^bold>+ _ _" [61, 61] 61)
+  | NegRh 'p "('x,'e) id list" ("\<^bold>\<not> _ _" [61, 61] 61)
 
-datatype (preds_cls: 'p, 'x,'e) clause = Cls 'p "('x,'e) identifier list" (the_rhs: "('p,'x,'e) righthand list") (* Why not righthand set? *)
+datatype (preds_cls: 'p, 'x,'e) clause = Cls 'p "('x,'e) id list" (the_rhs: "('p,'x,'e) rh list") (* Why not rh set? *)
 
 fun the_lh where
   "the_lh (Cls p ids rhs) = (p,ids)"
@@ -135,7 +135,7 @@ type_synonym ('x,'e) var_val = "'x \<Rightarrow> 'e"
 
 type_synonym ('p,'e) pred_val = "'p \<Rightarrow> 'e list set"
 
-type_synonym ('p,'x,'e) lefthand = "'p * ('x,'e) identifier list"
+type_synonym ('p,'x,'e) lefthand = "'p * ('x,'e) id list"
 
 fun preds_lh :: "('p,'x,'e) lefthand \<Rightarrow> 'p set" where 
   "preds_lh (p,ids) = {p}"
@@ -143,20 +143,20 @@ fun preds_lh :: "('p,'x,'e) lefthand \<Rightarrow> 'p set" where
 fun the_lhs :: "('p, 'x,'e) clause \<Rightarrow> ('p,'x,'e) lefthand" where
   "the_lhs (Cls p ids rhs) = (p,ids)"
 
-fun eval_id :: "('x,'e) identifier \<Rightarrow> ('x,'e) var_val \<Rightarrow> 'e" ("\<lbrakk>_\<rbrakk>\<^sub>i\<^sub>d") where
+fun eval_id :: "('x,'e) id \<Rightarrow> ('x,'e) var_val \<Rightarrow> 'e" ("\<lbrakk>_\<rbrakk>\<^sub>i\<^sub>d") where
   "\<lbrakk>Var x\<rbrakk>\<^sub>i\<^sub>d \<sigma> = \<sigma> x"
 | "\<lbrakk>Cst e\<rbrakk>\<^sub>i\<^sub>d \<sigma> = e"
 
-fun eval_ids :: "('x,'e) identifier list \<Rightarrow> ('x,'e) var_val \<Rightarrow> 'e list" ("\<lbrakk>_\<rbrakk>\<^sub>i\<^sub>d\<^sub>s") where
+fun eval_ids :: "('x,'e) id list \<Rightarrow> ('x,'e) var_val \<Rightarrow> 'e list" ("\<lbrakk>_\<rbrakk>\<^sub>i\<^sub>d\<^sub>s") where
   "\<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> = map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) ids"
 
-fun meaning_rh :: "('p,'x,'e) righthand \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>r\<^sub>h") where
+fun meaning_rh :: "('p,'x,'e) rh \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>r\<^sub>h") where
   "\<lbrakk>a \<^bold>= a'\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma> = \<lbrakk>a'\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
 | "\<lbrakk>a \<^bold>\<noteq> a'\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>  \<noteq> \<lbrakk>a'\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
 | "\<lbrakk>\<^bold>+ p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<in> \<rho> p"
 | "\<lbrakk>\<^bold>\<not> p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<not> \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<in> \<rho> p"
 
-fun meaning_rhs :: "('p,'x,'e) righthand list \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>r\<^sub>h\<^sub>s") where
+fun meaning_rhs :: "('p,'x,'e) rh list \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>r\<^sub>h\<^sub>s") where
   "\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma> \<longleftrightarrow> (\<forall>rh \<in> set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
 
 fun meaning_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>l\<^sub>h") where
@@ -165,7 +165,7 @@ fun meaning_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('p,'e) pred_val \<Rightarr
 fun meaning_cls :: "('p,'x,'e) clause \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>c\<^sub>l\<^sub>s") where
   "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma> \<longleftrightarrow> (\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma> \<longrightarrow> \<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>)" (* use meaning_rhs *)
 
-fun solves_rh :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) righthand \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>r\<^sub>h" 91) where (* Not in the book *)
+fun solves_rh :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) rh \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>r\<^sub>h" 91) where (* Not in the book *)
   "\<rho> \<Turnstile>\<^sub>r\<^sub>h rh \<longleftrightarrow> (\<forall>\<sigma>. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
 
 definition solves_cls :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) clause \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>c\<^sub>l\<^sub>s" 91) where
@@ -177,7 +177,7 @@ definition solves_program :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_progr
 
 section \<open>Facts (not in the book?)\<close> (* TODO: get rid of these*)
 
-type_synonym ('p,'x,'e) fact = "'p * ('x,'e) identifier list" (* The fact type is the same as the lh type... *)
+type_synonym ('p,'x,'e) fact = "'p * ('x,'e) id list" (* The fact type is the same as the lh type... *)
 
 fun meaning_fact :: "('p,'x,'e) fact \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>f") where
   "\<lbrakk>(p,ids)\<rbrakk>\<^sub>f \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<in> \<rho> p"
@@ -187,22 +187,22 @@ fun solves_fact :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) fact \<Rightarrow>
 
 section \<open>Substitutions (not in the book?)\<close>
 
-type_synonym ('x,'e) subst = "'x \<Rightarrow> ('x,'e) identifier"
+type_synonym ('x,'e) subst = "'x \<Rightarrow> ('x,'e) id"
 
-fun subst_id :: "('x,'e) identifier \<Rightarrow> ('x,'e) subst \<Rightarrow> ('x,'e) identifier" (infix "\<cdot>\<^sub>i\<^sub>d" 70) where
+fun subst_id :: "('x,'e) id \<Rightarrow> ('x,'e) subst \<Rightarrow> ('x,'e) id" (infix "\<cdot>\<^sub>i\<^sub>d" 70) where
   "(Var x) \<cdot>\<^sub>i\<^sub>d \<eta>  = \<eta> x"
 | "(Cst e) \<cdot>\<^sub>i\<^sub>d \<eta> = (Cst e)"
 
-fun subst_ids :: "('x,'e) identifier list \<Rightarrow> ('x,'e) subst \<Rightarrow> ('x,'e) identifier list" (infix "\<cdot>\<^sub>i\<^sub>d\<^sub>s" 50) where
+fun subst_ids :: "('x,'e) id list \<Rightarrow> ('x,'e) subst \<Rightarrow> ('x,'e) id list" (infix "\<cdot>\<^sub>i\<^sub>d\<^sub>s" 50) where
   "ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta> = map (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>) ids"
 
-fun subst_rh :: "('p,'x,'e) righthand \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) righthand" (infix "\<cdot>\<^sub>r\<^sub>h" 50) where
+fun subst_rh :: "('p,'x,'e) rh \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) rh" (infix "\<cdot>\<^sub>r\<^sub>h" 50) where
   "(a \<^bold>= a') \<cdot>\<^sub>r\<^sub>h \<eta> = (a \<cdot>\<^sub>i\<^sub>d \<eta> \<^bold>= a' \<cdot>\<^sub>i\<^sub>d \<eta>)"
 | "(a \<^bold>\<noteq> a') \<cdot>\<^sub>r\<^sub>h \<eta> = (a \<cdot>\<^sub>i\<^sub>d \<eta> \<^bold>\<noteq> a' \<cdot>\<^sub>i\<^sub>d \<eta>)"
 | "(\<^bold>+ p ids) \<cdot>\<^sub>r\<^sub>h \<eta> = (\<^bold>+ p (ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>))"
 | "(\<^bold>\<not> p ids) \<cdot>\<^sub>r\<^sub>h \<eta> = (\<^bold>\<not> p ( ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>))"
 
-fun subst_rhs :: "('p,'x,'e) righthand list \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) righthand list" (infix "\<cdot>\<^sub>r\<^sub>h\<^sub>s" 50) where
+fun subst_rhs :: "('p,'x,'e) rh list \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) rh list" (infix "\<cdot>\<^sub>r\<^sub>h\<^sub>s" 50) where
   "rhs \<cdot>\<^sub>r\<^sub>h\<^sub>s \<eta> = map (\<lambda>a. a \<cdot>\<^sub>r\<^sub>h \<eta>) rhs"
 
 fun subst_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) lefthand" (infix "\<cdot>\<^sub>l\<^sub>h" 50) where
@@ -219,20 +219,20 @@ definition compose :: "('x,'e) subst \<Rightarrow> ('x,'e) var_val \<Rightarrow>
 
 section \<open>Substiting variable valuations (not in the book?)\<close>
 
-fun substv_id :: "('x,'e) identifier \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('x,'e) identifier" (infix "\<cdot>\<^sub>v\<^sub>i\<^sub>d" 70) where
+fun substv_id :: "('x,'e) id \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('x,'e) id" (infix "\<cdot>\<^sub>v\<^sub>i\<^sub>d" 70) where
   "(Var x) \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma> = Cst (\<sigma> x)"
 | "(Cst e) \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma> = (Cst e)"
 
-fun substv_ids :: "('x,'e) identifier list \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('x,'e) identifier list" (infix "\<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s" 50) where
+fun substv_ids :: "('x,'e) id list \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('x,'e) id list" (infix "\<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s" 50) where
   "rhs \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma> = map (\<lambda>a. a \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>) rhs"
 
-fun substv_rh :: "('p,'x,'e) righthand \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) righthand" (infix "\<cdot>\<^sub>v\<^sub>r\<^sub>h" 50) where
+fun substv_rh :: "('p,'x,'e) rh \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) rh" (infix "\<cdot>\<^sub>v\<^sub>r\<^sub>h" 50) where
   "(a \<^bold>= a') \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma> = (a \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma> \<^bold>= a' \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>)"
 | "(a \<^bold>\<noteq> a') \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma> = (a \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma> \<^bold>\<noteq> a' \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>)"
 | "(\<^bold>+ p ids) \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma> = (\<^bold>+ p (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>))"
 | "(\<^bold>\<not> p ids) \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma> = (\<^bold>\<not> p (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>))"
 
-definition substv_rhs :: "('p,'x,'e) righthand list \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) righthand list" (infix "\<cdot>\<^sub>v\<^sub>r\<^sub>h\<^sub>s" 50) where
+definition substv_rhs :: "('p,'x,'e) rh list \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) rh list" (infix "\<cdot>\<^sub>v\<^sub>r\<^sub>h\<^sub>s" 50) where
   "rhs \<cdot>\<^sub>v\<^sub>r\<^sub>h\<^sub>s \<sigma> = map (\<lambda>a. a \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma>) rhs"
 
 fun substv_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) lefthand" (infix "\<cdot>\<^sub>v\<^sub>l\<^sub>h" 50) where
@@ -379,7 +379,7 @@ section \<open>Stratification and solutions to stratified datalog programs\<clos
 
 type_synonym 'p strat = "'p \<Rightarrow> nat"
 
-fun rnk :: "'p strat \<Rightarrow> ('p,'x,'e) righthand \<Rightarrow> nat" where
+fun rnk :: "'p strat \<Rightarrow> ('p,'x,'e) rh \<Rightarrow> nat" where
   "rnk s (a \<^bold>= a') = 0"
 | "rnk s (a \<^bold>\<noteq> a') = 0"
 | "rnk s (\<^bold>+ p ids) = s p"
@@ -1662,7 +1662,7 @@ lemma iiiiiii3:
 definition agree_var_val :: "'x set \<Rightarrow> ('x, 'e) var_val \<Rightarrow> ('x, 'e) var_val \<Rightarrow> bool " where
   "agree_var_val xs \<sigma> \<sigma>' \<longleftrightarrow> (\<forall>x \<in> xs. \<sigma> x = \<sigma>' x)"
 
-fun vars_ids :: "('a, 'b) identifier list \<Rightarrow> 'a set" where
+fun vars_ids :: "('a, 'b) id list \<Rightarrow> 'a set" where
   "vars_ids ids = \<Union>(vars_id ` set ids)"
 
 fun vars_lh :: "('p,'x,'e) lefthand \<Rightarrow> 'x set" where
@@ -2004,24 +2004,24 @@ datatype RD_var =
 datatype RD_pred =
   the_RD
   | the_VAR
-(* Cst\<^sub>R\<^sub>D\<^sub>N *)
-abbreviation Cst\<^sub>R\<^sub>D\<^sub>N :: "'n \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where
+
+abbreviation Cst\<^sub>R\<^sub>D\<^sub>N :: "'n \<Rightarrow> (RD_var, ('n, 'v) RD_elem) id" where
   "Cst\<^sub>R\<^sub>D\<^sub>N q == Cst (RD_Node q)"
 
-fun Cst\<^sub>R\<^sub>D\<^sub>N_Q :: "'n option \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where
+fun Cst\<^sub>R\<^sub>D\<^sub>N_Q :: "'n option \<Rightarrow> (RD_var, ('n, 'v) RD_elem) id" where
   "Cst\<^sub>R\<^sub>D\<^sub>N_Q (Some q) = Cst (RD_Node q)"
 | "Cst\<^sub>R\<^sub>D\<^sub>N_Q None = Cst Questionmark"
 
-abbreviation Cst\<^sub>R\<^sub>D\<^sub>V :: "'v \<Rightarrow> (RD_var, ('n, 'v) RD_elem) identifier" where
+abbreviation Cst\<^sub>R\<^sub>D\<^sub>V :: "'v \<Rightarrow> (RD_var, ('n, 'v) RD_elem) id" where
   "Cst\<^sub>R\<^sub>D\<^sub>V v == Cst (RD_Var v)"
 
-abbreviation RD_Cls :: "(RD_var, ('n, 'v) RD_elem) identifier list \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) righthand list \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) clause" ("RD\<langle>_\<rangle> :- _ .") where 
+abbreviation RD_Cls :: "(RD_var, ('n, 'v) RD_elem) id list \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) rh list \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) clause" ("RD\<langle>_\<rangle> :- _ .") where 
   "RD\<langle>args\<rangle> :- ls. \<equiv> Cls the_RD args ls"
 
 abbreviation VAR_Cls :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) clause" ("VAR\<langle>_\<rangle> :-.") where
   "VAR\<langle>x\<rangle> :-. == Cls the_VAR [Cst\<^sub>R\<^sub>D\<^sub>V x] []"
 
-abbreviation RD_Fact :: "(RD_var, ('n, 'v) RD_elem) identifier list \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) fact" ("RD\<langle>_\<rangle>.") where 
+abbreviation RD_Fact :: "(RD_var, ('n, 'v) RD_elem) id list \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) fact" ("RD\<langle>_\<rangle>.") where 
   "RD\<langle>args\<rangle>. \<equiv> (the_RD, args)"
 
 abbreviation VAR_Fact :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) fact" ("VAR\<langle>_\<rangle>.") where 
@@ -2031,13 +2031,13 @@ abbreviation VAR_Fact :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) f
 abbreviation "RD == PosRh the_RD"
 abbreviation "VAR == PosRh the_VAR"
 
-abbreviation \<u> :: "(RD_var, 'a) identifier" where
+abbreviation \<u> :: "(RD_var, 'a) id" where
   "\<u> == Var the_\<u>"
 
-abbreviation \<v> :: "(RD_var, 'a) identifier" where
+abbreviation \<v> :: "(RD_var, 'a) id" where
   "\<v> == Var the_\<v>"
 
-abbreviation \<w> :: "(RD_var, 'a) identifier" where
+abbreviation \<w> :: "(RD_var, 'a) id" where
   "\<w> == Var the_\<w>"
 
 fun ana_edge :: "('n, 'v) edge \<Rightarrow> (RD_pred, RD_var, ('n,'v) RD_elem) clause set" where
@@ -2339,46 +2339,46 @@ datatype ('n,'v,'elem) BV_elem =
   | is_bv_elem: Elem (the_bv_elem: 'elem)
   | BV_Action "'v action"
 
-abbreviation BV_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) righthand list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("BV\<langle>_\<rangle> :- _ .") where 
+abbreviation BV_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) rh list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("BV\<langle>_\<rangle> :- _ .") where 
    "BV\<langle>args\<rangle> :- ls. \<equiv> Cls the_BV args ls"
 
-abbreviation CBV_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) righthand list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("CBV\<langle>_\<rangle> :- _ .") where
+abbreviation CBV_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) rh list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("CBV\<langle>_\<rangle> :- _ .") where
   "CBV\<langle>args\<rangle> :- ls. \<equiv> Cls the_CBV args ls"
 
-abbreviation init_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) righthand list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("init\<langle>_\<rangle> :- _ .") where 
+abbreviation init_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) rh list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("init\<langle>_\<rangle> :- _ .") where 
   "init\<langle>args\<rangle> :- ls. \<equiv> Cls the_init args ls"
 
-abbreviation kill_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) righthand list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("kill\<langle>_\<rangle> :- _ .") where 
+abbreviation kill_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) rh list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("kill\<langle>_\<rangle> :- _ .") where 
   "kill\<langle>args\<rangle> :- ls. \<equiv> Cls the_kill args ls"
 
-abbreviation gen_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) righthand list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("gen\<langle>_\<rangle> :- _ .") where 
+abbreviation gen_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) rh list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("gen\<langle>_\<rangle> :- _ .") where 
   "gen\<langle>args\<rangle> :- ls. \<equiv> Cls the_gen args ls"
 
-abbreviation BV_Fact :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) fact" ("BV\<langle>_\<rangle>.") where  
+abbreviation BV_Fact :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) fact" ("BV\<langle>_\<rangle>.") where  
   "BV\<langle>args\<rangle>. \<equiv> (the_BV, args)"
 
-abbreviation CBV_Fact :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) fact" ("CBV\<langle>_\<rangle>.") where 
+abbreviation CBV_Fact :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) fact" ("CBV\<langle>_\<rangle>.") where 
   "CBV\<langle>args\<rangle>. \<equiv> (the_CBV, args)"
 
-abbreviation init_Fact :: "(BV_var, ('n,'v,'elem) BV_elem) identifier list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) fact" ("init\<langle>_\<rangle>.") where (* is this needed? *)
+abbreviation init_Fact :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) fact" ("init\<langle>_\<rangle>.") where (* is this needed? *)
   "init\<langle>args\<rangle>. \<equiv> (the_init, args)"
 
-abbreviation \<uu> :: "(BV_var, 'a) identifier" where
+abbreviation \<uu> :: "(BV_var, 'a) id" where
   "\<uu> == Var the_\<uu>"
 
-abbreviation Cst\<^sub>N :: "'n \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) identifier" where
+abbreviation Cst\<^sub>N :: "'n \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) id" where
   "Cst\<^sub>N q == Cst (Node q)"
 
-abbreviation Decode_Node :: "(BV_var, ('n, 'v, 'elem) BV_elem) identifier \<Rightarrow> 'n" where
+abbreviation Decode_Node :: "(BV_var, ('n, 'v, 'elem) BV_elem) id \<Rightarrow> 'n" where
   "Decode_Node ident == the_node (the_Cst ident)"
 
-abbreviation Cst\<^sub>E :: "'elem \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) identifier" where
+abbreviation Cst\<^sub>E :: "'elem \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) id" where
   "Cst\<^sub>E e == Cst (Elem e)"
 
-abbreviation Decode_Elem :: "(BV_var, ('n, 'v, 'elem) BV_elem) identifier \<Rightarrow> 'elem" where
+abbreviation Decode_Elem :: "(BV_var, ('n, 'v, 'elem) BV_elem) id \<Rightarrow> 'elem" where
   "Decode_Elem ident == the_bv_elem (the_Cst ident)"
 
-abbreviation Cst\<^sub>A :: "'v action \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) identifier" where
+abbreviation Cst\<^sub>A :: "'v action \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) id" where
   "Cst\<^sub>A \<alpha> == Cst (BV_Action \<alpha>)"
 
 
@@ -4048,7 +4048,7 @@ next
     using assms(1) assms(2) not_init_action by blast
 qed
 
-lemma in_analysis_dom_if_init': (* init, like kill and gen doesn't have righthandsides, so we could make a lemma like uuuuuuuuh_aaa for this case??? *)
+lemma in_analysis_dom_if_init': (* init, like kill and gen doesn't have rhsides, so we could make a lemma like uuuuuuuuh_aaa for this case??? *)
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>f init\<langle>[Cst\<^sub>E d]\<rangle>."
   shows "d \<in> analysis_dom"
@@ -4561,7 +4561,7 @@ proof
   have "\<rho>' \<sqsubset>s_BV\<sqsubset> \<rho>"
   proof -
     have "\<rho>' the_CBV \<subset> \<rho> the_CBV"
-      unfolding \<rho>'_def using \<open>[BV_Action q, identifier.the_Cst d] \<in> \<rho> the_CBV\<close> by auto
+      unfolding \<rho>'_def using \<open>[BV_Action q, id.the_Cst d] \<in> \<rho> the_CBV\<close> by auto
     moreover
     have "\<forall>p'. s_BV p' = s_BV the_kill \<longrightarrow> \<rho>' p' \<subseteq> \<rho>  p'"
       unfolding \<rho>'_def by auto
@@ -4791,7 +4791,7 @@ proof
   have "\<rho>' \<sqsubset>s_BV\<sqsubset> \<rho>"
   proof -
     have "\<rho>' the_CBV \<subset> \<rho> the_CBV"
-      unfolding \<rho>'_def using \<open>[Elem q, identifier.the_Cst d] \<in> \<rho> the_CBV\<close> by auto
+      unfolding \<rho>'_def using \<open>[Elem q, id.the_Cst d] \<in> \<rho> the_CBV\<close> by auto
     moreover
     have "\<forall>p'. s_BV p' = s_BV the_kill \<longrightarrow> \<rho>' p' \<subseteq> \<rho>  p'"
       unfolding \<rho>'_def by auto
@@ -4896,10 +4896,10 @@ proof -
     using assms(1) assms(2) in_analysis_dom_if_CBV by auto
 
   have \<pi>e: "\<pi>_end = Cst\<^sub>N (LTS.get_end \<pi>)"
-    by (smt (verit, best) BV_elem.collapse(1) BV_elem.collapse(3) BV_elem.disc(6) BV_elem.distinct(1) BV_elem.distinct(3) BV_elem.expand assms(1) assms(2) assms(5) identifier.sel(2) is_bv_elem_def is_encode_node_if_CBV_left_arg)
+    by (smt (verit, best) BV_elem.collapse(1) BV_elem.collapse(3) BV_elem.disc(6) BV_elem.distinct(1) BV_elem.distinct(3) BV_elem.expand assms(1) assms(2) assms(5) id.sel(2) is_bv_elem_def is_encode_node_if_CBV_left_arg)
 
   have d_encdec: "d = Cst\<^sub>E (Decode_Elem d)"
-    by (metis BV_elem.sel(2) assms(1) assms(2) identifier.sel(2) is_encode_elem_if_CBV_right_arg)
+    by (metis BV_elem.sel(2) assms(1) assms(2) id.sel(2) is_encode_elem_if_CBV_right_arg)
 
   have m: "\<not> \<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_end \<pi>), d]\<rangle>."
     using not_CBV2[OF assms(1), of "(LTS.get_end \<pi>)" "Decode_Elem d"] assms(2) \<pi>e d_encdec by force
