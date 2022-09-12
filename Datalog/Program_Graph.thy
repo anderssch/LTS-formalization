@@ -111,137 +111,137 @@ fun summarizes_RD :: "('n,'v) analysis_assignment \<Rightarrow> ('n,'v) program_
 
 section \<open>Datalog programs and their solutions\<close>
 
-datatype (vars_id: 'x,'e) id = is_Var: Var 'x | is_Cst: Cst (the_Cst: 'e)
+datatype (vars_id: 'x,'c) id = is_Var: Var 'x | is_Cst: Cst (the_Cst: 'c)
 
-datatype (preds_rh: 'p,'x,'e) rh = 
-  Eql "('x,'e) id" "('x,'e) id" ("_ \<^bold>= _" [61, 61] 61)
-  | Neql "('x,'e) id" "('x,'e) id" ("_ \<^bold>\<noteq> _" [61, 61] 61)
-  | PosRh 'p "('x,'e) id list" ("\<^bold>+ _ _" [61, 61] 61)
-  | NegRh 'p "('x,'e) id list" ("\<^bold>\<not> _ _" [61, 61] 61)
+datatype (preds_rh: 'p,'x,'c) rh = 
+  Eql "('x,'c) id" "('x,'c) id" ("_ \<^bold>= _" [61, 61] 61)
+  | Neql "('x,'c) id" "('x,'c) id" ("_ \<^bold>\<noteq> _" [61, 61] 61)
+  | PosRh 'p "('x,'c) id list" ("\<^bold>+ _ _" [61, 61] 61)
+  | NegRh 'p "('x,'c) id list" ("\<^bold>\<not> _ _" [61, 61] 61)
 
-datatype (preds_cls: 'p, 'x,'e) clause = Cls 'p "('x,'e) id list" (the_rhs: "('p,'x,'e) rh list") (* Why not rh set? *)
+datatype (preds_cls: 'p, 'x,'c) clause = Cls 'p "('x,'c) id list" (the_rhs: "('p,'x,'c) rh list") (* Why not rh set? *)
 
 fun the_lh where
   "the_lh (Cls p ids rhs) = (p,ids)"
 
-type_synonym ('p,'x,'e) dl_program = "('p,'x,'e) clause set"
+type_synonym ('p,'x,'c) dl_program = "('p,'x,'c) clause set"
 
 definition "preds_dl dl = \<Union>{preds_cls c| c. c \<in> dl}"
 
 lemma preds_dl_union[simp]: "preds_dl (dl1 \<union> dl2) = preds_dl dl1 \<union> preds_dl dl2"
   unfolding preds_dl_def by auto
 
-type_synonym ('x,'e) var_val = "'x \<Rightarrow> 'e"
+type_synonym ('x,'c) var_val = "'x \<Rightarrow> 'c"
 
-type_synonym ('p,'e) pred_val = "'p \<Rightarrow> 'e list set"
+type_synonym ('p,'c) pred_val = "'p \<Rightarrow> 'c list set"
 
-type_synonym ('p,'x,'e) lefthand = "'p * ('x,'e) id list"
+type_synonym ('p,'x,'c) lefthand = "'p * ('x,'c) id list"
 
-fun preds_lh :: "('p,'x,'e) lefthand \<Rightarrow> 'p set" where 
+fun preds_lh :: "('p,'x,'c) lefthand \<Rightarrow> 'p set" where 
   "preds_lh (p,ids) = {p}"
 
-fun the_lhs :: "('p, 'x,'e) clause \<Rightarrow> ('p,'x,'e) lefthand" where
+fun the_lhs :: "('p, 'x,'c) clause \<Rightarrow> ('p,'x,'c) lefthand" where
   "the_lhs (Cls p ids rhs) = (p,ids)"
 
-fun eval_id :: "('x,'e) id \<Rightarrow> ('x,'e) var_val \<Rightarrow> 'e" ("\<lbrakk>_\<rbrakk>\<^sub>i\<^sub>d") where
+fun eval_id :: "('x,'c) id \<Rightarrow> ('x,'c) var_val \<Rightarrow> 'c" ("\<lbrakk>_\<rbrakk>\<^sub>i\<^sub>d") where
   "\<lbrakk>Var x\<rbrakk>\<^sub>i\<^sub>d \<sigma> = \<sigma> x"
 | "\<lbrakk>Cst e\<rbrakk>\<^sub>i\<^sub>d \<sigma> = e"
 
-fun eval_ids :: "('x,'e) id list \<Rightarrow> ('x,'e) var_val \<Rightarrow> 'e list" ("\<lbrakk>_\<rbrakk>\<^sub>i\<^sub>d\<^sub>s") where
+fun eval_ids :: "('x,'c) id list \<Rightarrow> ('x,'c) var_val \<Rightarrow> 'c list" ("\<lbrakk>_\<rbrakk>\<^sub>i\<^sub>d\<^sub>s") where
   "\<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> = map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) ids"
 
-fun meaning_rh :: "('p,'x,'e) rh \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>r\<^sub>h") where
+fun meaning_rh :: "('p,'x,'c) rh \<Rightarrow> ('p,'c) pred_val \<Rightarrow> ('x,'c) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>r\<^sub>h") where
   "\<lbrakk>a \<^bold>= a'\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma> = \<lbrakk>a'\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
 | "\<lbrakk>a \<^bold>\<noteq> a'\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>  \<noteq> \<lbrakk>a'\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
 | "\<lbrakk>\<^bold>+ p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<in> \<rho> p"
 | "\<lbrakk>\<^bold>\<not> p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<not> \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<in> \<rho> p"
 
-fun meaning_rhs :: "('p,'x,'e) rh list \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>r\<^sub>h\<^sub>s") where
+fun meaning_rhs :: "('p,'x,'c) rh list \<Rightarrow> ('p,'c) pred_val \<Rightarrow> ('x,'c) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>r\<^sub>h\<^sub>s") where
   "\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma> \<longleftrightarrow> (\<forall>rh \<in> set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
 
-fun meaning_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>l\<^sub>h") where
+fun meaning_lh :: "('p,'x,'c) lefthand \<Rightarrow> ('p,'c) pred_val \<Rightarrow> ('x,'c) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>l\<^sub>h") where
   "\<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<in> \<rho> p"
 
-fun meaning_cls :: "('p,'x,'e) clause \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>c\<^sub>l\<^sub>s") where
+fun meaning_cls :: "('p,'x,'c) clause \<Rightarrow> ('p,'c) pred_val \<Rightarrow> ('x,'c) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>c\<^sub>l\<^sub>s") where
   "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma> \<longleftrightarrow> (\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma> \<longrightarrow> \<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>)" (* use meaning_rhs *)
 
-fun solves_rh :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) rh \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>r\<^sub>h" 91) where (* Not in the book *)
+fun solves_rh :: "('p,'c) pred_val \<Rightarrow> ('p,'x,'c) rh \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>r\<^sub>h" 91) where (* Not in the book *)
   "\<rho> \<Turnstile>\<^sub>r\<^sub>h rh \<longleftrightarrow> (\<forall>\<sigma>. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
 
-definition solves_cls :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) clause \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>c\<^sub>l\<^sub>s" 91) where
+definition solves_cls :: "('p,'c) pred_val \<Rightarrow> ('p,'x,'c) clause \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>c\<^sub>l\<^sub>s" 91) where
   "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c \<longleftrightarrow> (\<forall>\<sigma>. \<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>)"
 
-definition solves_program :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>d\<^sub>l" 91) where
+definition solves_program :: "('p,'c) pred_val \<Rightarrow> ('p,'x,'c) dl_program \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>d\<^sub>l" 91) where
   "\<rho> \<Turnstile>\<^sub>d\<^sub>l dl \<longleftrightarrow> (\<forall>c \<in> dl. \<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c)"
 
 
 section \<open>Facts (not in the book?)\<close> (* TODO: get rid of these*)
 
-type_synonym ('p,'x,'e) fact = "'p * ('x,'e) id list" (* The fact type is the same as the lh type... *)
+type_synonym ('p,'x,'c) fact = "'p * ('x,'c) id list" (* The fact type is the same as the lh type... *)
 
-fun meaning_fact :: "('p,'x,'e) fact \<Rightarrow> ('p,'e) pred_val \<Rightarrow> ('x,'e) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>f") where
+fun meaning_fact :: "('p,'x,'c) fact \<Rightarrow> ('p,'c) pred_val \<Rightarrow> ('x,'c) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>f") where
   "\<lbrakk>(p,ids)\<rbrakk>\<^sub>f \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<in> \<rho> p"
 
-fun solves_fact :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) fact \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>f" 91) where
+fun solves_fact :: "('p,'c) pred_val \<Rightarrow> ('p,'x,'c) fact \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>f" 91) where
   "\<rho> \<Turnstile>\<^sub>f (p,ids) \<longleftrightarrow> (\<forall>\<sigma>. \<lbrakk>(p,ids)\<rbrakk>\<^sub>f \<rho> \<sigma>)"
 
 section \<open>Substitutions (not in the book?)\<close>
 
-type_synonym ('x,'e) subst = "'x \<Rightarrow> ('x,'e) id"
+type_synonym ('x,'c) subst = "'x \<Rightarrow> ('x,'c) id"
 
-fun subst_id :: "('x,'e) id \<Rightarrow> ('x,'e) subst \<Rightarrow> ('x,'e) id" (infix "\<cdot>\<^sub>i\<^sub>d" 70) where
+fun subst_id :: "('x,'c) id \<Rightarrow> ('x,'c) subst \<Rightarrow> ('x,'c) id" (infix "\<cdot>\<^sub>i\<^sub>d" 70) where
   "(Var x) \<cdot>\<^sub>i\<^sub>d \<eta>  = \<eta> x"
 | "(Cst e) \<cdot>\<^sub>i\<^sub>d \<eta> = (Cst e)"
 
-fun subst_ids :: "('x,'e) id list \<Rightarrow> ('x,'e) subst \<Rightarrow> ('x,'e) id list" (infix "\<cdot>\<^sub>i\<^sub>d\<^sub>s" 50) where
+fun subst_ids :: "('x,'c) id list \<Rightarrow> ('x,'c) subst \<Rightarrow> ('x,'c) id list" (infix "\<cdot>\<^sub>i\<^sub>d\<^sub>s" 50) where
   "ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta> = map (\<lambda>a. a \<cdot>\<^sub>i\<^sub>d \<eta>) ids"
 
-fun subst_rh :: "('p,'x,'e) rh \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) rh" (infix "\<cdot>\<^sub>r\<^sub>h" 50) where
+fun subst_rh :: "('p,'x,'c) rh \<Rightarrow> ('x,'c) subst \<Rightarrow> ('p,'x,'c) rh" (infix "\<cdot>\<^sub>r\<^sub>h" 50) where
   "(a \<^bold>= a') \<cdot>\<^sub>r\<^sub>h \<eta> = (a \<cdot>\<^sub>i\<^sub>d \<eta> \<^bold>= a' \<cdot>\<^sub>i\<^sub>d \<eta>)"
 | "(a \<^bold>\<noteq> a') \<cdot>\<^sub>r\<^sub>h \<eta> = (a \<cdot>\<^sub>i\<^sub>d \<eta> \<^bold>\<noteq> a' \<cdot>\<^sub>i\<^sub>d \<eta>)"
 | "(\<^bold>+ p ids) \<cdot>\<^sub>r\<^sub>h \<eta> = (\<^bold>+ p (ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>))"
 | "(\<^bold>\<not> p ids) \<cdot>\<^sub>r\<^sub>h \<eta> = (\<^bold>\<not> p ( ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>))"
 
-fun subst_rhs :: "('p,'x,'e) rh list \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) rh list" (infix "\<cdot>\<^sub>r\<^sub>h\<^sub>s" 50) where
+fun subst_rhs :: "('p,'x,'c) rh list \<Rightarrow> ('x,'c) subst \<Rightarrow> ('p,'x,'c) rh list" (infix "\<cdot>\<^sub>r\<^sub>h\<^sub>s" 50) where
   "rhs \<cdot>\<^sub>r\<^sub>h\<^sub>s \<eta> = map (\<lambda>a. a \<cdot>\<^sub>r\<^sub>h \<eta>) rhs"
 
-fun subst_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) lefthand" (infix "\<cdot>\<^sub>l\<^sub>h" 50) where
+fun subst_lh :: "('p,'x,'c) lefthand \<Rightarrow> ('x,'c) subst \<Rightarrow> ('p,'x,'c) lefthand" (infix "\<cdot>\<^sub>l\<^sub>h" 50) where
   "(p,ids) \<cdot>\<^sub>l\<^sub>h \<eta> = (p, ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>)"
 
-fun subst_cls :: "('p,'x,'e) clause \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) clause" (infix "\<cdot>\<^sub>c\<^sub>l\<^sub>s" 50) where
+fun subst_cls :: "('p,'x,'c) clause \<Rightarrow> ('x,'c) subst \<Rightarrow> ('p,'x,'c) clause" (infix "\<cdot>\<^sub>c\<^sub>l\<^sub>s" 50) where
   "(Cls p ids rhs) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<eta>  = Cls p (ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>) (rhs \<cdot>\<^sub>r\<^sub>h\<^sub>s \<eta>)"
 
-fun subst_fact :: "('p,'x,'e) fact \<Rightarrow> ('x,'e) subst \<Rightarrow> ('p,'x,'e) fact" (infix "\<cdot>\<^sub>q" 50) where
+fun subst_fact :: "('p,'x,'c) fact \<Rightarrow> ('x,'c) subst \<Rightarrow> ('p,'x,'c) fact" (infix "\<cdot>\<^sub>q" 50) where
   "(p,ids) \<cdot>\<^sub>q \<eta>  = (p, (ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>))"
 
-definition compose :: "('x,'e) subst \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('x,'e) var_val" (infix "\<circ>\<^sub>s\<^sub>v" 50) where
+definition compose :: "('x,'c) subst \<Rightarrow> ('x,'c) var_val \<Rightarrow> ('x,'c) var_val" (infix "\<circ>\<^sub>s\<^sub>v" 50) where
   "(\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) x = \<lbrakk>(\<eta> x)\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
 
 section \<open>Substiting variable valuations (not in the book?)\<close>
 
-fun substv_id :: "('x,'e) id \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('x,'e) id" (infix "\<cdot>\<^sub>v\<^sub>i\<^sub>d" 70) where
+fun substv_id :: "('x,'c) id \<Rightarrow> ('x,'c) var_val \<Rightarrow> ('x,'c) id" (infix "\<cdot>\<^sub>v\<^sub>i\<^sub>d" 70) where
   "(Var x) \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma> = Cst (\<sigma> x)"
 | "(Cst e) \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma> = (Cst e)"
 
-fun substv_ids :: "('x,'e) id list \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('x,'e) id list" (infix "\<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s" 50) where
+fun substv_ids :: "('x,'c) id list \<Rightarrow> ('x,'c) var_val \<Rightarrow> ('x,'c) id list" (infix "\<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s" 50) where
   "rhs \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma> = map (\<lambda>a. a \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>) rhs"
 
-fun substv_rh :: "('p,'x,'e) rh \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) rh" (infix "\<cdot>\<^sub>v\<^sub>r\<^sub>h" 50) where
+fun substv_rh :: "('p,'x,'c) rh \<Rightarrow> ('x,'c) var_val \<Rightarrow> ('p,'x,'c) rh" (infix "\<cdot>\<^sub>v\<^sub>r\<^sub>h" 50) where
   "(a \<^bold>= a') \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma> = (a \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma> \<^bold>= a' \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>)"
 | "(a \<^bold>\<noteq> a') \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma> = (a \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma> \<^bold>\<noteq> a' \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>)"
 | "(\<^bold>+ p ids) \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma> = (\<^bold>+ p (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>))"
 | "(\<^bold>\<not> p ids) \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma> = (\<^bold>\<not> p (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>))"
 
-definition substv_rhs :: "('p,'x,'e) rh list \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) rh list" (infix "\<cdot>\<^sub>v\<^sub>r\<^sub>h\<^sub>s" 50) where
+definition substv_rhs :: "('p,'x,'c) rh list \<Rightarrow> ('x,'c) var_val \<Rightarrow> ('p,'x,'c) rh list" (infix "\<cdot>\<^sub>v\<^sub>r\<^sub>h\<^sub>s" 50) where
   "rhs \<cdot>\<^sub>v\<^sub>r\<^sub>h\<^sub>s \<sigma> = map (\<lambda>a. a \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma>) rhs"
 
-fun substv_lh :: "('p,'x,'e) lefthand \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) lefthand" (infix "\<cdot>\<^sub>v\<^sub>l\<^sub>h" 50) where
+fun substv_lh :: "('p,'x,'c) lefthand \<Rightarrow> ('x,'c) var_val \<Rightarrow> ('p,'x,'c) lefthand" (infix "\<cdot>\<^sub>v\<^sub>l\<^sub>h" 50) where
   "(p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma> = (p,  ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>)"
 
-fun substv_cls :: "('p,'x,'e) clause \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) clause" (infix "\<cdot>\<^sub>v\<^sub>c\<^sub>l\<^sub>s" 50) where
+fun substv_cls :: "('p,'x,'c) clause \<Rightarrow> ('x,'c) var_val \<Rightarrow> ('p,'x,'c) clause" (infix "\<cdot>\<^sub>v\<^sub>c\<^sub>l\<^sub>s" 50) where
   "(Cls p ids rhs) \<cdot>\<^sub>v\<^sub>c\<^sub>l\<^sub>s \<sigma>  = Cls p (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>) (rhs \<cdot>\<^sub>v\<^sub>r\<^sub>h\<^sub>s \<sigma>)"
 
-fun substv_fact :: "('p,'x,'e) fact \<Rightarrow> ('x,'e) var_val \<Rightarrow> ('p,'x,'e) fact" (infix "\<cdot>\<^sub>v\<^sub>q" 50) where
+fun substv_fact :: "('p,'x,'c) fact \<Rightarrow> ('x,'c) var_val \<Rightarrow> ('p,'x,'c) fact" (infix "\<cdot>\<^sub>v\<^sub>q" 50) where
   "(p,ids) \<cdot>\<^sub>v\<^sub>q \<sigma>  = (p,  ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>)"
 
 
@@ -361,12 +361,12 @@ qed
 
 lemma substitution_rule:
   assumes "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
-  shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s (c \<cdot>\<^sub>c\<^sub>l\<^sub>s (\<eta>::('x,'e) subst))"
+  shows "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s (c \<cdot>\<^sub>c\<^sub>l\<^sub>s (\<eta>::('x,'c) subst))"
 proof -
   show ?thesis
     unfolding solves_cls_def
   proof
-    fix \<sigma> :: "'x \<Rightarrow> 'e"
+    fix \<sigma> :: "'x \<Rightarrow> 'c"
     from assms have "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>)"
       using solves_cls_def by auto
     then show "\<lbrakk>c \<cdot>\<^sub>c\<^sub>l\<^sub>s \<eta> \<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
@@ -379,42 +379,42 @@ section \<open>Stratification and solutions to stratified datalog programs\<clos
 
 type_synonym 'p strat = "'p \<Rightarrow> nat"
 
-fun rnk :: "'p strat \<Rightarrow> ('p,'x,'e) rh \<Rightarrow> nat" where
+fun rnk :: "'p strat \<Rightarrow> ('p,'x,'c) rh \<Rightarrow> nat" where
   "rnk s (a \<^bold>= a') = 0"
 | "rnk s (a \<^bold>\<noteq> a') = 0"
 | "rnk s (\<^bold>+ p ids) = s p"
 | "rnk s (\<^bold>\<not> p ids) = 1 + s p"
 
-fun strat_wf_cls :: "'p strat \<Rightarrow> ('p,'x,'e) clause \<Rightarrow> bool" where
+fun strat_wf_cls :: "'p strat \<Rightarrow> ('p,'x,'c) clause \<Rightarrow> bool" where
   "strat_wf_cls s (Cls p ids rhs) \<longleftrightarrow> (\<forall>rh \<in> set rhs. s p \<ge> rnk s rh)"
 
-definition strat_wf :: "'p strat \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> bool" where
+definition strat_wf :: "'p strat \<Rightarrow> ('p,'x,'c) dl_program \<Rightarrow> bool" where
   "strat_wf s dl \<longleftrightarrow> (\<forall>c \<in> dl. strat_wf_cls s c)"
 
-definition max_strata :: "'p strat \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> nat" where
+definition max_strata :: "'p strat \<Rightarrow> ('p,'x,'c) dl_program \<Rightarrow> nat" where
   "max_strata s dl = Max {s p | p ids rhs. Cls p ids rhs \<in> dl}"
 
-fun pred_val_mod_strata :: "('p,'e) pred_val \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'e) pred_val" ("_ \\_\\ _" 0) where 
+fun pred_val_mod_strata :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'c) pred_val" ("_ \\_\\ _" 0) where 
   "(\<rho> \\s\\ n) p = (if s p \<le> n then \<rho> p else {})"
 
-fun dl_program_mod_strata :: "('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'e) dl_program" ("_ --_-- _" 0) where 
+fun dl_program_mod_strata :: "('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'c) dl_program" ("_ --_-- _" 0) where 
   "(dl -- s -- n) = {(Cls p ids rhs)| p ids rhs . (Cls p ids rhs) \<in> dl \<and> s p \<le> n}"
 
-fun dl_program_on_strata :: "('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'e) dl_program" ("_ ==_== _" 0) where 
+fun dl_program_on_strata :: "('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'c) dl_program" ("_ ==_== _" 0) where 
   "(dl == s == n) = {(Cls p ids rhs)| p ids rhs . (Cls p ids rhs) \<in> dl \<and> s p = n}"
 
-definition lt :: "('p,'e) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'e) pred_val \<Rightarrow> bool" ("_ \<sqsubset>_\<sqsubset> _") where
+definition lt :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'c) pred_val \<Rightarrow> bool" ("_ \<sqsubset>_\<sqsubset> _") where
   "(\<rho> \<sqsubset>s\<sqsubset> \<rho>') \<longleftrightarrow> (\<exists>p. \<rho> p \<subset> \<rho>' p \<and>
                        (\<forall>p'. s p' = s p \<longrightarrow> \<rho> p' \<subseteq> \<rho>' p') \<and>
                        (\<forall>p'. s p' < s p \<longrightarrow> \<rho> p' = \<rho>' p'))"
 
-definition lte :: "('p,'e) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'e) pred_val \<Rightarrow> bool" ("_ \<sqsubseteq>_\<sqsubseteq> _") where
+definition lte :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'c) pred_val \<Rightarrow> bool" ("_ \<sqsubseteq>_\<sqsubseteq> _") where
   "(\<rho> \<sqsubseteq>s\<sqsubseteq> \<rho>') \<longleftrightarrow> \<rho> = \<rho>' \<or> (\<rho> \<sqsubset>s\<sqsubset> \<rho>')"
 
-definition least_solution :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> bool" ("_ \<Turnstile>\<^sub>l\<^sub>s\<^sub>t") where
+definition least_solution :: "('p,'c) pred_val \<Rightarrow> ('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> bool" ("_ \<Turnstile>\<^sub>l\<^sub>s\<^sub>t") where
   "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s \<longleftrightarrow> (\<rho> \<Turnstile>\<^sub>d\<^sub>l dl \<and> (\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l dl \<longrightarrow> \<rho> \<sqsubseteq>s\<sqsubseteq> \<rho>'))"
 
-definition minimal_solution :: "('p,'e) pred_val \<Rightarrow> ('p,'x,'e) dl_program \<Rightarrow> 'p strat \<Rightarrow> bool"  ("_ \<Turnstile>\<^sub>m\<^sub>i\<^sub>n") where
+definition minimal_solution :: "('p,'c) pred_val \<Rightarrow> ('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> bool"  ("_ \<Turnstile>\<^sub>m\<^sub>i\<^sub>n") where
   "\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n dl s \<longleftrightarrow> (\<rho> \<Turnstile>\<^sub>d\<^sub>l dl \<and> (\<nexists>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l dl \<and> \<rho>' \<sqsubset>s\<sqsubset> \<rho>))"
 
 lemma lte_def2:
@@ -1170,16 +1170,16 @@ lemma below_least_disagreement:
   shows "\<rho>' p' = \<rho> p'"
   using assms below_least_rank_p_st by fastforce
 
-definition agree_below_eq :: "('p,'e) pred_val \<Rightarrow> ('p,'e) pred_val \<Rightarrow> nat \<Rightarrow> 'p strat \<Rightarrow> bool"  where
+definition agree_below_eq :: "('p,'c) pred_val \<Rightarrow> ('p,'c) pred_val \<Rightarrow> nat \<Rightarrow> 'p strat \<Rightarrow> bool"  where
   "agree_below_eq \<rho> \<rho>' n s \<longleftrightarrow> (\<forall>p. s p \<le> n \<longrightarrow> \<rho> p = \<rho>' p)"
 
-definition agree_below :: "('p,'e) pred_val \<Rightarrow> ('p,'e) pred_val \<Rightarrow> nat \<Rightarrow> 'p strat \<Rightarrow> bool"  where
+definition agree_below :: "('p,'c) pred_val \<Rightarrow> ('p,'c) pred_val \<Rightarrow> nat \<Rightarrow> 'p strat \<Rightarrow> bool"  where
   "agree_below \<rho> \<rho>' n s \<longleftrightarrow> (\<forall>p. s p < n \<longrightarrow> \<rho> p = \<rho>' p)"
 
-definition agree_above :: "('p,'e) pred_val \<Rightarrow> ('p,'e) pred_val \<Rightarrow> nat \<Rightarrow> 'p strat \<Rightarrow> bool"  where
+definition agree_above :: "('p,'c) pred_val \<Rightarrow> ('p,'c) pred_val \<Rightarrow> nat \<Rightarrow> 'p strat \<Rightarrow> bool"  where
   "agree_above \<rho> \<rho>' n s \<longleftrightarrow> (\<forall>p. s p > n \<longrightarrow> \<rho> p = \<rho>' p)"
 
-definition agree_above_eq :: "('p,'e) pred_val \<Rightarrow> ('p,'e) pred_val \<Rightarrow> nat \<Rightarrow> 'p strat \<Rightarrow> bool" where
+definition agree_above_eq :: "('p,'c) pred_val \<Rightarrow> ('p,'c) pred_val \<Rightarrow> nat \<Rightarrow> 'p strat \<Rightarrow> bool" where
   "agree_above_eq \<rho> \<rho>' n s \<longleftrightarrow> (\<forall>p. s p \<ge> n \<longrightarrow> \<rho> p = \<rho>' p)"
 
 lemma agree_below_trans:
@@ -1467,12 +1467,12 @@ lemma downward_least_solution:
   shows "(\<rho> \\s\\ m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- m) s"
 proof (rule ccontr)
   assume a: "\<not> (\<rho> \\s\\ m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- m) s"
-  have strrr: "strat_wf s (dl --s-- m)"
+  have s_dl_m: "strat_wf s (dl --s-- m)"
     using assms strat_wf_mod_if_strat_wf by auto
   have strrrr: "strat_wf s (dl --s-- n)"
     using assms strat_wf_mod_if_strat_wf by auto
   from a have "\<not> (\<rho> \\s\\ m) \<Turnstile>\<^sub>m\<^sub>i\<^sub>n (dl --s-- m) s"
-    using least_is_minimal strrr assms(1) finite_below_finite by metis
+    using least_is_minimal s_dl_m assms(1) finite_below_finite by metis
   moreover 
   have "(\<rho> \\s\\ m) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
     using assms downward_mod_solves least_solution_def by blast
@@ -1523,9 +1523,9 @@ proof (rule ccontr)
         case True
         then have "c \<in> (dl --s-- m)"
           using a c_def by auto
-        then have gugu: "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
+        then have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
           using tt c_def solves_cls_def solves_program_def by blast
-        from gugu show ?thesis
+        then show ?thesis
           apply -
           unfolding \<rho>''_def
           apply auto
@@ -1659,13 +1659,13 @@ lemma iiiiiii3:
   apply (smt (verit, del_insts) eval_id.simps(1) eval_id.simps(2) substv_id.elims)
   done
 
-definition agree_var_val :: "'x set \<Rightarrow> ('x, 'e) var_val \<Rightarrow> ('x, 'e) var_val \<Rightarrow> bool " where
+definition agree_var_val :: "'x set \<Rightarrow> ('x, 'c) var_val \<Rightarrow> ('x, 'c) var_val \<Rightarrow> bool " where
   "agree_var_val xs \<sigma> \<sigma>' \<longleftrightarrow> (\<forall>x \<in> xs. \<sigma> x = \<sigma>' x)"
 
 fun vars_ids :: "('a, 'b) id list \<Rightarrow> 'a set" where
   "vars_ids ids = \<Union>(vars_id ` set ids)"
 
-fun vars_lh :: "('p,'x,'e) lefthand \<Rightarrow> 'x set" where
+fun vars_lh :: "('p,'x,'c) lefthand \<Rightarrow> 'x set" where
   "vars_lh (p,ids) = vars_ids ids"
 
 (* 
@@ -2307,14 +2307,14 @@ theorem RD_sound:
 
 section \<open>Bitvector framework\<close>
 
-datatype BV_pred =
+datatype pred =
   the_BV
   | the_kill
   | the_gen
   | the_CBV
   | the_init
 
-datatype BV_var =
+datatype var =
   the_\<uu>
 
 abbreviation "BV == PosRh the_BV"
@@ -2327,59 +2327,59 @@ abbreviation NegRh_kill ("\<^bold>\<not>kill") where
 abbreviation "gen == PosRh the_gen"
 abbreviation "init == PosRh the_init"
 
-fun s_BV :: "BV_pred \<Rightarrow> nat" where 
+fun s_BV :: "pred \<Rightarrow> nat" where 
   "s_BV the_kill = 0"
 | "s_BV the_gen = 0"
 | "s_BV the_init = 0"
 | "s_BV the_BV = 1"
 | "s_BV the_CBV = 2"
 
-datatype ('n,'v,'elem) BV_elem =
+datatype ('n,'v,'d) cst =
   Node (the_node: 'n)
-  | is_bv_elem: Elem (the_bv_elem: 'elem)
-  | BV_Action "'v action"
+  | is_elem: Elem (the_elem: 'd)
+  | Action "'v action"
 
-abbreviation BV_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) rh list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("BV\<langle>_\<rangle> :- _ .") where 
+abbreviation BV_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("BV\<langle>_\<rangle> :- _ .") where 
    "BV\<langle>args\<rangle> :- ls. \<equiv> Cls the_BV args ls"
 
-abbreviation CBV_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) rh list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("CBV\<langle>_\<rangle> :- _ .") where
+abbreviation CBV_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("CBV\<langle>_\<rangle> :- _ .") where
   "CBV\<langle>args\<rangle> :- ls. \<equiv> Cls the_CBV args ls"
 
-abbreviation init_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) rh list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("init\<langle>_\<rangle> :- _ .") where 
+abbreviation init_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("init\<langle>_\<rangle> :- _ .") where 
   "init\<langle>args\<rangle> :- ls. \<equiv> Cls the_init args ls"
 
-abbreviation kill_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) rh list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("kill\<langle>_\<rangle> :- _ .") where 
+abbreviation kill_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("kill\<langle>_\<rangle> :- _ .") where 
   "kill\<langle>args\<rangle> :- ls. \<equiv> Cls the_kill args ls"
 
-abbreviation gen_Cls :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) rh list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) clause" ("gen\<langle>_\<rangle> :- _ .") where 
+abbreviation gen_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("gen\<langle>_\<rangle> :- _ .") where 
   "gen\<langle>args\<rangle> :- ls. \<equiv> Cls the_gen args ls"
 
-abbreviation BV_Fact :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) fact" ("BV\<langle>_\<rangle>.") where  
+abbreviation BV_Fact :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) fact" ("BV\<langle>_\<rangle>.") where  
   "BV\<langle>args\<rangle>. \<equiv> (the_BV, args)"
 
-abbreviation CBV_Fact :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) fact" ("CBV\<langle>_\<rangle>.") where 
+abbreviation CBV_Fact :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) fact" ("CBV\<langle>_\<rangle>.") where 
   "CBV\<langle>args\<rangle>. \<equiv> (the_CBV, args)"
 
-abbreviation init_Fact :: "(BV_var, ('n,'v,'elem) BV_elem) id list \<Rightarrow> (BV_pred, BV_var, ('n,'v,'elem) BV_elem) fact" ("init\<langle>_\<rangle>.") where (* is this needed? *)
+abbreviation init_Fact :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) fact" ("init\<langle>_\<rangle>.") where (* is this needed? *)
   "init\<langle>args\<rangle>. \<equiv> (the_init, args)"
 
-abbreviation \<uu> :: "(BV_var, 'a) id" where
+abbreviation \<uu> :: "(var, 'a) id" where
   "\<uu> == Var the_\<uu>"
 
-abbreviation Cst\<^sub>N :: "'n \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) id" where
+abbreviation Cst\<^sub>N :: "'n \<Rightarrow> (var, ('n, 'v, 'd) cst) id" where
   "Cst\<^sub>N q == Cst (Node q)"
 
-abbreviation Decode_Node :: "(BV_var, ('n, 'v, 'elem) BV_elem) id \<Rightarrow> 'n" where
+abbreviation Decode_Node :: "(var, ('n, 'v, 'd) cst) id \<Rightarrow> 'n" where
   "Decode_Node ident == the_node (the_Cst ident)"
 
-abbreviation Cst\<^sub>E :: "'elem \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) id" where
+abbreviation Cst\<^sub>E :: "'d \<Rightarrow> (var, ('n, 'v, 'd) cst) id" where
   "Cst\<^sub>E e == Cst (Elem e)"
 
-abbreviation Decode_Elem :: "(BV_var, ('n, 'v, 'elem) BV_elem) id \<Rightarrow> 'elem" where
-  "Decode_Elem ident == the_bv_elem (the_Cst ident)"
+abbreviation Decode_Elem :: "(var, ('n, 'v, 'd) cst) id \<Rightarrow> 'd" where
+  "Decode_Elem ident == the_elem (the_Cst ident)"
 
-abbreviation Cst\<^sub>A :: "'v action \<Rightarrow> (BV_var, ('n, 'v, 'elem) BV_elem) id" where
-  "Cst\<^sub>A \<alpha> == Cst (BV_Action \<alpha>)"
+abbreviation Cst\<^sub>A :: "'v action \<Rightarrow> (var, ('n, 'v, 'd) cst) id" where
+  "Cst\<^sub>A \<alpha> == Cst (Action \<alpha>)"
 
 
 section \<open>Forward may-analysis\<close>
@@ -2461,25 +2461,25 @@ lemma S_hat_path_mono:
   shows "Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R1 \<subseteq> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R2"
   unfolding S_hat_path_def using assms S_hat_edge_list_mono by auto
 
-fun ana_kill_BV_edge_d :: "('n, 'v) edge \<Rightarrow> 'd \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause" where
+fun ana_kill_BV_edge_d :: "('n, 'v) edge \<Rightarrow> 'd \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause" where
   "ana_kill_BV_edge_d (q\<^sub>o, \<alpha>, q\<^sub>s) d = kill\<langle>[Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, Cst\<^sub>E d]\<rangle> :- []."
 
-definition ana_kill_BV_edge :: "('n, 'v) edge \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
+definition ana_kill_BV_edge :: "('n, 'v) edge \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause set" where
   "ana_kill_BV_edge e = ana_kill_BV_edge_d e ` (kill_set e \<inter> analysis_dom)"
 
-fun ana_gen_BV_edge_d :: "('n, 'v) edge \<Rightarrow> 'd \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause" where
+fun ana_gen_BV_edge_d :: "('n, 'v) edge \<Rightarrow> 'd \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause" where
   "ana_gen_BV_edge_d (q\<^sub>o, \<alpha>, q\<^sub>s) d = gen\<langle>[Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, Cst\<^sub>E d]\<rangle> :- []."
 
-definition ana_gen_BV_edge :: "('n, 'v) edge \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
+definition ana_gen_BV_edge :: "('n, 'v) edge \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause set" where
   "ana_gen_BV_edge e = ana_gen_BV_edge_d e ` (gen_set e \<inter> analysis_dom)"
 
-definition ana_init_BV :: "'d \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
+definition ana_init_BV :: "'d \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause set" where
   "ana_init_BV d =
      {
        init\<langle>[Cst\<^sub>E d]\<rangle> :- [].
      }"
 
-definition ana_entry_node_BV :: "(BV_pred, BV_var, ('n,'v, 'd) BV_elem) clause set" where (* This should be a clause, not clause set. *)
+definition ana_entry_node_BV :: "(pred, var, ('n,'v, 'd) cst) clause set" where (* This should be a clause, not clause set. *)
   "ana_entry_node_BV = 
      {
        BV\<langle>[Cst\<^sub>N start,\<uu>]\<rangle> :-
@@ -2488,7 +2488,7 @@ definition ana_entry_node_BV :: "(BV_pred, BV_var, ('n,'v, 'd) BV_elem) clause s
          ].
      }"
 
-fun ana_edge_BV :: "('n, 'v) edge \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
+fun ana_edge_BV :: "('n, 'v) edge \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause set" where
   "ana_edge_BV (q\<^sub>o, \<alpha>, q\<^sub>s) =
      {
         BV\<langle>[Cst\<^sub>N q\<^sub>s, \<uu>]\<rangle> :-
@@ -2500,7 +2500,7 @@ fun ana_edge_BV :: "('n, 'v) edge \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) B
         BV\<langle>[Cst\<^sub>N q\<^sub>s, \<uu>]\<rangle> :- [gen[Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, \<uu>]].
      }"
 
-definition ana_CBV :: "'n \<Rightarrow> (BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause" where
+definition ana_CBV :: "'n \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause" where
   "ana_CBV q = CBV\<langle>[Cst\<^sub>N q,\<uu>]\<rangle> :- [\<^bold>\<not>BV[Cst\<^sub>N q,\<uu>], init[\<uu>]]."
 
 lemma ana_CBV_meta_var:
@@ -2514,7 +2514,7 @@ proof -
     unfolding \<mu>_def by auto
 qed
 
-definition ana_pg_fw_may :: "(BV_pred, BV_var, ('n, 'v, 'd) BV_elem) clause set" where
+definition ana_pg_fw_may :: "(pred, var, ('n, 'v, 'd) cst) clause set" where
   "ana_pg_fw_may = \<Union>(ana_edge_BV ` edge_set)
                \<union> \<Union>(ana_init_BV ` d_init)
                \<union> \<Union>(ana_kill_BV_edge ` edge_set)
@@ -2533,7 +2533,7 @@ proof -
     unfolding \<mu>_def by auto
 qed
 
-definition summarizes_fw_may :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+definition summarizes_fw_may :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
   "summarizes_fw_may \<rho> \<longleftrightarrow> 
      (\<forall>\<pi> d. \<pi> \<in> lts.path_with_word_from start \<longrightarrow> d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init \<longrightarrow> 
         \<rho> \<Turnstile>\<^sub>f (BV\<langle>[Cst\<^sub>N (LTS.get_end \<pi>), Cst\<^sub>E d]\<rangle>.))"
@@ -2608,10 +2608,10 @@ fun vars_fact :: "('p,'x,'e) fact \<Rightarrow> 'x set" where
   "vars_fact (p,ids) = vars_ids ids"
 
 lemma not_kill:
-  fixes \<rho> :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val"
+  fixes \<rho> :: "(pred, ('n, 'v, 'd) cst) pred_val"
   assumes "d \<notin> kill_set(q\<^sub>o, \<alpha>, q\<^sub>s)"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_may s_BV"
-  shows "[Node q\<^sub>o, BV_Action \<alpha>, Node q\<^sub>s, Elem d] \<notin> \<rho> the_kill"
+  shows "[Node q\<^sub>o, Action \<alpha>, Node q\<^sub>s, Elem d] \<notin> \<rho> the_kill"
 proof -
   have "\<forall>\<sigma>. \<lbrakk>\<^bold>\<not>kill [Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, Cst\<^sub>E d]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
   proof
@@ -2681,7 +2681,7 @@ lemma sound_ana_pg_fw_may':
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_may s_BV"
   shows "\<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_end (ss, w)), Cst\<^sub>E d]\<rangle>."
   using assms 
-proof (induction arbitrary: d rule: LTS.path_with_word_from_induct_reverse[OF assms(1)])
+proof (induction rule: LTS.path_with_word_from_induct_reverse[OF assms(1)])
   case (1 s)
   have assms_2: "\<rho> \<Turnstile>\<^sub>d\<^sub>l ana_pg_fw_may"
     using assms(3) unfolding least_solution_def by auto
@@ -2693,9 +2693,8 @@ proof (induction arbitrary: d rule: LTS.path_with_word_from_induct_reverse[OF as
     unfolding S_hat_path_def by auto
   then have "d \<in> d_init"
     using 1(2) by auto
-  moreover
-  from assms_2 have "\<forall>d\<in>d_init. \<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s init\<langle>[Cst\<^sub>E d]\<rangle> :- [] ."
-    unfolding ana_pg_fw_may_def ana_init_BV_def solves_program_def by auto
+  then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s init\<langle>[Cst\<^sub>E d]\<rangle> :- [] ."
+    using assms_2 unfolding ana_pg_fw_may_def ana_init_BV_def solves_program_def by auto
   moreover
   have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s BV\<langle>[Cst\<^sub>N start, \<uu>]\<rangle> :- [init[\<uu>]]."
     by (metis Un_insert_right ana_entry_node_BV_def analysis_BV_forward_may.ana_pg_fw_may_def 
@@ -3000,7 +2999,7 @@ qed
 lemma def_path_S_hat_path: "def_path \<pi> start = interp.S_hat_path \<pi> d_init_RD"
   using interp.S_hat_path_def def_path_def def_var_UNIV_S_hat_edge_list by metis
 
-definition summarizes_RD :: "(BV_pred, ('n,'v,('n,'v) triple) BV_elem) pred_val \<Rightarrow> bool" where
+definition summarizes_RD :: "(pred, ('n,'v,('n,'v) triple) cst) pred_val \<Rightarrow> bool" where
   "summarizes_RD \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> def_path \<pi> start \<longrightarrow> 
                         \<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_end \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
@@ -3089,7 +3088,7 @@ qed
 definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>P\<lbrakk>_\<rbrakk> _") where
   "Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = Ŝ\<^sub>E\<^sub>s\<lbrakk>(LTS.transition_list \<pi>)\<rbrakk> R"
 
-definition summarizes_bw_may :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+definition summarizes_bw_may :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
   "summarizes_bw_may \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init \<longrightarrow> 
                              \<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_start \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
@@ -3400,7 +3399,7 @@ lemma use_edge_list_UNIV_S_hat_edge_list: "{x. use_edge_list \<pi> x} = interpb.
 lemma use_path_S_hat_path: "use_path \<pi> = interpb.S_hat_path \<pi> d_init_LV"
   by (simp add: use_edge_list_UNIV_S_hat_edge_list interpb.S_hat_path_def use_path_def)
 
-definition summarizes_LV :: "(BV_pred, ('n,'v,'v) BV_elem) pred_val \<Rightarrow> bool" where
+definition summarizes_LV :: "(pred, ('n,'v,'v) cst) pred_val \<Rightarrow> bool" where
   "summarizes_LV \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> use_path \<pi> \<longrightarrow> 
                          \<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_start \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
@@ -3492,7 +3491,7 @@ lemma S_hat_path_mono:
   shows "Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R1 \<subseteq> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R2"
   unfolding S_hat_path_def using assms S_hat_edge_list_mono by auto
 
-fun summarizes_fw_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+fun summarizes_fw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
    "summarizes_fw_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_end d.
          \<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>_end, d]\<rangle>. \<longrightarrow>
@@ -3721,7 +3720,7 @@ proof -
     have "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
       unfolding solves_cls_def
     proof (rule)
-      fix \<sigma>' :: "BV_var \<Rightarrow> ('n, 'v, 'd) BV_elem"
+      fix \<sigma>' :: "var \<Rightarrow> ('n, 'v, 'd) cst"
       { 
         assume b: "Cls p ids rhs \<in> \<Union> (a_may.ana_edge_BV ` a_may.edge_set)"
         from a c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
@@ -4030,10 +4029,10 @@ next
     by auto
 qed
 
-lemma is_bv_elem_if_init:
+lemma is_elem_if_init:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>f init\<langle>[Cst d]\<rangle>."
-  shows "is_bv_elem d"
+  shows "is_elem d"
 proof (cases "d")
   case (Node x1)
   then show ?thesis
@@ -4043,7 +4042,7 @@ next
   then show ?thesis
     by simp
 next
-  case (BV_Action x3)
+  case (Action x3)
   then show ?thesis
     using assms(1) assms(2) not_init_action by blast
 qed
@@ -4053,7 +4052,7 @@ lemma in_analysis_dom_if_init': (* init, like kill and gen doesn't have rhsides,
   assumes "\<rho> \<Turnstile>\<^sub>f init\<langle>[Cst\<^sub>E d]\<rangle>."
   shows "d \<in> analysis_dom"
 proof -
-  have "\<forall>\<sigma> :: BV_var \<Rightarrow> ('n, 'v, 'd) BV_elem. d \<in> analysis_dom"
+  have "\<forall>\<sigma> :: var \<Rightarrow> ('n, 'v, 'd) cst. d \<in> analysis_dom"
   proof
     fix \<sigma>
     have "finite ana_pg_fw_must"
@@ -4091,7 +4090,7 @@ proof -
   then obtain d' where "d = Cst d'"
     by (meson is_Cst_def)
   then obtain d'' where "d' = Elem d''"
-    using is_bv_elem_if_init[OF assms(1)] assms(2)
+    using is_elem_if_init[OF assms(1)] assms(2)
     apply (cases d')
     apply auto
     using assms(1) assms(2) not_init_node apply blast
@@ -4162,7 +4161,7 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
     have "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
       unfolding solves_cls_def
     proof (rule)
-      fix \<sigma>' :: "BV_var \<Rightarrow> ('n, 'v, 'd) BV_elem"
+      fix \<sigma>' :: "var \<Rightarrow> ('n, 'v, 'd) cst"
       { 
         assume b: "Cls p ids rhs \<in> \<Union> (a_may.ana_edge_BV ` a_may.edge_set)"
         from a c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
@@ -4363,7 +4362,7 @@ lemma not_CBV_action: (* Copy paste adapt from not_init_node *)
   shows "\<not>\<rho> \<Turnstile>\<^sub>f CBV\<langle>[Cst\<^sub>A q,d]\<rangle>."
 proof
   assume asm_2: "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[Cst\<^sub>A q,d]\<rangle>."
-  then have "[BV_Action q, the_Cst d] \<in> \<rho> the_CBV"
+  then have "[Action q, the_Cst d] \<in> \<rho> the_CBV"
     using is_Cst_if_CBV[OF assms(1)] by (cases d) auto
 
   have "finite ana_pg_fw_must"
@@ -4377,7 +4376,7 @@ proof
     by (smt (verit) a_may.ana_pg_fw_may_stratified) 
   moreover
 
-  define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_CBV then (\<rho> the_CBV) - {[BV_Action q, the_Cst d]} else \<rho> p))"
+  define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_CBV then (\<rho> the_CBV) - {[Action q, the_Cst d]} else \<rho> p))"
 
   have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l ana_pg_fw_must"
     unfolding solves_program_def
@@ -4398,7 +4397,7 @@ proof
     have "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
       unfolding solves_cls_def
     proof (rule)
-      fix \<sigma>' :: "BV_var \<Rightarrow> ('n, 'v, 'd) BV_elem"
+      fix \<sigma>' :: "var \<Rightarrow> ('n, 'v, 'd) cst"
       { 
         assume b: "Cls p ids rhs \<in> \<Union> (a_may.ana_edge_BV ` a_may.edge_set)"
         from a c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
@@ -4561,7 +4560,7 @@ proof
   have "\<rho>' \<sqsubset>s_BV\<sqsubset> \<rho>"
   proof -
     have "\<rho>' the_CBV \<subset> \<rho> the_CBV"
-      unfolding \<rho>'_def using \<open>[BV_Action q, id.the_Cst d] \<in> \<rho> the_CBV\<close> by auto
+      unfolding \<rho>'_def using \<open>[Action q, id.the_Cst d] \<in> \<rho> the_CBV\<close> by auto
     moreover
     have "\<forall>p'. s_BV p' = s_BV the_kill \<longrightarrow> \<rho>' p' \<subseteq> \<rho>  p'"
       unfolding \<rho>'_def by auto
@@ -4585,10 +4584,10 @@ proof -
   have "\<rho> \<Turnstile>\<^sub>f init\<langle>[d]\<rangle>."
     using assms(1) assms(2) init_if_CBV[of \<rho> \<pi>_end d] by fastforce
   show ?thesis
-    by (metis BV_elem.exhaust \<open>\<rho> \<Turnstile>\<^sub>f init\<langle>[d]\<rangle>.\<close> assms(1) is_Cst_def not_init_action is_Cst_if_init not_init_node)
+    by (metis cst.exhaust \<open>\<rho> \<Turnstile>\<^sub>f init\<langle>[d]\<rangle>.\<close> assms(1) is_Cst_def not_init_action is_Cst_if_init not_init_node)
 qed
 
-lemma not_CBV_elem: (* Copy paste adapt from not_init_node *)
+lemma not_Ccst: (* Copy paste adapt from not_init_node *)
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   shows "\<not>\<rho> \<Turnstile>\<^sub>f CBV\<langle>[Cst\<^sub>E q,d]\<rangle>."
 proof
@@ -4628,7 +4627,7 @@ proof
     have "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
       unfolding solves_cls_def
     proof (rule)
-      fix \<sigma>' :: "BV_var \<Rightarrow> ('n, 'v, 'd) BV_elem"
+      fix \<sigma>' :: "var \<Rightarrow> ('n, 'v, 'd) cst"
       { 
         assume b: "Cls p ids rhs \<in> \<Union> (a_may.ana_edge_BV ` a_may.edge_set)"
         from a c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
@@ -4808,7 +4807,7 @@ proof
 qed
 
 thm not_CBV_action
-thm not_CBV_elem
+thm not_Ccst
 
 lemma is_Cst_if_CBV_left_arg:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
@@ -4826,7 +4825,7 @@ proof (cases q)
   have "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[Cst\<^sub>E undefined,Cst\<^sub>E d']\<rangle>."
     unfolding solves_fact.simps 
   proof 
-    fix \<sigma> :: "BV_var \<Rightarrow> ('n, 'v, 'd) BV_elem"
+    fix \<sigma> :: "var \<Rightarrow> ('n, 'v, 'd) cst"
     define \<sigma>' where "\<sigma>' = (\<lambda>y. if y = x then Elem undefined else \<sigma> y)"
     have "\<lbrakk>CBV\<langle>[Var x, Cst\<^sub>E d']\<rangle>.\<rbrakk>\<^sub>f \<rho> \<sigma>'"
       using \<open>\<forall>\<sigma>. \<lbrakk>CBV\<langle>[Var x, Cst\<^sub>E d']\<rangle>.\<rbrakk>\<^sub>f \<rho> \<sigma>\<close> by blast
@@ -4837,7 +4836,7 @@ proof (cases q)
       done
   qed
   then have "False"
-    using assms(1) not_CBV_elem by blast
+    using assms(1) not_Ccst by blast
   then show ?thesis 
     by metis
 next
@@ -4864,7 +4863,7 @@ proof -
         apply simp
         done
       subgoal for d'
-        using not_CBV_elem[OF assms(1), of d' d]
+        using not_Ccst[OF assms(1), of d' d]
           assms(2)
         apply auto
         done
@@ -4896,10 +4895,10 @@ proof -
     using assms(1) assms(2) in_analysis_dom_if_CBV by auto
 
   have \<pi>e: "\<pi>_end = Cst\<^sub>N (LTS.get_end \<pi>)"
-    by (smt (verit, best) BV_elem.collapse(1) BV_elem.collapse(3) BV_elem.disc(6) BV_elem.distinct(1) BV_elem.distinct(3) BV_elem.expand assms(1) assms(2) assms(5) id.sel(2) is_bv_elem_def is_encode_node_if_CBV_left_arg)
+    by (smt (verit, best) cst.collapse(1) cst.collapse(3) cst.disc(6) cst.distinct(1) cst.distinct(3) cst.expand assms(1) assms(2) assms(5) id.sel(2) is_elem_def is_encode_node_if_CBV_left_arg)
 
   have d_encdec: "d = Cst\<^sub>E (Decode_Elem d)"
-    by (metis BV_elem.sel(2) assms(1) assms(2) id.sel(2) is_encode_elem_if_CBV_right_arg)
+    by (metis cst.sel(2) assms(1) assms(2) id.sel(2) is_encode_elem_if_CBV_right_arg)
 
   have m: "\<not> \<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_end \<pi>), d]\<rangle>."
     using not_CBV2[OF assms(1), of "(LTS.get_end \<pi>)" "Decode_Elem d"] assms(2) \<pi>e d_encdec by force
@@ -5097,7 +5096,7 @@ qed
 definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>P\<lbrakk>_\<rbrakk> _") where (* Copy paste *)
   "Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = Ŝ\<^sub>E\<^sub>s\<lbrakk>LTS.transition_list \<pi>\<rbrakk> R"
 
-fun summarizes_bw_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where (* Ny *)
+fun summarizes_bw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where (* Ny *)
    "summarizes_bw_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_start d.
          \<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>_start, d]\<rangle>. \<longrightarrow>
@@ -5193,27 +5192,27 @@ Plan:
 Forstå hvordan du 
 
 FORWARD MAY:
-fun summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+fun summarizes_dl_BV :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
   "summarizes_dl_BV \<rho> \<longleftrightarrow> 
      (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> Ŝ\<^sub>P\<lbrakk> \<pi> d_init \<longrightarrow> 
         \<rho> \<Turnstile>\<^sub>f (BV\<langle>[Cst\<^sub>N (LTS.get_end \<pi>), Cst\<^sub>E d]\<rangle>.))"
 
 
 BACKWARD MAY:
-definition summarizes_dl_BV :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+definition summarizes_dl_BV :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
   "summarizes_dl_BV \<rho> \<longleftrightarrow> 
      (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> Ŝ\<^sub>P\<lbrakk> \<pi> d_init \<longrightarrow> 
                              \<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_start \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
 FORWARD MUST:
-fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+fun summarizes_dl_BV_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
   "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_end d.
         \<rho> \<Turnstile>\<^sub>f CBV\<langle>[Cst\<^sub>N \<pi>_end, Cst\<^sub>E d]\<rangle>. \<longrightarrow>
           (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = \<pi>_end \<longrightarrow> d \<in> Ŝ\<^sub>P\<lbrakk> \<pi> d_init))"
 
 BACKWARD MUST:
-fun summarizes_dl_BV_must :: "(BV_pred, ('n, 'v, 'd) BV_elem) pred_val \<Rightarrow> bool" where
+fun summarizes_dl_BV_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
   "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_start d.
         \<rho> \<Turnstile>\<^sub>f CBV\<langle>[Cst\<^sub>N \<pi>_start, Cst\<^sub>E d]\<rangle>. \<longrightarrow>
