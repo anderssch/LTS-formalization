@@ -3014,8 +3014,6 @@ end
 
 section \<open>Backward may-analysis\<close>
 
-thm Program_Graph.analysis_BV_forward_may.edge_set.cong 
-
 locale analysis_BV_backward_may =
   fixes pg :: "('n::finite,'v) program_graph"
   fixes analysis_dom :: "'d set"
@@ -3053,8 +3051,8 @@ lemma S_hat_mono:
   using assms unfolding S_hat_def by auto
 
 fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R" |
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>(e # \<pi>)\<rbrakk> R = Ŝ\<^sub>E\<lbrakk>e\<rbrakk> (S_hat_edge_list \<pi> R)"
+  "Ŝ\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R"
+| "Ŝ\<^sub>E\<^sub>s\<lbrakk>(e # \<pi>)\<rbrakk> R = Ŝ\<^sub>E\<lbrakk>e\<rbrakk> (Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R)"
 
 lemma S_hat_edge_list_def2:
   "Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R = foldr S_hat \<pi> R"
@@ -3641,7 +3639,7 @@ qed
 lemma not_CBV:
   assumes "[Node q, Elem d] \<in> \<rho> the_CBV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes a: "[Node q, Elem d] \<in> \<rho> the_BV"                  
+  assumes a: "[Node q, Elem d] \<in> \<rho> the_BV"
   shows False
 proof -
   have fin: "finite ana_pg_fw_must"
@@ -3931,8 +3929,6 @@ proof -
     using not_CBV[of q d \<rho>] assms(1) by auto
 qed
 
-thm analysis_BV_forward_may.not_kill
-
 lemma not_init_node:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   shows "\<not>\<rho> \<Turnstile>\<^sub>f init\<langle>[Cst\<^sub>N q]\<rangle>."
@@ -4145,8 +4141,7 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
     unfolding solves_program_def
   proof
     fix c
-    assume a: "c \<in> ana_pg_fw_must
-"
+    assume a: "c \<in> ana_pg_fw_must"
     then obtain p ids rhs where c_def: "c = Cls p ids rhs"
       by (cases c) auto
 
