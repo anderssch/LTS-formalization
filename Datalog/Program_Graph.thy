@@ -2809,8 +2809,7 @@ lemma gen_RD_subset_analysis_dom: "gen_set_RD e \<subseteq> analysis_dom_RD"
 lemma kill_RD_subset_analysis_dom: "kill_set_RD e \<subseteq> analysis_dom_RD"
   unfolding analysis_dom_RD_def by auto
 
-
-interpretation interp: analysis_BV_forward_may pg analysis_dom_RD kill_set_RD gen_set_RD d_init_RD 
+interpretation fw_may: analysis_BV_forward_may pg analysis_dom_RD kill_set_RD gen_set_RD d_init_RD 
   using analysis_BV_forward_may_def analysis_RD_axioms analysis_RD_def
   using d_init_RD_subset_analysis_dom_RD finite_analysis_dom_RD gen_RD_subset_analysis_dom kill_RD_subset_analysis_dom
   by blast 
@@ -2818,7 +2817,7 @@ interpretation interp: analysis_BV_forward_may pg analysis_dom_RD kill_set_RD ge
 lemma def_var_def_edge_S_hat:
   assumes "def_var \<pi> x start \<in> R"
   assumes "x \<notin> def_edge t"
-  shows "def_var \<pi> x start \<in> interp.S_hat t R"
+  shows "def_var \<pi> x start \<in> fw_may.S_hat t R"
 proof -
   define q1 where "q1 = fst t"
   define \<alpha> where "\<alpha> = fst (snd t)"
@@ -2829,25 +2828,25 @@ proof -
   from assms(2) have assms_2: "x \<notin> def_edge (q1, \<alpha>, q2)"
     unfolding t_def by auto
 
-  have "def_var \<pi> x start \<in> interp.S_hat (q1, \<alpha>, q2) R"
+  have "def_var \<pi> x start \<in> fw_may.S_hat (q1, \<alpha>, q2) R"
   proof (cases \<alpha>)
     case (Asg y exp)
     then show ?thesis
-      by (metis (no_types, lifting) DiffI Un_iff assms(1) assms_2 def_action.simps(1) def_var_x interp.S_hat_def kill_set_RD.simps(1) mem_Sigma_iff old.prod.case prod.collapse)
+      by (metis (no_types, lifting) DiffI Un_iff assms(1) assms_2 def_action.simps(1) def_var_x fw_may.S_hat_def kill_set_RD.simps(1) mem_Sigma_iff old.prod.case prod.collapse)
   next
     case (Bool b)
     then show ?thesis
-      by (simp add: interp.S_hat_def assms(1))
+      by (simp add: fw_may.S_hat_def assms(1))
   next
     case Skip
     then show ?thesis
-      by (simp add: interp.S_hat_def assms(1))
+      by (simp add: fw_may.S_hat_def assms(1))
   qed
   then show ?thesis
     unfolding t_def by auto
 qed
 
-lemma def_var_S_hat_edge_list: "(def_var \<pi>) x start \<in> interp.S_hat_edge_list \<pi> d_init_RD"
+lemma def_var_S_hat_edge_list: "(def_var \<pi>) x start \<in> fw_may.S_hat_edge_list \<pi> d_init_RD"
 proof (induction \<pi> rule: rev_induct)
   case Nil
   then show ?case
@@ -2860,14 +2859,14 @@ next
     then have "def_var (\<pi> @[t]) x start = def_var [t] x start"
       by (simp add: def_var_def)
     moreover
-    have "interp.S_hat_edge_list (\<pi> @ [t]) d_init_RD = interp.S_hat t (interp.S_hat_edge_list \<pi> d_init_RD)"
-      unfolding interp.S_hat_edge_list_def2 by simp
+    have "fw_may.S_hat_edge_list (\<pi> @ [t]) d_init_RD = fw_may.S_hat t (fw_may.S_hat_edge_list \<pi> d_init_RD)"
+      unfolding fw_may.S_hat_edge_list_def2 by simp
     moreover
     obtain q1 \<alpha> q2 where t_split: "t = (q1, \<alpha>, q2)"
       using prod_cases3 by blast
     moreover
-    have "def_var [t] x start \<in> interp.S_hat t (interp.S_hat_edge_list \<pi> d_init_RD)"
-      unfolding interp.S_hat_def def_var_def triple_of_def using True t_split by (cases \<alpha>) auto
+    have "def_var [t] x start \<in> fw_may.S_hat t (fw_may.S_hat_edge_list \<pi> d_init_RD)"
+      unfolding fw_may.S_hat_def def_var_def triple_of_def using True t_split by (cases \<alpha>) auto
     ultimately
     show ?thesis by auto
   next
@@ -2877,10 +2876,10 @@ next
     from False have "def_var (\<pi> @ [t]) x start = def_var \<pi> x start"
       by (simp add: def_var_def)
     moreover
-    from snoc.IH have "def_var \<pi> x start \<in> interp.S_hat t (interp.S_hat_edge_list \<pi> d_init_RD)"
+    from snoc.IH have "def_var \<pi> x start \<in> fw_may.S_hat t (fw_may.S_hat_edge_list \<pi> d_init_RD)"
       by (simp add: False def_var_def_edge_S_hat)
-    then have "def_var \<pi> x start \<in> interp.S_hat_edge_list (\<pi> @ [t]) d_init_RD"
-      unfolding interp.S_hat_edge_list_def2 by simp
+    then have "def_var \<pi> x start \<in> fw_may.S_hat_edge_list (\<pi> @ [t]) d_init_RD"
+      unfolding fw_may.S_hat_edge_list_def2 by simp
     ultimately
     show ?thesis
       using snoc by auto
@@ -2907,25 +2906,25 @@ proof -
     .
 qed
 
-lemma S_hat_edge_list_last: "interp.S_hat_edge_list (\<pi> @ [e]) d_init_RD = interp.S_hat e (interp.S_hat_edge_list \<pi> d_init_RD)"
-  using interp.S_hat_edge_list_def2 foldl_conv_foldr by simp
+lemma S_hat_edge_list_last: "fw_may.S_hat_edge_list (\<pi> @ [e]) d_init_RD = fw_may.S_hat e (fw_may.S_hat_edge_list \<pi> d_init_RD)"
+  using fw_may.S_hat_edge_list_def2 foldl_conv_foldr by simp
 
-lemma def_var_if_S_hat: "(x,q1,q2) \<in> interp.S_hat_edge_list \<pi> d_init_RD \<Longrightarrow> (x,q1,q2) = (def_var \<pi>) x start"
+lemma def_var_if_S_hat: "(x,q1,q2) \<in> fw_may.S_hat_edge_list \<pi> d_init_RD \<Longrightarrow> (x,q1,q2) = (def_var \<pi>) x start"
 proof (induction \<pi> rule: rev_induct)
   case Nil
   then show ?case
-    by (metis append_is_Nil_conv d_init_RD_def def_var_def in_set_conv_decomp interp.S_hat_edge_list.simps(1) list.distinct(1) mem_Sigma_iff singletonD)
+    by (metis append_is_Nil_conv d_init_RD_def def_var_def in_set_conv_decomp fw_may.S_hat_edge_list.simps(1) list.distinct(1) mem_Sigma_iff singletonD)
 next
   case (snoc e \<pi>)
 
-  from snoc(2) have "(x, q1, q2) \<in> interp.S_hat e (interp.S_hat_edge_list \<pi> d_init_RD)"
+  from snoc(2) have "(x, q1, q2) \<in> fw_may.S_hat e (fw_may.S_hat_edge_list \<pi> d_init_RD)"
     using S_hat_edge_list_last by blast     
 
-  then have "(x, q1, q2) \<in> interp.S_hat_edge_list \<pi> d_init_RD - kill_set_RD e \<or> (x, q1, q2) \<in> gen_set_RD e"
-    unfolding interp.S_hat_def by auto
+  then have "(x, q1, q2) \<in> fw_may.S_hat_edge_list \<pi> d_init_RD - kill_set_RD e \<or> (x, q1, q2) \<in> gen_set_RD e"
+    unfolding fw_may.S_hat_def by auto
   then show ?case
   proof
-    assume a: "(x, q1, q2) \<in> interp.S_hat_edge_list \<pi> d_init_RD - kill_set_RD e"
+    assume a: "(x, q1, q2) \<in> fw_may.S_hat_edge_list \<pi> d_init_RD - kill_set_RD e"
     then have "(x, q1, q2) = def_var \<pi> x start"
       using snoc by auto
     moreover
@@ -2983,31 +2982,31 @@ next
   qed
 qed
 
-lemma def_var_UNIV_S_hat_edge_list: "(\<lambda>x. def_var \<pi> x start) ` UNIV = interp.S_hat_edge_list \<pi> d_init_RD"
+lemma def_var_UNIV_S_hat_edge_list: "(\<lambda>x. def_var \<pi> x start) ` UNIV = fw_may.S_hat_edge_list \<pi> d_init_RD"
 proof (rule; rule)
   fix x
   assume "x \<in> range (\<lambda>x. def_var \<pi> x start)"
-  then show "x \<in> interp.S_hat_edge_list \<pi> d_init_RD"
+  then show "x \<in> fw_may.S_hat_edge_list \<pi> d_init_RD"
     using def_var_S_hat_edge_list by blast
 next
   fix x
-  assume "x \<in> interp.S_hat_edge_list \<pi> d_init_RD"
+  assume "x \<in> fw_may.S_hat_edge_list \<pi> d_init_RD"
   then show "x \<in> range (\<lambda>x. def_var \<pi> x start)"
     by (metis def_var_if_S_hat prod.collapse range_eqI)
 qed
 
-lemma def_path_S_hat_path: "def_path \<pi> start = interp.S_hat_path \<pi> d_init_RD"
-  using interp.S_hat_path_def def_path_def def_var_UNIV_S_hat_edge_list by metis
+lemma def_path_S_hat_path: "def_path \<pi> start = fw_may.S_hat_path \<pi> d_init_RD"
+  using fw_may.S_hat_path_def def_path_def def_var_UNIV_S_hat_edge_list by metis
 
 definition summarizes_RD :: "(pred, ('n,'v,('n,'v) triple) cst) pred_val \<Rightarrow> bool" where
   "summarizes_RD \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> def_path \<pi> start \<longrightarrow> 
                         \<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_end \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
 theorem RD_sound_again: 
-  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (interp.ana_pg_fw_may) s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (fw_may.ana_pg_fw_may) s_BV"
   shows "summarizes_RD \<rho>"
-  using assms def_path_S_hat_path interp.sound_ana_pg_fw_may unfolding interp.summarizes_fw_may_def summarizes_RD.simps
-  using edge_set_def in_mono interp.edge_set_def interp.start_def start_def summarizes_RD_def by fastforce 
+  using assms def_path_S_hat_path fw_may.sound_ana_pg_fw_may unfolding fw_may.summarizes_fw_may_def summarizes_RD.simps
+  using edge_set_def in_mono fw_may.edge_set_def fw_may.start_def start_def summarizes_RD_def by fastforce 
 
 end
 
@@ -3051,8 +3050,8 @@ lemma S_hat_mono:
   using assms unfolding S_hat_def by auto
 
 fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R"
-| "Ŝ\<^sub>E\<^sub>s\<lbrakk>(e # \<pi>)\<rbrakk> R = Ŝ\<^sub>E\<lbrakk>e\<rbrakk> (Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R)"
+  "Ŝ\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R" |
+  "Ŝ\<^sub>E\<^sub>s\<lbrakk>(e # \<pi>)\<rbrakk> R = Ŝ\<^sub>E\<lbrakk>e\<rbrakk> (Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R)"
 
 lemma S_hat_edge_list_def2:
   "Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R = foldr S_hat \<pi> R"
@@ -3099,22 +3098,24 @@ lemma new_gen_subs_analysis_dom: "(kill_set (rev_edge e)) \<subseteq> analysis_d
 lemma new_kill_subs_analysis_dom: "(gen_set (rev_edge e)) \<subseteq> analysis_dom"
   by (meson analysis_BV_backward_may_axioms analysis_BV_backward_may_def)
 
-interpretation fa: analysis_BV_forward_may pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
+interpretation fw_may: analysis_BV_forward_may pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
   using analysis_BV_forward_may_def finite_pg_rev by (metis analysis_BV_backward_may_axioms analysis_BV_backward_may_def) 
 
 abbreviation ana_pg_bw_may where
-  "ana_pg_bw_may == fa.ana_pg_fw_may"
+  "ana_pg_bw_may == fw_may.ana_pg_fw_may"
 
 lemma rev_end_is_start:
   assumes "ss \<noteq> []"
   assumes "LTS.get_end (ss, w) = end"
-  shows "LTS.get_start (rev ss, rev w) = fa.start"
+  shows "LTS.get_start (rev ss, rev w) = fw_may.start"
   using assms
-  unfolding LTS.get_end_def LTS.get_start_def fa.start_def pg_rev_def fa.start_def
-  using hd_rev by (metis fa.start_def fst_conv pg_rev_def snd_conv) 
+  unfolding LTS.get_end_def LTS.get_start_def fw_may.start_def pg_rev_def fw_may.start_def
+  using hd_rev by (metis fw_may.start_def fst_conv pg_rev_def snd_conv) 
+
+(*  "Ŝ\<^sub>E\<^sub>s\<lbrakk>ss\<rbrakk> d_init = Ŝ\<^sub>E\<^sub>s\<^sub>F\<^sub>W \<lbrakk>rev_edge_list ss\<rbrakk> d_init" *)
 
 lemma S_hat_edge_list_forward_backward:
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>ss\<rbrakk> d_init = fa.S_hat_edge_list (rev_edge_list ss) d_init"
+  "Ŝ\<^sub>E\<^sub>s\<lbrakk>ss\<rbrakk> d_init = fw_may.S_hat_edge_list (rev_edge_list ss) d_init"
 proof (induction ss)
   case Nil
   then show ?case
@@ -3123,13 +3124,13 @@ next
   case (Cons e es)
   show ?case
     unfolding rev_edge_list_def
-    unfolding fa.S_hat_edge_list_def2
+    unfolding fw_may.S_hat_edge_list_def2
     unfolding foldl_conv_foldr
     apply simp
     unfolding foldr_conv_foldl
-    unfolding fa.S_hat_edge_list_def2[symmetric]
+    unfolding fw_may.S_hat_edge_list_def2[symmetric]
     unfolding rev_edge_list_def[symmetric]
-    unfolding fa.S_hat_def
+    unfolding fw_may.S_hat_def
     apply (simp only: rev_edge_rev_edge_id)
     unfolding S_hat_def
     using Cons
@@ -3139,35 +3140,35 @@ qed
 
 lemma S_hat_path_forward_backward:
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
-  shows "Ŝ\<^sub>P\<lbrakk>(ss, w)\<rbrakk> d_init = fa.S_hat_path (rev ss, rev w) d_init"
-  using S_hat_edge_list_forward_backward unfolding S_hat_path_def fa.S_hat_path_def
+  shows "Ŝ\<^sub>P\<lbrakk>(ss, w)\<rbrakk> d_init = fw_may.S_hat_path (rev ss, rev w) d_init"
+  using S_hat_edge_list_forward_backward unfolding S_hat_path_def fw_may.S_hat_path_def
   by (metis transition_list_rev_edge_list assms)
 
 lemma summarizes_bw_may_forward_backward':
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
   assumes "LTS.get_end (ss,w) = end"
   assumes "d \<in> Ŝ\<^sub>P\<lbrakk>(ss,w)\<rbrakk> d_init"
-  assumes "fa.summarizes_fw_may \<rho>"
+  assumes "fw_may.summarizes_fw_may \<rho>"
   shows "\<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_start (ss, w)), Cst\<^sub>E d]\<rangle>."
 proof -
-  have rev_in_edge_set: "(rev ss, rev w) \<in> LTS.path_with_word fa.edge_set"
-    using assms(1) rev_path_in_rev_pg[of ss w] fa.edge_set_def pg_rev_def by auto 
+  have rev_in_edge_set: "(rev ss, rev w) \<in> LTS.path_with_word fw_may.edge_set"
+    using assms(1) rev_path_in_rev_pg[of ss w] fw_may.edge_set_def pg_rev_def by auto 
   moreover
-  have "LTS.get_start (rev ss, rev w) = fa.start"
+  have "LTS.get_start (rev ss, rev w) = fw_may.start"
     using assms(1,2) rev_end_is_start by (metis LTS.path_with_word_not_empty)
   moreover
-  have "d \<in> fa.S_hat_path (rev ss, rev w) d_init"
+  have "d \<in> fw_may.S_hat_path (rev ss, rev w) d_init"
     using assms(3)
     using assms(1) S_hat_path_forward_backward by auto
   ultimately
   have "\<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_end (rev ss, rev w)), Cst\<^sub>E d]\<rangle>."
-    using assms(4) fa.summarizes_fw_may_def by blast
+    using assms(4) fw_may.summarizes_fw_may_def by blast
   then show ?thesis
     by (metis LTS.get_end_def LTS.get_start_def fst_conv hd_rev rev_rev_ident)
 qed
 
 lemma summarizes_dl_BV_forward_backward:
-  assumes "fa.summarizes_fw_may \<rho>"
+  assumes "fw_may.summarizes_fw_may \<rho>"
   shows "summarizes_bw_may \<rho>"
   unfolding summarizes_bw_may_def
 proof(rule; rule ; rule ;rule ;rule)
@@ -3185,7 +3186,7 @@ qed
 theorem sound_ana_pg_bw_may:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_bw_may s_BV"
   shows "summarizes_bw_may \<rho>"
-  using assms fa.sound_ana_pg_fw_may[of \<rho>] summarizes_dl_BV_forward_backward by metis
+  using assms fw_may.sound_ana_pg_fw_may[of \<rho>] summarizes_dl_BV_forward_backward by metis
 
 end
 
@@ -3236,13 +3237,13 @@ fun gen_set_LV :: "('n,'v) edge \<Rightarrow> 'v set" where
 definition d_init_LV :: "'v set" where
   "d_init_LV = {}"
 
-interpretation interpb: analysis_BV_backward_may pg analysis_dom_LV kill_set_LV gen_set_LV d_init_LV
+interpretation bw_may: analysis_BV_backward_may pg analysis_dom_LV kill_set_LV gen_set_LV d_init_LV
   using analysis_BV_backward_may.intro analysis_LV_axioms analysis_LV_def
   by (metis (mono_tags) analysis_dom_LV_def finite_UNIV subset_UNIV)
 
 lemma use_edge_list_S_hat_edge_list: 
   assumes "use_edge_list \<pi> x"
-  shows "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV"
+  shows "x \<in> bw_may.S_hat_edge_list \<pi> d_init_LV"
   using assms
 proof (induction \<pi>)
   case Nil
@@ -3270,7 +3271,7 @@ next
     obtain p \<alpha> q where a_split: "e = (p, \<alpha>, q)"
       by (cases e)
     show ?thesis
-      using x_used_a interpb.S_hat_def a_split by (cases \<alpha>) auto
+      using x_used_a bw_may.S_hat_def a_split by (cases \<alpha>) auto
   next
     case (Cons hd_\<pi>1 tl_\<pi>1)
     obtain p \<alpha> q where e_split: "e' = (p, \<alpha>, q)"
@@ -3279,7 +3280,7 @@ next
       using Cons \<pi>1_\<pi>2_e'_p e_split by auto
     then have "use_edge_list \<pi> x"
       unfolding use_edge_list_def by force
-    then have x_in_S_hat_\<pi>: "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV"
+    then have x_in_S_hat_\<pi>: "x \<in> bw_may.S_hat_edge_list \<pi> d_init_LV"
       using Cons_inner by auto
     have "e \<in> set \<pi>1"
       using \<pi>1_\<pi>2_e'_p(1) Cons(1) by auto
@@ -3297,13 +3298,13 @@ next
     next
       case False
       then show ?thesis
-        by (simp add: interpb.S_hat_def x_in_S_hat_\<pi>)
+        by (simp add: bw_may.S_hat_def x_in_S_hat_\<pi>)
     qed
   qed
 qed
 
 lemma S_hat_edge_list_use_edge_list:
-  assumes "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV"
+  assumes "x \<in> bw_may.S_hat_edge_list \<pi> d_init_LV"
   shows "use_edge_list \<pi> x"
   using assms 
 proof (induction \<pi>)
@@ -3314,12 +3315,12 @@ proof (induction \<pi>)
     by metis
 next
   case (Cons e \<pi>)
-  from Cons(2) have "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV - kill_set_LV e \<union> gen_set_LV e"
-    unfolding interpb.S_hat_edge_list.simps unfolding interpb.S_hat_def by auto
+  from Cons(2) have "x \<in> bw_may.S_hat_edge_list \<pi> d_init_LV - kill_set_LV e \<union> gen_set_LV e"
+    unfolding bw_may.S_hat_edge_list.simps unfolding bw_may.S_hat_def by auto
   then show ?case
   proof
-    assume a: "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV - kill_set_LV e"
-    then have "x \<in> interpb.S_hat_edge_list \<pi> d_init_LV"
+    assume a: "x \<in> bw_may.S_hat_edge_list \<pi> d_init_LV - kill_set_LV e"
+    then have "x \<in> bw_may.S_hat_edge_list \<pi> d_init_LV"
       by auto
     then have "use_edge_list \<pi> x"
       using Cons by auto
@@ -3391,25 +3392,25 @@ next
   qed
 qed
 
-lemma use_edge_list_UNIV_S_hat_edge_list: "{x. use_edge_list \<pi> x} = interpb.S_hat_edge_list \<pi> d_init_LV"
+lemma use_edge_list_UNIV_S_hat_edge_list: "{x. use_edge_list \<pi> x} = bw_may.S_hat_edge_list \<pi> d_init_LV"
   using use_edge_list_S_hat_edge_list S_hat_edge_list_use_edge_list by auto
 
-lemma use_path_S_hat_path: "use_path \<pi> = interpb.S_hat_path \<pi> d_init_LV"
-  by (simp add: use_edge_list_UNIV_S_hat_edge_list interpb.S_hat_path_def use_path_def)
+lemma use_path_S_hat_path: "use_path \<pi> = bw_may.S_hat_path \<pi> d_init_LV"
+  by (simp add: use_edge_list_UNIV_S_hat_edge_list bw_may.S_hat_path_def use_path_def)
 
 definition summarizes_LV :: "(pred, ('n,'v,'v) cst) pred_val \<Rightarrow> bool" where
   "summarizes_LV \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> use_path \<pi> \<longrightarrow> 
                          \<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_start \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
 theorem LV_sound:
-  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (interpb.ana_pg_bw_may) s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (bw_may.ana_pg_bw_may) s_BV"
   shows "summarizes_LV \<rho>"
 proof -
-  from assms have "interpb.summarizes_bw_may \<rho>"
-    using interpb.sound_ana_pg_bw_may[of \<rho>] by auto
+  from assms have "bw_may.summarizes_bw_may \<rho>"
+    using bw_may.sound_ana_pg_bw_may[of \<rho>] by auto
   then show ?thesis
-    unfolding summarizes_LV_def interpb.summarizes_bw_may_def interpb.edge_set_def edge_set_def
-      interpb.end_def end_def use_path_S_hat_path by blast
+    unfolding summarizes_LV_def bw_may.summarizes_bw_may_def bw_may.edge_set_def edge_set_def
+      bw_may.end_def end_def use_path_S_hat_path by blast
 qed
 
 end
@@ -3639,7 +3640,7 @@ qed
 lemma not_CBV:
   assumes "[Node q, Elem d] \<in> \<rho> the_CBV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes a: "[Node q, Elem d] \<in> \<rho> the_BV"
+  assumes a: "[Node q, Elem d] \<in> \<rho> the_BV"                  
   shows False
 proof -
   have fin: "finite ana_pg_fw_must"
@@ -3929,6 +3930,8 @@ proof -
     using not_CBV[of q d \<rho>] assms(1) by auto
 qed
 
+thm analysis_BV_forward_may.not_kill
+
 lemma not_init_node:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   shows "\<not>\<rho> \<Turnstile>\<^sub>f init\<langle>[Cst\<^sub>N q]\<rangle>."
@@ -4141,7 +4144,8 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
     unfolding solves_program_def
   proof
     fix c
-    assume a: "c \<in> ana_pg_fw_must"
+    assume a: "c \<in> ana_pg_fw_must
+"
     then obtain p ids rhs where c_def: "c = Cls p ids rhs"
       by (cases c) auto
 
@@ -5008,13 +5012,13 @@ definition d_init_AE :: "'v arith set" where
 
 (* Problem: 'v arith  er ikke en endelig type. *)
 
-interpretation interpb: analysis_BV_forward_must pg analysis_dom_AE kill_set_AE gen_set_AE d_init_AE
+interpretation bw_may: analysis_BV_forward_must pg analysis_dom_AE kill_set_AE gen_set_AE d_init_AE
   using analysis_BV_forward_must.intro analysis_AE_axioms analysis_AE_def
   by (metis d_init_AE_def empty_iff finite_analysis_dom_AE subsetI) 
 
 lemma aexp_edge_list_S_hat_edge_list: 
   assumes "aexp_edge_list \<pi> a"
-  shows "a \<in> interpb.S_hat_edge_list \<pi> d_init_AE"
+  shows "a \<in> bw_may.S_hat_edge_list \<pi> d_init_AE"
   using assms oops (* TODO: *)
 
 end
@@ -5100,23 +5104,23 @@ fun summarizes_bw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool"
 lemma finite_pg_rev: "finite (fst pg_rev)" (* Copy paste *)
   by (metis analysis_BV_backward_must_axioms analysis_BV_backward_must_def edge_set_def finite_imageI fst_conv pg_rev_def)
 
-interpretation fa: analysis_BV_forward_must pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
+interpretation fw_must: analysis_BV_forward_must pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
   using analysis_BV_forward_must_def finite_pg_rev
   by (metis analysis_BV_backward_must_axioms analysis_BV_backward_must_def) 
 
 abbreviation ana_pg_bw_must where (* Copy paste *)
-  "ana_pg_bw_must == fa.ana_pg_fw_must"
+  "ana_pg_bw_must == fw_must.ana_pg_fw_must"
 
 lemma rev_end_is_start: (* Copy paste *)
   assumes "ss \<noteq> []"
   assumes "LTS.get_end (ss, w) = end"
-  shows "LTS.get_start (rev ss, rev w) = fa.start"
+  shows "LTS.get_start (rev ss, rev w) = fw_must.start"
   using assms
-  unfolding LTS.get_end_def LTS.get_start_def fa.start_def pg_rev_def fa.start_def
-  using hd_rev by (metis fa.start_def fst_conv pg_rev_def snd_conv) 
+  unfolding LTS.get_end_def LTS.get_start_def fw_must.start_def pg_rev_def fw_must.start_def
+  using hd_rev by (metis fw_must.start_def fst_conv pg_rev_def snd_conv) 
 
 lemma S_hat_edge_list_forward_backward: (* Copy paste *)
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>ss\<rbrakk> d_init = fa.S_hat_edge_list (rev_edge_list ss) d_init"
+  "Ŝ\<^sub>E\<^sub>s\<lbrakk>ss\<rbrakk> d_init = fw_must.S_hat_edge_list (rev_edge_list ss) d_init"
 proof (induction ss)
   case Nil
   then show ?case
@@ -5125,13 +5129,13 @@ next
   case (Cons a ss)
   show ?case
     unfolding rev_edge_list_def
-    unfolding fa.S_hat_edge_list_def2
+    unfolding fw_must.S_hat_edge_list_def2
     unfolding foldl_conv_foldr
     apply simp
     unfolding foldr_conv_foldl
-    unfolding fa.S_hat_edge_list_def2[symmetric]
+    unfolding fw_must.S_hat_edge_list_def2[symmetric]
     unfolding rev_edge_list_def[symmetric]
-    unfolding fa.S_hat_def
+    unfolding fw_must.S_hat_def
     apply (simp only: rev_edge_rev_edge_id)
     unfolding S_hat_def
     using Cons
@@ -5141,25 +5145,25 @@ qed
 
 lemma S_hat_path_forward_backward: (* Copy paste *)
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
-  shows "Ŝ\<^sub>P\<lbrakk>(ss, w)\<rbrakk> d_init = fa.S_hat_path (rev ss, rev w) d_init"
-  using S_hat_edge_list_forward_backward unfolding S_hat_path_def fa.S_hat_path_def
+  shows "Ŝ\<^sub>P\<lbrakk>(ss, w)\<rbrakk> d_init = fw_must.S_hat_path (rev ss, rev w) d_init"
+  using S_hat_edge_list_forward_backward unfolding S_hat_path_def fw_must.S_hat_path_def
   by (metis transition_list_rev_edge_list assms)
 
 lemma summarizes_fw_must_forward_backward':
-  assumes "fa.summarizes_fw_must \<rho>"
+  assumes "fw_must.summarizes_fw_must \<rho>"
   assumes "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>_start, d]\<rangle>."
   assumes "\<pi> \<in> LTS.path_with_word edge_set"
   assumes "LTS.get_end \<pi> = end"
   assumes "LTS.get_start \<pi> = Decode_Node \<pi>_start"
   shows "Decode_Elem d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
   using LTS.get_end_def LTS.get_start_def S_hat_path_forward_backward 
-    analysis_BV_backward_must_axioms assms fa.start_def fa.summarizes_fw_must.simps fst_conv 
-    hd_rev last_rev pg_rev_def rev_path_in_rev_pg snd_conv fa.edge_set_def prod.collapse 
+    analysis_BV_backward_must_axioms assms fw_must.start_def fw_must.summarizes_fw_must.simps fst_conv 
+    hd_rev last_rev pg_rev_def rev_path_in_rev_pg snd_conv fw_must.edge_set_def prod.collapse 
   by (metis (no_types, lifting))
     (* TODO? Expand proof into something coherent? *)
 
 lemma summarizes_bw_must_forward_backward: (* Copy paste statement by adapted proof *)
-  assumes "fa.summarizes_fw_must \<rho>"
+  assumes "fw_must.summarizes_fw_must \<rho>"
   shows "summarizes_bw_must \<rho>"
   unfolding summarizes_bw_must.simps
 proof(rule; rule ; rule ;rule ;rule; rule; rule)
@@ -5179,7 +5183,7 @@ qed
 theorem sound_ana_pg_bw_must:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_bw_must s_BV"
   shows "summarizes_bw_must \<rho>"
-  using assms fa.sound_CBV[of \<rho>] summarizes_bw_must_forward_backward by metis
+  using assms fw_must.sound_CBV[of \<rho>] summarizes_bw_must_forward_backward by metis
 
 (* 
 
