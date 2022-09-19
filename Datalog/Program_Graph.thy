@@ -185,6 +185,7 @@ fun meaning_fact :: "('p,'x,'c) fact \<Rightarrow> ('p,'c) pred_val \<Rightarrow
 fun solves_fact :: "('p,'c) pred_val \<Rightarrow> ('p,'x,'c) fact \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>f" 91) where
   "\<rho> \<Turnstile>\<^sub>f (p,ids) \<longleftrightarrow> (\<forall>\<sigma>. \<lbrakk>(p,ids)\<rbrakk>\<^sub>f \<rho> \<sigma>)"
 
+
 section \<open>Substitutions (not in the book?)\<close>
 
 type_synonym ('x,'c) subst = "'x \<Rightarrow> ('x,'c) id"
@@ -301,6 +302,7 @@ lemma resolution_only_from_cls_cls_to_cls:
   by (metis append_self_conv2 assms resolution_last_from_cls_rh_to_cls solves_fact_iff_solves_lh)
 
 lemmas resolution_only = resolution_only_from_cls_fact_to_fact resolution_only_from_cls_cls_to_cls
+
 
 subsubsection \<open>Of all right hands\<close>
 
@@ -4940,7 +4942,7 @@ fun ae_boolean :: "'v boolean \<Rightarrow> 'v arith set" where
 lemma finite_ae_boolean: "finite (ae_boolean b)"
   using finite_ae_arith by (induction b) auto
 
-fun aexp_action :: "'v action \<Rightarrow> 'v arith set" where (* Maybe avexp would be a better name. *)
+fun aexp_action :: "'v action \<Rightarrow> 'v arith set" where
   "aexp_action (x ::= a) = ae_arith a"
 | "aexp_action (Bool b) = ae_boolean b"
 | "aexp_action Skip = {}"
@@ -4957,13 +4959,12 @@ lemma finite_aexp_edge: "finite (aexp_edge (q1, \<alpha>, q2))"
 fun aexp_pg :: "('n,'v) program_graph \<Rightarrow> 'v arith set" where
   "aexp_pg pg = \<Union>(aexp_edge ` (fst pg))"
 
-(*
 definition aexp_edge_list :: "('n,'v) edge list \<Rightarrow> 'v arith \<Rightarrow> bool" where
-  "aexp_edge_list \<pi> a = (\<exists>\<pi>1 \<pi>2 e. \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and> a \<in> aexp_edge e \<and> (\<forall>e' \<in> set \<pi>2. fv_arith a \<inter> def_edge e' = {}))"
+  "aexp_edge_list \<pi> a = (\<exists>\<pi>1 \<pi>2 e. \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and> a \<in> aexp_edge e \<and> (\<forall>e' \<in> set ([e] @ \<pi>2). fv_arith a \<inter> def_edge e' = {}))"
 
 definition aexp_path :: "'n list \<times> 'v action list \<Rightarrow> 'v arith set" where
   "aexp_path \<pi> = {a. aexp_edge_list (LTS.transition_list \<pi>) a}"
-*)
+
 
 locale analysis_AE =
   fixes pg :: "('n::finite,'v::finite) program_graph"
@@ -5006,12 +5007,111 @@ interpretation fw_must: analysis_BV_forward_must pg analysis_dom_AE kill_set_AE 
   using analysis_BV_forward_must.intro analysis_AE_axioms analysis_AE_def
   by (metis d_init_AE_def empty_iff finite_analysis_dom_AE subsetI) 
 
-(*
-lemma aexp_edge_list_S_hat_edge_list: 
+lemma use_edge_list_S_hat_edge_list: 
+  assumes "a \<in> aexp_edge (q, \<alpha>, q')"
+  assumes "fv_arith a \<inter> def_edge (q, \<alpha>, q') = {}"
+  shows "a \<in> fw_must.S_hat (q, \<alpha>, q') R"
+  using assms unfolding fw_must.S_hat_def by  (cases \<alpha>) auto
+
+lemma use_edge_list_S_hat_edge_list: 
   assumes "aexp_edge_list \<pi> a"
-  shows "a \<in> bw_may.S_hat_edge_list \<pi> d_init_AE"
-  using assms oops (* TODO: *)
-*)
+  shows "a \<in> fw_must.S_hat_edge_list \<pi> d_init_AE"
+  using assms
+proof (induction \<pi> rule: rev_induct)
+  case Nil
+  then have False 
+    unfolding aexp_edge_list_def by auto
+  then show ?case
+    by metis
+next
+  case (snoc e \<pi>)
+  note snoc_inner = Cons
+  from snoc(2) have "\<exists>\<pi>1 \<pi>2 e'. \<pi> @ [e] = \<pi>1 @ [e'] @ \<pi>2 \<and> a \<in> aexp_edge e' \<and> (\<forall>e'' \<in> set ([e'] @ \<pi>2). fv_arith a \<inter> def_edge e'' = {})"
+    unfolding aexp_edge_list_def by auto
+  then obtain \<pi>1 \<pi>2 e' where \<pi>1_\<pi>2_e'_p:
+    "\<pi> @ [e] = \<pi>1 @ [e'] @ \<pi>2"
+    "a \<in> aexp_edge e'"
+    "(\<forall>e'' \<in> set ([e'] @ \<pi>2). fv_arith a \<inter> def_edge e'' = {})"
+    by auto
+  then show ?case
+  proof (cases \<pi>2)
+    case Nil
+    have "e = e'"
+      using \<pi>1_\<pi>2_e'_p(1) Nil by auto
+    then have a_aexp_e: "a \<in> aexp_edge e"
+      using \<pi>1_\<pi>2_e'_p(2) by auto
+    have fv_arith_inter_def_edge: "fv_arith a \<inter> def_edge e = {}"
+      by (simp add: \<open>e = e'\<close> \<pi>1_\<pi>2_e'_p(3))
+    obtain p \<alpha> q where a_split: "e = (p, \<alpha>, q)"
+      by (cases e)
+    show ?thesis 
+      using a_aexp_e fv_arith_inter_def_edge fw_must.S_hat_def a_split by (cases \<alpha>) auto
+  next
+    case (Cons hd_\<pi>2 tl_\<pi>2)
+    obtain p \<alpha> q where e_split: "e' = (p, \<alpha>, q)"
+      by (cases e')
+    have "(\<pi> = \<pi>1 @ (p, \<alpha>, q) # \<pi>2) \<and> x \<in> use_action \<alpha> \<and> (\<forall>e'\<in>set tl_\<pi>1. x \<notin> def_edge e')"
+      using Cons \<pi>1_\<pi>2_e'_p e_split by auto
+    then have "use_edge_list \<pi> x"
+      unfolding use_edge_list_def by force
+    then have x_in_S_hat_\<pi>: "x \<in> bw_may.S_hat_edge_list \<pi> d_init_LV"
+      using Cons_inner by auto
+    have "e \<in> set \<pi>1"
+      using \<pi>1_\<pi>2_e'_p(1) Cons(1) by auto
+    then have x_not_def_a: "\<not>x \<in> def_edge e"
+      using \<pi>1_\<pi>2_e'_p(3) by auto
+
+    obtain p' \<alpha>' q' where a_split: "e = (p', \<alpha>', q')"
+      by (cases e)
+
+    show ?thesis
+    proof (cases "x \<in> kill_set_LV e")
+      case True
+      show ?thesis
+        using True a_split x_not_def_a by (cases \<alpha>'; force)
+    next
+      case False
+      then show ?thesis
+        by (simp add: bw_may.S_hat_def x_in_S_hat_\<pi>)
+    qed
+  qed
+qed
+
+lemma aexp_edge_list_S_hat_edge_list: 
+  "aexp_edge_list \<pi> a \<longleftrightarrow> a \<in> fw_must.S_hat_edge_list \<pi> d_init_AE"
+proof (induction \<pi>)
+  case Nil
+  then show ?case
+    unfolding aexp_edge_list_def unfolding d_init_AE_def
+    by auto
+next
+  case (Cons e \<pi>)
+  then show ?case
+    apply auto
+    using d_init_AE_def fw_must.S_hat_edge_list_mono apply force
+      apply (metis aexp_edge_list_def append_Cons)
+    subgoal
+      apply (induction a)
+      subgoal for x
+        unfolding fw_must.S_hat_def
+        apply (induction e)
+        subgoal for qn \<alpha> qn1
+          apply (cases \<alpha>)
+            apply auto
+          unfolding d_init_AE_def
+          apply auto
+
+    
+qed
+
+definition summarizes_AE :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
+   "summarizes_AE \<rho> \<longleftrightarrow>
+     (\<forall>\<pi>_end d.
+         \<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>_end, d]\<rangle>. \<longrightarrow>
+          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = Decode_Node \<pi>_end \<longrightarrow> aexp_edge_list \<pi> (Decode_Elem d)))"
+
+
+
 
 end
 
@@ -5177,6 +5277,8 @@ theorem sound_ana_pg_bw_must:
   shows "summarizes_bw_must \<rho>"
   using assms fw_must.sound_CBV[of \<rho>] summarizes_bw_must_forward_backward by metis
 
+
+
 (* 
 
 Plan:
@@ -5220,5 +5322,7 @@ Backward betyder at vi bruger kravet LTS.get_end \<pi> = end, og at vi har start
 end
 
 section \<open>TODO: Very Busy Expressions\<close>
+
+
 
 end
