@@ -56,7 +56,7 @@ section \<open>Program Graphs\<close>
 
 type_synonym ('n,'v) edge = "'n \<times> 'v action \<times> 'n"
 
-type_synonym ('n,'v) program_graph = "(('n,'v) edge set \<times> 'n \<times> 'n)"
+type_synonym ('n,'v) program_graph = "('n,'v) edge set \<times> 'n \<times> 'n"
 
 term "LTS.path_with_word :: ('n,'v) edge set \<Rightarrow> ('n list \<times> 'v action list) set"
 
@@ -145,7 +145,7 @@ fun the_lhs :: "('p, 'x,'c) clause \<Rightarrow> ('p,'x,'c) lefthand" where
 
 fun eval_id :: "('x,'c) id \<Rightarrow> ('x,'c) var_val \<Rightarrow> 'c" ("\<lbrakk>_\<rbrakk>\<^sub>i\<^sub>d") where
   "\<lbrakk>Var x\<rbrakk>\<^sub>i\<^sub>d \<sigma> = \<sigma> x"
-| "\<lbrakk>Cst e\<rbrakk>\<^sub>i\<^sub>d \<sigma> = e"
+| "\<lbrakk>Cst c\<rbrakk>\<^sub>i\<^sub>d \<sigma> = c"
 
 fun eval_ids :: "('x,'c) id list \<Rightarrow> ('x,'c) var_val \<Rightarrow> 'c list" ("\<lbrakk>_\<rbrakk>\<^sub>i\<^sub>d\<^sub>s") where
   "\<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> = map (\<lambda>a. \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma>) ids"
@@ -1989,6 +1989,7 @@ lemma meaning_neg_rh:
   shows "\<lbrakk>\<^bold>\<not> p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
   by (metis assms meaning_rh.simps(3,4) uuuuuuuuh_aaa)
 
+
 section \<open>Reaching Definitions in Datalog\<close>
 
 datatype ('n,'v) RD_elem =
@@ -2454,7 +2455,7 @@ next
 qed
 
 definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>P\<lbrakk>_\<rbrakk> _") where
-  "Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = Ŝ\<^sub>E\<^sub>s\<lbrakk>(LTS.transition_list \<pi>)\<rbrakk> R"
+  "Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = Ŝ\<^sub>E\<^sub>s\<lbrakk>LTS.transition_list \<pi>\<rbrakk> R"
 
 lemma S_hat_path_mono:
   assumes "R1 \<subseteq> R2"
@@ -3490,7 +3491,7 @@ lemma S_hat_path_mono:
   shows "Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R1 \<subseteq> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R2"
   unfolding S_hat_path_def using assms S_hat_edge_list_mono by auto
 
-fun summarizes_fw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
+definition summarizes_fw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
    "summarizes_fw_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_end d.
          \<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>_end, d]\<rangle>. \<longrightarrow>
@@ -4144,8 +4145,7 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
     unfolding solves_program_def
   proof
     fix c
-    assume a: "c \<in> ana_pg_fw_must
-"
+    assume a: "c \<in> ana_pg_fw_must"
     then obtain p ids rhs where c_def: "c = Cls p ids rhs"
       by (cases c) auto
 
@@ -4915,13 +4915,11 @@ qed
 theorem sound_CBV:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   shows "summarizes_fw_must \<rho>"
-  using assms unfolding summarizes_fw_must.simps using sound_BV_must' by auto
+  using assms unfolding summarizes_fw_must_def using sound_BV_must' by auto
 
 end
 
 section \<open>TODO: Available expressions\<close>
-
-typ "'v boolean"
 
 fun ae_arith :: "'v arith \<Rightarrow> 'v arith set" where
   "ae_arith (Integer i) = {}"
@@ -4930,9 +4928,7 @@ fun ae_arith :: "'v arith \<Rightarrow> 'v arith set" where
 | "ae_arith (Minus a) = ae_arith a"
 
 lemma finite_ae_arith: "finite (ae_arith a)"
-  apply (induction a)
-     apply auto
-  done
+  by (induction a) auto
 
 fun ae_boolean :: "'v boolean \<Rightarrow> 'v arith set" where
   "ae_boolean true = {}"
@@ -4942,10 +4938,7 @@ fun ae_boolean :: "'v boolean \<Rightarrow> 'v arith set" where
 | "ae_boolean (Neg b) = ae_boolean b"
 
 lemma finite_ae_boolean: "finite (ae_boolean b)"
-  apply (induction b)
-  using finite_ae_arith
-      apply auto
-  done
+  using finite_ae_arith by (induction b) auto
 
 fun aexp_action :: "'v action \<Rightarrow> 'v arith set" where (* Maybe avexp would be a better name. *)
   "aexp_action (x ::= a) = ae_arith a"
@@ -4953,27 +4946,24 @@ fun aexp_action :: "'v action \<Rightarrow> 'v arith set" where (* Maybe avexp w
 | "aexp_action Skip = {}"
 
 lemma finite_aexp_action: "finite (aexp_action \<alpha>)"
-  apply (cases \<alpha>)
-  using finite_ae_arith finite_ae_boolean
-    apply auto
-  done
+  using finite_ae_arith finite_ae_boolean by (cases \<alpha>) auto
 
 fun aexp_edge :: "('n,'v) edge \<Rightarrow> 'v arith set" where
   "aexp_edge (q1, \<alpha>, q2) = aexp_action \<alpha>"
 
 lemma finite_aexp_edge: "finite (aexp_edge (q1, \<alpha>, q2))"
-  using finite_aexp_action 
-  apply auto
-  done
+  using finite_aexp_action by auto
 
 fun aexp_pg :: "('n,'v) program_graph \<Rightarrow> 'v arith set" where
   "aexp_pg pg = \<Union>(aexp_edge ` (fst pg))"
 
+(*
 definition aexp_edge_list :: "('n,'v) edge list \<Rightarrow> 'v arith \<Rightarrow> bool" where
   "aexp_edge_list \<pi> a = (\<exists>\<pi>1 \<pi>2 e. \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and> a \<in> aexp_edge e \<and> (\<forall>e' \<in> set \<pi>2. fv_arith a \<inter> def_edge e' = {}))"
 
 definition aexp_path :: "'n list \<times> 'v action list \<Rightarrow> 'v arith set" where
   "aexp_path \<pi> = {a. aexp_edge_list (LTS.transition_list \<pi>) a}"
+*)
 
 locale analysis_AE =
   fixes pg :: "('n::finite,'v::finite) program_graph"
@@ -5012,14 +5002,16 @@ definition d_init_AE :: "'v arith set" where
 
 (* Problem: 'v arith  er ikke en endelig type. *)
 
-interpretation bw_may: analysis_BV_forward_must pg analysis_dom_AE kill_set_AE gen_set_AE d_init_AE
+interpretation fw_must: analysis_BV_forward_must pg analysis_dom_AE kill_set_AE gen_set_AE d_init_AE
   using analysis_BV_forward_must.intro analysis_AE_axioms analysis_AE_def
   by (metis d_init_AE_def empty_iff finite_analysis_dom_AE subsetI) 
 
+(*
 lemma aexp_edge_list_S_hat_edge_list: 
   assumes "aexp_edge_list \<pi> a"
   shows "a \<in> bw_may.S_hat_edge_list \<pi> d_init_AE"
   using assms oops (* TODO: *)
+*)
 
 end
 
@@ -5095,7 +5087,7 @@ qed
 definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>P\<lbrakk>_\<rbrakk> _") where (* Copy paste *)
   "Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = Ŝ\<^sub>E\<^sub>s\<lbrakk>LTS.transition_list \<pi>\<rbrakk> R"
 
-fun summarizes_bw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where (* Ny *)
+definition summarizes_bw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where (* Ny *)
    "summarizes_bw_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_start d.
          \<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>_start, d]\<rangle>. \<longrightarrow>
@@ -5157,7 +5149,7 @@ lemma summarizes_fw_must_forward_backward':
   assumes "LTS.get_start \<pi> = Decode_Node \<pi>_start"
   shows "Decode_Elem d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
   using LTS.get_end_def LTS.get_start_def S_hat_path_forward_backward 
-    analysis_BV_backward_must_axioms assms fw_must.start_def fw_must.summarizes_fw_must.simps fst_conv 
+    analysis_BV_backward_must_axioms assms fw_must.start_def fw_must.summarizes_fw_must_def fst_conv 
     hd_rev last_rev pg_rev_def rev_path_in_rev_pg snd_conv fw_must.edge_set_def prod.collapse 
   by (metis (no_types, lifting))
     (* TODO? Expand proof into something coherent? *)
@@ -5165,7 +5157,7 @@ lemma summarizes_fw_must_forward_backward':
 lemma summarizes_bw_must_forward_backward: (* Copy paste statement by adapted proof *)
   assumes "fw_must.summarizes_fw_must \<rho>"
   shows "summarizes_bw_must \<rho>"
-  unfolding summarizes_bw_must.simps
+  unfolding summarizes_bw_must_def
 proof(rule; rule ; rule ;rule ;rule; rule; rule)
   fix \<pi>_start d \<pi>
   assume "\<rho> \<Turnstile>\<^sub>f CBV\<langle>[\<pi>_start, d]\<rangle>."
