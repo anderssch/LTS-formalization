@@ -117,6 +117,9 @@ abbreviation path_with_word_from :: "'state \<Rightarrow> ('state list * 'label 
 definition get_end :: "('state list \<times> 'label list) \<Rightarrow> 'state" where
   "get_end \<pi> = last (fst \<pi>)"
 
+abbreviation path_with_word_from_to :: "'state \<Rightarrow> 'state \<Rightarrow> ('state list * 'label list) set" where
+  "path_with_word_from_to start end == {\<pi>. \<pi> \<in> path_with_word \<and> get_start \<pi> = start \<and> get_end \<pi> = end}"
+
 lemma singleton_path_start_end:
   assumes "([s], []) \<in> LTS.path_with_word pg"
   shows "get_start ([s], []) = get_end ([s], [])"
