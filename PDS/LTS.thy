@@ -157,7 +157,6 @@ next
     by (metis (no_types) LTS.path_with_word.path_with_word_refl LTS.path_with_word.path_with_word_step LTS.path_with_word_length One_nat_def Suc_1 Suc_inject Suc_leI Suc_le_mono butlast.simps(2) length_0_conv length_Cons list.distinct(1) list.size(4) not_gr0)
 qed
 
-
 lemma transition_butlast:
   assumes "(ss, w) \<in> path_with_word"
   assumes "length ss \<ge> 2"
