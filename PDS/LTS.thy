@@ -112,13 +112,17 @@ definition get_start :: "('state list \<times> 'label list) \<Rightarrow> 'state
   "get_start \<pi> = hd (fst \<pi>)"
 
 abbreviation path_with_word_from :: "'state \<Rightarrow> ('state list * 'label list) set" where
-  "path_with_word_from start == {\<pi>. \<pi> \<in> path_with_word \<and> get_start \<pi> = start}"
+  "path_with_word_from q == {\<pi>. \<pi> \<in> path_with_word \<and> get_start \<pi> = q}"
 
 definition get_end :: "('state list \<times> 'label list) \<Rightarrow> 'state" where
   "get_end \<pi> = last (fst \<pi>)"
 
 abbreviation path_with_word_from_to :: "'state \<Rightarrow> 'state \<Rightarrow> ('state list * 'label list) set" where
   "path_with_word_from_to start end == {\<pi>. \<pi> \<in> path_with_word \<and> get_start \<pi> = start \<and> get_end \<pi> = end}"
+
+inductive_set transition_list_path :: "('state, 'label) transition list set" where
+  "(q, l, q') \<in> transition_relation \<Longrightarrow> [(q, l, q')] \<in> transition_list_path"
+| "(q, l, q') \<in> transition_relation \<Longrightarrow> (q', l', q'') # ts \<in> transition_list_path \<Longrightarrow> (q, l', q') # (q', l', q'') # ts \<in> transition_list_path"
 
 lemma singleton_path_start_end:
   assumes "([s], []) \<in> LTS.path_with_word pg"
