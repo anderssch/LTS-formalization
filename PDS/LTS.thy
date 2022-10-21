@@ -11,6 +11,12 @@ type_synonym ('state, 'label) transition = "'state \<times> 'label \<times> 'sta
 
 subsection \<open>LTS functions\<close>
 
+fun trans_hd :: "('state, 'label) transition \<Rightarrow> 'state" where
+  "trans_hd (s1,\<gamma>,s2) = s1"
+
+fun trans_tl :: "('state, 'label) transition \<Rightarrow> 'state" where
+  "trans_tl (s1,\<gamma>,s2) = s2"
+
 fun transitions_of :: "'state list * 'label list \<Rightarrow> ('state, 'label) transition multiset" where
   "transitions_of (s1#s2#ss, \<gamma>#w) = {# (s1, \<gamma>, s2) #} + transitions_of (s2#ss, w)"
 | "transitions_of ([s1],_) = {#}"
