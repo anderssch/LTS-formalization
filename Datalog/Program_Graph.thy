@@ -1625,14 +1625,30 @@ qed
 
 subsection \<open>Negation\<close>
 
+lemma eval_id_is_substv_id:
+  "\<lbrakk>ids'\<rbrakk>\<^sub>i\<^sub>d \<sigma>' = \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d \<sigma> \<longleftrightarrow> (ids' \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>') = (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>)"
+  by (cases ids'; cases ids) auto
+
 lemma eval_ids_is_substv_ids:
   "\<lbrakk>ids'\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma>' = \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<longleftrightarrow> (ids' \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>') = (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>)"
-  apply (induction ids' arbitrary: ids)
-  apply auto
-  apply (metis (no_types, opaque_lifting) eval_id.simps(1) eval_id.simps(2) substv_id.elims)
-  apply blast
-  apply (smt (verit, del_insts) eval_id.simps(1) eval_id.simps(2) substv_id.elims)
-  done
+proof (induction ids' arbitrary: ids)
+  case Nil
+  then show ?case 
+    by auto
+next
+  case (Cons a ids')
+  note Cons_outer = Cons
+  show ?case
+  proof (cases ids)
+    case Nil
+    then show ?thesis
+      using Cons_outer by auto
+  next
+    case (Cons a list)
+    then show ?thesis
+      using eval_id_is_substv_id Cons_outer by force
+  qed
+qed
 
 definition agree_var_val :: "'x set \<Rightarrow> ('x, 'c) var_val \<Rightarrow> ('x, 'c) var_val \<Rightarrow> bool " where
   "agree_var_val xs \<sigma> \<sigma>' \<longleftrightarrow> (\<forall>x \<in> xs. \<sigma> x = \<sigma>' x)"
@@ -2415,23 +2431,8 @@ proof -
 qed
 
 lemma ana_pg_fw_may_stratified: "strat_wf s_BV ana_pg_fw_may"
-  unfolding ana_pg_fw_may_def
-  apply auto
-  unfolding strat_wf_def
-  apply auto
-  unfolding ana_init_BV_def
-       apply auto
-  unfolding ana_anadom_BV_def
-      apply auto
-  unfolding ana_gen_BV_edge_def
-     apply auto
-  unfolding ana_CBV_def
-    apply auto
-  unfolding ana_entry_node_BV_def
-   apply auto
-  unfolding ana_kill_BV_edge_def
-  apply auto
-  done
+  unfolding ana_pg_fw_may_def strat_wf_def ana_init_BV_def ana_anadom_BV_def ana_gen_BV_edge_def 
+    ana_CBV_def ana_entry_node_BV_def  ana_kill_BV_edge_def by auto
 
 lemma finite_ana_init_BV_edgeset: "finite (\<Union> (ana_edge_BV ` edge_set))"
   by (smt (verit, best) analysis_BV_forward_may.ana_edge_BV.elims analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def finite.emptyI finite.intros(2) finite_UN)
