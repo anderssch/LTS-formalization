@@ -5,9 +5,9 @@ begin
 unbundle finfun_syntax
 
 \<comment> \<open>We show that FinFun from a finite set to a WellQuasiOrder (wqo) set is WellQuasiOrdered, with the forall-relation.
-   In other words: (('a::finite, 'b::wqo) finfun)::wqo \<close>
+   In other words that @{typ "('a::finite, 'b::wqo) finfun"} is instance of @{class wqo}\<close>
 
-\<comment> \<open>First define the order, and prove that it is a partial \<open>order\<close> (and \<open>preorder\<close>)\<close>
+\<comment> \<open>First define the order, and prove that it is a partial @{class order} (and @{class preorder})\<close>
 instantiation finfun :: (type, preorder) preorder 
 begin
   definition less_eq_finfun_def: "f \<le> g = (\<forall>a. f $ a \<le> g $ a)"
@@ -25,7 +25,7 @@ begin
   qed
 end
 
-\<comment> \<open>The proof of WQO goes by induction on the (finite) input domain, 
+\<comment> \<open>The proof of wqo goes by induction on the (finite) input domain, 
    so we need to define the set of \<open>finfuns\<close> over given input and output domains.\<close>
 
 inductive_set finfuns :: "'a set \<Rightarrow> 'b set  \<Rightarrow> ('a \<Rightarrow>f 'b) set"
@@ -80,7 +80,7 @@ lemma finfuns_empty_almost_full:
   done
 
 \<comment> \<open>In the step of the induction, we use Dickson's lemma for almost-full relations @{thm almost_full_on_Sigma}
-    and a homomorphism from a pair of finfuns to a finfun with larger input domains @{term "insert a A"} using @{thm almost_full_on_hom}.\<close>
+    and a homomorphism from a pair of finfuns to a finfun with larger input domain @{term "insert a A"} using @{thm almost_full_on_hom}.\<close>
 definition finfun_step_prod_hom :: "'a \<Rightarrow> ('a \<Rightarrow>f 'b \<times> 'a \<Rightarrow>f 'b) \<Rightarrow> ('a \<Rightarrow>f 'b)" where
   "finfun_step_prod_hom a fg = (snd fg)(a $:= (fst fg)$a)"
 
@@ -118,8 +118,8 @@ lemma finfuns_insert_prod_almost_full:
                               "finfun_emb P" "finfun_step_prod_hom a"]
   by metis
 
-\<comment> \<open>For the step, we also need to show that finfuns over a singleton input set preserves almost-full.
-    For any given singleton set, such finfuns are homomorphic to pars of values (one constant and one for the single distinct input).
+\<comment> \<open>For the step, we also need to show that @{term finfuns} over a singleton input set preserves almost-full.
+    For any given singleton set, such finfuns are homomorphic to pairs of values (one constant and one for the single distinct input).
     Again we use @{thm almost_full_on_Sigma} and @{thm almost_full_on_hom}\<close>
 definition finfun_single_prod_hom :: "'a \<Rightarrow> ('b \<times> 'b) \<Rightarrow> ('a \<Rightarrow>f 'b)" where
   "finfun_single_prod_hom a bb = (K$ fst bb)(a $:= (snd bb))"
@@ -163,8 +163,8 @@ lemma finfuns_insert_almost_full:
         assms 
   by simp
 
-\<comment> \<open>Finfuns of a finite domains preserve the almost-full property (all infinite sequences contain a non-decreasing pair).
-    This is the main result, and goes by induction on the finite input domain A.\<close>
+\<comment> \<open>Finfuns of a finite domain preserve the almost-full property (all infinite sequences contain a non-decreasing pair).
+    This is the main result in this section, and goes by induction on the finite input domain A.\<close>
 lemma finite_finfuns_almost_full:
   assumes "finite A"
       and "almost_full_on P B"
@@ -178,14 +178,14 @@ next
   then show ?case using finfuns_insert_almost_full by fast
 qed
 
-\<comment> \<open>Trasitivity of the finfun_emb on finfuns\<close>
+\<comment> \<open>Transitivity of the @{term finfun_emb} on @{term finfuns}.\<close>
 lemma finfuns_transp_on:
   assumes "transp_on P B"
     shows "transp_on (finfun_emb P) (finfuns A B)"
   using assms unfolding finfun_emb_def transp_on_def
   by (meson finfuns_apply_domain)
 
-\<comment> \<open>Combining almost-full and transitivety, we get well-quasi-order.\<close>
+\<comment> \<open>Combining almost-full and transitivity, we get well-quasi-order.\<close>
 lemma finite_finfuns_wqo:
   assumes "finite A"
       and "wqo_on P B"
@@ -205,6 +205,5 @@ begin
     then show "good (\<le>) f" unfolding wqo_on_def almost_full_on_def less_eq_finfun_def by simp
   qed
 end
-
 
 end

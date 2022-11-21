@@ -2,8 +2,8 @@ theory WPDS
   imports "LTS" "Saturation" "FinFunWellQuasiOrder" "ProdDioid" "Kleene_Algebra.Dioid_Models"
 begin
 
-\<comment> \<open>Preliminary\<close>
-
+\<comment> \<open>Preliminary definition of reflexive and transitive closure over a relation labelled with a monoid, 
+    (and transitive closure over a semigroup-labelled relation)\<close>
 inductive_set monoid_rtrancl :: "('a \<times> 'b::monoid_mult \<times> 'a) set \<Rightarrow> ('a \<times> 'b \<times> 'a) set"
  for r :: "('a \<times> 'b \<times> 'a) set" where
     monoid_rtrancl_refl [intro!, Pure.intro!, simp]: "(a, 1, a) \<in> monoid_rtrancl r"
@@ -15,6 +15,7 @@ inductive_set semigroup_trancl :: "('a \<times> 'b::semigroup_mult \<times> 'a) 
  for r :: "('a \<times> 'b \<times> 'a) set" where
     semigroup_trancl_refl [intro!, Pure.intro!, simp]: "(a, l, b) \<in> r \<Longrightarrow> (a, l, b) \<in> semigroup_trancl r"
   | semigroup_trancl_into_rtrancl [Pure.intro]: "(a, w, b) \<in> semigroup_trancl r \<Longrightarrow> (b, l, c) \<in> r \<Longrightarrow> (a, w*l,c) \<in> semigroup_trancl r"
+
 
 \<comment> \<open>If the @{typ 'label} of a LTS is a monoid, we can express the monoid product of labels over a path.\<close>
 locale monoidLTS = LTS transition_relation 
@@ -28,7 +29,7 @@ definition monoid_star :: "('state \<times> 'label \<times> 'state) set" where
   "monoid_star = {(c,l,c'). c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
 end
 
-\<comment> \<open>If the @{typ 'label} of a LTS is a dioid (with additive and multiplicative identities), 
+\<comment> \<open>If the @{typ 'label} of a LTS is a dioid with additive and multiplicative identities, 
     we can express the meet-over-all-paths value as a generalization of pre-star and post-star.\<close>
 locale dioidLTS = monoidLTS transition_relation 
   for transition_relation :: "('state, 'label::dioid_one_zero) transition set"
@@ -40,8 +41,9 @@ definition weight_post_star :: "('state \<Rightarrow> 'label) \<Rightarrow> ('st
   "weight_post_star C c = \<Sum>{(C c')*l | c' l. c' \<Midarrow>l\<Rightarrow>\<^sup>* c}"
 end
 
-\<comment> \<open>WPDS has @{typ "'weight::dioid_one_zero"} on the rule.\<close>
+
 datatype 'label operation = pop | swap 'label | push 'label 'label
+\<comment> \<open>WPDS has a @{typ "'weight::dioid_one_zero"} on the rule.\<close>
 type_synonym ('ctr_loc, 'label, 'weight) rule = "('ctr_loc \<times> 'label) \<times> 'weight \<times> ('ctr_loc \<times> 'label operation)"
 type_synonym ('ctr_loc, 'label) conf = "'ctr_loc \<times> 'label list"
 
@@ -82,7 +84,7 @@ datatype ('ctr_loc, 'noninit, 'label) state =
   | is_Noninit: Noninit (the_St: 'noninit) (* q \<in> Q \<and> q \<notin> P *)
   | is_Isolated: Isolated (the_Ctr_Loc: 'ctr_loc) (the_Label: 'label) (* q\<^sub>p\<^sub>\<gamma> *)
 
-\<comment> \<open>Labels are lifted to the list-monoid and paired with a weight\<close>
+\<comment> \<open>For the semantics of a weighted automaton, labels are lifted to the list-monoid and paired with a weight\<close>
 type_synonym ('label, 'weight) wautomaton_label = "('label list \<times> 'weight)" 
 \<comment> \<open>Weighted automata transitions are modelled as a @{term finfun} from transitions to their weight, 
     where @{term "0::('weight::dioid_one_zero)"} is the default value, indicating no transition.\<close>
@@ -100,8 +102,10 @@ interpretation monoidLTS "wts_to_monoidLTS transition_relation" .
 
 end
 
-\<comment> \<open>The weighted version of the @{term reach} function. Computes a set of pairs of a state and the weight to reach the state.
-    Note that the @{term wts_to_monoidLTS} embedding ensures that all labels @{term \<gamma>'} of transitions in @{term ts} are of lists length 1.\<close>
+\<comment> \<open>The weighted version of the @{term LTS.reach} function. 
+    Computes a set of pairs of a state and the weight to reach the state.
+    Note that the @{term wts_to_monoidLTS} embedding ensures that all labels @{term \<gamma>'} of 
+    transitions in @{term ts} are of lists length 1.\<close>
 context fixes ts :: "('state, 'label list \<times> 'weight::monoid_mult) transition set" begin
 fun monoidLTS_reach where
   "monoidLTS_reach p [] = {(p,1)}"
@@ -164,7 +168,7 @@ lemma  set_set_to_list:
 (* end from *)
 
 \<comment> \<open>For the executable pre-star, the saturation rule computes a set of new transition weights, 
-    that we are updated using the dioid's plus operator.\<close>
+    that are updated using the dioid's plus operator to combine with the existing value.\<close>
 fun update_wts :: "('a \<Rightarrow>f 'b::semigroup_add) \<Rightarrow> ('a \<times> 'b) list \<Rightarrow> ('a \<Rightarrow>f 'b)" where
   "update_wts f [] = f" |
   "update_wts f ((a,b)#xs) = update_wts f(a $:= (f$a) + b) xs"
