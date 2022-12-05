@@ -128,7 +128,7 @@ abbreviation path_with_word_from_to :: "'state \<Rightarrow> 'state \<Rightarrow
 
 inductive_set transition_list_path :: "('state, 'label) transition list set" where
   "(q, l, q') \<in> transition_relation \<Longrightarrow> [(q, l, q')] \<in> transition_list_path"
-| "(q, l, q') \<in> transition_relation \<Longrightarrow> (q', l', q'') # ts \<in> transition_list_path \<Longrightarrow> (q, l', q') # (q', l', q'') # ts \<in> transition_list_path"
+| "(q, l, q') \<in> transition_relation \<Longrightarrow> (q', l', q'') # ts \<in> transition_list_path \<Longrightarrow> (q, l, q') # (q', l', q'') # ts \<in> transition_list_path"
 
 lemma singleton_path_start_end:
   assumes "([s], []) \<in> LTS.path_with_word pg"
