@@ -77,9 +77,9 @@ inductive exe_step :: "('n,'v) program_graph \<Rightarrow> ('n,'v) config \<Righ
 
 section \<open>Reaching Definitions\<close>
 
-type_synonym ('n,'v) triple = "'v * 'n option * 'n"
+type_synonym ('n,'v) def = "'v * 'n option * 'n"
 
-type_synonym ('n,'v) analysis_assignment = "'n \<Rightarrow> ('n,'v) triple set"
+type_synonym ('n,'v) analysis_assignment = "'n \<Rightarrow> ('n,'v) def set"
 
 
 subsection \<open>What is defined on a path\<close>
@@ -92,15 +92,15 @@ fun def_action :: "'v action \<Rightarrow> 'v set" where
 abbreviation def_edge :: "('n,'v) edge \<Rightarrow> 'v set" where
   "def_edge == \<lambda>(q1, \<alpha>, q2). def_action \<alpha>"
 
-definition triple_of :: "'v \<Rightarrow> ('n,'v) edge \<Rightarrow> ('n,'v) triple" where
-  "triple_of == (\<lambda>x (q1, \<alpha>, q2). (x, Some q1, q2))"
+definition def_of :: "'v \<Rightarrow> ('n,'v) edge \<Rightarrow> ('n,'v) def" where
+  "def_of == (\<lambda>x (q1, \<alpha>, q2). (x, Some q1, q2))"
 
-definition def_var :: "('n,'v) edge list \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> ('n,'v) triple" where
+definition def_var :: "('n,'v) edge list \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> ('n,'v) def" where
   "def_var \<pi> x start = (if (\<exists>e \<in> set \<pi>. x \<in> def_edge e)
-                        then (triple_of x (last (filter (\<lambda>e. x \<in> def_edge e) \<pi>)))
+                        then (def_of x (last (filter (\<lambda>e. x \<in> def_edge e) \<pi>)))
                         else (x, None, start))"
 
-definition def_path :: "('n list \<times> 'v action list) \<Rightarrow> 'n \<Rightarrow> ('n,'v) triple set" where
+definition def_path :: "('n list \<times> 'v action list) \<Rightarrow> 'n \<Rightarrow> ('n,'v) def set" where
   "def_path \<pi> start = ((\<lambda>x. def_var (LTS.transition_list \<pi>) x start) ` UNIV)"
 
 (*
@@ -606,7 +606,7 @@ lemma solve_pg_Suc_subset:
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n)"
   assumes "(\<rho> \\s\\ n) = solve_pg s dl n"
   shows "(solve_pg s dl (Suc n)) p \<subseteq> \<rho> p"
-  using assms by (force simp add: Inter'_def)
+  using assms by (force simp add: Inter'_def2)
 
 lemma solve_pg_0_empty:
   assumes "s p > 0"
@@ -2040,7 +2040,7 @@ fun summarizes_RD :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('n,'v) p
        \<rho> \<Turnstile>\<^sub>f RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N (LTS.get_end \<pi>), Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]\<rangle>.)"
 
 lemma def_var_x: "fst (def_var ts x start) = x"
-  unfolding def_var_def by (simp add: case_prod_beta triple_of_def)
+  unfolding def_var_def by (simp add: case_prod_beta def_of_def)
 
 lemma last_def_transition:
   assumes "length ss = length w"
@@ -2054,7 +2054,7 @@ proof -
   proof (cases "y = x")
     case True
     then show ?thesis 
-      using assms y_p unfolding def_var_def triple_of_def by auto
+      using assms y_p unfolding def_var_def def_of_def by auto
   next
     case False
     then show ?thesis
@@ -2074,7 +2074,7 @@ proof -
   proof (cases "y = x")
     case True
     then show ?thesis 
-      using assms y_p unfolding def_var_def triple_of_def by auto
+      using assms y_p unfolding def_var_def def_of_def by auto
   next
     case False
     then show ?thesis
@@ -2719,20 +2719,20 @@ definition start where
 definition "end" where
   "end = snd (snd pg)"
 
-definition analysis_dom_RD :: "('n,'v) triple set" where
+definition analysis_dom_RD :: "('n,'v) def set" where
   "analysis_dom_RD = UNIV \<times> UNIV \<times> UNIV"
 
-fun kill_set_RD :: "('n,'v) edge \<Rightarrow> ('n,'v) triple set" where
+fun kill_set_RD :: "('n,'v) edge \<Rightarrow> ('n,'v) def set" where
   "kill_set_RD (q\<^sub>o, x ::= a, q\<^sub>s) = {x} \<times> UNIV \<times> UNIV"
 | "kill_set_RD (q\<^sub>o, Bool b, q\<^sub>s) = {}"
 | "kill_set_RD (v, Skip, vc) = {}"
 
-fun gen_set_RD :: "('n,'v) edge \<Rightarrow> ('n,'v) triple set" where
+fun gen_set_RD :: "('n,'v) edge \<Rightarrow> ('n,'v) def set" where
   "gen_set_RD (q\<^sub>o, x ::= a, q\<^sub>s) = {x} \<times> {Some q\<^sub>o} \<times> {q\<^sub>s}"
 | "gen_set_RD (q\<^sub>o, Bool b, q\<^sub>s) = {}"
 | "gen_set_RD (v, Skip, vc) = {} "
 
-definition d_init_RD :: " ('n,'v) triple set" where
+definition d_init_RD :: " ('n,'v) def set" where
   "d_init_RD = (UNIV \<times> {None} \<times> {start})"
 
 
@@ -2806,7 +2806,7 @@ next
       using prod_cases3 by blast
     moreover
     have "def_var [t] x start \<in> fw_may.S_hat t (fw_may.S_hat_edge_list \<pi> d_init_RD)"
-      unfolding fw_may.S_hat_def def_var_def triple_of_def using True t_split by (cases \<alpha>) auto
+      unfolding fw_may.S_hat_def def_var_def def_of_def using True t_split by (cases \<alpha>) auto
     ultimately
     show ?thesis by auto
   next
@@ -2833,14 +2833,14 @@ proof -
     by auto
   then have "\<exists>e\<in>set (\<pi> @ [(q1, x ::= exp, q2)]). x \<in> def_edge e"
     by auto
-  have "def_var (\<pi> @ [(q1, x ::= exp, q2)]) x start = triple_of x (last (filter (\<lambda>e. x \<in> def_edge e) (\<pi> @ [(q1, x ::= exp, q2)])))"
+  have "def_var (\<pi> @ [(q1, x ::= exp, q2)]) x start = def_of x (last (filter (\<lambda>e. x \<in> def_edge e) (\<pi> @ [(q1, x ::= exp, q2)])))"
     unfolding def_var_def by auto
   also
-  have "... = triple_of x (q1, x ::= exp, q2)"
+  have "... = def_of x (q1, x ::= exp, q2)"
     by auto
   also
   have "... = (x, Some q1, q2)"
-    unfolding triple_of_def by auto
+    unfolding def_of_def by auto
   finally
   show ?thesis
     .
@@ -2914,12 +2914,12 @@ qed
 lemma def_path_S_hat_path: "def_path \<pi> start = fw_may.S_hat_path \<pi> d_init_RD"
   using fw_may.S_hat_path_def def_path_def def_var_UNIV_S_hat_edge_list by metis
 
-definition summarizes_RD :: "(pred, ('n,'v,('n,'v) triple) cst) pred_val \<Rightarrow> bool" where
+definition summarizes_RD :: "(pred, ('n,'v,('n,'v) def) cst) pred_val \<Rightarrow> bool" where
   "summarizes_RD \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> def_path \<pi> start \<longrightarrow> 
                         \<rho> \<Turnstile>\<^sub>f BV\<langle>[Cst\<^sub>N (LTS.get_end \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
 theorem RD_sound_again: 
-  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (fw_may.ana_pg_fw_may) s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t fw_may.ana_pg_fw_may s_BV"
   shows "summarizes_RD \<rho>"
   using assms def_path_S_hat_path fw_may.sound_ana_pg_fw_may unfolding fw_may.summarizes_fw_may_def summarizes_RD.simps
   using edge_set_def in_mono fw_may.edge_set_def fw_may.start_def start_def summarizes_RD_def by fastforce 
