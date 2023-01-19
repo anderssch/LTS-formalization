@@ -2253,7 +2253,7 @@ theorem RD_sound:
   using assms RD_sound' by (cases pg) force 
 
 
-section \<open>Bitvector framework\<close>
+section \<open>Bit-Vector Framework\<close>
 
 datatype pred =
   the_BV
