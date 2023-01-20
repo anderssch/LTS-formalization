@@ -116,8 +116,8 @@ datatype (vars_id: 'x,'c) id = is_Var: Var 'x | is_Cst: Cst (the_Cst: 'c)
 datatype (preds_rh: 'p,'x,'c) rh = 
   Eql "('x,'c) id" "('x,'c) id" ("_ \<^bold>= _" [61, 61] 61)
   | Neql "('x,'c) id" "('x,'c) id" ("_ \<^bold>\<noteq> _" [61, 61] 61)
-  | PosRh 'p "('x,'c) id list" ("\<^bold>+ _ _" [61, 61] 61)
-  | NegRh 'p "('x,'c) id list" ("\<^bold>\<not> _ _" [61, 61] 61)
+  | PosLit 'p "('x,'c) id list" ("\<^bold>+ _ _" [61, 61] 61)
+  | NegLit 'p "('x,'c) id list" ("\<^bold>\<not> _ _" [61, 61] 61)
 
 datatype (preds_cls: 'p, 'x,'c) clause = Cls 'p "('x,'c) id list" (the_rhs: "('p,'x,'c) rh list") (* Why not rh set? *)
 
@@ -337,11 +337,11 @@ next
   then show ?case
     by (simp add: substitution_lemma_id)
 next
-  case (PosRh p ids)
+  case (PosLit p ids)
   then show ?case
     using substitution_lemma_lh by fastforce
 next
-  case (NegRh p ids)
+  case (NegLit p ids)
   then show ?case
     using substitution_lemma_lh by fastforce
 qed
@@ -775,29 +775,29 @@ next
   then show ?thesis 
     using assms by auto
 next
-  case (PosRh p' ids')
+  case (PosLit p' ids')
   then have "s p' \<le> m"
     using assms pos_rhs_strata_leq_clause_strata by fastforce
   moreover
-  from PosRh have "s p' \<le> n"
+  from PosLit have "s p' \<le> n"
     using assms pos_rhs_strata_leq_clause_strata by fastforce
   ultimately
   have "solve_pg s dl m p' = solve_pg s dl n p'"
     using solve_pg_two_agree_above[of s p' n m dl] by force
   then show ?thesis
-    by (simp add: PosRh)
+    by (simp add: PosLit)
 next
-  case (NegRh p' ids)
+  case (NegLit p' ids)
   then have "s p' < m"
     using assms neg_rhs_strata_less_clause_strata by fastforce
   moreover
-  from NegRh have "s p' < n"
+  from NegLit have "s p' < n"
     using assms neg_rhs_strata_less_clause_strata by fastforce
   ultimately
   have "solve_pg s dl m p' = solve_pg s dl n p'"
     using solve_pg_two_agree_above[of s p' n m dl] by force
   then show ?thesis
-    by (simp add: NegRh)
+    by (simp add: NegLit)
 qed
 
 lemma solve_pg_two_agree_above_on_lh:
@@ -867,11 +867,11 @@ next
   then show ?thesis
     using assms by auto
 next
-  case (PosRh p ids)
+  case (PosLit p ids)
   then show ?thesis
     using assms meaning_rh.simps(3) solve_pg_0_subset by fastforce
 next
-  case (NegRh p ids)
+  case (NegLit p ids)
   then show ?thesis
     using assms strata0_no_neg' by fastforce
 qed
@@ -893,19 +893,19 @@ next
   then show ?thesis
     using assms(2) by force
 next
-  case (PosRh p' ids')
+  case (PosLit p' ids')
   then show ?thesis
     using assms solve_pg_Suc_subset by fastforce
 next
-  case (NegRh p' ids')
+  case (NegLit p' ids')
   then have "s p' \<le> n"
     using strataSuc_less_neg[OF assms(1) assms(6), of p'] assms(5) by auto
   then have "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl n) \<sigma>"
-    by (metis NegRh assms(2) le_imp_less_Suc less_imp_le_nat meaning_rh.simps(4) solve_pg_two_agree_above)
+    by (metis NegLit assms(2) le_imp_less_Suc less_imp_le_nat meaning_rh.simps(4) solve_pg_two_agree_above)
   then have "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ n) \<sigma>"
     using assms(4) by presburger
   then show ?thesis
-    by (simp add: NegRh \<open>s p' \<le> n\<close>)
+    by (simp add: NegLit \<open>s p' \<le> n\<close>)
 qed
 
 lemma solve_pg_0_if_all_meaning_lh:
@@ -1012,16 +1012,16 @@ lemma solve_pg_meaning_cls:
 lemma solve_pg_solves_cls:
   assumes "strat_wf s dl"
   assumes "c \<in> (dl --s-- n)"
-  shows "(solve_pg s dl n) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
+  shows "solve_pg s dl n \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
   unfolding solves_cls_def using solve_pg_meaning_cls assms by blast
 
 lemma solve_pg_solves_dl:
   assumes "strat_wf s dl"
-  shows "(solve_pg s dl n) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
+  shows "solve_pg s dl n \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
 proof -
   have "\<forall>c \<in> (dl --s-- n). (solve_pg s dl n) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
     using assms solve_pg_solves_cls[of s dl] by auto
-  then show "(solve_pg s dl n) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
+  then show "solve_pg s dl n \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
     using solves_program_def by blast
 qed
 
@@ -1324,7 +1324,7 @@ next
       have "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<and> (\<rho> \\s\\ n) = solve_pg s dl n"
         by auto
       then have "\<rho>''n1 p \<subseteq> \<rho> p"
-        using solve_pg_subset_solution
+        using solve_pg_subset_solution[of n "Suc n" \<rho> dl s p]
         using \<rho>''n1_def by fastforce 
       then have "\<rho>''n1 p \<subset> \<rho> p"
         using dis by auto
@@ -1462,25 +1462,26 @@ proof (rule ccontr)
     unfolding minimal_solution_def by auto
   then obtain \<rho>' where tt: "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)" and ttt: "(\<rho>' \<sqsubset>s\<sqsubset> (\<rho> \\s\\ m))"
     by auto
-  then have "\<exists>p. \<rho>' p \<subset> (\<rho> \\s\\ m) p \<and> 
-                    (\<forall>p'. s p' = s p \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \\s\\ m) p') \<and> 
+  then have "\<exists>p. \<rho>' p \<subset> (\<rho> \\s\\ m) p \<and>
+                    (\<forall>p'. s p' = s p \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \\s\\ m) p') \<and>
                     (\<forall>p'. s p' < s p \<longrightarrow> \<rho>' p' = (\<rho> \\s\\ m) p')"
     unfolding lt_def by auto
   then obtain p where a: "\<rho>' p \<subset> (\<rho> \\s\\ m) p" and
-    b:"(\<forall>p'. s p' = s p \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \\s\\ m) p')" and
-    c:"(\<forall>p'. s p' < s p \<longrightarrow> \<rho>' p' = (\<rho> \\s\\ m) p')"
+    b:"\<forall>p'. s p' = s p \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \\s\\ m) p'" and
+    c:"\<forall>p'. s p' < s p \<longrightarrow> \<rho>' p' = (\<rho> \\s\\ m) p'"
     by auto
-  define \<rho>'' where "\<rho>'' == \<lambda>p. (if s p \<le> m then \<rho>' p else UNIV)"
+  define \<rho>'' where "\<rho>'' == \<lambda>p. if s p \<le> m then \<rho>' p else UNIV"
 
-  have "\<rho>'' p \<subset> \<rho> p"
-    using a
-    by (metis \<rho>''_def empty_iff leD pred_val_mod_strata.simps subsetI) 
+  have "s p \<le> m"
+    using a by auto
+  then have "\<rho>'' p \<subset> \<rho> p"
+    unfolding \<rho>''_def using a by auto
   moreover
-  have "(\<forall>p'. s p' = s p \<longrightarrow> \<rho>'' p' \<subseteq> \<rho> p')"
+  have "\<forall>p'. s p' = s p \<longrightarrow> \<rho>'' p' \<subseteq> \<rho> p'"
     using b
     by (metis \<rho>''_def calculation pred_val_mod_strata.simps top.extremum_strict)
   moreover
-  have "(\<forall>p'. s p' < s p \<longrightarrow> \<rho>'' p' = \<rho> p')"
+  have "\<forall>p'. s p' < s p \<longrightarrow> \<rho>'' p' = \<rho> p'"
     using \<rho>''_def c calculation(1) by force
   ultimately
   have "(\<rho>'' \<sqsubset>s\<sqsubset> \<rho>)"
@@ -1527,12 +1528,12 @@ proof (rule ccontr)
               then show ?thesis
                 using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> by auto
             next
-              case (PosRh p ids)
+              case (PosLit p ids)
               then show ?thesis
                 using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> \<open>c \<in> (dl --s-- m)\<close> \<open>rh \<in> set rhs\<close> \<rho>''_def assms(3) c_def 
                   pos_rhs_strata_leq_clause_strata by fastforce
             next
-              case (NegRh p ids)
+              case (NegLit p ids)
               then show ?thesis
                 using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> \<open>c \<in> (dl --s-- m)\<close> \<open>rh \<in> set rhs\<close> \<rho>''_def c_def 
                   neg_rhs_strata_less_clause_strata s_dl_m by fastforce
@@ -1645,12 +1646,12 @@ proof (rule ccontr)
               then show ?thesis
                 using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> by auto
             next
-              case (PosRh p ids)
+              case (PosLit p ids)
               then show ?thesis
                 using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> \<open>c \<in> (dl --s-- m)\<close> \<open>rh \<in> set rhs\<close> \<rho>''_def c_def 
                   pos_rhs_strata_leq_clause_strata strrr by fastforce 
             next
-              case (NegRh p ids)
+              case (NegLit p ids)
               then show ?thesis
                 using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> \<open>c \<in> (dl --s-- m)\<close> \<open>rh \<in> set rhs\<close> \<rho>''_def c_def 
                   by (metis (full_types, opaque_lifting) UNIV_I meaning_rh.simps(4)) 
@@ -1732,28 +1733,28 @@ next
   then show ?thesis 
     by auto
 next
-  case (PosRh p' ids)
+  case (PosLit p' ids)
   show ?thesis
   proof
     assume "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>'"
     then show "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ s p) \<sigma>'"
-      using PosRh assms pos_rhs_strata_leq_clause_strata by fastforce
+      using PosLit assms pos_rhs_strata_leq_clause_strata by fastforce
   next
     assume "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ s p) \<sigma>'"
     then show "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>'"
-      by (metis PosRh equals0D meaning_rh.simps(3) pred_val_mod_strata.simps)
+      by (metis PosLit equals0D meaning_rh.simps(3) pred_val_mod_strata.simps)
   qed
 next
-  case (NegRh p' ids)
+  case (NegLit p' ids)
   show ?thesis
   proof
     assume "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>'"
     then show "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ s p) \<sigma>'"
-      using NegRh assms by fastforce
+      using NegLit assms by fastforce
   next
     assume "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ s p) \<sigma>'"
     then show "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>'"
-      using NegRh assms(1) assms(2) assms(3) neg_rhs_strata_less_clause_strata by fastforce
+      using NegLit assms(1) assms(2) assms(3) neg_rhs_strata_less_clause_strata by fastforce
   qed
 qed
 
@@ -1793,20 +1794,20 @@ proof -
       then show ?thesis
         using \<open>rh \<in> set rhs'\<close> assms(1) by auto
     next
-      case (PosRh p'' ids'')
+      case (PosLit p'' ids'')
       then show ?thesis
         by (metis Diff_iff \<open>rh \<in> set rhs'\<close> \<rho>''_def assms(1) meaning_rh.simps(3) meaning_rhs.elims(2))
     next
-      case (NegRh p'' ids'')
+      case (NegLit p'' ids'')
       have "p'' \<noteq> p"
-        using NegRh One_nat_def \<open>\<forall>rh'\<in>set rhs'. rnk s rh' \<le> s p'\<close> \<open>rh \<in> set rhs'\<close> c_dl' by fastforce
+        using NegLit One_nat_def \<open>\<forall>rh'\<in>set rhs'. rnk s rh' \<le> s p'\<close> \<open>rh \<in> set rhs'\<close> c_dl' by fastforce
       then show ?thesis
-        using NegRh  \<open>rh \<in> set rhs'\<close> \<rho>''_def assms(1) by auto
+        using NegLit  \<open>rh \<in> set rhs'\<close> \<rho>''_def assms(1) by auto
     qed
   qed
 qed
 
-lemma meaning_PosRh_least':
+lemma meaning_PosLit_least':
   assumes "finite dl"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
   assumes "strat_wf s dl"
@@ -1885,7 +1886,7 @@ proof (rule ccontr)
     by (metis assms(1,3) dl'_def finite_below_finite least_iff_minimal minimal_solution_def strat_wf_mod_if_strat_wf)
 qed
 
-lemma meaning_PosRh_least:
+lemma meaning_PosLit_least:
   assumes "finite dl"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
   assumes "strat_wf s dl"
@@ -1893,7 +1894,7 @@ lemma meaning_PosRh_least:
 proof
   assume "\<lbrakk>\<^bold>+ p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
   then show "\<exists>c \<in> dl. lh_consequence \<rho> c ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
-    by (meson assms(1) assms(2) assms(3) meaning_PosRh_least')
+    by (meson assms(1) assms(2) assms(3) meaning_PosLit_least')
 next
   assume "\<exists>c \<in> dl. lh_consequence \<rho> c ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
   then show "\<lbrakk>\<^bold>+ p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
@@ -1903,7 +1904,7 @@ next
       prod.inject substv_lh.simps the_lh.simps by metis
 qed
 
-lemma solves_PosRh_least:
+lemma solves_PosLit_least:
   assumes "finite dl"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
   assumes "strat_wf s dl"
@@ -1913,17 +1914,17 @@ proof -
   have "\<forall>\<sigma>. ((p, ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) = (p, ids)"
     using assms(4) by (induction ids) (auto simp add: is_Cst_def)
   then show ?thesis
-    by (metis assms(1) assms(2) assms(3) meaning_PosRh_least solves_rh.simps)
+    by (metis assms(1) assms(2) assms(3) meaning_PosLit_least solves_rh.simps)
 qed
 
-lemma meaning_NegRh_least:
+lemma meaning_NegLit_least:
   assumes "finite dl"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
   assumes "strat_wf s dl"
   shows "\<lbrakk>\<^bold>\<not> p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> (\<not>(\<exists>c \<in> dl. lh_consequence \<rho> c ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)))"
-  by (metis assms(1) assms(2) assms(3) meaning_PosRh_least meaning_rh.simps(3) meaning_rh.simps(4))
+  by (metis assms(1) assms(2) assms(3) meaning_PosLit_least meaning_rh.simps(3) meaning_rh.simps(4))
 
-lemma solves_NegRh_least:
+lemma solves_NegLit_least:
   assumes "finite dl"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
   assumes "strat_wf s dl"
@@ -1933,7 +1934,7 @@ proof -
   have "\<forall>\<sigma>. ((p, ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) = (p, ids)"
     using assms(4) by (induction ids) (auto simp add: is_Cst_def)
   then show ?thesis
-    by (metis assms(1) assms(2) assms(3) meaning_NegRh_least solves_rh.simps)
+    by (metis assms(1) assms(2) assms(3) meaning_NegLit_least solves_rh.simps)
 qed
 
 
@@ -1976,8 +1977,8 @@ abbreviation VAR_Fact :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) f
   "VAR\<langle>x\<rangle>. \<equiv> (the_VAR, [Cst\<^sub>R\<^sub>D\<^sub>V x])"
 
 
-abbreviation "RD == PosRh the_RD"
-abbreviation "VAR == PosRh the_VAR"
+abbreviation "RD == PosLit the_RD"
+abbreviation "VAR == PosLit the_VAR"
 
 abbreviation \<u> :: "(RD_var, 'a) id" where
   "\<u> == Var the_\<u>"
@@ -2266,16 +2267,16 @@ datatype pred =
 datatype var =
   the_\<uu>
 
-abbreviation "BV == PosRh the_BV"
-abbreviation "CBV == PosRh the_CBV"
-abbreviation NegRh_BV ("\<^bold>\<not>BV") where
-  "\<^bold>\<not>BV \<equiv> NegRh the_BV"
-abbreviation "kill == PosRh the_kill"
-abbreviation NegRh_kill ("\<^bold>\<not>kill") where
-  "\<^bold>\<not>kill \<equiv> NegRh the_kill"
-abbreviation "gen == PosRh the_gen"
-abbreviation "init == PosRh the_init"
-abbreviation "anadom == PosRh the_anadom"
+abbreviation "BV == PosLit the_BV"
+abbreviation "CBV == PosLit the_CBV"
+abbreviation NegLit_BV ("\<^bold>\<not>BV") where
+  "\<^bold>\<not>BV \<equiv> NegLit the_BV"
+abbreviation "kill == PosLit the_kill"
+abbreviation NegLit_kill ("\<^bold>\<not>kill") where
+  "\<^bold>\<not>kill \<equiv> NegLit the_kill"
+abbreviation "gen == PosLit the_gen"
+abbreviation "init == PosLit the_init"
+abbreviation "anadom == PosLit the_anadom"
 
 fun s_BV :: "pred \<Rightarrow> nat" where 
   "s_BV the_kill = 0"
@@ -2578,7 +2579,7 @@ proof -
     using lh_consequence_def by metis
   ultimately
   show "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>kill [Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, Cst\<^sub>E d]"
-    using solves_NegRh_least[of ana_pg_fw_may \<rho> s_BV "[Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, Cst\<^sub>E d]" the_kill] by auto
+    using solves_NegLit_least[of ana_pg_fw_may \<rho> s_BV "[Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, Cst\<^sub>E d]" the_kill] by auto
 qed
 
 lemma the_funny_invariant':
@@ -3813,11 +3814,11 @@ next
   then show ?thesis 
     by auto 
 next
-  case (PosRh p ids)
+  case (PosLit p ids)
   then show ?thesis
     using assms by auto 
 next
-  case (NegRh p ids)
+  case (NegLit p ids)
   then show ?thesis 
     using assms by auto 
 qed
@@ -4198,7 +4199,7 @@ proof -
     unfolding lh_consequence_def by metis
   ultimately
   have "\<rho> \<Turnstile>\<^sub>r\<^sub>h ( \<^bold>\<not> the_init [Cst\<^sub>N q])"
-    using solves_NegRh_least[of ana_pg_fw_must \<rho> s_BV] by auto
+    using solves_NegLit_least[of ana_pg_fw_must \<rho> s_BV] by auto
   then show ?thesis
     by auto
 qed
@@ -4235,13 +4236,13 @@ proof -
     unfolding lh_consequence_def by metis
   ultimately
   have "\<rho> \<Turnstile>\<^sub>r\<^sub>h ( \<^bold>\<not> the_anadom [Cst\<^sub>N q])"
-    using solves_NegRh_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>N q]" the_anadom] by auto
+    using solves_NegLit_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>N q]" the_anadom] by auto
 
   then show ?thesis
     by auto
 qed
 
-lemma not_init_action: (* Copy paste adapt from not_init_node. They are kind of special cases of meaning_NegRh_least because *)
+lemma not_init_action: (* Copy paste adapt from not_init_node. They are kind of special cases of meaning_NegLit_least because *)
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   shows "\<not>\<rho> \<Turnstile>\<^sub>f init\<langle>[Cst\<^sub>A q]\<rangle>."
 proof -
@@ -4273,12 +4274,12 @@ proof -
     unfolding lh_consequence_def by metis
   ultimately
   have "\<rho> \<Turnstile>\<^sub>r\<^sub>h ( \<^bold>\<not> the_init [Cst\<^sub>A q])"
-    using solves_NegRh_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>A q]" the_init] by auto
+    using solves_NegLit_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>A q]" the_init] by auto
   then show ?thesis
     by auto
 qed
 
-lemma not_anadom_action: (* Copy paste adapt from not_init_node. They are kind of special cases of meaning_NegRh_least because *)
+lemma not_anadom_action: (* Copy paste adapt from not_init_node. They are kind of special cases of meaning_NegLit_least because *)
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   shows "\<not>\<rho> \<Turnstile>\<^sub>f anadom\<langle>[Cst\<^sub>A q]\<rangle>."
 proof -
@@ -4310,7 +4311,7 @@ proof -
     unfolding lh_consequence_def by metis
   ultimately
   have "\<rho> \<Turnstile>\<^sub>r\<^sub>h (\<^bold>\<not> the_anadom [Cst\<^sub>A q])"
-    using solves_NegRh_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>A q]" the_anadom] by auto
+    using solves_NegLit_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>A q]" the_anadom] by auto
 
   then show ?thesis
     by auto
@@ -4392,7 +4393,7 @@ proof -
     using assms(2) by auto
   ultimately
   have "(\<exists>c\<in>ana_pg_fw_must. lh_consequence \<rho> c init\<langle>[Cst\<^sub>E d]\<rangle>.)"
-    using solves_PosRh_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>E d]" the_init] by auto
+    using solves_PosLit_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>E d]" the_init] by auto
   then have "d \<in> analysis_dom - d_init"
     unfolding lh_consequence_def fw_may.ana_pg_fw_may_def fw_may.ana_init_BV_def  
       fw_may.ana_anadom_BV_def fw_may.ana_kill_BV_edge_def fw_may.ana_gen_BV_edge_def 
@@ -4419,7 +4420,7 @@ proof -
     using assms(2) by auto
   ultimately
   have "(\<exists>c\<in>ana_pg_fw_must. lh_consequence \<rho> c anadom\<langle>[Cst\<^sub>E d]\<rangle>.)"
-    using solves_PosRh_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>E d]" the_anadom] by auto
+    using solves_PosLit_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>E d]" the_anadom] by auto
   then show "d \<in> analysis_dom"
     unfolding lh_consequence_def fw_may.ana_pg_fw_may_def fw_may.ana_init_BV_def  
       fw_may.ana_anadom_BV_def fw_may.ana_kill_BV_edge_def fw_may.ana_gen_BV_edge_def 
