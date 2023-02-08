@@ -119,7 +119,7 @@ datatype (preds_rh: 'p,'x,'c) rh =
   | PosLit 'p "('x,'c) id list" ("\<^bold>+ _ _" [61, 61] 61)
   | NegLit 'p "('x,'c) id list" ("\<^bold>\<not> _ _" [61, 61] 61)
 
-datatype (preds_cls: 'p, 'x,'c) clause = Cls 'p "('x,'c) id list" (the_rhs: "('p,'x,'c) rh list") (* Why not rh set? *)
+datatype (preds_cls: 'p, 'x,'c) clause = Cls 'p "('x,'c) id list" (the_rhs: "('p,'x,'c) rh list")
 
 fun the_lh where
   "the_lh (Cls p ids rhs) = (p,ids)"
@@ -135,7 +135,7 @@ type_synonym ('x,'c) var_val = "'x \<Rightarrow> 'c"
 
 type_synonym ('p,'c) pred_val = "'p \<Rightarrow> 'c list set"
 
-type_synonym ('p,'x,'c) lh = "'p * ('x,'c) id list"
+type_synonym ('p,'x,'c) lh = "'p \<times> ('x,'c) id list"
 
 fun preds_lh :: "('p,'x,'c) lh \<Rightarrow> 'p set" where 
   "preds_lh (p,ids) = {p}"
@@ -163,12 +163,12 @@ fun meaning_lh :: "('p,'x,'c) lh \<Rightarrow> ('p,'c) pred_val \<Rightarrow> ('
   "\<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma> \<longleftrightarrow> \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<in> \<rho> p"
 
 fun meaning_cls :: "('p,'x,'c) clause \<Rightarrow> ('p,'c) pred_val \<Rightarrow> ('x,'c) var_val \<Rightarrow> bool" ("\<lbrakk>_\<rbrakk>\<^sub>c\<^sub>l\<^sub>s") where
-  "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma> \<longleftrightarrow> (\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma> \<longrightarrow> \<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>)" (* use meaning_rhs *)
+  "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma> \<longleftrightarrow> (\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma> \<longrightarrow> \<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>)" 
 
 fun solves_lh :: "('p,'c) pred_val \<Rightarrow> ('p,'x,'c) lh \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>l\<^sub>h" 91) where
   "\<rho> \<Turnstile>\<^sub>l\<^sub>h (p,ids) \<longleftrightarrow> (\<forall>\<sigma>. \<lbrakk>(p,ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>)"
 
-fun solves_rh :: "('p,'c) pred_val \<Rightarrow> ('p,'x,'c) rh \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>r\<^sub>h" 91) where (* Not in the book *)
+fun solves_rh :: "('p,'c) pred_val \<Rightarrow> ('p,'x,'c) rh \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>r\<^sub>h" 91) where 
   "\<rho> \<Turnstile>\<^sub>r\<^sub>h rh \<longleftrightarrow> (\<forall>\<sigma>. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>)"
 
 definition solves_cls :: "('p,'c) pred_val \<Rightarrow> ('p,'x,'c) clause \<Rightarrow> bool" (infix "\<Turnstile>\<^sub>c\<^sub>l\<^sub>s" 91) where
@@ -394,14 +394,14 @@ definition strat_wf :: "'p strat \<Rightarrow> ('p,'x,'c) dl_program \<Rightarro
 definition max_strata :: "'p strat \<Rightarrow> ('p,'x,'c) dl_program \<Rightarrow> nat" where
   "max_strata s dl = Max {s p | p ids rhs. Cls p ids rhs \<in> dl}"
 
-fun pred_val_mod_strata :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'c) pred_val" ("_ \\_\\ _" 0) where 
-  "(\<rho> \\s\\ n) p = (if s p \<le> n then \<rho> p else {})"
+fun pred_val_mod_strata :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'c) pred_val" ("_ \<le>\<le>\<le>_\<le>\<le>\<le> _" 0) where 
+  "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) p = (if s p \<le> n then \<rho> p else {})"
 
-fun dl_program_mod_strata :: "('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'c) dl_program" ("_ --_-- _" 0) where 
-  "(dl -- s -- n) = {(Cls p ids rhs)| p ids rhs . (Cls p ids rhs) \<in> dl \<and> s p \<le> n}"
+fun dl_program_mod_strata :: "('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'c) dl_program" ("_ \<le>\<le>_\<le>\<le> _" 0) where 
+  "(dl \<le>\<le>s\<le>\<le> n) = {(Cls p ids rhs)| p ids rhs . (Cls p ids rhs) \<in> dl \<and> s p \<le> n}"
 
 fun dl_program_on_strata :: "('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'c) dl_program" ("_ ==_== _" 0) where 
-  "(dl == s == n) = {(Cls p ids rhs)| p ids rhs . (Cls p ids rhs) \<in> dl \<and> s p = n}"
+  "(dl ==s== n) = {(Cls p ids rhs)| p ids rhs . (Cls p ids rhs) \<in> dl \<and> s p = n}"
 
 definition lt :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'c) pred_val \<Rightarrow> bool" ("_ \<sqsubset>_\<sqsubset> _") where
   "(\<rho> \<sqsubset>s\<sqsubset> \<rho>') \<longleftrightarrow> (\<exists>p. \<rho> p \<subset> \<rho>' p \<and>
@@ -426,54 +426,54 @@ subsection \<open>Solving lower strata\<close>
 
 lemma strat_wf_mod_if_strat_wf_mod:
   assumes "n > m"
-  assumes "strat_wf s (dl --s-- n)"
-  shows "strat_wf s (dl --s-- m)"
+  assumes "strat_wf s (dl \<le>\<le>s\<le>\<le> n)"
+  shows "strat_wf s (dl \<le>\<le>s\<le>\<le> m)"
   using assms unfolding strat_wf_def by fastforce
 
 lemma strat_wf_mod_if_strat_wf:
   assumes "strat_wf s dl"
-  shows "strat_wf s (dl --s-- n)"
+  shows "strat_wf s (dl \<le>\<le>s\<le>\<le> n)"
   using assms unfolding strat_wf_def by auto
 
 lemma meaning_mod_m_iff_meaning_rh:
   assumes "rnk s rh \<le> n"
-  shows "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ n) \<sigma> \<longleftrightarrow> \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+  shows "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) \<sigma> \<longleftrightarrow> \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
   using assms equals0D meaning_rh.elims(3) pred_val_mod_strata.simps by fastforce
 
 lemma meaning_mod_m_iff_meaning_lh:
   assumes "s p \<le> m"
-  shows "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (\<rho> \\s\\ m) \<sigma> \<longleftrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+  shows "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<sigma> \<longleftrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
   using assms by auto
 
 lemma meaning_mod_m_iff_meaning_cls:
   assumes "strat_wf_cls s (Cls p ids rhs)"
   assumes "s p \<le> m"
-  shows "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \\s\\ m) \<sigma> \<longleftrightarrow> \<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
+  shows "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<sigma> \<longleftrightarrow> \<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
 proof -
   have p_leq_m: "s p \<le> m"
     using assms by fastforce
   have rh_leq_m: "\<forall>rh \<in> set rhs. rnk s rh \<le> m"
     using assms assms(2) dual_order.trans by (metis (no_types, lifting) p_leq_m strat_wf_cls.simps)
 
-  show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \\s\\ m) \<sigma> \<longleftrightarrow> \<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
+  show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<sigma> \<longleftrightarrow> \<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
     using meaning_mod_m_iff_meaning_rh[of s _ m \<rho> \<sigma>] p_leq_m rh_leq_m assms(2) by force
 qed
 
 lemma solves_mod_m_iff_solves_cls:
   assumes "strat_wf_cls s (Cls p ids rhs)"
   assumes "s p \<le> m"
-  shows "(\<rho> \\s\\ m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs \<longleftrightarrow> \<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
+  shows "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs \<longleftrightarrow> \<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
   by (meson assms meaning_mod_m_iff_meaning_cls solves_cls_def)
                                           
 lemma downward_mod_solves:
   assumes "n > m"
-  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> n)"
   assumes "strat_wf s dl"
-  shows "(\<rho> \\s\\ m) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
+  shows "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> m)"
   unfolding solves_program_def
 proof
   fix c
-  assume a: "c \<in> (dl --s-- m)"
+  assume a: "c \<in> (dl \<le>\<le>s\<le>\<le> m)"
   obtain p ids rhs where c_split: "c = Cls p ids rhs"
     by (cases c) auto
 
@@ -489,27 +489,27 @@ proof
   have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
     using c_split assms a unfolding solves_program_def by force  
   ultimately
-  show "(\<rho> \\s\\ m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
+  show "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
     using c_split by (simp add: solves_mod_m_iff_solves_cls)
 qed
 
 lemma downward_solves:
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l dl"
   assumes "strat_wf s dl"
-  shows "(\<rho> \\s\\ m) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
+  shows "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> m)"
   unfolding solves_program_def
 proof
   fix c
-  assume a: "c \<in> (dl --s-- m)"
+  assume a: "c \<in> (dl \<le>\<le>s\<le>\<le> m)"
   then obtain p ids rhs where c_def: "c = Cls p ids rhs"
     by (cases c) auto
 
   have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
-    using \<open>c \<in> (dl --s-- m)\<close> assms(1) solves_program_def by auto
+    using \<open>c \<in> (dl \<le>\<le>s\<le>\<le> m)\<close> assms(1) solves_program_def by auto
 
-  have "(\<rho> \\s\\ m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
+  have "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
     using \<open>\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c\<close> a assms(2) c_def solves_mod_m_iff_solves_cls strat_wf_def by fastforce
-  then show "(\<rho> \\s\\ m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
+  then show "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
     using c_def by auto
 qed
 
@@ -547,7 +547,7 @@ lemma intersection_valuation_subset_valuation:
 
 fun solve_pg where
   "solve_pg s dl 0 = (\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== 0)})"
-| "solve_pg s dl (Suc n) = (\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<and> (\<rho>' \\s\\ n) = solve_pg s dl n})"
+| "solve_pg s dl (Suc n) = (\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<and> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n})"
 
 definition least_rank_p_st :: "('p \<Rightarrow> bool) \<Rightarrow> 'p \<Rightarrow> ('p \<Rightarrow> nat) \<Rightarrow> bool" where 
   "least_rank_p_st P p s \<longleftrightarrow> P p \<and> (\<forall>p'. P p' \<longrightarrow> s p \<le> s p')"
@@ -585,24 +585,24 @@ next
 qed
 
 lemma solves_leq:
-  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> m)"
   assumes "n \<le> m"
-  shows "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
+  shows "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> n)"
   using assms unfolding solves_program_def by auto
 
 lemma solves_Suc:
-  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n)"
-  shows "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> Suc n)"
+  shows "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> n)"
   by (meson assms lessI less_imp_le_nat solves_leq)
 
 lemma solve_pg_0_subset:
-  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> 0)"
   shows "(solve_pg s dl 0) p \<subseteq> \<rho> p"
   using assms by (auto simp add: Inter'_def)
 
 lemma solve_pg_Suc_subset:
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n)"
-  assumes "(\<rho> \\s\\ n) = solve_pg s dl n"
+  assumes "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n"
   shows "(solve_pg s dl (Suc n)) p \<subseteq> \<rho> p"
   using assms by (force simp add: Inter'_def2)
 
@@ -672,7 +672,7 @@ next
     then show "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
       unfolding c_split by auto
   qed
-  have "\<forall>p. (\<rho>' \\s\\ n) p = (solve_pg s dl n) p"
+  have "\<forall>p. (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> n) p = (solve_pg s dl n) p"
     using Suc by (auto simp add: \<rho>'_def)
   then have "\<rho>'' p \<subseteq> \<rho>' p"
     using solve_pg_Suc_subset[of \<rho>' dl s n  p] \<rho>'_solves \<rho>''_def by force
@@ -683,7 +683,7 @@ next
 qed
 
 lemma exi_sol_n: 
-  "\<exists>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \\s\\ m) = solve_pg s dl m"
+  "\<exists>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> m) = solve_pg s dl m"
 proof -
   define \<rho>' where 
     "\<rho>' = (\<lambda>p. (if s p < Suc m then (solve_pg s dl m) p else if s p = Suc m then UNIV else {}))"
@@ -691,7 +691,7 @@ proof -
   have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m)"
     unfolding \<rho>'_def solves_cls_def solves_program_def by fastforce
   moreover
-  have "\<forall>p. (\<rho>' \\s\\ m) p = solve_pg s dl m p"
+  have "\<forall>p. (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> m) p = solve_pg s dl m p"
     unfolding \<rho>'_def using solve_pg_Suc_empty[of m s _ dl] by auto
   ultimately
   show ?thesis 
@@ -718,18 +718,18 @@ next
       using Suc by auto
     then have solve_pg_sp_m: "(solve_pg s dl (s p)) p = (solve_pg s dl m) p"
       using Suc by auto
-    have \<rho>'_solve_pg: "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \\s\\ m) = solve_pg s dl m \<longrightarrow> \<rho>' p = solve_pg s dl m p"
+    have \<rho>'_solve_pg: "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> m) = solve_pg s dl m \<longrightarrow> \<rho>' p = solve_pg s dl m p"
       by (metis pred_val_mod_strata.simps s_p)
-    have "\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \\s\\ m) = solve_pg s dl m} p = solve_pg s dl (s p) p"
+    have "\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> m) = solve_pg s dl m} p = solve_pg s dl (s p) p"
     proof (rule; rule)
       fix x 
-      assume "x \<in> \<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \\s\\ m) = solve_pg s dl m} p"
+      assume "x \<in> \<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> m) = solve_pg s dl m} p"
       then show "x \<in> solve_pg s dl (s p) p"
         by (metis (mono_tags) CollectI \<rho>'_solve_pg exi_sol_n member_if_member_Inter' solve_pg_sp_m)
     next
       fix x
       assume "x \<in> solve_pg s dl (s p) p"
-      then show "x \<in> \<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \\s\\ m) = solve_pg s dl m} p"
+      then show "x \<in> \<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> m) = solve_pg s dl m} p"
         by (simp add: \<rho>'_solve_pg member_Inter' solve_pg_sp_m)
     qed
     then show ?thesis
@@ -837,14 +837,14 @@ lemma strataSuc_less_neg':
 
 lemma strata0_no_neg:
   assumes "strat_wf s dl"
-  assumes "Cls p ids rhs \<in> (dl --s-- 0)"
+  assumes "Cls p ids rhs \<in> (dl \<le>\<le>s\<le>\<le> 0)"
   assumes "rh \<in> set rhs"
   shows "\<nexists>p' ids. rh = \<^bold>\<not> p ids"
   using assms strata0_no_neg' by fastforce 
 
 lemma strataSuc_less_neg:
   assumes "strat_wf s dl"
-  assumes "Cls p ids rhs \<in> (dl --s-- Suc n)"
+  assumes "Cls p ids rhs \<in> (dl \<le>\<le>s\<le>\<le> Suc n)"
   assumes "\<^bold>\<not> p' ids' \<in> set rhs"
   shows "s p' \<le> n"
   using assms neg_rhs_strata_less_clause_strata by fastforce
@@ -852,9 +852,9 @@ lemma strataSuc_less_neg:
 lemma all_meaning_rh_if_solve_pg_0:
   assumes "strat_wf s dl"
   assumes "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl 0) \<sigma>"
-  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> 0)"
   assumes "rh \<in> set rhs"
-  assumes "Cls p ids rhs \<in> (dl --s-- 0)"
+  assumes "Cls p ids rhs \<in> (dl \<le>\<le>s\<le>\<le> 0)"
   shows "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
 proof (cases rh)
   case (Eql a1 a2)
@@ -878,9 +878,9 @@ lemma all_meaning_rh_if_solve_pg_Suc:
   assumes "strat_wf s dl"
   assumes "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n)"
-  assumes "(\<rho> \\s\\ n) = solve_pg s dl n"
+  assumes "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n"
   assumes "rh \<in> set rhs"
-  assumes "Cls p ids rhs \<in> (dl --s-- Suc n)"
+  assumes "Cls p ids rhs \<in> (dl \<le>\<le>s\<le>\<le> Suc n)"
   shows "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
 proof (cases rh)
   case (Eql a a')
@@ -900,52 +900,52 @@ next
     using strataSuc_less_neg[OF assms(1) assms(6), of p'] assms(5) by auto
   then have "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl n) \<sigma>"
     by (metis NegLit assms(2) le_imp_less_Suc less_imp_le_nat meaning_rh.simps(4) solve_pg_two_agree_above)
-  then have "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ n) \<sigma>"
+  then have "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) \<sigma>"
     using assms(4) by presburger
   then show ?thesis
     by (simp add: NegLit \<open>s p' \<le> n\<close>)
 qed
 
 lemma solve_pg_0_if_all_meaning_lh:
-  assumes "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
+  assumes "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> 0) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
   shows "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl 0) \<sigma>"
   using assms by (auto simp add: Inter'_def)
 
 lemma all_meaning_lh_if_solve_pg_0:
   assumes "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl 0) \<sigma>"
-  shows "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
+  shows "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> 0) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
   using assms by (auto simp add: Inter'_def)
 
 lemma solve_pg_0_iff_all_meaning_lh:
-  "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl 0) \<sigma> \<longleftrightarrow> (\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>)"
+  "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl 0) \<sigma> \<longleftrightarrow> (\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> 0) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>)"
   using solve_pg_0_if_all_meaning_lh all_meaning_lh_if_solve_pg_0 by metis
 
 lemma solve_pg_Suc_if_all_meaning_lh:
-  assumes "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \\s\\ n) = solve_pg s dl n \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
+  assumes "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
   shows "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
   using assms by (auto simp add: Inter'_def)
 
 lemma all_meaning_if_solve_pg_Suc_lh: (* Is this one used at all? *)
   assumes "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
-  shows "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \\s\\ n) = solve_pg s dl n \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
+  shows "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
   using assms by (auto simp add: Inter'_def)
 
 lemma solve_pg_Suc_iff_all_meaning_lh:
-  "(\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl (Suc n)) \<sigma>) \<longleftrightarrow> (\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \\s\\ n) = solve_pg s dl n \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>)"
+  "(\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl (Suc n)) \<sigma>) \<longleftrightarrow> (\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>)"
   by (auto simp add: Inter'_def)
 
 lemma solve_pg_0_meaning_cls':
   assumes "strat_wf s dl"
-  assumes "Cls p ids rhs \<in> (dl --s-- 0)"
+  assumes "Cls p ids rhs \<in> (dl \<le>\<le>s\<le>\<le> 0)"
   shows "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl 0) \<sigma>"
   unfolding meaning_cls.simps
 proof
   define \<rho>'' :: "'a \<Rightarrow> 'c list set" where "\<rho>'' = (solve_pg s dl 0)"
   assume "\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s (solve_pg s dl 0) \<sigma>"
-  then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0) \<longrightarrow> (\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>)"
+  then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> 0) \<longrightarrow> (\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>)"
     using all_meaning_rh_if_solve_pg_0[OF assms(1), of _ \<sigma> _ rhs p ids, OF _ _ _ assms(2)] 
     by auto
-  then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h  \<rho>' \<sigma>"
+  then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> 0) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h  \<rho>' \<sigma>"
     by (metis assms(2) meaning_cls.simps solves_cls_def solves_program_def meaning_rhs.simps)
   then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl 0) \<sigma>"
     using solve_pg_0_if_all_meaning_lh by auto
@@ -953,7 +953,7 @@ qed
 
 lemma solve_pg_meaning_cls':
   assumes "strat_wf s dl"
-  assumes "Cls p ids rhs \<in> (dl --s-- n)"
+  assumes "Cls p ids rhs \<in> (dl \<le>\<le>s\<le>\<le> n)"
   shows "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl n) \<sigma>"
   unfolding meaning_cls.simps
   using assms
@@ -978,10 +978,10 @@ next
     proof
       define \<rho>'' :: "'a \<Rightarrow> 'c list set" where "\<rho>'' = (solve_pg s dl (Suc n))"
       assume "\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s (solve_pg s dl (Suc n)) \<sigma>"
-      then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \\s\\ n) = solve_pg s dl n \<longrightarrow> (\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>)"
+      then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n \<longrightarrow> (\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>)"
         using all_meaning_rh_if_solve_pg_Suc[OF assms(1) _ _ _ _ Suc(3), of _ \<sigma>] 
         by auto
-      then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \\s\\ n) = solve_pg s dl n \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
+      then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
         using meaning_cls.simps solves_cls_def solves_program_def cls_in_Suc meaning_rhs.simps by metis
       then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
         using solve_pg_Suc_if_all_meaning_lh[of dl s n p ids \<sigma>] by auto
@@ -992,7 +992,7 @@ next
       using leq_n by auto
     then have s_p_n: "s p \<le> n"
       by auto
-    then have "Cls p ids rhs \<in> (dl --s-- n)"
+    then have "Cls p ids rhs \<in> (dl \<le>\<le>s\<le>\<le> n)"
       by (simp add: cls_in)
     then have "(\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl n) \<sigma>) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl n) \<sigma>"
       using Suc by auto
@@ -1003,23 +1003,23 @@ qed
 
 lemma solve_pg_meaning_cls:
   assumes "strat_wf s dl"
-  assumes "c \<in> (dl --s-- n)"
+  assumes "c \<in> (dl \<le>\<le>s\<le>\<le> n)"
   shows "\<lbrakk>c\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl n) \<sigma>"
   using assms solve_pg_meaning_cls'[of s dl] by (cases c) metis
 
 lemma solve_pg_solves_cls:
   assumes "strat_wf s dl"
-  assumes "c \<in> (dl --s-- n)"
+  assumes "c \<in> (dl \<le>\<le>s\<le>\<le> n)"
   shows "solve_pg s dl n \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
   unfolding solves_cls_def using solve_pg_meaning_cls assms by blast
 
 lemma solve_pg_solves_dl:
   assumes "strat_wf s dl"
-  shows "solve_pg s dl n \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
+  shows "solve_pg s dl n \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> n)"
 proof -
-  have "\<forall>c \<in> (dl --s-- n). (solve_pg s dl n) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
+  have "\<forall>c \<in> (dl \<le>\<le>s\<le>\<le> n). (solve_pg s dl n) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
     using assms solve_pg_solves_cls[of s dl] by auto
-  then show "solve_pg s dl n \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
+  then show "solve_pg s dl n \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> n)"
     using solves_program_def by blast
 qed
 
@@ -1032,7 +1032,7 @@ lemma disjE3:
   using assms by auto
 
 lemma solve_pg_0_below_solution:
-  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- 0)"
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> 0)"
   shows "(solve_pg s dl 0) \<sqsubseteq>s\<sqsubseteq> \<rho>"
 proof -
   define \<rho>'' :: "'a \<Rightarrow> 'b list set" where "\<rho>'' = solve_pg s dl 0"
@@ -1119,7 +1119,7 @@ proof -
 qed
 
 lemma solution_on_subset_solution_below:
-  "(dl ==s== n) \<subseteq> (dl --s-- n)"
+  "(dl ==s== n) \<subseteq> (dl \<le>\<le>s\<le>\<le> n)"
   by fastforce
 
 lemma solves_program_mono:
@@ -1129,20 +1129,20 @@ lemma solves_program_mono:
   by (meson assms in_mono solves_program_def)
 
 lemma solution_on_if_solution_below:
-  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> n)"
   shows  "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl ==s== n)"
   by (meson assms solves_program_mono solution_on_subset_solution_below)
 
 lemma solve_pg_Suc_subset_solution:
-  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n)"
-  assumes "(\<rho> \\s\\ n) = solve_pg s dl n"
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> Suc n)"
+  assumes "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n"
   shows "solve_pg s dl (Suc n) p \<subseteq> \<rho> p"
   by (meson assms solution_on_if_solution_below solve_pg_Suc_subset)
 
 lemma solve_pg_subset_solution:
   assumes "m > n"
-  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
-  assumes "(\<rho> \\s\\ n) = solve_pg s dl n"
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> m)"
+  assumes "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n"
   shows "solve_pg s dl (Suc n) p \<subseteq> \<rho> p"
   by (meson Suc_leI assms solve_pg_Suc_subset_solution solves_leq)
 
@@ -1215,12 +1215,12 @@ lemma asjkdflaasjdfklaasdf:
   by (meson agree_above_def agree_above_eq_def asjkdfla assms less_imp_le_nat)
 
 lemma asdfasdfsafsdfasddddd:
-  "agree_below_eq \<rho> (\<rho> \\s\\ n) n s"
+  "agree_below_eq \<rho> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) n s"
   by (simp add: agree_below_eq_def)
 
 lemma asdfasdfsafsdfasdddddffff:
   assumes "m \<le> n"
-  shows "agree_below_eq \<rho> (\<rho> \\s\\ n) m s"
+  shows "agree_below_eq \<rho> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) m s"
   using agree_below_ajskldfjaslkfjdslkf asdfasdfsafsdfasddddd assms by blast
 
 lemma agree_below_eq_solve_pg:
@@ -1230,7 +1230,7 @@ lemma agree_below_eq_solve_pg:
   by (smt (verit, best) agree_below_eq_def assms le_trans solve_pg_agree_above)
 
 lemma solve_pg_below_solution: (* I can look in my notes to improve this one *)
-  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
+  assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> n)"
   shows "(solve_pg s dl n) \<sqsubseteq>s\<sqsubseteq> \<rho>"
   using assms
 proof (induction n arbitrary: \<rho>)
@@ -1293,10 +1293,10 @@ next
         unfolding lt_def by auto
     next
       assume "Suc n \<le> i"
-      have "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n)"
+      have "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> Suc n)"
         using Suc.prems by auto
       moreover
-      have "(\<rho> \\s\\ n) = (solve_pg s dl n)"
+      have "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) = (solve_pg s dl n)"
       proof -
         have "agree_below_eq \<rho>''n \<rho>''n1 n s"
           by (metis B' agree_below_eq_def)
@@ -1304,22 +1304,22 @@ next
         have "agree_below_eq \<rho>''n1 \<rho> n s"
           using \<open>Suc n \<le> i\<close> agree_below_eq_least_disagreement i_def p_p by fastforce
         moreover
-        have "agree_below_eq \<rho> (\<rho> \\s\\ n) n s"
+        have "agree_below_eq \<rho> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) n s"
           by (simp add: asdfasdfsafsdfasddddd)
         ultimately
-        have "agree_below_eq \<rho>''n (\<rho> \\s\\ n) n s"
+        have "agree_below_eq \<rho>''n (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) n s"
           using agree_below_trans by metis
         moreover
-        have "agree_above \<rho>''n (\<rho> \\s\\ n) n s"
+        have "agree_above \<rho>''n (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) n s"
           using \<rho>''n_def by (simp add: agree_above_def solve_pg_Suc_empty)
         ultimately
-        have "(\<rho> \\s\\ n) = \<rho>''n"
+        have "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) = \<rho>''n"
            using asjkdfla by blast
-        then show "(\<rho> \\s\\ n) = (solve_pg s dl n)"
+        then show "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) = (solve_pg s dl n)"
           using \<rho>''n_def by metis
       qed
       ultimately
-      have "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<and> (\<rho> \\s\\ n) = solve_pg s dl n"
+      have "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> Suc n) \<and> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n"
         by auto
       then have "\<rho>''n1 p \<subseteq> \<rho> p"
         using solve_pg_subset_solution[of n "Suc n" \<rho> dl s p]
@@ -1328,7 +1328,7 @@ next
         using dis by auto
       moreover
       have "\<forall>p'. s p' = s p \<longrightarrow> \<rho>''n1 p' \<subseteq> \<rho> p'"
-        using \<open>\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl --s-- Suc n) \<and> (\<rho> \s\ n) = solve_pg s dl n\<close> \<rho>''n1_def solve_pg_subset_solution by fastforce
+        using \<open>\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> Suc n) \<and> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n\<close> \<rho>''n1_def solve_pg_subset_solution by fastforce
       moreover
       have "\<forall>p'. s p' < s p \<longrightarrow> \<rho>''n1 p' = \<rho> p'"
         using below_least_rank_p_st p_p by fastforce
@@ -1343,7 +1343,7 @@ qed
 
 lemma solve_pg_least_solution':
   assumes "strat_wf s dl"
-  shows "(solve_pg s dl n) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- n) s"
+  shows "solve_pg s dl n \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl \<le>\<le>s\<le>\<le> n) s"
   using assms least_solution_def solve_pg_below_solution solve_pg_solves_dl by blast 
 
 lemma strata_less_eq_max_strata:
@@ -1365,10 +1365,10 @@ qed
 
 lemma finite_max_strata:
   assumes "finite dl"
-  shows "(dl --s-- (max_strata s dl)) = dl"
+  shows "(dl \<le>\<le>s\<le>\<le> (max_strata s dl)) = dl"
 proof (rule; rule)
   fix c
-  assume "c \<in> (dl --s-- max_strata s dl)"
+  assume "c \<in> (dl \<le>\<le>s\<le>\<le> max_strata s dl)"
   then show "c \<in> dl"
     by auto
 next
@@ -1380,9 +1380,9 @@ next
     using c_in_dl by auto
   then have "s p \<le> max_strata s dl"
     using strata_less_eq_max_strata assms by metis
-  then have "Cls p ids rhs \<in> (dl --s-- max_strata s dl)"
+  then have "Cls p ids rhs \<in> (dl \<le>\<le>s\<le>\<le> max_strata s dl)"
     using c_in_dl' by auto
-  then show "c \<in> (dl --s-- max_strata s dl)"
+  then show "c \<in> (dl \<le>\<le>s\<le>\<le> max_strata s dl)"
     unfolding c_split by auto
 qed 
 
@@ -1391,7 +1391,7 @@ lemma solve_pg_least_solution:
   assumes "strat_wf s dl"
   shows "(solve_pg s dl (max_strata s dl)) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
 proof -
-  have "(solve_pg s dl (max_strata s dl)) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- (max_strata s dl)) s"
+  have "(solve_pg s dl (max_strata s dl)) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl \<le>\<le>s\<le>\<le> (max_strata s dl)) s"
     using solve_pg_least_solution' assms by auto
   then show ?thesis
     using finite_max_strata assms by metis
@@ -1430,43 +1430,43 @@ qed
 subsubsection \<open>Least solution on lower strata\<close>
 
 lemma below_subset:
-  "(dl --s-- n) \<subseteq> dl"
+  "(dl \<le>\<le>s\<le>\<le> n) \<subseteq> dl"
   by auto
 
 lemma finite_below_finite:
   assumes "finite dl"
-  shows "finite (dl --s-- n)"
+  shows "finite (dl \<le>\<le>s\<le>\<le> n)"
   using assms finite_subset below_subset by metis
 
 lemma downward_least_solution:
   assumes "finite dl"
   assumes "n > m"
   assumes "strat_wf s dl"
-  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- n) s"
-  shows "(\<rho> \\s\\ m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- m) s"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl \<le>\<le>s\<le>\<le> n) s"
+  shows "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl \<le>\<le>s\<le>\<le> m) s"
 proof (rule ccontr)
-  assume a: "\<not> (\<rho> \\s\\ m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- m) s"
-  have s_dl_m: "strat_wf s (dl --s-- m)"
+  assume a: "\<not> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl \<le>\<le>s\<le>\<le> m) s"
+  have s_dl_m: "strat_wf s (dl \<le>\<le>s\<le>\<le> m)"
     using assms strat_wf_mod_if_strat_wf by auto
-  have strrrr: "strat_wf s (dl --s-- n)"
+  have strrrr: "strat_wf s (dl \<le>\<le>s\<le>\<le> n)"
     using assms strat_wf_mod_if_strat_wf by auto
-  from a have "\<not> (\<rho> \\s\\ m) \<Turnstile>\<^sub>m\<^sub>i\<^sub>n (dl --s-- m) s"
+  from a have "\<not> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>m\<^sub>i\<^sub>n (dl \<le>\<le>s\<le>\<le> m) s"
     using least_iff_minimal s_dl_m assms(1) finite_below_finite by metis
   moreover 
-  have "(\<rho> \\s\\ m) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
+  have "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> m)"
     using assms downward_mod_solves least_solution_def by blast
   ultimately
-  have "(\<exists>\<sigma>'. \<sigma>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m) \<and> (\<sigma>' \<sqsubset>s\<sqsubset> (\<rho> \\s\\ m)))"
+  have "(\<exists>\<sigma>'. \<sigma>' \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> m) \<and> (\<sigma>' \<sqsubset>s\<sqsubset> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m)))"
     unfolding minimal_solution_def by auto
-  then obtain \<rho>' where tt: "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)" and ttt: "(\<rho>' \<sqsubset>s\<sqsubset> (\<rho> \\s\\ m))"
+  then obtain \<rho>' where tt: "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> m)" and ttt: "(\<rho>' \<sqsubset>s\<sqsubset> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m))"
     by auto
-  then have "\<exists>p. \<rho>' p \<subset> (\<rho> \\s\\ m) p \<and>
-                    (\<forall>p'. s p' = s p \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \\s\\ m) p') \<and>
-                    (\<forall>p'. s p' < s p \<longrightarrow> \<rho>' p' = (\<rho> \\s\\ m) p')"
+  then have "\<exists>p. \<rho>' p \<subset> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p \<and>
+                    (\<forall>p'. s p' = s p \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p') \<and>
+                    (\<forall>p'. s p' < s p \<longrightarrow> \<rho>' p' = (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p')"
     unfolding lt_def by auto
-  then obtain p where a: "\<rho>' p \<subset> (\<rho> \\s\\ m) p" and
-    b:"\<forall>p'. s p' = s p \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \\s\\ m) p'" and
-    c:"\<forall>p'. s p' < s p \<longrightarrow> \<rho>' p' = (\<rho> \\s\\ m) p'"
+  then obtain p where a: "\<rho>' p \<subset> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p" and
+    b:"\<forall>p'. s p' = s p \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p'" and
+    c:"\<forall>p'. s p' < s p \<longrightarrow> \<rho>' p' = (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p'"
     by auto
   define \<rho>'' where "\<rho>'' == \<lambda>p. if s p \<le> m then \<rho>' p else UNIV"
 
@@ -1485,11 +1485,11 @@ proof (rule ccontr)
   have "(\<rho>'' \<sqsubset>s\<sqsubset> \<rho>)"
     by (metis lt_def)
   moreover
-  have "\<rho>'' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- n)"
+  have "\<rho>'' \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> n)"
     unfolding solves_program_def
   proof
     fix c
-    assume a: "c \<in> (dl --s-- n)"
+    assume a: "c \<in> (dl \<le>\<le>s\<le>\<le> n)"
     then obtain p ids rhs where c_def: "c = Cls p ids rhs"
       by (cases c) auto
 
@@ -1500,7 +1500,7 @@ proof (rule ccontr)
       show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>'' \<sigma>"
       proof (cases "s p \<le> m")
         case True
-        then have "c \<in> (dl --s-- m)"
+        then have "c \<in> (dl \<le>\<le>s\<le>\<le> m)"
           using a c_def by auto
         then have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
           using tt c_def solves_cls_def solves_program_def by blast
@@ -1528,12 +1528,12 @@ proof (rule ccontr)
             next
               case (PosLit p ids)
               then show ?thesis
-                using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> \<open>c \<in> (dl --s-- m)\<close> \<open>rh \<in> set rhs\<close> \<rho>''_def assms(3) c_def 
+                using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> \<open>c \<in> (dl \<le>\<le>s\<le>\<le> m)\<close> \<open>rh \<in> set rhs\<close> \<rho>''_def assms(3) c_def 
                   pos_rhs_strata_leq_clause_strata by fastforce
             next
               case (NegLit p ids)
               then show ?thesis
-                using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> \<open>c \<in> (dl --s-- m)\<close> \<open>rh \<in> set rhs\<close> \<rho>''_def c_def 
+                using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> \<open>c \<in> (dl \<le>\<le>s\<le>\<le> m)\<close> \<open>rh \<in> set rhs\<close> \<rho>''_def c_def 
                   neg_rhs_strata_less_clause_strata s_dl_m by fastforce
             qed
           qed
@@ -1552,9 +1552,9 @@ proof (rule ccontr)
       using c_def by blast
   qed
   ultimately
-  have "\<not>\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n (dl --s-- n) s"
+  have "\<not>\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n (dl \<le>\<le>s\<le>\<le> n) s"
     unfolding minimal_solution_def by auto
-  then have "\<not>\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- n) s" 
+  then have "\<not>\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl \<le>\<le>s\<le>\<le> n) s" 
     using least_iff_minimal strrrr finite_below_finite assms by metis
   then show "False"
     using assms by auto
@@ -1564,28 +1564,28 @@ lemma downward_least_solution2:
   assumes "finite dl"
   assumes "strat_wf s dl"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
-  shows "(\<rho> \\s\\ m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- m) s"
+  shows "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl \<le>\<le>s\<le>\<le> m) s"
 proof (rule ccontr)
-  assume a: "\<not> (\<rho> \\s\\ m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl --s-- m) s"
-  have strrr: "strat_wf s (dl --s-- m)"
+  assume a: "\<not> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl \<le>\<le>s\<le>\<le> m) s"
+  have strrr: "strat_wf s (dl \<le>\<le>s\<le>\<le> m)"
     using assms strat_wf_mod_if_strat_wf by auto
-  from a have "\<not> (\<rho> \\s\\ m) \<Turnstile>\<^sub>m\<^sub>i\<^sub>n (dl --s-- m) s"
+  from a have "\<not> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>m\<^sub>i\<^sub>n (dl \<le>\<le>s\<le>\<le> m) s"
     using least_iff_minimal strrr finite_below_finite assms by metis  
   moreover 
-  have "(\<rho> \\s\\ m) \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)"
+  have "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> m)"
     using assms downward_solves least_solution_def by blast
   ultimately
-  have "\<exists>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m) \<and> \<rho>' \<sqsubset>s\<sqsubset> \<rho> \\s\\ m"
+  have "\<exists>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> m) \<and> \<rho>' \<sqsubset>s\<sqsubset> \<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m"
     unfolding minimal_solution_def by auto
-  then obtain \<rho>' where tt: "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl --s-- m)" and ttt: "(\<rho>' \<sqsubset>s\<sqsubset> (\<rho> \\s\\ m))"
+  then obtain \<rho>' where tt: "\<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> m)" and ttt: "(\<rho>' \<sqsubset>s\<sqsubset> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m))"
     by auto
-  then have "\<exists>p. \<rho>' p \<subset> (\<rho> \\s\\ m) p \<and> 
-                    (\<forall>p'. s p' = s p \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \\s\\ m) p') \<and> 
-                    (\<forall>p'. s p' < s p \<longrightarrow> \<rho>' p' = (\<rho> \\s\\ m) p')"
+  then have "\<exists>p. \<rho>' p \<subset> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p \<and> 
+                    (\<forall>p'. s p' = s p \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p') \<and> 
+                    (\<forall>p'. s p' < s p \<longrightarrow> \<rho>' p' = (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p')"
     unfolding lt_def by auto
-  then obtain p where a: "\<rho>' p \<subset> (\<rho> \\s\\ m) p" and
-    b:"(\<forall>p'. s p' = s p \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \\s\\ m) p')" and
-    c:"(\<forall>p'. s p' < s p \<longrightarrow> \<rho>' p' = (\<rho> \\s\\ m) p')"
+  then obtain p where a: "\<rho>' p \<subset> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p" and
+    b:"(\<forall>p'. s p' = s p \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p')" and
+    c:"(\<forall>p'. s p' < s p \<longrightarrow> \<rho>' p' = (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p')"
     by auto
   define \<rho>'' where "\<rho>'' == \<lambda>p. (if s p \<le> m then \<rho>' p else UNIV)"
 
@@ -1618,7 +1618,7 @@ proof (rule ccontr)
       show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>'' \<sigma>"
       proof (cases "s p \<le> m")
         case True
-        then have "c \<in> (dl --s-- m)"
+        then have "c \<in> (dl \<le>\<le>s\<le>\<le> m)"
           using a c_def by auto
         then have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>"
           using tt c_def solves_cls_def solves_program_def by blast
@@ -1646,12 +1646,12 @@ proof (rule ccontr)
             next
               case (PosLit p ids)
               then show ?thesis
-                using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> \<open>c \<in> (dl --s-- m)\<close> \<open>rh \<in> set rhs\<close> \<rho>''_def c_def 
+                using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> \<open>c \<in> (dl \<le>\<le>s\<le>\<le> m)\<close> \<open>rh \<in> set rhs\<close> \<rho>''_def c_def 
                   pos_rhs_strata_leq_clause_strata strrr by fastforce 
             next
               case (NegLit p ids)
               then show ?thesis
-                using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> \<open>c \<in> (dl --s-- m)\<close> \<open>rh \<in> set rhs\<close> \<rho>''_def c_def 
+                using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> \<open>c \<in> (dl \<le>\<le>s\<le>\<le> m)\<close> \<open>rh \<in> set rhs\<close> \<rho>''_def c_def 
                   by (metis (full_types, opaque_lifting) UNIV_I meaning_rh.simps(4)) 
             qed
           qed
@@ -1718,10 +1718,10 @@ definition lh_consequence :: "('p, 'c) pred_val \<Rightarrow> ('p, 'x, 'c) claus
   "lh_consequence \<rho> c lh \<longleftrightarrow> (\<exists>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = lh \<and> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>')"
 
 lemma hjklasdfhkljfdfsdhjkljhbhjbfjksdfajkh:
-  assumes "c \<in> (dl --s-- s p)"
+  assumes "c \<in> (dl \<le>\<le>s\<le>\<le> s p)"
   assumes "strat_wf s dl"
   assumes "rh \<in> set (the_rhs c)"
-  shows "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>' \<longleftrightarrow> \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ s p) \<sigma>'"
+  shows "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>' \<longleftrightarrow> \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> s p) \<sigma>'"
 proof (cases rh)
   case (Eql a a')
   then show ?thesis 
@@ -1735,10 +1735,10 @@ next
   show ?thesis
   proof
     assume "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>'"
-    then show "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ s p) \<sigma>'"
+    then show "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> s p) \<sigma>'"
       using PosLit assms pos_rhs_strata_leq_clause_strata by fastforce
   next
-    assume "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ s p) \<sigma>'"
+    assume "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> s p) \<sigma>'"
     then show "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>'"
       by (metis PosLit equals0D meaning_rh.simps(3) pred_val_mod_strata.simps)
   qed
@@ -1747,26 +1747,26 @@ next
   show ?thesis
   proof
     assume "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>'"
-    then show "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ s p) \<sigma>'"
+    then show "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> s p) \<sigma>'"
       using NegLit assms by fastforce
   next
-    assume "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \\s\\ s p) \<sigma>'"
+    assume "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> s p) \<sigma>'"
     then show "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>'"
       using NegLit assms(1) assms(2) assms(3) neg_rhs_strata_less_clause_strata by fastforce
   qed
 qed
 
 lemma hjklasdfhkljfdfsdhjkljhbhjbfjksdfajkh2:
-  assumes "c \<in> (dl --s-- s p)"
+  assumes "c \<in> (dl \<le>\<le>s\<le>\<le> s p)"
   assumes "strat_wf s dl"
-  shows "\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>' \<longleftrightarrow> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s (\<rho> \\s\\ s p) \<sigma>'"
+  shows "\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>' \<longleftrightarrow> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> s p) \<sigma>'"
   by (meson assms(1) assms(2) hjklasdfhkljfdfsdhjkljhbhjbfjksdfajkh meaning_rhs.simps)
 
 lemma add_to_rhs_ajsdfjsakldfjklasjfjkldfajl: (* TODO: is this a kind of monotonicity? *)
   assumes "\<lbrakk>rhs'\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho>'' \<sigma>'"
   assumes "strat_wf s dl"
   assumes \<rho>''_def: "\<rho>'' = (\<lambda>p'. if p' = p then \<rho>' p - {\<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma>} else \<rho>' p')"
-  assumes c_dl': "Cls p' ids' rhs' \<in> (dl --s-- s p)"
+  assumes c_dl': "Cls p' ids' rhs' \<in> (dl \<le>\<le>s\<le>\<le> s p)"
   shows "\<lbrakk>rhs'\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho>' \<sigma>'"
 proof -
 (* The only difference is that \<rho>' makes p(ids\<sigma>) true, but \<rho>'' makes it false.
@@ -1818,8 +1818,8 @@ proof (rule ccontr)
   then have a: "\<forall>c \<in> dl. \<forall>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<longrightarrow> \<not>(\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>')"
     by metis
 
-  define \<rho>' where "\<rho>' = (\<rho> \\s\\ s p)"
-  define dl' where "dl' = (dl --s-- s p)"
+  define \<rho>' where "\<rho>' = (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> s p)"
+  define dl' where "dl' = (dl \<le>\<le>s\<le>\<le> s p)"
 
   have \<rho>'_least: "\<rho>' \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl' s"
     using downward_solves[of \<rho> dl s] assms downward_least_solution2 unfolding \<rho>'_def dl'_def by blast
@@ -2255,20 +2255,20 @@ theorem RD_sound:
 section \<open>Bit-Vector Framework\<close>
 
 datatype pred =
-  the_BV
+  the_may
   | the_kill
   | the_gen
-  | the_CBV
+  | the_must
   | the_init
   | the_anadom
 
 datatype var =
   the_\<uu>
 
-abbreviation "BV == PosLit the_BV"
-abbreviation "CBV == PosLit the_CBV"
+abbreviation "BV == PosLit the_may"
+abbreviation "CBV == PosLit the_must"
 abbreviation NegLit_BV ("\<^bold>\<not>BV") where
-  "\<^bold>\<not>BV \<equiv> NegLit the_BV"
+  "\<^bold>\<not>BV \<equiv> NegLit the_may"
 abbreviation "kill == PosLit the_kill"
 abbreviation NegLit_kill ("\<^bold>\<not>kill") where
   "\<^bold>\<not>kill \<equiv> NegLit the_kill"
@@ -2281,8 +2281,8 @@ fun s_BV :: "pred \<Rightarrow> nat" where
 | "s_BV the_gen = 0"
 | "s_BV the_init = 0"
 | "s_BV the_anadom = 0"
-| "s_BV the_BV = 1"
-| "s_BV the_CBV = 2"
+| "s_BV the_may = 1"
+| "s_BV the_must = 2"
 
 datatype ('n,'v,'d) cst =
   Node (the_node: 'n)
@@ -2290,10 +2290,10 @@ datatype ('n,'v,'d) cst =
   | Action "'v action"
 
 abbreviation BV_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("BV\<langle>_\<rangle> :- _ .") where 
-   "BV\<langle>args\<rangle> :- ls. \<equiv> Cls the_BV args ls"
+   "BV\<langle>args\<rangle> :- ls. \<equiv> Cls the_may args ls"
 
 abbreviation CBV_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("CBV\<langle>_\<rangle> :- _ .") where
-  "CBV\<langle>args\<rangle> :- ls. \<equiv> Cls the_CBV args ls"
+  "CBV\<langle>args\<rangle> :- ls. \<equiv> Cls the_must args ls"
 
 abbreviation init_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("init\<langle>_\<rangle> :- _ .") where 
   "init\<langle>args\<rangle> :- ls. \<equiv> Cls the_init args ls"
@@ -2308,10 +2308,10 @@ abbreviation gen_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var,
   "gen\<langle>args\<rangle> :- ls. \<equiv> Cls the_gen args ls"
 
 abbreviation BV_Fact :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) lh" ("BV\<langle>_\<rangle>.") where  
-  "BV\<langle>args\<rangle>. \<equiv> (the_BV, args)"
+  "BV\<langle>args\<rangle>. \<equiv> (the_may, args)"
 
 abbreviation CBV_Fact :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) lh" ("CBV\<langle>_\<rangle>.") where 
-  "CBV\<langle>args\<rangle>. \<equiv> (the_CBV, args)"
+  "CBV\<langle>args\<rangle>. \<equiv> (the_must, args)"
 
 abbreviation init_Fact :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) lh" ("init\<langle>_\<rangle>.") where (* is this needed? *)
   "init\<langle>args\<rangle>. \<equiv> (the_init, args)"
@@ -2368,20 +2368,20 @@ definition "end" where
 interpretation lts: LTS edge_set
   .
 
-definition "S_hat" :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>E\<lbrakk>_\<rbrakk> _") where
-  "Ŝ\<^sub>E\<lbrakk>e\<rbrakk> R = (R - kill_set e) \<union> gen_set e"
+definition "S_hat" :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<lbrakk>_\<rbrakk> _") where
+  "S^\<^sub>E\<lbrakk>e\<rbrakk> R = (R - kill_set e) \<union> gen_set e"
 
 lemma S_hat_mono:
   assumes "d1 \<subseteq> d2"
-  shows "Ŝ\<^sub>E\<lbrakk>e\<rbrakk> d1 \<subseteq> Ŝ\<^sub>E\<lbrakk>e\<rbrakk> d2"
+  shows "S^\<^sub>E\<lbrakk>e\<rbrakk> d1 \<subseteq> S^\<^sub>E\<lbrakk>e\<rbrakk> d2"
   using assms unfolding S_hat_def by auto
 
-fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R" |
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>e # \<pi>\<rbrakk> R = Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> (Ŝ\<^sub>E\<lbrakk>e\<rbrakk> R)"
+fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
+  "S^\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R" |
+  "S^\<^sub>E\<^sub>s\<lbrakk>e # \<pi>\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> (S^\<^sub>E\<lbrakk>e\<rbrakk> R)"
 
 lemma S_hat_edge_list_def2:
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R = foldl (\<lambda>a b. Ŝ\<^sub>E\<lbrakk>b\<rbrakk> a) R \<pi>"
+  "S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R = foldl (\<lambda>a b. S^\<^sub>E\<lbrakk>b\<rbrakk> a) R \<pi>"
 proof (induction \<pi> arbitrary: R)
   case Nil
   then show ?case
@@ -2393,12 +2393,12 @@ next
 qed
 
 lemma S_hat_edge_list_append[simp]:
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>xs @ ys\<rbrakk> R = Ŝ\<^sub>E\<^sub>s\<lbrakk>ys\<rbrakk> (Ŝ\<^sub>E\<^sub>s\<lbrakk>xs\<rbrakk> R)"
+  "S^\<^sub>E\<^sub>s\<lbrakk>xs @ ys\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>ys\<rbrakk> (S^\<^sub>E\<^sub>s\<lbrakk>xs\<rbrakk> R)"
   unfolding S_hat_edge_list_def2 foldl_append by auto
 
 lemma S_hat_edge_list_mono:
   assumes "R1 \<subseteq> R2"
-  shows "Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R1 \<subseteq> Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R2"
+  shows "S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R1 \<subseteq> S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R2"
 proof(induction \<pi> rule: List.rev_induct)
   case Nil
   then show ?case
@@ -2409,12 +2409,12 @@ next
     using assms by (simp add: S_hat_mono)
 qed
 
-definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>P\<lbrakk>_\<rbrakk> _") where
-  "Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = Ŝ\<^sub>E\<^sub>s\<lbrakk>LTS.transition_list \<pi>\<rbrakk> R"
+definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>P\<lbrakk>_\<rbrakk> _") where
+  "S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>LTS.transition_list \<pi>\<rbrakk> R"
 
 lemma S_hat_path_mono:
   assumes "R1 \<subseteq> R2"
-  shows "Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R1 \<subseteq> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R2"
+  shows "S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R1 \<subseteq> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R2"
   unfolding S_hat_path_def using assms S_hat_edge_list_mono by auto
 
 fun ana_kill_BV_edge_d :: "('n, 'v) edge \<Rightarrow> 'd \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause" where
@@ -2492,27 +2492,27 @@ qed
 
 definition summarizes_fw_may :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
   "summarizes_fw_may \<rho> \<longleftrightarrow> 
-     (\<forall>\<pi> d. \<pi> \<in> lts.path_with_word_from start \<longrightarrow> d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init \<longrightarrow> 
+     (\<forall>\<pi> d. \<pi> \<in> lts.path_with_word_from start \<longrightarrow> d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init \<longrightarrow> 
         \<rho> \<Turnstile>\<^sub>l\<^sub>h (BV\<langle>[Cst\<^sub>N (LTS.get_end \<pi>), Cst\<^sub>E d]\<rangle>.))"
 
 lemma S_hat_path_append:
   assumes "length qs = length w"                               
-  shows "Ŝ\<^sub>P\<lbrakk>(qs @ [qnminus1, qn], w @ [\<alpha>])\<rbrakk> d_init =
-    Ŝ\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> (Ŝ\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init)"
+  shows "S^\<^sub>P\<lbrakk>(qs @ [qnminus1, qn], w @ [\<alpha>])\<rbrakk> d_init =
+    S^\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> (S^\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init)"
 proof -
-  have "Ŝ\<^sub>P\<lbrakk> (qs @ [qnminus1, qn], w @ [\<alpha>])\<rbrakk> d_init = Ŝ\<^sub>E\<^sub>s\<lbrakk>(transition_list (qs @ [qnminus1, qn], w @ [\<alpha>]))\<rbrakk> d_init"
+  have "S^\<^sub>P\<lbrakk> (qs @ [qnminus1, qn], w @ [\<alpha>])\<rbrakk> d_init = S^\<^sub>E\<^sub>s\<lbrakk>(transition_list (qs @ [qnminus1, qn], w @ [\<alpha>]))\<rbrakk> d_init"
     unfolding S_hat_path_def by auto
   moreover
-  have "Ŝ\<^sub>E\<^sub>s\<lbrakk>(transition_list (qs @ [qnminus1, qn], w @ [\<alpha>]))\<rbrakk> d_init =
-        Ŝ\<^sub>E\<^sub>s\<lbrakk>(transition_list (qs @ [qnminus1], w) @ [(qnminus1, \<alpha>, qn)])\<rbrakk> d_init"
+  have "S^\<^sub>E\<^sub>s\<lbrakk>(transition_list (qs @ [qnminus1, qn], w @ [\<alpha>]))\<rbrakk> d_init =
+        S^\<^sub>E\<^sub>s\<lbrakk>(transition_list (qs @ [qnminus1], w) @ [(qnminus1, \<alpha>, qn)])\<rbrakk> d_init"
     using transition_list_reversed_simp[of qs w] assms
     by auto
   moreover
-  have "... = Ŝ\<^sub>E\<^sub>s\<lbrakk>[(qnminus1, \<alpha>, qn)]\<rbrakk> (S_hat_edge_list (transition_list (qs @ [qnminus1], w)) d_init)"
+  have "... = S^\<^sub>E\<^sub>s\<lbrakk>[(qnminus1, \<alpha>, qn)]\<rbrakk> (S_hat_edge_list (transition_list (qs @ [qnminus1], w)) d_init)"
     using S_hat_edge_list_append[of "transition_list (qs @ [qnminus1], w)" " [(qnminus1, \<alpha>, qn)]" d_init]
     by auto
   moreover
-  have "... = Ŝ\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> (Ŝ\<^sub>P\<lbrakk> (qs @ [qnminus1], w)\<rbrakk> d_init)"
+  have "... = S^\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> (S^\<^sub>P\<lbrakk> (qs @ [qnminus1], w)\<rbrakk> d_init)"
     unfolding S_hat_path_def by auto
   ultimately show ?thesis
     by blast
@@ -2581,7 +2581,7 @@ proof -
 qed
 
 lemma the_funny_invariant':
-  "d \<in> Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> d_init \<Longrightarrow> d \<in> analysis_dom"
+  "d \<in> S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> d_init \<Longrightarrow> d \<in> analysis_dom"
 proof(induction \<pi> rule: List.rev_induct)
   case Nil
   then show ?case
@@ -2595,12 +2595,12 @@ next
 qed
 
 lemma the_funny_invariant:
-  "d \<in> Ŝ\<^sub>P\<lbrakk>(ss,w)\<rbrakk> d_init \<Longrightarrow> d \<in> analysis_dom"
+  "d \<in> S^\<^sub>P\<lbrakk>(ss,w)\<rbrakk> d_init \<Longrightarrow> d \<in> analysis_dom"
   using S_hat_path_def the_funny_invariant' by auto
 
 lemma S_hat_path_last:
   assumes "length qs = length w"
-  shows "Ŝ\<^sub>P\<lbrakk>(qs @ [qnminus1, qn], w @ [\<alpha>])\<rbrakk> d_init = Ŝ\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> (Ŝ\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init)"
+  shows "S^\<^sub>P\<lbrakk>(qs @ [qnminus1, qn], w @ [\<alpha>])\<rbrakk> d_init = S^\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> (S^\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init)"
   using assms transition_list_reversed_simp unfolding S_hat_path_def by force
 
 lemma gen_sound:
@@ -2618,7 +2618,7 @@ qed
 
 lemma sound_ana_pg_fw_may':
   assumes "(ss,w) \<in> lts.path_with_word_from start"
-  assumes "d \<in> Ŝ\<^sub>P\<lbrakk>(ss,w)\<rbrakk> d_init"
+  assumes "d \<in> S^\<^sub>P\<lbrakk>(ss,w)\<rbrakk> d_init"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_may s_BV"
   shows "\<rho> \<Turnstile>\<^sub>l\<^sub>h BV\<langle>[Cst\<^sub>N (LTS.get_end (ss, w)), Cst\<^sub>E d]\<rangle>."
   using assms 
@@ -2630,7 +2630,7 @@ proof (induction rule: LTS.path_with_word_from_induct_reverse[OF assms(1)])
   from 1(1) have start_end: "LTS.get_end ([s], []) = start"
     by (simp add: LTS.get_end_def LTS.get_start_def)
 
-  from 1 have "Ŝ\<^sub>P\<lbrakk>([s], [])\<rbrakk> d_init = d_init"
+  from 1 have "S^\<^sub>P\<lbrakk>([s], [])\<rbrakk> d_init = d_init"
     unfolding S_hat_path_def by auto
   then have "d \<in> d_init"
     using 1(2) by auto
@@ -2651,13 +2651,13 @@ next
   then have len: "length qs = length w"
     using lts.path_with_word_lengths by blast
   
-  have "d \<in> Ŝ\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> (Ŝ\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init)"
+  have "d \<in> S^\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> (S^\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init)"
     using "2.prems"(2) S_hat_path_last len by blast
-  then have "d \<in> (Ŝ\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init) - kill_set (qnminus1, \<alpha>, qn) \<or> d \<in> gen_set (qnminus1, \<alpha>, qn)"
+  then have "d \<in> (S^\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init) - kill_set (qnminus1, \<alpha>, qn) \<or> d \<in> gen_set (qnminus1, \<alpha>, qn)"
     unfolding S_hat_def by simp
   then show ?case
   proof 
-    assume dSnotkill: "d \<in> (Ŝ\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init) - kill_set (qnminus1, \<alpha>, qn)"
+    assume dSnotkill: "d \<in> (S^\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init) - kill_set (qnminus1, \<alpha>, qn)"
     then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h BV\<langle>[Cst\<^sub>N qnminus1, Cst\<^sub>E d]\<rangle>."
       using 2(1,3,6) by (auto simp add: LTS.get_end_def)
     moreover
@@ -2956,20 +2956,20 @@ definition "end" where
 definition pg_rev :: "('n,'v) program_graph" where
   "pg_rev = (rev_edge ` edge_set, end, start)"
 
-definition S_hat :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>E\<lbrakk>_\<rbrakk> _") where
-  "Ŝ\<^sub>E\<lbrakk>e\<rbrakk> R = (R - kill_set e) \<union> gen_set e"
+definition S_hat :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<lbrakk>_\<rbrakk> _") where
+  "S^\<^sub>E\<lbrakk>e\<rbrakk> R = (R - kill_set e) \<union> gen_set e"
 
 lemma S_hat_mono:
   assumes "R1 \<subseteq> R2"
-  shows "Ŝ\<^sub>E\<lbrakk>e\<rbrakk> R1 \<subseteq> Ŝ\<^sub>E\<lbrakk>e\<rbrakk> R2"
+  shows "S^\<^sub>E\<lbrakk>e\<rbrakk> R1 \<subseteq> S^\<^sub>E\<lbrakk>e\<rbrakk> R2"
   using assms unfolding S_hat_def by auto
 
-fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R" |
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>(e # \<pi>)\<rbrakk> R = Ŝ\<^sub>E\<lbrakk>e\<rbrakk> (Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R)"
+fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
+  "S^\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R" |
+  "S^\<^sub>E\<^sub>s\<lbrakk>(e # \<pi>)\<rbrakk> R = S^\<^sub>E\<lbrakk>e\<rbrakk> (S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R)"
 
 lemma S_hat_edge_list_def2:
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R = foldr S_hat \<pi> R"
+  "S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R = foldr S_hat \<pi> R"
 proof (induction \<pi> arbitrary: R)
   case Nil
   then show ?case
@@ -2981,12 +2981,12 @@ next
 qed
 
 lemma S_hat_edge_list_append[simp]:
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>(xs @ ys)\<rbrakk> R = Ŝ\<^sub>E\<^sub>s\<lbrakk>xs\<rbrakk> (Ŝ\<^sub>E\<^sub>s\<lbrakk>ys\<rbrakk> R)"
+  "S^\<^sub>E\<^sub>s\<lbrakk>(xs @ ys)\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>xs\<rbrakk> (S^\<^sub>E\<^sub>s\<lbrakk>ys\<rbrakk> R)"
   unfolding S_hat_edge_list_def2 foldl_append by auto
 
 lemma S_hat_edge_list_mono:
   assumes "d1 \<subseteq> d2"
-  shows "Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> d1 \<subseteq> Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> d2"
+  shows "S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> d1 \<subseteq> S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> d2"
 proof(induction \<pi>)
   case Nil
   then show ?case
@@ -2997,11 +2997,11 @@ next
     using assms by (simp add: S_hat_mono)
 qed
 
-definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>P\<lbrakk>_\<rbrakk> _") where
-  "Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = Ŝ\<^sub>E\<^sub>s\<lbrakk>(LTS.transition_list \<pi>)\<rbrakk> R"
+definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>P\<lbrakk>_\<rbrakk> _") where
+  "S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>(LTS.transition_list \<pi>)\<rbrakk> R"
 
 definition summarizes_bw_may :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
-  "summarizes_bw_may \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init \<longrightarrow> 
+  "summarizes_bw_may \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init \<longrightarrow> 
                              \<rho> \<Turnstile>\<^sub>l\<^sub>h BV\<langle>[Cst\<^sub>N (LTS.get_start \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
 lemma finite_pg_rev: "finite (fst pg_rev)"
@@ -3027,17 +3027,17 @@ lemma rev_end_is_start:
   unfolding LTS.get_end_def LTS.get_start_def fw_may.start_def pg_rev_def fw_may.start_def
   using hd_rev by (metis fw_may.start_def fst_conv pg_rev_def snd_conv) 
 
-(*  "Ŝ\<^sub>E\<^sub>s\<lbrakk>ss\<rbrakk> d_init = Ŝ\<^sub>E\<^sub>s\<^sub>F\<^sub>W \<lbrakk>rev_edge_list ss\<rbrakk> d_init" *)
+(*  "S^\<^sub>E\<^sub>s\<lbrakk>ss\<rbrakk> d_init = S^\<^sub>E\<^sub>s\<^sub>F\<^sub>W \<lbrakk>rev_edge_list ss\<rbrakk> d_init" *)
 
 lemma S_hat_edge_list_forward_backward:
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>ss\<rbrakk> d_init = fw_may.S_hat_edge_list (rev_edge_list ss) d_init"
+  "S^\<^sub>E\<^sub>s\<lbrakk>ss\<rbrakk> d_init = fw_may.S_hat_edge_list (rev_edge_list ss) d_init"
 proof (induction ss)
   case Nil
   then show ?case
     unfolding rev_edge_list_def by auto
 next
   case (Cons e es)
-  have "Ŝ\<^sub>E\<^sub>s\<lbrakk>e # es\<rbrakk> d_init = Ŝ\<^sub>E\<lbrakk>e\<rbrakk> Ŝ\<^sub>E\<^sub>s\<lbrakk>es\<rbrakk> d_init"
+  have "S^\<^sub>E\<^sub>s\<lbrakk>e # es\<rbrakk> d_init = S^\<^sub>E\<lbrakk>e\<rbrakk> S^\<^sub>E\<^sub>s\<lbrakk>es\<rbrakk> d_init"
     by simp
   also 
   have "... = fw_may.S_hat (rev_edge e) (foldr fw_may.S_hat (map rev_edge es) d_init)"
@@ -3055,14 +3055,14 @@ qed
 
 lemma S_hat_path_forward_backward:
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
-  shows "Ŝ\<^sub>P\<lbrakk>(ss, w)\<rbrakk> d_init = fw_may.S_hat_path (rev ss, rev w) d_init"
+  shows "S^\<^sub>P\<lbrakk>(ss, w)\<rbrakk> d_init = fw_may.S_hat_path (rev ss, rev w) d_init"
   using S_hat_edge_list_forward_backward unfolding S_hat_path_def fw_may.S_hat_path_def
   by (metis transition_list_rev_edge_list assms)
 
 lemma summarizes_bw_may_forward_backward':
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
   assumes "LTS.get_end (ss,w) = end"
-  assumes "d \<in> Ŝ\<^sub>P\<lbrakk>(ss,w)\<rbrakk> d_init"
+  assumes "d \<in> S^\<^sub>P\<lbrakk>(ss,w)\<rbrakk> d_init"
   assumes "fw_may.summarizes_fw_may \<rho>"
   shows "\<rho> \<Turnstile>\<^sub>l\<^sub>h BV\<langle>[Cst\<^sub>N (LTS.get_start (ss, w)), Cst\<^sub>E d]\<rangle>."
 proof -
@@ -3092,7 +3092,7 @@ proof(rule; rule ; rule ;rule ;rule)
   moreover
   assume "LTS.get_end \<pi> = end"
   moreover
-  assume "d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
+  assume "d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
   ultimately
   show "\<rho> \<Turnstile>\<^sub>l\<^sub>h BV\<langle>[Cst\<^sub>N (LTS.get_start \<pi>), Cst\<^sub>E d]\<rangle>."
     using summarizes_bw_may_forward_backward'[of "fst \<pi>" "snd \<pi>" d \<rho>] using assms by auto
@@ -3711,20 +3711,20 @@ definition start where
 definition "end" where
   "end = snd (snd pg)"
 
-definition S_hat :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>E\<lbrakk>_\<rbrakk> _") where
-  "Ŝ\<^sub>E\<lbrakk>e\<rbrakk> R = (R - kill_set e) \<union> gen_set e"
+definition S_hat :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<lbrakk>_\<rbrakk> _") where
+  "S^\<^sub>E\<lbrakk>e\<rbrakk> R = (R - kill_set e) \<union> gen_set e"
 
 lemma S_hat_mono:
   assumes "R1 \<subseteq> R2"
-  shows "Ŝ\<^sub>E\<lbrakk>e\<rbrakk> R1 \<subseteq> Ŝ\<^sub>E\<lbrakk>e\<rbrakk> R2"
+  shows "S^\<^sub>E\<lbrakk>e\<rbrakk> R1 \<subseteq> S^\<^sub>E\<lbrakk>e\<rbrakk> R2"
   using assms unfolding S_hat_def by auto
 
-fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R" |
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>(e # \<pi>)\<rbrakk> R = Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> (Ŝ\<^sub>E\<lbrakk>e\<rbrakk> R)"
+fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
+  "S^\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R" |
+  "S^\<^sub>E\<^sub>s\<lbrakk>(e # \<pi>)\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> (S^\<^sub>E\<lbrakk>e\<rbrakk> R)"
 
 lemma S_hat_edge_list_def2:
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R = foldl (\<lambda>a b. Ŝ\<^sub>E\<lbrakk>b\<rbrakk> a) R \<pi>"
+  "S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R = foldl (\<lambda>a b. S^\<^sub>E\<lbrakk>b\<rbrakk> a) R \<pi>"
 proof (induction \<pi> arbitrary: R)
   case Nil
   then show ?case
@@ -3736,12 +3736,12 @@ next
 qed
 
 lemma S_hat_edge_list_append[simp]:
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>(xs @ ys)\<rbrakk> R = Ŝ\<^sub>E\<^sub>s\<lbrakk>ys\<rbrakk> (Ŝ\<^sub>E\<^sub>s\<lbrakk>xs\<rbrakk> R)"
+  "S^\<^sub>E\<^sub>s\<lbrakk>(xs @ ys)\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>ys\<rbrakk> (S^\<^sub>E\<^sub>s\<lbrakk>xs\<rbrakk> R)"
   unfolding S_hat_edge_list_def2 foldl_append by auto
 
 lemma S_hat_edge_list_mono:
   assumes "R1 \<subseteq> R2"
-  shows "Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R1 \<subseteq> Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R2"
+  shows "S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R1 \<subseteq> S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R2"
 proof(induction \<pi> rule: List.rev_induct)
   case Nil
   then show ?case
@@ -3752,19 +3752,19 @@ next
     using assms by (simp add: S_hat_mono)
 qed
 
-definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>P\<lbrakk>_\<rbrakk> _") where
-  "Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = Ŝ\<^sub>E\<^sub>s\<lbrakk>LTS.transition_list \<pi>\<rbrakk> R"
+definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>P\<lbrakk>_\<rbrakk> _") where
+  "S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>LTS.transition_list \<pi>\<rbrakk> R"
 
 lemma S_hat_path_mono:
   assumes "R1 \<subseteq> R2"
-  shows "Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R1 \<subseteq> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R2"
+  shows "S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R1 \<subseteq> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R2"
   unfolding S_hat_path_def using assms S_hat_edge_list_mono by auto
 
 definition summarizes_fw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
    "summarizes_fw_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_end d.
          \<rho> \<Turnstile>\<^sub>l\<^sub>h CBV\<langle>[\<pi>_end, d]\<rangle>. \<longrightarrow>
-          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = Decode_Node \<pi>_end \<longrightarrow> (Decode_Elem d) \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init))"
+          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = Decode_Node \<pi>_end \<longrightarrow> (Decode_Elem d) \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init))"
 
 interpretation fw_may: analysis_BV_forward_may pg analysis_dom "\<lambda>e. analysis_dom - (kill_set e)" "(\<lambda>e. analysis_dom - gen_set e)" "analysis_dom - d_init"
   using analysis_BV_forward_may.intro analysis_BV_forward_must_axioms analysis_BV_forward_must_def
@@ -3776,7 +3776,7 @@ abbreviation ana_pg_fw_must where (* Copy paste *)
 lemma opposite_lemma:
   assumes "d \<in> analysis_dom"
   assumes "\<not>d \<in> fw_may.S_hat_edge_list \<pi> (analysis_dom - d_init)"
-  shows "d \<in> Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> d_init"
+  shows "d \<in> S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> d_init"
   using assms proof (induction \<pi> rule: List.rev_induct)
   case Nil
   then show ?case
@@ -3791,10 +3791,10 @@ qed
 lemma opposite_lemma2:
   assumes "d \<in> analysis_dom"
   assumes "\<not>d \<in> fw_may.S_hat_path \<pi> (analysis_dom - d_init)"
-  shows "d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
+  shows "d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
   using S_hat_path_def fw_may.S_hat_path_def assms opposite_lemma by metis
 
-lemma the_CBV_only_ana_CBV: "the_CBV \<notin> preds_dl (ana_pg_fw_must - (fw_may.ana_CBV ` UNIV))"
+lemma the_must_only_ana_CBV: "the_must \<notin> preds_dl (ana_pg_fw_must - (fw_may.ana_CBV ` UNIV))"
   unfolding fw_may.ana_pg_fw_may_def preds_dl_def preds_dl_def fw_may.ana_init_BV_def
     preds_dl_def fw_may.ana_anadom_BV_def preds_dl_def fw_may.ana_kill_BV_edge_def preds_dl_def
     fw_may.ana_gen_BV_edge_def fw_may.ana_entry_node_BV_def by auto 
@@ -3920,9 +3920,9 @@ next
 qed
 
 lemma not_CBV:
-  assumes "[Node q, Elem d] \<in> \<rho> the_CBV"
+  assumes "[Node q, Elem d] \<in> \<rho> the_must"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes a: "[Node q, Elem d] \<in> \<rho> the_BV"                  
+  assumes a: "[Node q, Elem d] \<in> \<rho> the_may"                  
   shows False
 proof -
   have fin: "finite ana_pg_fw_must"
@@ -3936,7 +3936,7 @@ proof -
     using assms(2) least_solution_def by blast
 
 
-  define \<rho>' where  "\<rho>' = (\<lambda>p. (if p = the_CBV then (\<rho> the_CBV) - {[Node q, Elem d]} else \<rho> p))"
+  define \<rho>' where  "\<rho>' = (\<lambda>p. (if p = the_must then (\<rho> the_must) - {[Node q, Elem d]} else \<rho> p))"
 
   have CBV_solves: "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s CBV\<langle>[Cst\<^sub>N q, \<uu>]\<rangle> :- [\<^bold>\<not>BV [Cst\<^sub>N q, \<uu>], anadom[\<uu>]] ."
     unfolding solves_cls_def
@@ -3977,7 +3977,7 @@ proof -
     qed
   qed
 
-  have \<rho>'_off_the_CBV: "\<forall>p. p \<noteq> the_CBV \<longrightarrow> \<rho>' p = \<rho> p"
+  have \<rho>'_off_the_must: "\<forall>p. p \<noteq> the_must \<longrightarrow> \<rho>' p = \<rho> p"
     unfolding \<rho>'_def by auto
   
   have "\<rho> \<Turnstile>\<^sub>d\<^sub>l (ana_pg_fw_must - {fw_may.ana_CBV q})"
@@ -4046,16 +4046,16 @@ proof -
       moreover
       {
         assume "Cls p ids rhs \<in> range fw_may.ana_CBV - {fw_may.ana_CBV q}"
-        then have "\<exists>q'. p = the_CBV \<and> ids = [Cst\<^sub>N q', \<uu>] \<and> q' \<noteq> q"
+        then have "\<exists>q'. p = the_must \<and> ids = [Cst\<^sub>N q', \<uu>] \<and> q' \<noteq> q"
           unfolding fw_may.ana_CBV_def by auto
-        then obtain q' where yah: "p = the_CBV \<and> ids = [Cst\<^sub>N q', \<uu>] \<and> q' \<noteq> q"
+        then obtain q' where yah: "p = the_must \<and> ids = [Cst\<^sub>N q', \<uu>] \<and> q' \<noteq> q"
           by auto
         have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
         proof (cases "\<sigma>' the_\<uu> = Elem d")
           case True
-          then have "p = the_CBV \<and> ids = [Cst\<^sub>N q', \<uu>] \<and> \<sigma>' the_\<uu> = Elem d"
+          then have "p = the_must \<and> ids = [Cst\<^sub>N q', \<uu>] \<and> \<sigma>' the_\<uu> = Elem d"
             using yah by auto
-          then have p_def: "p = the_CBV"
+          then have p_def: "p = the_must"
             by auto
           from yah have ids_def: "ids = [Cst\<^sub>N q', \<uu>]"
             by auto
@@ -4076,7 +4076,7 @@ proof -
           case False
           then have False': "\<sigma>' the_\<uu> \<noteq> Elem d"
             by auto
-          from yah have p_def: "p = the_CBV"
+          from yah have p_def: "p = the_must"
             by auto
           from yah have ids_def: "ids = [Cst\<^sub>N q', \<uu>]"
             by auto
@@ -4123,14 +4123,14 @@ proof -
   moreover
   have "\<rho>' \<sqsubset>s_BV\<sqsubset> \<rho>"
   proof -
-    have "\<rho>' the_CBV \<subset> \<rho> the_CBV"
+    have "\<rho>' the_must \<subset> \<rho> the_must"
       using Diff_iff \<rho>'_def assms(1) by fastforce
     moreover
-    have "\<forall>p'. s_BV p' = s_BV the_CBV \<longrightarrow> \<rho>' p' \<subseteq> \<rho> p'"
+    have "\<forall>p'. s_BV p' = s_BV the_must \<longrightarrow> \<rho>' p' \<subseteq> \<rho> p'"
       by (simp add: \<rho>'_def)
     moreover
-    have "\<forall>p'. s_BV p' < s_BV the_CBV \<longrightarrow> \<rho>' p' = \<rho> p'"
-      by (metis \<rho>'_off_the_CBV nat_neq_iff)
+    have "\<forall>p'. s_BV p' < s_BV the_must \<longrightarrow> \<rho>' p' = \<rho> p'"
+      by (metis \<rho>'_off_the_must nat_neq_iff)
     ultimately
     show "\<rho>' \<sqsubset>s_BV\<sqsubset> \<rho>"
       unfolding lt_def by blast
@@ -4147,13 +4147,13 @@ lemma not_CBV2:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h BV\<langle>[Cst\<^sub>N q, Cst\<^sub>E d]\<rangle>."
   shows "False"
 proof -
-  have "[Node q, Elem d] \<in> \<rho> the_CBV"
+  have "[Node q, Elem d] \<in> \<rho> the_must"
     using assms(2)
     unfolding solves_lh.simps
     unfolding meaning_lh.simps
     by auto
   moreover
-  have "[Node q, Elem d] \<in> \<rho> the_BV"
+  have "[Node q, Elem d] \<in> \<rho> the_may"
     using assms(3)
     unfolding solves_lh.simps
     unfolding meaning_lh.simps
@@ -4466,7 +4466,7 @@ lemma init_if_CBV':
  *)
 proof -
 
-  thm uuuuuuuuh_aaa[of ana_pg_BV \<rho> s_BV the_CBV "[\<pi>_end, d]" \<sigma>]
+  thm uuuuuuuuh_aaa[of ana_pg_BV \<rho> s_BV the_must "[\<pi>_end, d]" \<sigma>]
 *)
 
 lemma anadom_if_CBV:
@@ -4491,7 +4491,7 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
     by (smt (verit) fw_may.ana_pg_fw_may_stratified) 
   moreover
 
-  define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_CBV then (\<rho> the_CBV) - {[\<lbrakk>\<pi>_end\<rbrakk>\<^sub>i\<^sub>d \<sigma>, \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>]} else \<rho> p))"
+  define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_must then (\<rho> the_must) - {[\<lbrakk>\<pi>_end\<rbrakk>\<^sub>i\<^sub>d \<sigma>, \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>]} else \<rho> p))"
 
   have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l ana_pg_fw_must"
     unfolding solves_program_def
@@ -4564,16 +4564,16 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
       moreover
       {
         assume "Cls p ids rhs \<in> fw_may.ana_CBV ` UNIV"
-        then have "\<exists>q'. p = the_CBV \<and> ids = [Cst\<^sub>N q', \<uu>]"
+        then have "\<exists>q'. p = the_must \<and> ids = [Cst\<^sub>N q', \<uu>]"
           unfolding fw_may.ana_CBV_def by blast
-        then obtain q' where yah: "p = the_CBV \<and> ids = [Cst\<^sub>N q', \<uu>]"
+        then obtain q' where yah: "p = the_must \<and> ids = [Cst\<^sub>N q', \<uu>]"
           by auto
         have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
         proof (cases "\<sigma>' the_\<uu> = \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>")
           case True
-          then have "p = the_CBV \<and> ids = [Cst\<^sub>N q', \<uu>] \<and> \<sigma>' the_\<uu> = \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
+          then have "p = the_must \<and> ids = [Cst\<^sub>N q', \<uu>] \<and> \<sigma>' the_\<uu> = \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
             using yah by auto
-          then have p_def: "p = the_CBV"
+          then have p_def: "p = the_must"
             by auto
           from yah have ids_def: "ids = [Cst\<^sub>N q', \<uu>]"
             by auto
@@ -4590,7 +4590,7 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
           case False
           then have False': "\<not>\<sigma>' the_\<uu> = \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
             by auto
-          from yah have p_def: "p = the_CBV"
+          from yah have p_def: "p = the_must"
             by auto
           from yah have ids_def: "ids = [Cst\<^sub>N q', \<uu>]"
             by auto
@@ -4627,18 +4627,18 @@ proof (rule ccontr) (* Proof copy paste and adapted from not_init_action *)
   qed
 
   moreover
-  have "[\<lbrakk>\<pi>_end\<rbrakk>\<^sub>i\<^sub>d \<sigma>, \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>] \<in> \<rho> the_CBV"
+  have "[\<lbrakk>\<pi>_end\<rbrakk>\<^sub>i\<^sub>d \<sigma>, \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>] \<in> \<rho> the_must"
     using assms(2) unfolding solves_lh.simps by auto
   have "\<rho>' \<sqsubset>s_BV\<sqsubset> \<rho>"
   proof -
-    have "\<rho>' the_CBV \<subset> \<rho> the_CBV"
+    have "\<rho>' the_must \<subset> \<rho> the_must"
       unfolding \<rho>'_def
-      using \<open>[\<lbrakk>\<pi>_end\<rbrakk>\<^sub>i\<^sub>d \<sigma>, \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>] \<in> \<rho> the_CBV\<close> by auto 
+      using \<open>[\<lbrakk>\<pi>_end\<rbrakk>\<^sub>i\<^sub>d \<sigma>, \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>] \<in> \<rho> the_must\<close> by auto 
     moreover
-    have "\<forall>p'. s_BV p' = s_BV the_CBV \<longrightarrow> \<rho>' p' \<subseteq> \<rho> p'"
+    have "\<forall>p'. s_BV p' = s_BV the_must \<longrightarrow> \<rho>' p' \<subseteq> \<rho> p'"
       unfolding \<rho>'_def by auto
     moreover
-    have "\<forall>p'. s_BV p' < s_BV the_CBV \<longrightarrow> \<rho>' p' = \<rho> p'"
+    have "\<forall>p'. s_BV p' < s_BV the_must \<longrightarrow> \<rho>' p' = \<rho> p'"
       unfolding \<rho>'_def by auto
     ultimately
     show "\<rho>' \<sqsubset>s_BV\<sqsubset> \<rho>"
@@ -4660,7 +4660,7 @@ lemma not_CBV_action: (* Copy paste adapt from not_init_node *)
   shows "\<not>\<rho> \<Turnstile>\<^sub>l\<^sub>h CBV\<langle>[Cst\<^sub>A q,d]\<rangle>."
 proof
   assume asm_2: "\<rho> \<Turnstile>\<^sub>l\<^sub>h CBV\<langle>[Cst\<^sub>A q,d]\<rangle>."
-  then have "[Action q, the_Cst d] \<in> \<rho> the_CBV"
+  then have "[Action q, the_Cst d] \<in> \<rho> the_must"
     using is_Cst_if_CBV[OF assms(1)] by (cases d) auto
 
   have "finite ana_pg_fw_must"
@@ -4674,7 +4674,7 @@ proof
     by (smt (verit) fw_may.ana_pg_fw_may_stratified) 
   moreover
 
-  define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_CBV then (\<rho> the_CBV) - {[Action q, the_Cst d]} else \<rho> p))"
+  define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_must then (\<rho> the_must) - {[Action q, the_Cst d]} else \<rho> p))"
 
   have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l ana_pg_fw_must"
     unfolding solves_program_def
@@ -4745,16 +4745,16 @@ proof
       moreover
       {
         assume "Cls p ids rhs \<in> fw_may.ana_CBV ` UNIV"
-        then have "\<exists>q'. p = the_CBV \<and> ids = [Cst\<^sub>N q', \<uu>]"
+        then have "\<exists>q'. p = the_must \<and> ids = [Cst\<^sub>N q', \<uu>]"
           unfolding fw_may.ana_CBV_def by blast
-        then obtain q' where yah: "p = the_CBV \<and> ids = [Cst\<^sub>N q', \<uu>]"
+        then obtain q' where yah: "p = the_must \<and> ids = [Cst\<^sub>N q', \<uu>]"
           by auto
         have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
         proof (cases "\<sigma>' the_\<uu> = the_Cst d")
           case True
-          then have "p = the_CBV \<and> ids = [Cst\<^sub>N q', \<uu>] \<and> \<sigma>' the_\<uu> = the_Cst d"
+          then have "p = the_must \<and> ids = [Cst\<^sub>N q', \<uu>] \<and> \<sigma>' the_\<uu> = the_Cst d"
             using yah by auto
-          then have p_def: "p = the_CBV"
+          then have p_def: "p = the_must"
             by auto
           from yah have ids_def: "ids = [Cst\<^sub>N q', \<uu>]"
             by auto
@@ -4773,7 +4773,7 @@ proof
           case False
           then have False': "\<not>\<sigma>' the_\<uu> = the_Cst d"
             by auto
-          from yah have p_def: "p = the_CBV"
+          from yah have p_def: "p = the_must"
             by auto
           from yah have ids_def: "ids = [Cst\<^sub>N q', \<uu>]"
             by auto
@@ -4816,8 +4816,8 @@ proof
   moreover
   have "\<rho>' \<sqsubset>s_BV\<sqsubset> \<rho>"
   proof -
-    have "\<rho>' the_CBV \<subset> \<rho> the_CBV"
-      unfolding \<rho>'_def using \<open>[Action q, id.the_Cst d] \<in> \<rho> the_CBV\<close> by auto
+    have "\<rho>' the_must \<subset> \<rho> the_must"
+      unfolding \<rho>'_def using \<open>[Action q, id.the_Cst d] \<in> \<rho> the_must\<close> by auto
     moreover
     have "\<forall>p'. s_BV p' = s_BV the_kill \<longrightarrow> \<rho>' p' \<subseteq> \<rho>  p'"
       unfolding \<rho>'_def by auto
@@ -4851,7 +4851,7 @@ lemma not_Ccst: (* Copy paste adapt from not_init_node *)
   shows "\<not>\<rho> \<Turnstile>\<^sub>l\<^sub>h CBV\<langle>[Cst\<^sub>E q,d]\<rangle>."
 proof
   assume asm_2: "\<rho> \<Turnstile>\<^sub>l\<^sub>h CBV\<langle>[Cst\<^sub>E q,d]\<rangle>."
-  then have "[Elem q, the_Cst d] \<in> \<rho> the_CBV"
+  then have "[Elem q, the_Cst d] \<in> \<rho> the_must"
     using is_Cst_if_CBV[OF assms(1)] by (cases d) auto
 
   have "finite ana_pg_fw_must"
@@ -4865,7 +4865,7 @@ proof
     by (smt (verit) fw_may.ana_pg_fw_may_stratified) 
   moreover
 
-  define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_CBV then (\<rho> the_CBV) - {[Elem q, the_Cst d]} else \<rho> p))"
+  define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_must then (\<rho> the_must) - {[Elem q, the_Cst d]} else \<rho> p))"
 
   have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l ana_pg_fw_must"
     unfolding solves_program_def
@@ -4936,16 +4936,16 @@ proof
       moreover
       {
         assume "Cls p ids rhs \<in> fw_may.ana_CBV ` UNIV"
-        then have "\<exists>q'. p = the_CBV \<and> ids = [Cst\<^sub>N q', \<uu>]"
+        then have "\<exists>q'. p = the_must \<and> ids = [Cst\<^sub>N q', \<uu>]"
           unfolding fw_may.ana_CBV_def by blast
-        then obtain q' where yah: "p = the_CBV \<and> ids = [Cst\<^sub>N q', \<uu>]"
+        then obtain q' where yah: "p = the_must \<and> ids = [Cst\<^sub>N q', \<uu>]"
           by auto
         have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
         proof (cases "\<sigma>' the_\<uu> = the_Cst d")
           case True
-          then have "p = the_CBV \<and> ids = [Cst\<^sub>N q', \<uu>] \<and> \<sigma>' the_\<uu> = the_Cst d"
+          then have "p = the_must \<and> ids = [Cst\<^sub>N q', \<uu>] \<and> \<sigma>' the_\<uu> = the_Cst d"
             using yah by auto
-          then have p_def: "p = the_CBV"
+          then have p_def: "p = the_must"
             by auto
           from yah have ids_def: "ids = [Cst\<^sub>N q', \<uu>]"
             by auto
@@ -4964,7 +4964,7 @@ proof
           case False
           then have False': "\<not>\<sigma>' the_\<uu> = the_Cst d"
             by auto
-          from yah have p_def: "p = the_CBV"
+          from yah have p_def: "p = the_must"
             by auto
           from yah have ids_def: "ids = [Cst\<^sub>N q', \<uu>]"
             by auto
@@ -5006,8 +5006,8 @@ proof
   moreover
   have "\<rho>' \<sqsubset>s_BV\<sqsubset> \<rho>"
   proof -
-    have "\<rho>' the_CBV \<subset> \<rho> the_CBV"
-      unfolding \<rho>'_def using \<open>[Elem q, id.the_Cst d] \<in> \<rho> the_CBV\<close> by auto
+    have "\<rho>' the_must \<subset> \<rho> the_must"
+      unfolding \<rho>'_def using \<open>[Elem q, id.the_Cst d] \<in> \<rho> the_must\<close> by auto
     moreover
     have "\<forall>p'. s_BV p' = s_BV the_kill \<longrightarrow> \<rho>' p' \<subseteq> \<rho>  p'"
       unfolding \<rho>'_def by auto
@@ -5096,7 +5096,7 @@ lemma in_analysis_dom_if_CBV:
   shows "Decode_Elem d \<in> analysis_dom"
   using anadom_if_CBV
   using assms in_analysis_dom_if_anadom by blast
-(* Note -- many of those similar init lemmas are not used anymore. *)
+(* Note \<le>\<le> many of those similar init lemmas are not used anymore. *)
 
 lemma sound_ana_pg_fw_must':
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
@@ -5104,7 +5104,7 @@ lemma sound_ana_pg_fw_must':
   assumes "\<pi> \<in> LTS.path_with_word edge_set"
   assumes "LTS.get_start \<pi> = start"
   assumes "LTS.get_end \<pi> = Decode_Node \<pi>_end"
-  shows "Decode_Elem d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
+  shows "Decode_Elem d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
 proof -
   have d_ana: "Decode_Elem d \<in> analysis_dom"
     using assms(1) assms(2) in_analysis_dom_if_CBV by auto
@@ -5123,7 +5123,7 @@ proof -
     unfolding fw_may.summarizes_fw_may_def
      fw_may.edge_set_def fw_may.start_def assms(2) assms(4) assms(5) edge_set_def m start_def
     using assms(3) assms(4) d_encdec edge_set_def m start_def by (metis (mono_tags) mem_Collect_eq) 
-  then show "Decode_Elem d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
+  then show "Decode_Elem d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
     using opposite_lemma2
     using assms(1)
     using d_ana by blast 
@@ -5459,20 +5459,20 @@ definition "end" where (* Copy paste *)
 definition pg_rev :: "('n,'v) program_graph" where (* Copy paste *)
   "pg_rev = (rev_edge ` edge_set, end, start)"
 
-definition S_hat :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>E\<lbrakk>_\<rbrakk> _") where (* Copy paste *)
-  "Ŝ\<^sub>E\<lbrakk>e\<rbrakk> R = (R - kill_set e) \<union> gen_set e"
+definition S_hat :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<lbrakk>_\<rbrakk> _") where (* Copy paste *)
+  "S^\<^sub>E\<lbrakk>e\<rbrakk> R = (R - kill_set e) \<union> gen_set e"
 
 lemma S_hat_mono: (* Copy paste *)
   assumes "R1 \<subseteq> R2"
-  shows "Ŝ\<^sub>E\<lbrakk>e\<rbrakk> R1 \<subseteq> Ŝ\<^sub>E\<lbrakk>e\<rbrakk> R2"
+  shows "S^\<^sub>E\<lbrakk>e\<rbrakk> R1 \<subseteq> S^\<^sub>E\<lbrakk>e\<rbrakk> R2"
   using assms unfolding S_hat_def by auto
 
-fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where (* Copy paste *)
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R" |
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>(e # \<pi>)\<rbrakk> R = Ŝ\<^sub>E\<lbrakk>e\<rbrakk> (Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R)"
+fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where (* Copy paste *)
+  "S^\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R" |
+  "S^\<^sub>E\<^sub>s\<lbrakk>(e # \<pi>)\<rbrakk> R = S^\<^sub>E\<lbrakk>e\<rbrakk> (S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R)"
 
 lemma S_hat_edge_list_def2: (* Copy paste *)
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R = foldr S_hat \<pi> R"
+  "S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R = foldr S_hat \<pi> R"
 proof (induction \<pi> arbitrary: R)
   case Nil
   then show ?case
@@ -5484,12 +5484,12 @@ next
 qed
 
 lemma S_hat_edge_list_append[simp]: (* Copy paste *)
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>xs @ ys\<rbrakk> R = Ŝ\<^sub>E\<^sub>s\<lbrakk>xs\<rbrakk> (Ŝ\<^sub>E\<^sub>s\<lbrakk>ys\<rbrakk> R)"
+  "S^\<^sub>E\<^sub>s\<lbrakk>xs @ ys\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>xs\<rbrakk> (S^\<^sub>E\<^sub>s\<lbrakk>ys\<rbrakk> R)"
   unfolding S_hat_edge_list_def2 foldl_append by auto
 
 lemma S_hat_edge_list_mono: (* Copy paste *)
   assumes "R1 \<subseteq> R2"
-  shows "Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R1 \<subseteq> Ŝ\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R2"
+  shows "S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R1 \<subseteq> S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R2"
 proof(induction \<pi>)
   case Nil
   then show ?case
@@ -5500,14 +5500,14 @@ next
     using assms by (simp add: S_hat_mono)
 qed
 
-definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("Ŝ\<^sub>P\<lbrakk>_\<rbrakk> _") where (* Copy paste *)
-  "Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = Ŝ\<^sub>E\<^sub>s\<lbrakk>LTS.transition_list \<pi>\<rbrakk> R"
+definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>P\<lbrakk>_\<rbrakk> _") where (* Copy paste *)
+  "S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>LTS.transition_list \<pi>\<rbrakk> R"
 
 definition summarizes_bw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where (* Ny *)
    "summarizes_bw_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_start d.
          \<rho> \<Turnstile>\<^sub>l\<^sub>h CBV\<langle>[\<pi>_start, d]\<rangle>. \<longrightarrow>
-          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> LTS.get_start \<pi> = Decode_Node \<pi>_start \<longrightarrow> Decode_Elem d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init))"
+          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> LTS.get_start \<pi> = Decode_Node \<pi>_start \<longrightarrow> Decode_Elem d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init))"
 
 lemma finite_pg_rev: "finite (fst pg_rev)" (* Copy paste *)
   by (metis analysis_BV_backward_must_axioms analysis_BV_backward_must_def edge_set_def finite_imageI fst_conv pg_rev_def)
@@ -5528,7 +5528,7 @@ lemma rev_end_is_start: (* Copy paste *)
   using hd_rev by (metis fw_must.start_def fst_conv pg_rev_def snd_conv) 
 
 lemma S_hat_edge_list_forward_backward: (* Copy paste *)
-  "Ŝ\<^sub>E\<^sub>s\<lbrakk>ss\<rbrakk> d_init = fw_must.S_hat_edge_list (rev_edge_list ss) d_init"
+  "S^\<^sub>E\<^sub>s\<lbrakk>ss\<rbrakk> d_init = fw_must.S_hat_edge_list (rev_edge_list ss) d_init"
 proof (induction ss)
   case Nil
   then show ?case
@@ -5553,7 +5553,7 @@ qed
 
 lemma S_hat_path_forward_backward: (* Copy paste *)
   assumes "(ss,w) \<in> LTS.path_with_word edge_set"
-  shows "Ŝ\<^sub>P\<lbrakk>(ss, w)\<rbrakk> d_init = fw_must.S_hat_path (rev ss, rev w) d_init"
+  shows "S^\<^sub>P\<lbrakk>(ss, w)\<rbrakk> d_init = fw_must.S_hat_path (rev ss, rev w) d_init"
   using S_hat_edge_list_forward_backward unfolding S_hat_path_def fw_must.S_hat_path_def
   by (metis transition_list_rev_edge_list assms)
 
@@ -5563,7 +5563,7 @@ lemma summarizes_fw_must_forward_backward':
   assumes "\<pi> \<in> LTS.path_with_word edge_set"
   assumes "LTS.get_end \<pi> = end"
   assumes "LTS.get_start \<pi> = Decode_Node \<pi>_start"
-  shows "Decode_Elem d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
+  shows "Decode_Elem d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
   using LTS.get_end_def LTS.get_start_def S_hat_path_forward_backward 
     analysis_BV_backward_must_axioms assms fw_must.start_def fw_must.summarizes_fw_must_def fst_conv 
     hd_rev last_rev pg_rev_def rev_path_in_rev_pg snd_conv fw_must.edge_set_def prod.collapse 
@@ -5584,7 +5584,7 @@ proof(rule; rule ; rule ;rule ;rule; rule; rule)
   moreover
   assume "LTS.get_start \<pi> = Decode_Node \<pi>_start"
   ultimately
-  show "Decode_Elem d \<in> Ŝ\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
+  show "Decode_Elem d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
     by (metis assms summarizes_fw_must_forward_backward')
 qed
 
@@ -5603,14 +5603,14 @@ Forstå hvordan du
 FORWARD MAY:
 fun summarizes_dl_BV :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
   "summarizes_dl_BV \<rho> \<longleftrightarrow> 
-     (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> Ŝ\<^sub>P\<lbrakk> \<pi> d_init \<longrightarrow> 
+     (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> d \<in> S^\<^sub>P\<lbrakk> \<pi> d_init \<longrightarrow> 
         \<rho> \<Turnstile>\<^sub>l\<^sub>h (BV\<langle>[Cst\<^sub>N (LTS.get_end \<pi>), Cst\<^sub>E d]\<rangle>.))"
 
 
 BACKWARD MAY:
 definition summarizes_dl_BV :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
   "summarizes_dl_BV \<rho> \<longleftrightarrow> 
-     (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> Ŝ\<^sub>P\<lbrakk> \<pi> d_init \<longrightarrow> 
+     (\<forall>\<pi> d. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> d \<in> S^\<^sub>P\<lbrakk> \<pi> d_init \<longrightarrow> 
                              \<rho> \<Turnstile>\<^sub>l\<^sub>h BV\<langle>[Cst\<^sub>N (LTS.get_start \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
 FORWARD MUST:
@@ -5618,14 +5618,14 @@ fun summarizes_dl_BV_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bo
   "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_end d.
         \<rho> \<Turnstile>\<^sub>l\<^sub>h CBV\<langle>[Cst\<^sub>N \<pi>_end, Cst\<^sub>E d]\<rangle>. \<longrightarrow>
-          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = \<pi>_end \<longrightarrow> d \<in> Ŝ\<^sub>P\<lbrakk> \<pi> d_init))"
+          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_start \<pi> = start \<longrightarrow> LTS.get_end \<pi> = \<pi>_end \<longrightarrow> d \<in> S^\<^sub>P\<lbrakk> \<pi> d_init))"
 
 BACKWARD MUST:
 fun summarizes_dl_BV_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
   "summarizes_dl_BV_must \<rho> \<longleftrightarrow>
      (\<forall>\<pi>_start d.
         \<rho> \<Turnstile>\<^sub>l\<^sub>h CBV\<langle>[Cst\<^sub>N \<pi>_start, Cst\<^sub>E d]\<rangle>. \<longrightarrow>
-          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> LTS.get_start \<pi> = \<pi>_start \<longrightarrow> d \<in> Ŝ\<^sub>P\<lbrakk> \<pi> d_init))"
+          (\<forall>\<pi>. \<pi> \<in> LTS.path_with_word edge_set \<longrightarrow> LTS.get_end \<pi> = end \<longrightarrow> LTS.get_start \<pi> = \<pi>_start \<longrightarrow> d \<in> S^\<^sub>P\<lbrakk> \<pi> d_init))"
 
 MAY  betyder \<Turnstile> på højresiden og BV.
 MUST betyder \<Turnstile> på venstresiden og CBV.
