@@ -117,11 +117,14 @@ inductive_set path_with_word :: "('state list * 'label list) set" where
 definition get_start :: "('state list \<times> 'label list) \<Rightarrow> 'state" where
   "get_start \<pi> = hd (fst \<pi>)"
 
+definition get_end :: "('state list \<times> 'label list) \<Rightarrow> 'state" where
+  "get_end \<pi> = last (fst \<pi>)"
+
 abbreviation path_with_word_from :: "'state \<Rightarrow> ('state list * 'label list) set" where
   "path_with_word_from q == {\<pi>. \<pi> \<in> path_with_word \<and> get_start \<pi> = q}"
 
-definition get_end :: "('state list \<times> 'label list) \<Rightarrow> 'state" where
-  "get_end \<pi> = last (fst \<pi>)"
+abbreviation path_with_word_to :: "'state \<Rightarrow> ('state list * 'label list) set" where
+  "path_with_word_to q == {\<pi>. \<pi> \<in> path_with_word \<and> get_end \<pi> = q}"
 
 abbreviation path_with_word_from_to :: "'state \<Rightarrow> 'state \<Rightarrow> ('state list * 'label list) set" where
   "path_with_word_from_to start end == {\<pi>. \<pi> \<in> path_with_word \<and> get_start \<pi> = start \<and> get_end \<pi> = end}"
