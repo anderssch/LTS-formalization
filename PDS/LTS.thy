@@ -114,20 +114,20 @@ inductive_set path_with_word :: "('state list * 'label list) set" where
   path_with_word_refl[iff]: "([s],[]) \<in> path_with_word"
 | path_with_word_step: "(s'#ss, w) \<in> path_with_word \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,l#w) \<in> path_with_word"
 
-definition get_start :: "('state list \<times> 'label list) \<Rightarrow> 'state" where
-  "get_start \<pi> = hd (fst \<pi>)"
+definition start_of :: "('state list \<times> 'label list) \<Rightarrow> 'state" where
+  "start_of \<pi> = hd (fst \<pi>)"
 
-definition get_end :: "('state list \<times> 'label list) \<Rightarrow> 'state" where
-  "get_end \<pi> = last (fst \<pi>)"
+definition end_of :: "('state list \<times> 'label list) \<Rightarrow> 'state" where
+  "end_of \<pi> = last (fst \<pi>)"
 
 abbreviation path_with_word_from :: "'state \<Rightarrow> ('state list * 'label list) set" where
-  "path_with_word_from q == {\<pi>. \<pi> \<in> path_with_word \<and> get_start \<pi> = q}"
+  "path_with_word_from q == {\<pi>. \<pi> \<in> path_with_word \<and> start_of \<pi> = q}"
 
 abbreviation path_with_word_to :: "'state \<Rightarrow> ('state list * 'label list) set" where
-  "path_with_word_to q == {\<pi>. \<pi> \<in> path_with_word \<and> get_end \<pi> = q}"
+  "path_with_word_to q == {\<pi>. \<pi> \<in> path_with_word \<and> end_of \<pi> = q}"
 
 abbreviation path_with_word_from_to :: "'state \<Rightarrow> 'state \<Rightarrow> ('state list * 'label list) set" where
-  "path_with_word_from_to start end == {\<pi>. \<pi> \<in> path_with_word \<and> get_start \<pi> = start \<and> get_end \<pi> = end}"
+  "path_with_word_from_to start end == {\<pi>. \<pi> \<in> path_with_word \<and> start_of \<pi> = start \<and> end_of \<pi> = end}"
 
 inductive_set transition_list_path :: "('state, 'label) transition list set" where
   "(q, l, q') \<in> transition_relation \<Longrightarrow> [(q, l, q')] \<in> transition_list_path"
@@ -135,9 +135,9 @@ inductive_set transition_list_path :: "('state, 'label) transition list set" whe
 
 lemma singleton_path_start_end:
   assumes "([s], []) \<in> LTS.path_with_word pg"
-  shows "get_start ([s], []) = get_end ([s], [])"
+  shows "start_of ([s], []) = end_of ([s], [])"
   using assms
-  by (simp add: get_end_def get_start_def) 
+  by (simp add: end_of_def start_of_def) 
 
 lemma path_with_word_length:
   assumes "(ss, w) \<in> path_with_word"
@@ -279,7 +279,7 @@ next
       by (metis (no_types, lifting) butlast.simps(2) butlast_append list.discI mem_Collect_eq not_Cons_self2 s_split w'_def)
 
     have ss'w'_path_from: "(ss' @ [s], w') \<in> path_with_word_from start"
-      using Suc(3) butlast.simps(2) get_start_def list.sel(1) list.simps(3) mem_Collect_eq path_with_word.simps prod.sel(1) s_def snoc_eq_iff_butlast ss'_def ss'w'_path w_split by (metis (no_types, lifting) hd_append)
+      using Suc(3) butlast.simps(2) start_of_def list.sel(1) list.simps(3) mem_Collect_eq path_with_word.simps prod.sel(1) s_def snoc_eq_iff_butlast ss'_def ss'w'_path w_split by (metis (no_types, lifting) hd_append)
 
     have tr: "(s, l, s') \<in> transition_relation"
       using Suc(3) s'_def s_def l_def transition_butlast len_ss by blast
