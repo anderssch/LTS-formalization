@@ -4,12 +4,11 @@ This repository contains a number of formalizations based on labelled transition
 ## Datalog
 The Datalog subfolder contains a formalization of Datalog programs for program analysis.
 
+## LTS
+A slightly extended version of the LTS formalization from the PDS development.
 
 ## PDS
 The PDS subfolder contains a formalization of reachability for pushdown systems.
-
-Paper: https://www21.in.tum.de/~traytel/papers/fmcad22-pds/pds.pdf
-Based on this thesis: http://www.lsv.fr/Publis/PAPERS/PDF/schwoon-phd02.pdf
 
 ## WPDS
 The WPDS subfolder contains a work in progress formalization of reachability for weighted pushdown systems.
