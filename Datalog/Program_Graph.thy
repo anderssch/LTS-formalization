@@ -503,31 +503,27 @@ definition Inter' :: "('a \<Rightarrow> 'b set) set \<Rightarrow> 'a \<Rightarro
   "(\<^bold>\<Inter> \<rho>s) = (\<lambda>p. \<Inter>{\<rho> p | \<rho>. \<rho> \<in> \<rho>s})"
 
 lemma Inter'_def2: "(\<^bold>\<Inter> \<rho>s) = (\<lambda>p. \<Inter>{m. \<exists>\<rho> \<in> \<rho>s. m = \<rho> p})"
-proof
-  fix p
-  show "(\<^bold>\<Inter> \<rho>s) p = \<Inter>{m. \<exists>\<rho> \<in> \<rho>s. m = \<rho> p}"
-    by (smt (verit, best) Collect_cong Inter'_def)
-qed
+  unfolding Inter'_def by auto
 
 lemma member_Inter':
   assumes "\<forall>p \<in> ps. y \<in> p x"
   shows "y \<in> (\<^bold>\<Inter> ps) x"
-  by (smt (verit, best) Inter'_def assms mem_Collect_eq mem_simps(11))
+  using assms unfolding Inter'_def by auto
 
 lemma member_if_member_Inter':
   assumes "y \<in> (\<^bold>\<Inter> ps) x"
   assumes "p \<in> ps"
   shows "y \<in> p x"
-  by (smt (verit, best) Inter'_def assms mem_Collect_eq mem_simps(11))
+  using assms unfolding Inter'_def by auto
 
 lemma member_Inter'_iff:
   "(\<forall>p \<in> ps. y \<in> p x) \<longleftrightarrow> y \<in> (\<^bold>\<Inter> ps) x"
-  by (smt (verit, best) Inter'_def mem_Collect_eq mem_simps(11))
+  unfolding Inter'_def by auto
 
 lemma intersection_valuation_subset_valuation:
   assumes "P \<rho>"
   shows "\<^bold>\<Inter> {\<rho>'. P  \<rho>'} p \<subseteq> \<rho> p"
-  by (metis (mono_tags, lifting) CollectI Inf_lower Inter'_def assms)
+  using assms unfolding Inter'_def by auto
 
 fun solve_pg where
   "solve_pg s dl 0 = (\<^bold>\<Inter> {\<rho>. \<rho> \<Turnstile>\<^sub>d\<^sub>l (dl ==s== 0)})"
@@ -1211,7 +1207,7 @@ lemma agree_below_eq_solve_pg:
   assumes "l \<le> m"
   assumes "l \<le> n"
   shows "agree_below_eq (solve_pg s dl n) (solve_pg s dl m) l s"
-  by (smt (verit, best) agree_below_eq_def assms le_trans solve_pg_agree_above)
+  unfolding agree_below_eq_def by (meson assms dual_order.trans solve_pg_two_agree_above)    
 
 lemma solve_pg_below_solution:
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> n)"
@@ -2502,7 +2498,16 @@ lemma ana_pg_fw_may_stratified: "strat_wf s_BV ana_pg_fw_may"
     ana_must_def ana_entry_node_def  ana_kill_edge_def by auto
 
 lemma finite_ana_edge_edgeset: "finite (\<Union> (ana_edge ` edge_set))"
-  by (smt (verit, best) analysis_BV_forward_may.ana_edge.elims analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def finite.emptyI finite.intros(2) finite_UN)
+proof -
+  have "finite edge_set"
+    by (metis analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def)
+  moreover
+  have "\<forall>e \<in> edge_set. finite (ana_edge e)"
+    by force
+  ultimately
+  show ?thesis
+    by blast
+qed
 
 lemma finite_ana_kill_edgeset: "finite (\<Union> (ana_kill_edge ` edge_set))"
   by (metis ana_kill_edge_def analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def finite_Int finite_UN finite_imageI kill_set_eq_kill_set_inter_analysis_dom)
@@ -3639,15 +3644,29 @@ theorem RN_sound:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t bw_may.ana_pg_bw_may s_BV"
   shows "summarizes_RN \<rho>"
 proof -
-  from assms have "bw_may.summarizes_bw_may \<rho>"
+  from assms have summary: "bw_may.summarizes_bw_may \<rho>"
     using bw_may.sound_ana_pg_bw_may[of \<rho>] by auto
+  {
+    fix \<pi> d
+    assume \<pi>_path_to_end: "\<pi> \<in> path_with_word_to end"
+    assume d_on_path: "d \<in> nodes_on_path \<pi>"
+    have \<pi>_path: "\<pi> \<in> LTS.path_with_word bw_may.edge_set"
+      using \<pi>_path_to_end bw_may.edge_set_def edge_set_def by auto
+    have \<pi>_end: "end_of \<pi> = bw_may.end"
+      using \<pi>_path_to_end bw_may.end_def end_def by fastforce
+    then have "last (fst \<pi>) = end"
+      using bw_may.end_def end_def end_of_def by auto
+    then have "d \<in> bw_may.S_hat_path \<pi> d_init_RN"
+      using \<pi>_path_to_end d_on_path nodes_on_path_S_hat_path[of \<pi>] Nil_is_append_conv list.discI 
+        mem_Collect_eq node_on_edge_list_def nodes_on_path_def prod.exhaust_sel 
+        transition_list.simps(2) nodes_singleton_if_path_with_word_empty
+      by (metis (mono_tags, lifting))
+    then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h may\<langle>[Cst\<^sub>N (start_of \<pi>), Cst\<^sub>E d]\<rangle>."
+      using \<pi>_path \<pi>_end summary unfolding bw_may.summarizes_bw_may_def mem_Collect_eq by metis
+  }
+
   then show ?thesis
-    unfolding summarizes_RN_def bw_may.summarizes_bw_may_def bw_may.edge_set_def 
-      bw_may.end_def using nodes_on_path_S_hat_path
-    using LTS.end_of_def Nil_is_append_conv edge_set_def end_def 
-        list.discI mem_Collect_eq node_on_edge_list_def nodes_on_path_def 
-        prod.exhaust_sel transition_list.simps(2) nodes_singleton_if_path_with_word_empty
-    by (smt (verit))
+    unfolding summarizes_RN_def by auto
 qed
 
 end
@@ -4434,9 +4453,7 @@ proof (rule ccontr)
     using downward_least_solution_same_stratum[of ana_pg_fw_must s_BV \<rho> 2] assms(2)
     using fw_may.ana_pg_fw_may_stratified assms(1) by blast 
   then have "\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n ana_pg_fw_must s_BV"
-    using least_iff_minimal[of]
-    using strat_wf_mod_if_strat_wf \<open>finite ana_pg_fw_must\<close> finite_below_finite
-    by (smt (verit) fw_may.ana_pg_fw_may_stratified) 
+    using fw_may.ana_pg_fw_may_finite fw_may.ana_pg_fw_may_stratified least_iff_minimal by blast
   moreover
 
   define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_must then (\<rho> the_must) - {[\<lbrakk>q\<rbrakk>\<^sub>i\<^sub>d \<sigma>, \<lbrakk>d\<rbrakk>\<^sub>i\<^sub>d \<sigma>]} else \<rho> p))"
@@ -4615,9 +4632,8 @@ proof
     using downward_least_solution_same_stratum[of ana_pg_fw_must s_BV \<rho> 0] asm
     using fw_may.ana_pg_fw_may_stratified assms(1) by blast 
   then have "\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n ana_pg_fw_must s_BV"
-    using least_iff_minimal[of]
-    using strat_wf_mod_if_strat_wf \<open>finite ana_pg_fw_must\<close> finite_below_finite
-    by (smt (verit) fw_may.ana_pg_fw_may_stratified) 
+    using fw_may.ana_pg_fw_may_finite fw_may.ana_pg_fw_may_stratified least_iff_minimal by blast
+  
   moreover
 
   define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_must then (\<rho> the_must) - {[Action q, the_Cst d]} else \<rho> p))"
@@ -4806,9 +4822,7 @@ proof
     using downward_least_solution_same_stratum[of ana_pg_fw_must s_BV \<rho> 0] asm
     using fw_may.ana_pg_fw_may_stratified assms(1) by blast 
   then have "\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n ana_pg_fw_must s_BV"
-    using least_iff_minimal[of]
-    using strat_wf_mod_if_strat_wf  \<open>finite ana_pg_fw_must\<close> finite_below_finite
-    by (smt (verit) fw_may.ana_pg_fw_may_stratified) 
+    using fw_may.ana_pg_fw_may_finite fw_may.ana_pg_fw_may_stratified least_iff_minimal by blast
   moreover
 
   define \<rho>' where "\<rho>' = (\<lambda>p. (if p = the_must then (\<rho> the_must) - {[Elem q, the_Cst d]} else \<rho> p))"
@@ -5049,9 +5063,7 @@ proof -
     using assms(1) assms(2) in_analysis_dom_if_CBV by auto
 
   have \<pi>e: "q = Cst\<^sub>N (end_of \<pi>)"
-    using  cst.collapse(1) cst.collapse(3) cst.disc(6) cst.distinct(1) cst.distinct(3) 
-        cst.expand assms(1) assms(2) id.sel(2) is_elem_def is_encode_node_if_CBV_left_arg
-    by (smt (verit, best) assms(3) mem_Collect_eq)
+    using assms(1) assms(2) assms(3) is_encode_node_if_CBV_left_arg by fastforce
 
   have d_encdec: "d = Cst\<^sub>E (Decode_Elem d)"
     by (metis cst.sel(2) assms(1) assms(2) id.sel(2) is_encode_elem_if_CBV_right_arg)
@@ -5534,10 +5546,25 @@ lemma summarizes_fw_must_forward_backward':
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>."
   assumes "\<pi> \<in> path_with_word_from_to (Decode_Node q) end"
   shows "Decode_Elem d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
-  using LTS.end_of_def LTS.start_of_def S_hat_path_forward_backward 
-    analysis_BV_backward_must_axioms assms fw_must.start_def fw_must.summarizes_fw_must_def fst_conv 
-    hd_rev last_rev pg_rev_def rev_path_in_rev_pg snd_conv fw_must.edge_set_def prod.collapse
-  by (smt (verit, ccfv_SIG) mem_Collect_eq) 
+proof -
+  define rev_\<pi> where "rev_\<pi> = (rev (fst \<pi>), rev (snd \<pi>))"
+  have rev_\<pi>_path: "rev_\<pi> \<in> LTS.path_with_word fw_must.edge_set"
+    using rev_\<pi>_def assms(3) fw_must.edge_set_def pg_rev_def rev_path_in_rev_pg
+    by (metis (no_types, lifting) fst_conv mem_Collect_eq  prod.collapse)
+  have rev_\<pi>_start: "start_of rev_\<pi> = fw_must.start"
+    by (metis (mono_tags, lifting) rev_\<pi>_def analysis_BV_backward_must_axioms
+        analysis_BV_backward_must_def assms(3) analysis_BV_forward_must.intro pg_rev_def 
+        start_of_def analysis_BV_forward_must.start_def edge_set_def end_of_def finite_imageI 
+        hd_rev mem_Collect_eq prod.sel(1) prod.sel(2))
+  have rev_\<pi>_start_end: "end_of rev_\<pi> = Decode_Node q"
+    using assms(3) rev_\<pi>_def end_of_def last_rev start_of_def
+    by (metis (mono_tags, lifting) mem_Collect_eq prod.sel(1))
+  have "Decode_Elem d \<in> fw_must.S_hat_path (rev (fst \<pi>), rev (snd \<pi>)) d_init"
+    using rev_\<pi>_def rev_\<pi>_path rev_\<pi>_start_end rev_\<pi>_start assms(1) assms(2) 
+      fw_must.summarizes_fw_must_def by blast
+  then show ?thesis
+    by (metis (no_types, lifting) S_hat_path_forward_backward assms(3) mem_Collect_eq prod.collapse)
+qed
  
 
 lemma summarizes_bw_must_forward_backward:
