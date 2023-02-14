@@ -503,9 +503,11 @@ definition Inter' :: "('a \<Rightarrow> 'b set) set \<Rightarrow> 'a \<Rightarro
   "(\<^bold>\<Inter> \<rho>s) = (\<lambda>p. \<Inter>{\<rho> p | \<rho>. \<rho> \<in> \<rho>s})"
 
 lemma Inter'_def2: "(\<^bold>\<Inter> \<rho>s) = (\<lambda>p. \<Inter>{m. \<exists>\<rho> \<in> \<rho>s. m = \<rho> p})"
-  apply rule
-  apply (smt (verit, best) Collect_cong Inter'_def)
-  done
+proof
+  fix p
+  show "(\<^bold>\<Inter> \<rho>s) p = \<Inter>{m. \<exists>\<rho> \<in> \<rho>s. m = \<rho> p}"
+    by (smt (verit, best) Collect_cong Inter'_def)
+qed
 
 lemma member_Inter':
   assumes "\<forall>p \<in> ps. y \<in> p x"
@@ -5007,31 +5009,27 @@ lemma is_encode_node_if_CBV_left_arg:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>."
   shows "\<exists>q'. q = Cst\<^sub>N q'"
-proof -
+proof (cases q)
+  case (Var x)
+  then show ?thesis
+    using 
+      is_Cst_if_CBV_left_arg[OF assms(1), OF assms(2)] by auto
+next
+  case (Cst q'')
   show ?thesis
-    apply (cases q)
-    subgoal for x
-      using 
-        is_Cst_if_CBV_left_arg[OF assms(1), OF assms(2)]
-      apply auto
-      done
-    subgoal for q''
-      apply (cases q'')
-      subgoal for q'''
-        apply simp
-        done
-      subgoal for d'
-        using not_must_element[OF assms(1), of d' d]
-          assms(2)
-        apply auto
-        done
-      subgoal for \<alpha>
-        using not_must_action[OF assms(1), of \<alpha> d]
-          assms(2)
-        apply auto
-        done
-      done
-    done
+  proof (cases  q'')
+    case (Node x1)
+    then show ?thesis 
+      using Cst assms by auto
+  next
+    case (Elem d')
+    then show ?thesis
+      using not_must_element[OF assms(1), of d' d] Cst assms by auto
+  next
+    case (Action \<alpha>)
+    then show ?thesis 
+       using not_must_action[OF assms(1), of \<alpha> d] Cst assms by auto
+  qed
 qed
 
 lemma in_analysis_dom_if_CBV:
@@ -5143,9 +5141,12 @@ definition analysis_dom_AE :: "'v arith set" where
   "analysis_dom_AE = aexp_pg pg"
 
 lemma finite_analysis_dom_AE: "finite analysis_dom_AE"
-  unfolding analysis_dom_AE_def
-  apply auto
-  by (metis aexp_edge.elims analysis_AE_axioms analysis_AE_def finite_UN_I finite_aexp_action)
+proof -
+  have "finite (\<Union> (aexp_edge ` edges_of pg))"
+    by (metis aexp_edge.elims analysis_AE_axioms analysis_AE_def finite_UN_I finite_aexp_action)
+  then show ?thesis
+    unfolding analysis_dom_AE_def by auto
+qed
 
 fun kill_set_AE :: "('n,'v) edge \<Rightarrow> 'v arith set" where
   "kill_set_AE (q\<^sub>o, x ::= a, q\<^sub>s) = {a'. x \<in> fv_arith a'}"
@@ -5226,39 +5227,32 @@ qed
 lemma gen_set_AE_subset_aexp_edge:
   assumes "a \<in> gen_set_AE e"
   shows "a \<in> aexp_edge e"
-  using assms
-  apply (cases e)
-  apply auto
-  subgoal for q \<alpha> q'
-    apply (cases \<alpha>)
-      apply auto
-    done
-  done
+proof -
+  obtain q \<alpha> q' where "e = (q, \<alpha>, q')"
+    by (cases e)
+  then show ?thesis
+    using assms by (cases \<alpha>) auto
+qed
 
 lemma empty_inter_fv_arith_def_edge':
   assumes "a \<in> gen_set_AE e"
   shows "fv_arith a \<inter> def_edge e = {}"
-  using assms
-  apply (cases e)
-  apply auto
-  subgoal for q \<alpha> q'
-    apply (cases \<alpha>)
-      apply auto
-    done
-  done
+proof -
+  obtain q \<alpha> q' where "e = (q, \<alpha>, q')"
+    by (cases e)
+  then show ?thesis
+    using assms by (cases \<alpha>) auto
+qed
 
 lemma empty_inter_fv_arith_def_edge'':
   assumes "a \<notin> kill_set_AE e"
   shows "fv_arith a \<inter> def_edge e = {}"
-  using assms
-  apply (cases e)
-  apply auto
-  subgoal for q \<alpha> q'
-    apply (cases \<alpha>)
-      apply auto
-    done
-  done
-
+proof -
+  obtain q \<alpha> q' where "e = (q, \<alpha>, q')"
+    by (cases e)
+  then show ?thesis
+    using assms by (cases \<alpha>) auto
+qed
 
 lemma S_hat_edge_list_aexp_edge_list: 
   assumes "a \<in> fw_must.S_hat_edge_list \<pi> d_init_AE"
@@ -5298,6 +5292,24 @@ next
   qed
 qed
 
+lemma not_kill_set_AE_iff_fv_arith_def_edge_disjoint:
+  "fv_arith a \<inter> def_edge e = {} \<longleftrightarrow> a \<notin> kill_set_AE e"
+proof -
+  obtain q \<alpha> q' where e_split: "e = (q, \<alpha>, q')"
+    by (cases e)
+  then show ?thesis
+     by (cases \<alpha>) auto
+qed
+
+lemma gen_set_AE_AE_iff_fv_arith_def_edge_disjoint_and_aexp_edge:
+  "a \<in> aexp_edge e \<and> fv_arith a \<inter> def_edge e = {} \<longleftrightarrow> a \<in> gen_set_AE e"
+proof -
+  obtain q \<alpha> q' where e_split: "e = (q, \<alpha>, q')"
+    by (cases e)
+  then show ?thesis
+    by (cases \<alpha>) auto
+qed
+
 lemma aexp_edge_list_S_hat_edge_list': 
   assumes "aexp_edge_list \<pi> a"
   shows "a \<in> fw_must.S_hat_edge_list \<pi> d_init_AE"
@@ -5323,23 +5335,14 @@ next
       using snoc by auto
     moreover
     have "a \<notin> kill_set_AE e"
-      using fvae apply (cases e) subgoal for q \<alpha> q' 
-        apply (cases \<alpha>)
-          apply auto
-        done
-      done
+      using fvae not_kill_set_AE_iff_fv_arith_def_edge_disjoint by auto
     ultimately
     show ?case
       using fw_must.S_hat_def by auto
   next
     assume "a \<in> aexp_edge e"
     then have "a \<in> gen_set_AE e"
-      using fvae
-      apply (cases e) subgoal for q \<alpha> q' 
-        apply (cases \<alpha>)
-          apply auto
-        done 
-      done
+      using fvae gen_set_AE_AE_iff_fv_arith_def_edge_disjoint_and_aexp_edge by metis
     then show ?case
       using fw_must.S_hat_def by auto
   qed
@@ -5479,20 +5482,45 @@ proof (induction ss)
     unfolding rev_edge_list_def by auto
 next
   case (Cons a ss)
+  have "S^\<^sub>E\<^sub>s\<lbrakk>a # ss\<rbrakk> d_init = S^\<^sub>E\<lbrakk>a\<rbrakk> S^\<^sub>E\<^sub>s\<lbrakk>ss\<rbrakk> d_init"
+    by simp
+  also
+  have "... = (((S^\<^sub>E\<^sub>s\<lbrakk>ss\<rbrakk> d_init) - kill_set a) \<union> gen_set a)"
+    using S_hat_def by auto
+  also
+  have "... = fw_must.S_hat_edge_list (rev_edge_list ss) d_init - kill_set a \<union> gen_set a"
+    using Cons by auto
+  also
+  have "... = fw_must.S_hat_edge_list (rev_edge_list ss) d_init - kill_set (rev_edge (rev_edge a)) 
+                \<union> gen_set (rev_edge (rev_edge a))"
+    by simp
+  also
+  have "... = fw_must.S_hat (rev_edge a) (fw_must.S_hat_edge_list (rev_edge_list ss) d_init)"
+    using fw_must.S_hat_def by auto
+  also
+  have "... = fw_must.S_hat (rev_edge a) (fw_must.S_hat_edge_list (rev (map rev_edge ss)) d_init)"
+    by (simp add: rev_edge_list_def)
+  also
+  have "... = fw_must.S_hat (rev_edge a) (foldl (\<lambda>x y. fw_must.S_hat y x) d_init (rev (map rev_edge ss)))"
+    using fw_must.S_hat_edge_list_def2 by force
+  also
+  have "... = fw_must.S_hat (rev_edge a) (foldr fw_must.S_hat (map rev_edge ss) d_init)"
+    by (simp add: foldr_conv_foldl)
+  also
+  have "... = foldr fw_must.S_hat (rev (rev (map rev_edge (a # ss)))) d_init"
+    by force
+  also
+  have "... = foldl (\<lambda>a b. fw_must.S_hat b a) d_init (rev (map rev_edge (a # ss)))"
+    by (simp add: foldr_conv_foldl)
+  also
+  have "... = fw_must.S_hat_edge_list (rev (map rev_edge (a # ss))) d_init"
+    using fw_must.S_hat_edge_list_def2 by auto
+  also
+  have "... = fw_must.S_hat_edge_list (rev_edge_list (a # ss)) d_init"
+    by (simp add: rev_edge_list_def)
+  finally
   show ?case
-    unfolding rev_edge_list_def
-    unfolding fw_must.S_hat_edge_list_def2
-    unfolding foldl_conv_foldr
-    apply simp
-    unfolding foldr_conv_foldl
-    unfolding fw_must.S_hat_edge_list_def2[symmetric]
-    unfolding rev_edge_list_def[symmetric]
-    unfolding fw_must.S_hat_def
-    apply (simp only: rev_edge_rev_edge_id)
-    unfolding S_hat_def
-    using Cons
-    apply metis
-    done
+    by auto
 qed
 
 lemma S_hat_path_forward_backward:
@@ -5561,10 +5589,13 @@ definition analysis_dom_VB :: "'v arith set" where
   "analysis_dom_VB = aexp_pg pg"
 
 lemma finite_analysis_dom_VB: "finite analysis_dom_VB"
-  unfolding analysis_dom_VB_def
-  apply auto
-  by (metis aexp_edge.elims analysis_VB_axioms analysis_VB_def finite_UN_I finite_aexp_action)
-
+proof -
+  have "finite (\<Union> (aexp_edge ` edges_of pg))"
+     by (metis aexp_edge.elims analysis_VB_axioms analysis_VB_def finite_UN_I finite_aexp_action)
+  then show ?thesis
+    unfolding analysis_dom_VB_def by auto
+qed
+ 
 fun kill_set_VB :: "('n,'v) edge \<Rightarrow> 'v arith set" where
   "kill_set_VB (q\<^sub>o, x ::= a, q\<^sub>s) = {a'. x \<in> fv_arith a'}"
 | "kill_set_VB (q\<^sub>o, Bool b, q\<^sub>s) = {}"
@@ -5655,30 +5686,23 @@ proof -
   qed
 qed
 
-lemma gen_set_AE_subset_aexp_edge:
-  assumes "a \<in> gen_set_VB e"
-  shows "a \<in> aexp_edge e"
-  using assms
-  apply (cases e)
-  apply auto
-  subgoal for q \<alpha> q'
-    apply (cases \<alpha>)
-      apply auto
-    done
-  done
+lemma gen_set_VB_is_aexp_edge:
+  "a \<in> gen_set_VB e \<longleftrightarrow> a \<in> aexp_edge e"
+proof -
+  obtain q \<alpha> q' where e_split: "e = (q, \<alpha>, q')"
+    by (cases e)
+  then show ?thesis
+    by (cases \<alpha>) auto
+qed
 
 lemma empty_inter_fv_arith_def_edge'':
-  assumes "a \<notin> kill_set_VB e"
-  shows "fv_arith a \<inter> def_edge e = {}"
-  using assms
-  apply (cases e)
-  apply auto
-  subgoal for q \<alpha> q'
-    apply (cases \<alpha>)
-      apply auto
-    done
-  done
-
+  "a \<notin> kill_set_VB e \<longleftrightarrow> fv_arith a \<inter> def_edge e = {}"
+proof -
+  obtain q \<alpha> q' where e_split: "e = (q, \<alpha>, q')"
+    by (cases e)
+  then show ?thesis
+    by (cases \<alpha>) auto
+qed
 
 lemma S_hat_edge_list_aexp_edge_list: 
   assumes "a \<in> bw_must.S_hat_edge_list \<pi> d_init_VB"
@@ -5707,7 +5731,7 @@ next
   next
     assume a_gen: "a \<in> gen_set_VB e"
     then have "a \<in> aexp_edge e"
-      using gen_set_AE_subset_aexp_edge by auto
+      using gen_set_VB_is_aexp_edge by auto
     then show "vbexp_edge_list (e # \<pi>) a"
       unfolding vbexp_edge_list_def by (metis append_Cons append_Nil empty_iff empty_set)
   qed
@@ -5738,23 +5762,14 @@ next
       using Cons by auto
     moreover
     have "a \<notin> kill_set_VB e \<or> a \<in> gen_set_VB e"
-      using fvae apply (cases e) subgoal for q \<alpha> q' 
-        apply (cases \<alpha>)
-          apply auto
-        done
-      done
+      using fvae empty_inter_fv_arith_def_edge'' gen_set_VB_is_aexp_edge by auto
     ultimately
     show ?case
       using bw_must.S_hat_def by auto
   next
     assume "a \<in> aexp_edge e"
     then have "a \<in> gen_set_VB e"
-      using fvae
-      apply (cases e) subgoal for q \<alpha> q' 
-        apply (cases \<alpha>)
-          apply auto
-        done
-      done
+      using fvae empty_inter_fv_arith_def_edge'' gen_set_VB_is_aexp_edge by auto
     then show ?case
       using bw_must.S_hat_def by auto
   qed
