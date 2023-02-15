@@ -46,9 +46,8 @@ definition aexp_path :: "'n list \<times> 'v action list \<Rightarrow> 'v arith 
   "aexp_path \<pi> = {a. aexp_edge_list (transition_list \<pi>) a}"
 
 
-locale analysis_AE = program_graph pg 
-  for pg :: "('n::finite,'v::finite) program_graph" +
-  assumes "finite edge_set"
+locale analysis_AE = finite_program_graph pg 
+  for pg :: "('n::finite,'v::finite) program_graph"
 begin
 
 interpretation LTS edge_set .
@@ -59,7 +58,8 @@ definition analysis_dom_AE :: "'v arith set" where
 lemma finite_analysis_dom_AE: "finite analysis_dom_AE"
 proof -
   have "finite (\<Union> (aexp_edge ` edge_set))"
-    by (metis aexp_edge.elims analysis_AE_axioms analysis_AE_def finite_UN_I finite_aexp_action)
+    by (metis aexp_edge.elims finite_UN finite_aexp_edge finite_program_graph_axioms 
+        finite_program_graph_def)
   then show ?thesis
     unfolding analysis_dom_AE_def using edge_set_def by force 
 qed
@@ -79,7 +79,8 @@ definition d_init_AE :: "'v arith set" where
 
 interpretation fw_must: analysis_BV_forward_must pg analysis_dom_AE kill_set_AE gen_set_AE d_init_AE
   using analysis_BV_forward_must.intro analysis_AE_axioms analysis_AE_def
-  by (metis d_init_AE_def empty_iff finite_analysis_dom_AE subsetI) 
+    d_init_AE_def empty_subsetI finite_analysis_dom_AE analysis_BV_forward_must_axioms.intro
+  by metis
 
 lemma aexp_edge_list_S_hat_edge_list: 
   assumes "a \<in> aexp_edge (q, \<alpha>, q')"

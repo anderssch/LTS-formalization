@@ -640,19 +640,19 @@ end
 
 section \<open>Forward must-analysis\<close>
                                             
-locale analysis_BV_forward_must = program_graph pg
+locale analysis_BV_forward_must = finite_program_graph pg
   for pg :: "('n::finite,'v) program_graph" +
   fixes analysis_dom :: "'d set"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
-  assumes "finite edge_set"
   assumes "finite analysis_dom"
   assumes "d_init \<subseteq> analysis_dom"
 begin
 
 lemma finite_d_init: "finite d_init"
-  by (meson analysis_BV_forward_must_axioms analysis_BV_forward_must_def finite_subset)
+  by (meson analysis_BV_forward_must.axioms(2) analysis_BV_forward_must_axioms 
+      analysis_BV_forward_must_axioms_def rev_finite_subset)
 
 interpretation LTS edge_set .
 
@@ -712,8 +712,9 @@ definition summarizes_fw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow
           (\<forall>\<pi>. \<pi> \<in> path_with_word \<longrightarrow> start_of \<pi> = start \<longrightarrow> end_of \<pi> = Decode_Node q \<longrightarrow> (Decode_Elem d) \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init))"
 
 interpretation fw_may: analysis_BV_forward_may pg analysis_dom "\<lambda>e. analysis_dom - (kill_set e)" "(\<lambda>e. analysis_dom - gen_set e)" "analysis_dom - d_init"
-  using analysis_BV_forward_may.intro analysis_BV_forward_must_axioms analysis_BV_forward_must_def
-  by (metis Diff_subset analysis_BV_forward_may_axioms_def finite_program_graph.intro)
+  using analysis_BV_forward_may.intro[of pg] analysis_BV_forward_must_def[of pg] 
+    analysis_BV_forward_may_axioms_def analysis_BV_forward_must_axioms 
+    analysis_BV_forward_must_axioms_def by (metis Diff_subset)
   
 abbreviation ana_pg_fw_must where
   "ana_pg_fw_must == fw_may.ana_pg_fw_may"
@@ -2047,19 +2048,19 @@ end
 
 section \<open>Backward must-analysis\<close>
 
-locale analysis_BV_backward_must = program_graph pg
+locale analysis_BV_backward_must = finite_program_graph pg
   for pg :: "('n::finite,'v) program_graph" +
   fixes analysis_dom :: "'d set"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
-  assumes "finite edge_set"
   assumes "finite analysis_dom"
   assumes "d_init \<subseteq> analysis_dom"
 begin
 
 lemma finite_d_init: "finite d_init"
-  by (meson analysis_BV_backward_must_axioms analysis_BV_backward_must_def finite_subset)
+  by (meson analysis_BV_backward_must.axioms(2) analysis_BV_backward_must_axioms 
+      analysis_BV_backward_must_axioms_def rev_finite_subset)
 
 interpretation LTS edge_set .
 
@@ -2113,12 +2114,12 @@ definition summarizes_bw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow
          \<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>. \<longrightarrow>
           (\<forall>\<pi>. \<pi> \<in> path_with_word_from_to (Decode_Node q) end \<longrightarrow> Decode_Elem d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init))"
 
-lemma finite_pg_rev: "finite (fst pg_rev)"
-  by (metis analysis_BV_backward_must_axioms analysis_BV_backward_must_def edge_set_def finite_imageI fst_conv pg_rev_def)
-
 interpretation fw_must: analysis_BV_forward_must pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
   using analysis_BV_forward_must_def finite_pg_rev analysis_BV_backward_must_axioms
-    analysis_BV_backward_must_def by (metis program_graph.edge_set_def)
+    analysis_BV_backward_must_def analysis_BV_backward_must_axioms_def
+    analysis_BV_forward_must_axioms.intro finite_program_graph.intro
+    program_graph.edge_set_def by metis
+
 
 abbreviation ana_pg_bw_must where
   "ana_pg_bw_must == fw_must.ana_pg_fw_must"

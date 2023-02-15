@@ -9,9 +9,8 @@ definition vbexp_edge_list :: "('n,'v) edge list \<Rightarrow> 'v arith \<Righta
 definition vbexp_path :: "'n list \<times> 'v action list \<Rightarrow> 'v arith set" where
   "vbexp_path \<pi> = {a. vbexp_edge_list (LTS.transition_list \<pi>) a}"
 
-locale analysis_VB = program_graph pg 
-  for pg :: "('n::finite,'v::finite) program_graph" +
-  assumes "finite edge_set"
+locale analysis_VB = finite_program_graph pg 
+  for pg :: "('n::finite,'v::finite) program_graph"
 begin
 
 interpretation LTS edge_set .
@@ -22,7 +21,8 @@ definition analysis_dom_VB :: "'v arith set" where
 lemma finite_analysis_dom_VB: "finite analysis_dom_VB"
 proof -
   have "finite (\<Union> (aexp_edge ` edge_set))"
-     by (metis aexp_edge.elims analysis_VB_axioms analysis_VB_def finite_UN_I finite_aexp_action)
+    by (metis aexp_edge.elims finite_UN finite_aexp_edge finite_program_graph_axioms 
+        finite_program_graph_def)
   then show ?thesis
     unfolding analysis_dom_VB_def edge_set_def by auto
 qed
@@ -42,7 +42,8 @@ definition d_init_VB :: "'v arith set" where
 
 interpretation bw_must: analysis_BV_backward_must pg analysis_dom_VB kill_set_VB gen_set_VB d_init_VB
   using analysis_VB_axioms analysis_VB_def
-  by (metis analysis_BV_backward_must.intro bot.extremum d_init_VB_def finite_analysis_dom_VB)
+  by (metis analysis_BV_backward_must_axioms_def analysis_BV_backward_must_def bot.extremum 
+      d_init_VB_def finite_analysis_dom_VB)
 
 lemma aexp_edge_list_S_hat_edge_list: 
   assumes "a \<in> aexp_edge (q, \<alpha>, q')"
