@@ -75,6 +75,9 @@ definition start where
 definition "end" where
   "end = snd (snd pg)"
 
+definition pg_rev :: "('n,'v) program_graph" where
+  "pg_rev = (rev_edge ` edge_set, end, start)"
+
 
 subsubsection \<open>Execution Sequences\<close>
 
@@ -93,11 +96,11 @@ end
 subsection \<open>Finite Program Graph Locale\<close>
 
 locale finite_program_graph = program_graph pg
-  for pg :: "('n,'v) program_graph"
+  for pg :: "('n::finite,'v) program_graph" +
+  assumes "finite edge_set"
 begin
 
-
-
 end
+
 
 end

@@ -396,8 +396,9 @@ lemma kill_RD_subset_analysis_dom: "kill_set_RD e \<subseteq> analysis_dom_RD"
 
 interpretation fw_may: analysis_BV_forward_may pg analysis_dom_RD kill_set_RD gen_set_RD d_init_RD 
   using analysis_BV_forward_may_def analysis_RD_axioms analysis_RD_def
-  using d_init_RD_subset_analysis_dom_RD finite_analysis_dom_RD gen_RD_subset_analysis_dom kill_RD_subset_analysis_dom
-  by blast 
+    d_init_RD_subset_analysis_dom_RD finite_analysis_dom_RD gen_RD_subset_analysis_dom 
+    kill_RD_subset_analysis_dom analysis_BV_forward_may_axioms.intro finite_program_graph_def
+  by metis
 
 lemma def_var_def_edge_S_hat:
   assumes "def_var \<pi> x start \<in> R"

@@ -89,13 +89,12 @@ abbreviation Cst\<^sub>A :: "'v action \<Rightarrow> (var, ('n, 'v, 'd) cst) id"
 
 section \<open>Forward may-analysis\<close>       
 
-locale analysis_BV_forward_may = program_graph pg 
+locale analysis_BV_forward_may = finite_program_graph pg 
   for pg :: "('n::finite,'v) program_graph" +
   fixes analysis_dom :: "'d set"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
-  assumes "finite edge_set"
   assumes "finite analysis_dom"
   assumes "d_init \<subseteq> analysis_dom"
   assumes "\<forall>e. gen_set e \<subseteq> analysis_dom"
@@ -103,7 +102,7 @@ locale analysis_BV_forward_may = program_graph pg
 begin
 
 lemma finite_d_init: "finite d_init"
-  by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_def finite_subset)
+  by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def analysis_BV_forward_may_def rev_finite_subset)
 
 interpretation LTS edge_set .
 
@@ -163,7 +162,7 @@ definition ana_kill_edge :: "('n, 'v) edge \<Rightarrow> (pred, var, ('n, 'v, 'd
   "ana_kill_edge e = ana_kill_edge_d e ` (kill_set e)"
 
 lemma kill_set_eq_kill_set_inter_analysis_dom: "kill_set e = kill_set e \<inter> analysis_dom"
-  by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_def inf.orderE)
+  by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def analysis_BV_forward_may_def inf.orderE)
 
 fun ana_gen_edge_d :: "('n, 'v) edge \<Rightarrow> 'd \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause" where
   "ana_gen_edge_d (q\<^sub>o, \<alpha>, q\<^sub>s) d = gen\<langle>[Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, Cst\<^sub>E d]\<rangle> :- []."
@@ -172,7 +171,7 @@ definition ana_gen_edge :: "('n, 'v) edge \<Rightarrow> (pred, var, ('n, 'v, 'd)
   "ana_gen_edge e = ana_gen_edge_d e ` (gen_set e)"
 
 lemma gen_set_eq_gen_set_inter_analysis_dom: "gen_set e = gen_set e \<inter> analysis_dom"
-  by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_def inf.orderE)
+  by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def analysis_BV_forward_may_def inf.orderE)
 
 definition ana_init :: "'d \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause" where
   "ana_init d = init\<langle>[Cst\<^sub>E d]\<rangle> :- []."
@@ -264,7 +263,7 @@ lemma ana_pg_fw_may_stratified: "strat_wf s_BV ana_pg_fw_may"
 lemma finite_ana_edge_edgeset: "finite (\<Union> (ana_edge ` edge_set))"
 proof -
   have "finite edge_set"
-    by (metis analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def)
+    using finite_program_graph_axioms finite_program_graph_def by blast
   moreover
   have "\<forall>e \<in> edge_set. finite (ana_edge e)"
     by force
@@ -274,13 +273,34 @@ proof -
 qed
 
 lemma finite_ana_kill_edgeset: "finite (\<Union> (ana_kill_edge ` edge_set))"
-  by (metis ana_kill_edge_def analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def finite_Int finite_UN finite_imageI kill_set_eq_kill_set_inter_analysis_dom)
+proof -
+  have "finite edge_set"
+    using finite_program_graph_axioms finite_program_graph_def by blast
+  moreover
+  have "\<forall>e \<in> edge_set. finite (ana_kill_edge e)"
+    by (metis ana_kill_edge_def analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def 
+        analysis_BV_forward_may_def finite_Int finite_imageI kill_set_eq_kill_set_inter_analysis_dom)
+  ultimately
+  show ?thesis
+    by blast
+qed
 
 lemma finite_ana_gen_edgeset: "finite (\<Union> (ana_gen_edge ` edge_set))"
-  by (metis ana_gen_edge_def analysis_BV_forward_may_axioms analysis_BV_forward_may_def edge_set_def finite_UN finite_imageI rev_finite_subset)
+proof -
+  have "finite edge_set"
+    using finite_program_graph_axioms finite_program_graph_def by blast
+  moreover
+  have "\<forall>e \<in> edge_set. finite (ana_gen_edge e)"
+    by (metis ana_gen_edge_def analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def 
+        analysis_BV_forward_may_def finite_imageI rev_finite_subset)
+  ultimately
+  show ?thesis
+    by blast
+qed
 
 lemma finite_ana_anadom_edgeset: "finite (ana_anadom ` analysis_dom)"
-  using analysis_BV_forward_may_axioms analysis_BV_forward_may_def by blast
+  by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def 
+      analysis_BV_forward_may_def finite_imageI)
 
 lemma ana_pg_fw_may_finite: "finite ana_pg_fw_may"
   unfolding ana_pg_fw_may_def using finite_ana_edge_edgeset finite_d_init
@@ -333,7 +353,9 @@ lemma S_hat_edge_list_subset_analysis_dom:
 proof(induction \<pi> rule: List.rev_induct)
   case Nil
   then show ?case
-    by (metis S_hat_edge_list.simps(1) analysis_BV_forward_may_axioms analysis_BV_forward_may_def subsetD)
+    by (metis S_hat_edge_list.simps(1) analysis_BV_forward_may.axioms(2) 
+        analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def subsetD)
+
 next
   case (snoc e \<pi>)
   have "gen_set e \<inter> analysis_dom \<subseteq> analysis_dom"
@@ -452,7 +474,7 @@ end
 
 section \<open>Backward may-analysis\<close>
 
-locale analysis_BV_backward_may = program_graph pg
+locale analysis_BV_backward_may = finite_program_graph pg
   for pg :: "('n::finite,'v) program_graph" +
   fixes analysis_dom :: "'d set"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
@@ -465,13 +487,9 @@ locale analysis_BV_backward_may = program_graph pg
   assumes "\<forall>e. kill_set e \<subseteq> analysis_dom"
 begin
 
-lemma finite_d_init: "finite d_init"
-  by (meson analysis_BV_backward_may_axioms analysis_BV_backward_may_def finite_subset)
+
 
 interpretation LTS edge_set .
-
-definition pg_rev :: "('n,'v) program_graph" where
-  "pg_rev = (rev_edge ` edge_set, end, start)"
 
 definition S_hat :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<lbrakk>_\<rbrakk> _") where
   "S^\<^sub>E\<lbrakk>e\<rbrakk> R = (R - kill_set e) \<union> gen_set e"
@@ -521,19 +539,19 @@ definition summarizes_bw_may :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow>
   "summarizes_bw_may \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> path_with_word_to end \<longrightarrow> d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init \<longrightarrow> 
                              \<rho> \<Turnstile>\<^sub>l\<^sub>h may\<langle>[Cst\<^sub>N (start_of \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
-lemma finite_pg_rev: "finite (fst pg_rev)"
-  by (metis analysis_BV_backward_may_axioms analysis_BV_backward_may_def edge_set_def finite_imageI fst_conv pg_rev_def)
-
 lemma kill_subs_analysis_dom: "(kill_set (rev_edge e)) \<subseteq> analysis_dom"
-  by (meson analysis_BV_backward_may_axioms analysis_BV_backward_may_def)
+  by (meson analysis_BV_backward_may_axioms analysis_BV_backward_may_axioms_def 
+      analysis_BV_backward_may_def)
 
 lemma gen_subs_analysis_dom: "(gen_set (rev_edge e)) \<subseteq> analysis_dom"
-  by (meson analysis_BV_backward_may_axioms analysis_BV_backward_may_def)
+  by (meson analysis_BV_backward_may.axioms(2) analysis_BV_backward_may_axioms 
+      analysis_BV_backward_may_axioms_def)
 
 interpretation fw_may: analysis_BV_forward_may pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
   using analysis_BV_forward_may_def finite_pg_rev analysis_BV_backward_may_axioms analysis_BV_backward_may_def
-  by (metis program_graph.edge_set_def) 
-
+  by (metis (no_types, lifting) analysis_BV_backward_may_axioms_def 
+      analysis_BV_forward_may_axioms_def finite_program_graph_def program_graph.edge_set_def)
+ 
 abbreviation ana_pg_bw_may where
   "ana_pg_bw_may == fw_may.ana_pg_fw_may"
 
@@ -695,8 +713,8 @@ definition summarizes_fw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow
 
 interpretation fw_may: analysis_BV_forward_may pg analysis_dom "\<lambda>e. analysis_dom - (kill_set e)" "(\<lambda>e. analysis_dom - gen_set e)" "analysis_dom - d_init"
   using analysis_BV_forward_may.intro analysis_BV_forward_must_axioms analysis_BV_forward_must_def
-  by (metis Diff_subset edge_set_def) 
-
+  by (metis Diff_subset analysis_BV_forward_may_axioms_def finite_program_graph.intro)
+  
 abbreviation ana_pg_fw_must where
   "ana_pg_fw_must == fw_may.ana_pg_fw_may"
 
@@ -2044,9 +2062,6 @@ lemma finite_d_init: "finite d_init"
   by (meson analysis_BV_backward_must_axioms analysis_BV_backward_must_def finite_subset)
 
 interpretation LTS edge_set .
-
-definition pg_rev :: "('n,'v) program_graph" where 
-  "pg_rev = (rev_edge ` edge_set, end, start)"
 
 definition S_hat :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<lbrakk>_\<rbrakk> _") where
   "S^\<^sub>E\<lbrakk>e\<rbrakk> R = (R - kill_set e) \<union> gen_set e"

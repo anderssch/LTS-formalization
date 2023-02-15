@@ -14,7 +14,7 @@ definition nodes_on_path :: "'n list \<times> 'v action list \<Rightarrow> 'n se
 
 locale analysis_RN = program_graph pg
   for pg :: "('n::finite,'v::finite) program_graph" +
-  assumes "finite (fst pg)"
+  assumes "finite edge_set"
 begin
 
 interpretation LTS edge_set .
@@ -33,13 +33,13 @@ definition d_init_RN :: "'n set" where
 
 interpretation bw_may: analysis_BV_backward_may pg analysis_dom_RN kill_set_RN gen_set_RN d_init_RN
   using analysis_BV_backward_may.intro analysis_RN_axioms analysis_RN_def
-   analysis_dom_RN_def finite_UNIV subset_UNIV by (metis edge_set_def)
+   analysis_dom_RN_def finite_UNIV subset_UNIV 
 
 lemma node_on_edge_list_S_hat_edge_list:
   assumes "ts \<in> transition_list_path"
   assumes "trans_tl (last ts) = end"
   assumes "node_on_edge_list ts q"
-  shows "q \<in> bw_may.S_hat_edge_list ts d_init_RN"
+  shows "q \<in> S_hat_edge_list ts d_init_RN"
   using assms
 proof (induction rule: LTS.transition_list_path.induct[OF assms(1)])
   case (1 q' l q'')
@@ -325,12 +325,12 @@ proof -
     fix \<pi> d
     assume \<pi>_path_to_end: "\<pi> \<in> path_with_word_to end"
     assume d_on_path: "d \<in> nodes_on_path \<pi>"
-    have \<pi>_path: "\<pi> \<in> LTS.path_with_word bw_may.edge_set"
-      using \<pi>_path_to_end bw_may.edge_set_def edge_set_def by auto
-    have \<pi>_end: "end_of \<pi> = bw_may.end"
-      using \<pi>_path_to_end bw_may.end_def end_def by fastforce
+    have \<pi>_path: "\<pi> \<in> LTS.path_with_word edge_set"
+      using \<pi>_path_to_end edge_set_def edge_set_def by auto
+    have \<pi>_end: "end_of \<pi> = end"
+      using \<pi>_path_to_end end_def end_def by fastforce
     then have "last (fst \<pi>) = end"
-      using bw_may.end_def end_def end_of_def by auto
+      using end_def end_def end_of_def by auto
     then have "d \<in> bw_may.S_hat_path \<pi> d_init_RN"
       using \<pi>_path_to_end d_on_path nodes_on_path_S_hat_path[of \<pi>] Nil_is_append_conv list.discI 
         mem_Collect_eq node_on_edge_list_def nodes_on_path_def prod.exhaust_sel 

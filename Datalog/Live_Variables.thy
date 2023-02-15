@@ -41,8 +41,8 @@ definition d_init_LV :: "'v set" where
   "d_init_LV = {}"
 
 interpretation bw_may: analysis_BV_backward_may pg analysis_dom_LV kill_set_LV gen_set_LV d_init_LV
-  using analysis_BV_backward_may.intro analysis_LV_axioms analysis_LV_def
-  by (metis (mono_tags) analysis_dom_LV_def finite_UNIV subset_UNIV)
+  using analysis_BV_backward_may.intro analysis_LV_axioms analysis_LV_def analysis_dom_LV_def 
+    finite_UNIV subset_UNIV analysis_BV_backward_may_axioms_def finite_program_graph_def by metis
 
 lemma use_edge_list_S_hat_edge_list: 
   assumes "use_edge_list \<pi> x"
