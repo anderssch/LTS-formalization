@@ -34,9 +34,9 @@ fun s_BV :: "pred \<Rightarrow> nat" where
 | "s_BV the_must = 2"
 
 datatype ('n,'v,'d) cst =
-  Node (the_node: 'n)
-  | is_elem: Elem (the_elem: 'd)
-  | Action "'v action"
+  is_Node: Node (the_node: 'n)
+  | is_Elem: Elem (the_Elem: 'd)
+  | is_Action: Action (the_Action: "'v action")
 
 abbreviation may_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("may\<langle>_\<rangle> :- _ .") where 
    "may\<langle>ids\<rangle> :- ls. \<equiv> Cls the_may ids ls"
@@ -74,17 +74,25 @@ abbreviation \<uu> :: "(var, 'a) id" where
 abbreviation Cst\<^sub>N :: "'n \<Rightarrow> (var, ('n, 'v, 'd) cst) id" where
   "Cst\<^sub>N q == Cst (Node q)"
 
-abbreviation Decode_Node :: "(var, ('n, 'v, 'd) cst) id \<Rightarrow> 'n" where
-  "Decode_Node ident == the_node (the_Cst ident)"
-
 abbreviation Cst\<^sub>E :: "'d \<Rightarrow> (var, ('n, 'v, 'd) cst) id" where
   "Cst\<^sub>E e == Cst (Elem e)"
 
-abbreviation Decode_Elem :: "(var, ('n, 'v, 'd) cst) id \<Rightarrow> 'd" where
-  "Decode_Elem ident == the_elem (the_Cst ident)"
-
 abbreviation Cst\<^sub>A :: "'v action \<Rightarrow> (var, ('n, 'v, 'd) cst) id" where
   "Cst\<^sub>A \<alpha> == Cst (Action \<alpha>)"
+
+abbreviation the_Node\<^sub>i\<^sub>d :: "(var, ('n, 'v, 'd) cst) id \<Rightarrow> 'n" where
+  "the_Node\<^sub>i\<^sub>d ident == the_node (the_Cst ident)"
+
+abbreviation the_Elem\<^sub>i\<^sub>d :: "(var, ('n, 'v, 'd) cst) id \<Rightarrow> 'd" where
+  "the_Elem\<^sub>i\<^sub>d ident == the_Elem (the_Cst ident)"
+
+abbreviation the_Action\<^sub>i\<^sub>d :: "(var, ('n, 'v, 'd) cst) id \<Rightarrow> 'v action" where
+  "the_Action\<^sub>i\<^sub>d ident == the_Action (the_Cst ident)"
+
+abbreviation is_Node\<^sub>i\<^sub>d :: "(var, ('n, 'v, 'd) cst) id \<Rightarrow> bool" where
+  "is_Node\<^sub>i\<^sub>d ident == is_Cst ident \<and> is_Node (the_Cst ident)"
+
+
 
 
 section \<open>Forward may-analysis\<close>       
@@ -709,7 +717,7 @@ definition summarizes_fw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow
    "summarizes_fw_must \<rho> \<longleftrightarrow>
      (\<forall>q d.
          \<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>. \<longrightarrow>
-          (\<forall>\<pi>. \<pi> \<in> path_with_word \<longrightarrow> start_of \<pi> = start \<longrightarrow> end_of \<pi> = Decode_Node q \<longrightarrow> (Decode_Elem d) \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init))"
+          (\<forall>\<pi>. \<pi> \<in> path_with_word \<longrightarrow> start_of \<pi> = start \<longrightarrow> end_of \<pi> = the_Node\<^sub>i\<^sub>d q \<longrightarrow> (the_Elem\<^sub>i\<^sub>d d) \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init))"
 
 interpretation fw_may: analysis_BV_forward_may pg analysis_dom "\<lambda>e. analysis_dom - (kill_set e)" "(\<lambda>e. analysis_dom - gen_set e)" "analysis_dom - d_init"
   using analysis_BV_forward_may.intro[of pg] analysis_BV_forward_must_def[of pg] 
@@ -1296,7 +1304,7 @@ qed
 lemma is_elem_if_init:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[Cst d]\<rangle>."
-  shows "is_elem d"
+  shows "is_Elem d"
 proof (cases "d")
   case (Node x1)
   then show ?thesis
@@ -1366,7 +1374,7 @@ qed
 lemma in_analysis_dom_if_init:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[d]\<rangle>."
-  shows "Decode_Elem d \<in> analysis_dom"
+  shows "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom"
 proof -
   have "is_Cst d"
     using assms(1) assms(2) is_Cst_if_init by blast
@@ -1381,7 +1389,7 @@ qed
 lemma in_analysis_dom_if_anadom:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[d]\<rangle>."
-  shows "Decode_Elem d \<in> analysis_dom"
+  shows "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom"
 proof -
   have "is_Cst d"
     using assms(1) assms(2) is_Cst_if_anadom by blast
@@ -2003,33 +2011,33 @@ qed
 lemma in_analysis_dom_if_must:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>."
-  shows "Decode_Elem d \<in> analysis_dom"
+  shows "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom"
   using anadom_if_must
   using assms in_analysis_dom_if_anadom by blast
 
 lemma sound_ana_pg_fw_must':
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>."
-  assumes "\<pi> \<in> path_with_word_from_to start (Decode_Node q)"
-  shows "Decode_Elem d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
+  assumes "\<pi> \<in> path_with_word_from_to start (the_Node\<^sub>i\<^sub>d q)"
+  shows "the_Elem\<^sub>i\<^sub>d d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
 proof -
-  have d_ana: "Decode_Elem d \<in> analysis_dom"
+  have d_ana: "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom"
     using assms(1) assms(2) in_analysis_dom_if_must by auto
 
   have \<pi>e: "q = Cst\<^sub>N (end_of \<pi>)"
     using assms(1) assms(2) assms(3) is_encode_node_if_must_left_arg by fastforce
 
-  have d_encdec: "d = Cst\<^sub>E (Decode_Elem d)"
+  have d_encdec: "d = Cst\<^sub>E (the_Elem\<^sub>i\<^sub>d d)"
     by (metis cst.sel(2) assms(1) assms(2) id.sel(2) is_encode_elem_if_must_right_arg)
 
   have not_may: "\<not> \<rho> \<Turnstile>\<^sub>l\<^sub>h may\<langle>[Cst\<^sub>N (end_of \<pi>), d]\<rangle>."
-    using not_solves_must_and_may[OF assms(1), of "(end_of \<pi>)" "Decode_Elem d"] assms(2) \<pi>e d_encdec by force
-  have "\<not>Decode_Elem d \<in> fw_may.S_hat_path \<pi> (analysis_dom - d_init)"
+    using not_solves_must_and_may[OF assms(1), of "(end_of \<pi>)" "the_Elem\<^sub>i\<^sub>d d"] assms(2) \<pi>e d_encdec by force
+  have "\<not>the_Elem\<^sub>i\<^sub>d d \<in> fw_may.S_hat_path \<pi> (analysis_dom - d_init)"
     using fw_may.sound_ana_pg_fw_may assms(1)
     unfolding fw_may.summarizes_fw_may_def
      edge_set_def start_def assms(2) edge_set_def start_def
     using assms(3)  d_encdec edge_set_def not_may start_def by (metis (mono_tags) mem_Collect_eq) 
-  then show "Decode_Elem d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
+  then show "the_Elem\<^sub>i\<^sub>d d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
     using opposite_lemma_path
     using assms(1)
     using d_ana by blast 
@@ -2109,7 +2117,7 @@ definition summarizes_bw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow
    "summarizes_bw_must \<rho> \<longleftrightarrow>
      (\<forall>q d.
          \<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>. \<longrightarrow>
-          (\<forall>\<pi>. \<pi> \<in> path_with_word_from_to (Decode_Node q) end \<longrightarrow> Decode_Elem d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init))"
+          (\<forall>\<pi>. \<pi> \<in> path_with_word_from_to (the_Node\<^sub>i\<^sub>d q) end \<longrightarrow> the_Elem\<^sub>i\<^sub>d d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init))"
 
 interpretation fw_must: analysis_BV_forward_must pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
   using analysis_BV_forward_must_def finite_pg_rev analysis_BV_backward_must_axioms
@@ -2187,8 +2195,8 @@ lemma S_hat_path_forward_backward:
 lemma summarizes_fw_must_forward_backward':
   assumes "fw_must.summarizes_fw_must \<rho>"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>."
-  assumes "\<pi> \<in> path_with_word_from_to (Decode_Node q) end"
-  shows "Decode_Elem d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
+  assumes "\<pi> \<in> path_with_word_from_to (the_Node\<^sub>i\<^sub>d q) end"
+  shows "the_Elem\<^sub>i\<^sub>d d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
 proof -
   define rev_\<pi> where "rev_\<pi> = (rev (fst \<pi>), rev (snd \<pi>))"
   have rev_\<pi>_path: "rev_\<pi> \<in> LTS.path_with_word fw_must.edge_set"
@@ -2198,10 +2206,10 @@ proof -
     using  rev_\<pi>_def analysis_BV_backward_must_axioms
       assms(3) pg_rev_def start_of_def edge_set_def end_of_def hd_rev  
       by (metis (mono_tags, lifting) fw_must.start_def mem_Collect_eq prod.sel)
-  have rev_\<pi>_start_end: "end_of rev_\<pi> = Decode_Node q"
+  have rev_\<pi>_start_end: "end_of rev_\<pi> = the_Node\<^sub>i\<^sub>d q"
     using assms(3) rev_\<pi>_def end_of_def last_rev start_of_def
     by (metis (mono_tags, lifting) mem_Collect_eq prod.sel(1))
-  have "Decode_Elem d \<in> fw_must.S_hat_path (rev (fst \<pi>), rev (snd \<pi>)) d_init"
+  have "the_Elem\<^sub>i\<^sub>d d \<in> fw_must.S_hat_path (rev (fst \<pi>), rev (snd \<pi>)) d_init"
     using rev_\<pi>_def rev_\<pi>_path rev_\<pi>_start_end rev_\<pi>_start assms(1) assms(2) 
       fw_must.summarizes_fw_must_def by blast
   then show ?thesis
@@ -2217,9 +2225,9 @@ proof(rule; rule ; rule ;rule ;rule)
   fix q d \<pi>
   assume "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>."
   moreover
-  assume "\<pi> \<in> path_with_word_from_to (Decode_Node q) end"
+  assume "\<pi> \<in> path_with_word_from_to (the_Node\<^sub>i\<^sub>d q) end"
   ultimately
-  show "Decode_Elem d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
+  show "the_Elem\<^sub>i\<^sub>d d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
     using assms summarizes_fw_must_forward_backward' by auto
 qed
 
