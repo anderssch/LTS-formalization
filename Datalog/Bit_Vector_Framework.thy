@@ -59,7 +59,7 @@ abbreviation gen_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var,
 abbreviation BV_Fact :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) lh" ("may\<langle>_\<rangle>.") where  
   "may\<langle>ids\<rangle>. \<equiv> (the_may, ids)"
 
-abbreviation CBV_Fact :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) lh" ("must\<langle>_\<rangle>.") where 
+abbreviation must_Fact :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) lh" ("must\<langle>_\<rangle>.") where 
   "must\<langle>ids\<rangle>. \<equiv> (the_must, ids)"
 
 abbreviation init_Fact :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) lh" ("init\<langle>_\<rangle>.") where
@@ -884,7 +884,7 @@ proof -
 
   define \<rho>' where  "\<rho>' = (\<lambda>p. (if p = the_must then (\<rho> the_must) - {[Node q, Elem d]} else \<rho> p))"
 
-  have CBV_solves: "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s must\<langle>[Cst\<^sub>N q, \<uu>]\<rangle> :- [\<^bold>\<not>may [Cst\<^sub>N q, \<uu>], anadom[\<uu>]] ."
+  have must_solves: "\<rho>' \<Turnstile>\<^sub>c\<^sub>l\<^sub>s must\<langle>[Cst\<^sub>N q, \<uu>]\<rangle> :- [\<^bold>\<not>may [Cst\<^sub>N q, \<uu>], anadom[\<uu>]] ."
     unfolding solves_cls_def
   proof 
     fix \<sigma>
@@ -1064,7 +1064,7 @@ proof -
       unfolding c_def by auto
   qed
   then have "\<rho>' \<Turnstile>\<^sub>d\<^sub>l ana_pg_fw_must"
-    using CBV_solves unfolding fw_may.ana_must_def solves_program_def
+    using must_solves unfolding fw_may.ana_must_def solves_program_def
     by auto
   moreover
   have "\<rho>' \<sqsubset>s_BV\<sqsubset> \<rho>"
@@ -1569,7 +1569,7 @@ proof (rule ccontr)
     unfolding minimal_solution_def using assms(1) by auto
 qed
 
-lemma is_Cst_if_CBV:
+lemma is_Cst_if_must:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[\<pi>, d]\<rangle>."
   shows "is_Cst d"
@@ -1581,7 +1581,7 @@ lemma not_must_action:
 proof
   assume asm: "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[Cst\<^sub>A q,d]\<rangle>."
   then have "[Action q, the_Cst d] \<in> \<rho> the_must"
-    using is_Cst_if_CBV[OF assms(1)] by (cases d) auto
+    using is_Cst_if_must[OF assms(1)] by (cases d) auto
 
   have "finite ana_pg_fw_must"
     using fw_may.ana_pg_fw_may_finite by auto
@@ -1752,7 +1752,7 @@ proof
     unfolding minimal_solution_def by auto
 qed
 
-lemma is_encode_elem_if_CBV_right_arg:
+lemma is_encode_elem_if_must_right_arg:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>."
   shows "\<exists>d'. d = Cst\<^sub>E d'"
@@ -1771,7 +1771,7 @@ lemma not_must_element:
 proof
   assume asm: "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[Cst\<^sub>E q,d]\<rangle>."
   then have "[Elem q, the_Cst d] \<in> \<rho> the_must"
-    using is_Cst_if_CBV[OF assms(1)] by (cases d) auto
+    using is_Cst_if_must[OF assms(1)] by (cases d) auto
 
   have "finite ana_pg_fw_must"
     using fw_may.ana_pg_fw_may_finite by auto
@@ -1940,17 +1940,14 @@ proof
     unfolding minimal_solution_def by auto
 qed
 
-thm not_must_action
-thm not_must_element
-
-lemma is_Cst_if_CBV_left_arg:
+lemma is_Cst_if_must_left_arg:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q,d]\<rangle>."
   shows "is_Cst q"
 proof (cases q)
   case (Var x)
   obtain d' where "d = Cst\<^sub>E d'"
-    using assms is_encode_elem_if_CBV_right_arg by blast 
+    using assms is_encode_elem_if_must_right_arg by blast 
 
   then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[Var x, Cst\<^sub>E d']\<rangle>."
     using Var assms(2) by auto
@@ -1976,7 +1973,7 @@ next
     by auto
 qed
 
-lemma is_encode_node_if_CBV_left_arg:
+lemma is_encode_node_if_must_left_arg:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>."
   shows "\<exists>q'. q = Cst\<^sub>N q'"
@@ -1984,7 +1981,7 @@ proof (cases q)
   case (Var x)
   then show ?thesis
     using 
-      is_Cst_if_CBV_left_arg[OF assms(1), OF assms(2)] by auto
+      is_Cst_if_must_left_arg[OF assms(1), OF assms(2)] by auto
 next
   case (Cst q'')
   show ?thesis
@@ -2003,7 +2000,7 @@ next
   qed
 qed
 
-lemma in_analysis_dom_if_CBV:
+lemma in_analysis_dom_if_must:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>."
   shows "Decode_Elem d \<in> analysis_dom"
@@ -2017,13 +2014,13 @@ lemma sound_ana_pg_fw_must':
   shows "Decode_Elem d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
 proof -
   have d_ana: "Decode_Elem d \<in> analysis_dom"
-    using assms(1) assms(2) in_analysis_dom_if_CBV by auto
+    using assms(1) assms(2) in_analysis_dom_if_must by auto
 
   have \<pi>e: "q = Cst\<^sub>N (end_of \<pi>)"
-    using assms(1) assms(2) assms(3) is_encode_node_if_CBV_left_arg by fastforce
+    using assms(1) assms(2) assms(3) is_encode_node_if_must_left_arg by fastforce
 
   have d_encdec: "d = Cst\<^sub>E (Decode_Elem d)"
-    by (metis cst.sel(2) assms(1) assms(2) id.sel(2) is_encode_elem_if_CBV_right_arg)
+    by (metis cst.sel(2) assms(1) assms(2) id.sel(2) is_encode_elem_if_must_right_arg)
 
   have not_may: "\<not> \<rho> \<Turnstile>\<^sub>l\<^sub>h may\<langle>[Cst\<^sub>N (end_of \<pi>), d]\<rangle>."
     using not_solves_must_and_may[OF assms(1), of "(end_of \<pi>)" "Decode_Elem d"] assms(2) \<pi>e d_encdec by force
