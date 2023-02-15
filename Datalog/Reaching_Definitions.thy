@@ -1,5 +1,10 @@
 theory Reaching_Definitions imports Bit_Vector_Framework begin
 
+\<comment> \<open>We encode the Reaching Definitions analysis into Datalog. First we define the analysis, then
+    we encode the analysis directly into Datalog and prove the encoding correct. Hereafter we
+    encode it into Datalog again, but this time using our Bit-Vector Framework locale. We also prove 
+    this encoding correct.\<close>
+
 
 section \<open>Reaching Definitions\<close>
 
@@ -31,6 +36,8 @@ definition def_path :: "('n list \<times> 'v action list) \<Rightarrow> 'n \<Rig
 
 
 section \<open>Reaching Definitions in Datalog\<close>
+
+\<comment> \<open>Direct encoding of Reaching Definitions into Datalog.\<close>
 
 datatype ('n,'v) RD_elem =
   RD_Node 'n
@@ -346,7 +353,9 @@ theorem RD_sound:
   using assms RD_sound' by (cases pg) force
 
 
-section \<open>Reaching definitions as Bit-Vector Framework analysis\<close>
+section \<open>Reaching Definitions as Bit-Vector Framework analysis\<close>
+
+\<comment> \<open>Encoding of Reaching Definitions into Datalog using the Bit-Vector Framework.\<close>
 
 locale analysis_RD =
   fixes pg :: "('n::finite,'v::finite) program_graph"
