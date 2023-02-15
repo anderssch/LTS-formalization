@@ -357,19 +357,10 @@ section \<open>Reaching Definitions as Bit-Vector Framework analysis\<close>
 
 \<comment> \<open>Encoding of Reaching Definitions into Datalog using the Bit-Vector Framework.\<close>
 
-locale analysis_RD =
-  fixes pg :: "('n::finite,'v::finite) program_graph"
-  assumes "finite (fst pg)"
+locale analysis_RD = program_graph pg
+  for pg :: "('n::finite,'v::finite) program_graph" +
+  assumes "finite edge_set"
 begin
-
-definition edge_set where
-  "edge_set = fst pg"
-
-definition start where
-  "start = fst (snd pg)"
-
-definition "end" where
-  "end = snd (snd pg)"
 
 interpretation LTS edge_set .
 
@@ -576,7 +567,7 @@ theorem RD_sound_again:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t fw_may.ana_pg_fw_may s_BV"
   shows "summarizes_RD \<rho>"
   using assms def_path_S_hat_path fw_may.sound_ana_pg_fw_may unfolding fw_may.summarizes_fw_may_def summarizes_RD.simps
-  using edge_set_def in_mono fw_may.edge_set_def fw_may.start_def start_def summarizes_RD_def by fastforce 
+  using edge_set_def in_mono edge_set_def start_def start_def summarizes_RD_def by fastforce 
 
 end
 

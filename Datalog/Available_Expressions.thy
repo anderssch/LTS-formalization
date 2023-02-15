@@ -46,19 +46,10 @@ definition aexp_path :: "'n list \<times> 'v action list \<Rightarrow> 'v arith 
   "aexp_path \<pi> = {a. aexp_edge_list (transition_list \<pi>) a}"
 
 
-locale analysis_AE =
-  fixes pg :: "('n::finite,'v::finite) program_graph"
-  assumes "finite (fst pg)"
+locale analysis_AE = program_graph pg 
+  for pg :: "('n::finite,'v::finite) program_graph" +
+  assumes "finite edge_set"
 begin
-
-definition edge_set where 
-  "edge_set = fst pg"
-
-definition start where
-  "start = fst (snd pg)"
-
-definition "end" where
-  "end = snd (snd pg)"
 
 interpretation LTS edge_set .
 
@@ -67,10 +58,10 @@ definition analysis_dom_AE :: "'v arith set" where
 
 lemma finite_analysis_dom_AE: "finite analysis_dom_AE"
 proof -
-  have "finite (\<Union> (aexp_edge ` edges_of pg))"
+  have "finite (\<Union> (aexp_edge ` edge_set))"
     by (metis aexp_edge.elims analysis_AE_axioms analysis_AE_def finite_UN_I finite_aexp_action)
   then show ?thesis
-    unfolding analysis_dom_AE_def by auto
+    unfolding analysis_dom_AE_def using edge_set_def by force 
 qed
 
 fun kill_set_AE :: "('n,'v) edge \<Rightarrow> 'v arith set" where
@@ -294,8 +285,8 @@ proof -
   from assms have "fw_must.summarizes_fw_must \<rho>"
     using fw_must.sound_ana_pg_fw_must by auto
   then show ?thesis
-    unfolding summarizes_AE_def fw_must.summarizes_fw_must_def fw_must.edge_set_def edge_set_def
-      fw_must.end_def end_def aexp_path_S_hat_path_iff fw_must.start_def start_def by force
+    unfolding summarizes_AE_def fw_must.summarizes_fw_must_def edge_set_def edge_set_def
+      end_def end_def aexp_path_S_hat_path_iff start_def start_def by force
 qed
 
 end

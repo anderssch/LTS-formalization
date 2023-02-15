@@ -12,19 +12,10 @@ definition node_on_edge_list :: "('n,'v) edge list \<Rightarrow> 'n \<Rightarrow
 definition nodes_on_path :: "'n list \<times> 'v action list \<Rightarrow> 'n set" where
   "nodes_on_path \<pi> = {q. node_on_edge_list (LTS.transition_list \<pi>) q}"
 
-locale analysis_RN =
-  fixes pg :: "('n::finite,'v::finite) program_graph"
+locale analysis_RN = program_graph pg
+  for pg :: "('n::finite,'v::finite) program_graph" +
   assumes "finite (fst pg)"
 begin
-
-definition edge_set where 
-  "edge_set = fst pg"
-
-definition start where
-  "start = fst (snd pg)"
-
-definition "end" where
-  "end = snd (snd pg)"
 
 interpretation LTS edge_set .
 
@@ -42,7 +33,7 @@ definition d_init_RN :: "'n set" where
 
 interpretation bw_may: analysis_BV_backward_may pg analysis_dom_RN kill_set_RN gen_set_RN d_init_RN
   using analysis_BV_backward_may.intro analysis_RN_axioms analysis_RN_def
-  by (metis (mono_tags) analysis_dom_RN_def finite_UNIV subset_UNIV)
+   analysis_dom_RN_def finite_UNIV subset_UNIV by (metis edge_set_def)
 
 lemma node_on_edge_list_S_hat_edge_list:
   assumes "ts \<in> transition_list_path"

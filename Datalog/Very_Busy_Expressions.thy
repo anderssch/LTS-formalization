@@ -9,19 +9,10 @@ definition vbexp_edge_list :: "('n,'v) edge list \<Rightarrow> 'v arith \<Righta
 definition vbexp_path :: "'n list \<times> 'v action list \<Rightarrow> 'v arith set" where
   "vbexp_path \<pi> = {a. vbexp_edge_list (LTS.transition_list \<pi>) a}"
 
-locale analysis_VB =
-  fixes pg :: "('n::finite,'v::finite) program_graph"
-  assumes "finite (fst pg)"
+locale analysis_VB = program_graph pg 
+  for pg :: "('n::finite,'v::finite) program_graph" +
+  assumes "finite edge_set"
 begin
-
-definition edge_set where 
-  "edge_set = fst pg"
-
-definition start where
-  "start = fst (snd pg)"
-
-definition "end" where
-  "end = snd (snd pg)"
 
 interpretation LTS edge_set .
 
@@ -30,10 +21,10 @@ definition analysis_dom_VB :: "'v arith set" where
 
 lemma finite_analysis_dom_VB: "finite analysis_dom_VB"
 proof -
-  have "finite (\<Union> (aexp_edge ` edges_of pg))"
+  have "finite (\<Union> (aexp_edge ` edge_set))"
      by (metis aexp_edge.elims analysis_VB_axioms analysis_VB_def finite_UN_I finite_aexp_action)
   then show ?thesis
-    unfolding analysis_dom_VB_def by auto
+    unfolding analysis_dom_VB_def edge_set_def by auto
 qed
  
 fun kill_set_VB :: "('n,'v) edge \<Rightarrow> 'v arith set" where
@@ -236,8 +227,8 @@ proof -
   from assms have "bw_must.summarizes_bw_must \<rho>"
     using bw_must.sound_ana_pg_bw_must by auto
   then show ?thesis
-    unfolding summarizes_VB_def bw_must.summarizes_bw_must_def bw_must.edge_set_def edge_set_def
-      bw_must.end_def end_def vbexp_path_S_hat_path_iff bw_must.start_def start_def by force
+    unfolding summarizes_VB_def bw_must.summarizes_bw_must_def edge_set_def edge_set_def
+      end_def end_def vbexp_path_S_hat_path_iff start_def start_def by force
 qed
 
 end

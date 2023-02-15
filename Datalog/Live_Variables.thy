@@ -17,19 +17,10 @@ definition use_edge_list :: "('n,'v) edge list \<Rightarrow> 'v \<Rightarrow> bo
 definition use_path :: "'n list \<times> 'v action list \<Rightarrow> 'v set" where
   "use_path \<pi> = {x. use_edge_list (LTS.transition_list \<pi>) x}"
 
-locale analysis_LV =
-  fixes pg :: "('n::finite,'v::finite) program_graph"
-  assumes "finite (fst pg)"
+locale analysis_LV = program_graph pg
+  for pg :: "('n::finite,'v::finite) program_graph" +
+  assumes "finite edge_set"
 begin
-
-definition edge_set where 
-  "edge_set = fst pg"
-
-definition start where
-  "start = fst (snd pg)"
-
-definition "end" where
-  "end = snd (snd pg)"
 
 interpretation LTS edge_set .
 
@@ -221,8 +212,8 @@ proof -
   from assms have "bw_may.summarizes_bw_may \<rho>"
     using bw_may.sound_ana_pg_bw_may[of \<rho>] by auto
   then show ?thesis
-    unfolding summarizes_LV_def bw_may.summarizes_bw_may_def bw_may.edge_set_def edge_set_def
-      bw_may.end_def end_def use_path_S_hat_path by blast
+    unfolding summarizes_LV_def bw_may.summarizes_bw_may_def edge_set_def edge_set_def
+      end_def end_def use_path_S_hat_path by blast
 qed
 
 end

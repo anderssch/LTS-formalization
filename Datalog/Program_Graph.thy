@@ -50,25 +50,54 @@ fun sem_action :: "'v action \<Rightarrow> 'v memory \<rightharpoonup> 'v memory
 
 section \<open>Program Graphs\<close>
 
+
+subsection \<open>Types\<close>
+
 type_synonym ('n,'v) edge = "'n \<times> 'v action \<times> 'n"
 
 type_synonym ('n,'v) program_graph = "('n,'v) edge set \<times> 'n \<times> 'n"
 
-abbreviation edges_of :: "('n,'v) program_graph \<Rightarrow> ('n,'v) edge set" where
-  "edges_of \<equiv> fst"
-
-
-section \<open>Execution Sequences\<close>
-
 type_synonym ('n,'v) config = "'n * 'v memory"
 
-fun initial_config_of :: "('n,'v) config \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
-  "initial_config_of (q,\<sigma>) (es,start,end) \<longleftrightarrow> q = start"
 
-fun final_config_of :: "('n,'v) config \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
-  "final_config_of (q,\<sigma>) (es,start,end) \<longleftrightarrow> q = end"
+subsection \<open>Program Graph Locale\<close>
 
-inductive exe_step :: "('n,'v) program_graph \<Rightarrow> ('n,'v) config \<Rightarrow> 'v action \<Rightarrow> ('n,'v) config \<Rightarrow> bool" where
-  "(q1, \<alpha>, q2) \<in> es \<Longrightarrow> sem_action \<alpha> \<sigma> = Some \<sigma>' \<Longrightarrow> exe_step (es,start,end) (q1,\<sigma>) \<alpha> (q2,\<sigma>')"
+locale program_graph = 
+  fixes pg :: "('n,'v) program_graph"
+begin
+
+definition edge_set where 
+  "edge_set = fst pg"
+
+definition start where
+  "start = fst (snd pg)"
+
+definition "end" where
+  "end = snd (snd pg)"
+
+
+subsubsection \<open>Execution Sequences\<close>
+
+fun initial_config_of :: "('n,'v) config \<Rightarrow> bool" where
+  "initial_config_of (q,\<sigma>) \<longleftrightarrow> q = start"
+
+fun final_config_of :: "('n,'v) config \<Rightarrow> bool" where
+  "final_config_of (q,\<sigma>) \<longleftrightarrow> q = end"
+
+inductive exe_step :: "('n,'v) config \<Rightarrow> 'v action \<Rightarrow> ('n,'v) config \<Rightarrow> bool" where
+  "(q1, \<alpha>, q2) \<in> edge_set \<Longrightarrow> sem_action \<alpha> \<sigma> = Some \<sigma>' \<Longrightarrow> exe_step (q1,\<sigma>) \<alpha> (q2,\<sigma>')"
+
+end
+
+
+subsection \<open>Finite Program Graph Locale\<close>
+
+locale finite_program_graph = program_graph pg
+  for pg :: "('n,'v) program_graph"
+begin
+
+
+
+end
 
 end

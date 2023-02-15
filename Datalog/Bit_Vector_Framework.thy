@@ -87,15 +87,15 @@ abbreviation Cst\<^sub>A :: "'v action \<Rightarrow> (var, ('n, 'v, 'd) cst) id"
   "Cst\<^sub>A \<alpha> == Cst (Action \<alpha>)"
 
 
-section \<open>Forward may-analysis\<close>
+section \<open>Forward may-analysis\<close>       
 
-locale analysis_BV_forward_may =
-  fixes pg :: "('n::finite,'v) program_graph"
+locale analysis_BV_forward_may = program_graph pg 
+  for pg :: "('n::finite,'v) program_graph" +
   fixes analysis_dom :: "'d set"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
-  assumes "finite (edges_of pg)"
+  assumes "finite edge_set"
   assumes "finite analysis_dom"
   assumes "d_init \<subseteq> analysis_dom"
   assumes "\<forall>e. gen_set e \<subseteq> analysis_dom"
@@ -104,15 +104,6 @@ begin
 
 lemma finite_d_init: "finite d_init"
   by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_def finite_subset)
-
-definition edge_set where 
-  "edge_set = edges_of pg"
-
-definition start where
-  "start = fst (snd pg)"
-
-definition "end" where
-  "end = snd (snd pg)"
 
 interpretation LTS edge_set .
 
@@ -461,13 +452,13 @@ end
 
 section \<open>Backward may-analysis\<close>
 
-locale analysis_BV_backward_may =
-  fixes pg :: "('n::finite,'v) program_graph"
+locale analysis_BV_backward_may = program_graph pg
+  for pg :: "('n::finite,'v) program_graph" +
   fixes analysis_dom :: "'d set"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
-  assumes "finite (fst pg)"
+  assumes "finite edge_set"
   assumes "finite analysis_dom"
   assumes "d_init \<subseteq> analysis_dom"
   assumes "\<forall>e. gen_set e \<subseteq> analysis_dom"
@@ -476,15 +467,6 @@ begin
 
 lemma finite_d_init: "finite d_init"
   by (meson analysis_BV_backward_may_axioms analysis_BV_backward_may_def finite_subset)
-
-definition edge_set where
-  "edge_set = fst pg"
-
-definition start where
-  "start = fst (snd pg)"
-
-definition "end" where
-  "end = snd (snd pg)"
 
 interpretation LTS edge_set .
 
@@ -549,7 +531,8 @@ lemma gen_subs_analysis_dom: "(gen_set (rev_edge e)) \<subseteq> analysis_dom"
   by (meson analysis_BV_backward_may_axioms analysis_BV_backward_may_def)
 
 interpretation fw_may: analysis_BV_forward_may pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
-  using analysis_BV_forward_may_def finite_pg_rev by (metis analysis_BV_backward_may_axioms analysis_BV_backward_may_def) 
+  using analysis_BV_forward_may_def finite_pg_rev analysis_BV_backward_may_axioms analysis_BV_backward_may_def
+  by (metis program_graph.edge_set_def) 
 
 abbreviation ana_pg_bw_may where
   "ana_pg_bw_may == fw_may.ana_pg_fw_may"
@@ -639,28 +622,19 @@ end
 
 section \<open>Forward must-analysis\<close>
                                             
-locale analysis_BV_forward_must =
-  fixes pg :: "('n::finite,'v) program_graph"
+locale analysis_BV_forward_must = program_graph pg
+  for pg :: "('n::finite,'v) program_graph" +
   fixes analysis_dom :: "'d set"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
-  assumes "finite (fst pg)"
+  assumes "finite edge_set"
   assumes "finite analysis_dom"
   assumes "d_init \<subseteq> analysis_dom"
 begin
 
 lemma finite_d_init: "finite d_init"
   by (meson analysis_BV_forward_must_axioms analysis_BV_forward_must_def finite_subset)
-
-definition edge_set where
-  "edge_set = fst pg"
-
-definition start where
-  "start = fst (snd pg)"
-
-definition "end" where
-  "end = snd (snd pg)"
 
 interpretation LTS edge_set .
 
@@ -721,7 +695,7 @@ definition summarizes_fw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow
 
 interpretation fw_may: analysis_BV_forward_may pg analysis_dom "\<lambda>e. analysis_dom - (kill_set e)" "(\<lambda>e. analysis_dom - gen_set e)" "analysis_dom - d_init"
   using analysis_BV_forward_may.intro analysis_BV_forward_must_axioms analysis_BV_forward_must_def
-  by (metis Diff_subset)
+  by (metis Diff_subset edge_set_def) 
 
 abbreviation ana_pg_fw_must where
   "ana_pg_fw_must == fw_may.ana_pg_fw_may"
@@ -943,11 +917,11 @@ proof -
     then obtain p ids rhs where c_def: "c = Cls p ids rhs"
       by (cases c) auto
 
-    from c_pg have c_pg': "c \<in> \<Union> (fw_may.ana_edge ` fw_may.edge_set) \<or> 
+    from c_pg have c_pg': "c \<in> \<Union> (fw_may.ana_edge ` edge_set) \<or> 
           c \<in> (fw_may.ana_init ` (analysis_dom - d_init)) \<or>
           c \<in> (fw_may.ana_anadom ` (analysis_dom)) \<or>
-          c \<in> \<Union> (fw_may.ana_kill_edge ` fw_may.edge_set) \<or>
-          c \<in> \<Union> (fw_may.ana_gen_edge ` fw_may.edge_set) \<or>
+          c \<in> \<Union> (fw_may.ana_kill_edge ` edge_set) \<or>
+          c \<in> \<Union> (fw_may.ana_gen_edge ` edge_set) \<or>
           c \<in> range fw_may.ana_must - {fw_may.ana_must q} \<or>
           c \<in> {fw_may.ana_entry_node}"
       unfolding fw_may.ana_pg_fw_may_def by auto
@@ -957,7 +931,7 @@ proof -
     proof (rule)
       fix \<sigma>' :: "var \<Rightarrow> ('n, 'v, 'd) cst"
       { 
-        assume c_ana_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_edge ` fw_may.edge_set)"
+        assume c_ana_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_edge ` edge_set)"
         from c_pg c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
           using \<rho>_sol unfolding solves_program_def solves_cls_def by blast
         from c_ana_edge have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
@@ -982,7 +956,7 @@ proof -
       }
       moreover
       {
-        assume c_ana_kill_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_kill_edge ` fw_may.edge_set)"
+        assume c_ana_kill_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_kill_edge ` edge_set)"
         from c_pg c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
           using \<rho>_sol unfolding solves_program_def solves_cls_def by blast
         from c_ana_kill_edge have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
@@ -990,7 +964,7 @@ proof -
       }
       moreover
       {
-        assume c_ana_gen_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_gen_edge ` fw_may.edge_set)"
+        assume c_ana_gen_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_gen_edge ` edge_set)"
         from c_pg c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
           using \<rho>_sol unfolding solves_program_def solves_cls_def by blast
         from c_ana_gen_edge have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>'"
@@ -1430,11 +1404,11 @@ proof (rule ccontr)
     then obtain p ids rhs where c_def: "c = Cls p ids rhs"
       by (cases c) auto
 
-    from c_pg have c_pg': "c \<in> \<Union> (fw_may.ana_edge ` fw_may.edge_set) \<or> 
+    from c_pg have c_pg': "c \<in> \<Union> (fw_may.ana_edge ` edge_set) \<or> 
           c \<in> (fw_may.ana_init ` (analysis_dom - d_init)) \<or>
           c \<in> (fw_may.ana_anadom ` analysis_dom) \<or>
-          c \<in> \<Union> (fw_may.ana_kill_edge ` fw_may.edge_set) \<or>
-          c \<in> \<Union> (fw_may.ana_gen_edge ` fw_may.edge_set) \<or>
+          c \<in> \<Union> (fw_may.ana_kill_edge ` edge_set) \<or>
+          c \<in> \<Union> (fw_may.ana_gen_edge ` edge_set) \<or>
           c \<in> fw_may.ana_must ` UNIV \<or>
           c \<in> {fw_may.ana_entry_node}"
       unfolding fw_may.ana_pg_fw_may_def by auto
@@ -1444,7 +1418,7 @@ proof (rule ccontr)
     proof 
       fix \<sigma>' :: "var \<Rightarrow> ('n, 'v, 'd) cst"
       { 
-        assume c_ana_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_edge ` fw_may.edge_set)"
+        assume c_ana_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_edge ` edge_set)"
         from c_pg c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
           using assms(1)
           unfolding least_solution_def solves_program_def solves_cls_def by metis
@@ -1471,7 +1445,7 @@ proof (rule ccontr)
       }
       moreover
       {
-        assume c_ana_kill_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_kill_edge ` fw_may.edge_set)"
+        assume c_ana_kill_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_kill_edge ` edge_set)"
         from c_pg c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
           using assms(1)
           unfolding least_solution_def solves_program_def solves_cls_def by metis
@@ -1481,7 +1455,7 @@ proof (rule ccontr)
       }
       moreover
       {
-        assume c_ana_gen_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_gen_edge ` fw_may.edge_set)"
+        assume c_ana_gen_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_gen_edge ` edge_set)"
         from c_pg c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
           using assms(1)
           unfolding least_solution_def solves_program_def solves_cls_def by metis
@@ -1610,11 +1584,11 @@ proof
     then obtain p ids rhs where c_def: "c = Cls p ids rhs"
       by (cases c) auto
 
-    from c_pg have c_pg': "c \<in> \<Union> (fw_may.ana_edge ` fw_may.edge_set) \<or> 
+    from c_pg have c_pg': "c \<in> \<Union> (fw_may.ana_edge ` edge_set) \<or> 
           c \<in> (fw_may.ana_init ` (analysis_dom - d_init)) \<or>
           c \<in> (fw_may.ana_anadom ` analysis_dom) \<or>
-          c \<in> \<Union> (fw_may.ana_kill_edge ` fw_may.edge_set) \<or>
-          c \<in> \<Union> (fw_may.ana_gen_edge ` fw_may.edge_set) \<or>
+          c \<in> \<Union> (fw_may.ana_kill_edge ` edge_set) \<or>
+          c \<in> \<Union> (fw_may.ana_gen_edge ` edge_set) \<or>
           c \<in> fw_may.ana_must ` UNIV \<or>
           c \<in> {fw_may.ana_entry_node}"
       unfolding fw_may.ana_pg_fw_may_def by auto
@@ -1624,7 +1598,7 @@ proof
     proof (rule)
       fix \<sigma>' :: "var \<Rightarrow> ('n, 'v, 'd) cst"
       { 
-        assume c_ana_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_edge ` fw_may.edge_set)"
+        assume c_ana_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_edge ` edge_set)"
         from c_pg c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
           using assms(1)
           unfolding least_solution_def solves_program_def solves_cls_def by metis
@@ -1651,7 +1625,7 @@ proof
       }
       moreover
       {
-        assume c_ana_kill_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_kill_edge ` fw_may.edge_set)"
+        assume c_ana_kill_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_kill_edge ` edge_set)"
         from c_pg c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
           using assms(1)
           unfolding least_solution_def solves_program_def solves_cls_def by metis
@@ -1661,7 +1635,7 @@ proof
       }
       moreover
       {
-        assume c_ana_gen_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_gen_edge ` fw_may.edge_set)"
+        assume c_ana_gen_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_gen_edge ` edge_set)"
         from c_pg c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
           using assms(1)
           unfolding least_solution_def solves_program_def solves_cls_def by metis
@@ -1799,11 +1773,11 @@ proof
     then obtain p ids rhs where c_def: "c = Cls p ids rhs"
       by (cases c) auto
 
-    from c_pg have c_pg': "c \<in> \<Union> (fw_may.ana_edge ` fw_may.edge_set) \<or> 
+    from c_pg have c_pg': "c \<in> \<Union> (fw_may.ana_edge ` edge_set) \<or> 
           c \<in> (fw_may.ana_init ` (analysis_dom - d_init)) \<or>
           c \<in> (fw_may.ana_anadom ` (analysis_dom)) \<or>
-          c \<in> \<Union> (fw_may.ana_kill_edge ` fw_may.edge_set) \<or>
-          c \<in> \<Union> (fw_may.ana_gen_edge ` fw_may.edge_set) \<or>
+          c \<in> \<Union> (fw_may.ana_kill_edge ` edge_set) \<or>
+          c \<in> \<Union> (fw_may.ana_gen_edge ` edge_set) \<or>
           c \<in> fw_may.ana_must ` UNIV \<or>
           c \<in> {fw_may.ana_entry_node}"
       unfolding fw_may.ana_pg_fw_may_def by auto
@@ -1813,7 +1787,7 @@ proof
     proof (rule)
       fix \<sigma>' :: "var \<Rightarrow> ('n, 'v, 'd) cst"
       { 
-        assume c_ana_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_edge ` fw_may.edge_set)"
+        assume c_ana_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_edge ` edge_set)"
         from c_pg c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
           using assms(1)
           unfolding least_solution_def solves_program_def solves_cls_def by metis
@@ -1840,7 +1814,7 @@ proof
       }
       moreover
       {
-        assume c_ana_kill_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_kill_edge ` fw_may.edge_set)"
+        assume c_ana_kill_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_kill_edge ` edge_set)"
         from c_pg c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
           using assms(1)
           unfolding least_solution_def solves_program_def solves_cls_def by metis
@@ -1850,7 +1824,7 @@ proof
       }
       moreover
       {
-        assume c_ana_gen_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_gen_edge ` fw_may.edge_set)"
+        assume c_ana_gen_edge: "Cls p ids rhs \<in> \<Union> (fw_may.ana_gen_edge ` edge_set)"
         from c_pg c_def have "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>'"
           using assms(1)
           unfolding least_solution_def solves_program_def solves_cls_def by metis
@@ -2037,7 +2011,7 @@ proof -
   have "\<not>Decode_Elem d \<in> fw_may.S_hat_path \<pi> (analysis_dom - d_init)"
     using fw_may.sound_ana_pg_fw_may assms(1)
     unfolding fw_may.summarizes_fw_may_def
-     fw_may.edge_set_def fw_may.start_def assms(2) edge_set_def start_def
+     edge_set_def start_def assms(2) edge_set_def start_def
     using assms(3)  d_encdec edge_set_def not_may start_def by (metis (mono_tags) mem_Collect_eq) 
   then show "Decode_Elem d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
     using opposite_lemma_path
@@ -2055,28 +2029,19 @@ end
 
 section \<open>Backward must-analysis\<close>
 
-locale analysis_BV_backward_must =
-  fixes pg :: "('n::finite,'v) program_graph"
+locale analysis_BV_backward_must = program_graph pg
+  for pg :: "('n::finite,'v) program_graph" +
   fixes analysis_dom :: "'d set"
   fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
-  assumes "finite (fst pg)"
+  assumes "finite edge_set"
   assumes "finite analysis_dom"
   assumes "d_init \<subseteq> analysis_dom"
 begin
 
 lemma finite_d_init: "finite d_init"
   by (meson analysis_BV_backward_must_axioms analysis_BV_backward_must_def finite_subset)
-
-definition edge_set where 
-  "edge_set = fst pg"
-
-definition start where 
-  "start = fst (snd pg)"
-
-definition "end" where 
-  "end = snd (snd pg)"
 
 interpretation LTS edge_set .
 
@@ -2137,8 +2102,8 @@ lemma finite_pg_rev: "finite (fst pg_rev)"
   by (metis analysis_BV_backward_must_axioms analysis_BV_backward_must_def edge_set_def finite_imageI fst_conv pg_rev_def)
 
 interpretation fw_must: analysis_BV_forward_must pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
-  using analysis_BV_forward_must_def finite_pg_rev
-  by (metis analysis_BV_backward_must_axioms analysis_BV_backward_must_def) 
+  using analysis_BV_forward_must_def finite_pg_rev analysis_BV_backward_must_axioms
+    analysis_BV_backward_must_def by (metis program_graph.edge_set_def)
 
 abbreviation ana_pg_bw_must where
   "ana_pg_bw_must == fw_must.ana_pg_fw_must"
@@ -2217,10 +2182,9 @@ proof -
     using rev_\<pi>_def assms(3) fw_must.edge_set_def pg_rev_def rev_path_in_rev_pg
     by (metis (no_types, lifting) fst_conv mem_Collect_eq  prod.collapse)
   have rev_\<pi>_start: "start_of rev_\<pi> = fw_must.start"
-    by (metis (mono_tags, lifting) rev_\<pi>_def analysis_BV_backward_must_axioms
-        analysis_BV_backward_must_def assms(3) analysis_BV_forward_must.intro pg_rev_def 
-        start_of_def analysis_BV_forward_must.start_def edge_set_def end_of_def finite_imageI 
-        hd_rev mem_Collect_eq prod.sel(1) prod.sel(2))
+    using  rev_\<pi>_def analysis_BV_backward_must_axioms
+      assms(3) pg_rev_def start_of_def edge_set_def end_of_def hd_rev  
+      by (metis (mono_tags, lifting) fw_must.start_def mem_Collect_eq prod.sel)
   have rev_\<pi>_start_end: "end_of rev_\<pi> = Decode_Node q"
     using assms(3) rev_\<pi>_def end_of_def last_rev start_of_def
     by (metis (mono_tags, lifting) mem_Collect_eq prod.sel(1))
