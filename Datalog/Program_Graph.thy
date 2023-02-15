@@ -100,6 +100,9 @@ locale finite_program_graph = program_graph pg
   assumes "finite edge_set"
 begin
 
+lemma finite_pg_rev: "finite (fst pg_rev)"
+  by (metis finite_program_graph_axioms finite_program_graph_def finite_imageI fst_conv pg_rev_def)
+
 end
 
 

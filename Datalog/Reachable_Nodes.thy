@@ -12,9 +12,8 @@ definition node_on_edge_list :: "('n,'v) edge list \<Rightarrow> 'n \<Rightarrow
 definition nodes_on_path :: "'n list \<times> 'v action list \<Rightarrow> 'n set" where
   "nodes_on_path \<pi> = {q. node_on_edge_list (LTS.transition_list \<pi>) q}"
 
-locale analysis_RN = program_graph pg
-  for pg :: "('n::finite,'v::finite) program_graph" +
-  assumes "finite edge_set"
+locale analysis_RN = finite_program_graph pg
+  for pg :: "('n::finite,'v::finite) program_graph" 
 begin
 
 interpretation LTS edge_set .
@@ -32,14 +31,15 @@ definition d_init_RN :: "'n set" where
   "d_init_RN = {end}"
 
 interpretation bw_may: analysis_BV_backward_may pg analysis_dom_RN kill_set_RN gen_set_RN d_init_RN
-  using analysis_BV_backward_may.intro analysis_RN_axioms analysis_RN_def
-   analysis_dom_RN_def finite_UNIV subset_UNIV 
+  using analysis_BV_backward_may.intro[of pg analysis_dom_RN kill_set_RN gen_set_RN d_init_RN]
+    analysis_BV_backward_may_axioms_def[of pg analysis_dom_RN] finite_program_graph_axioms 
+    finite_program_graph_axioms finite_program_graph_def[of pg] analysis_dom_RN_def by auto
 
 lemma node_on_edge_list_S_hat_edge_list:
   assumes "ts \<in> transition_list_path"
   assumes "trans_tl (last ts) = end"
   assumes "node_on_edge_list ts q"
-  shows "q \<in> S_hat_edge_list ts d_init_RN"
+  shows "q \<in> bw_may.S_hat_edge_list ts d_init_RN"
   using assms
 proof (induction rule: LTS.transition_list_path.induct[OF assms(1)])
   case (1 q' l q'')
