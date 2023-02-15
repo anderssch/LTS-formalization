@@ -357,7 +357,7 @@ section \<open>Reaching Definitions as Bit-Vector Framework analysis\<close>
 
 \<comment> \<open>Encoding of Reaching Definitions into Datalog using the Bit-Vector Framework.\<close>
 
-locale analysis_RD = program_graph pg
+locale analysis_RD = finite_program_graph pg
   for pg :: "('n::finite,'v::finite) program_graph" +
   assumes "finite edge_set"
 begin

@@ -17,9 +17,8 @@ definition use_edge_list :: "('n,'v) edge list \<Rightarrow> 'v \<Rightarrow> bo
 definition use_path :: "'n list \<times> 'v action list \<Rightarrow> 'v set" where
   "use_path \<pi> = {x. use_edge_list (LTS.transition_list \<pi>) x}"
 
-locale analysis_LV = program_graph pg
-  for pg :: "('n::finite,'v::finite) program_graph" +
-  assumes "finite edge_set"
+locale analysis_LV = finite_program_graph pg
+  for pg :: "('n::finite,'v::finite) program_graph" 
 begin
 
 interpretation LTS edge_set .
