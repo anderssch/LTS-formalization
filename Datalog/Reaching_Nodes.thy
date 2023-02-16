@@ -1,7 +1,9 @@
 theory Reachable_Nodes imports Bit_Vector_Framework begin
 
 
-section \<open>Reaching Nodes\<close>
+section \<open>Reachable Nodes\<close>
+
+\<comment> \<open>For each node calculates to which nodes the execution may reach in the future\<close>
 
 fun nodes_on_edge :: "('n,'v) edge \<Rightarrow> 'n set" where
   "nodes_on_edge (q1, \<alpha>, q2) = {q1, q2}"
