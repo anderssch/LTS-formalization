@@ -1764,6 +1764,32 @@ proof (rule ccontr)
     by (metis assms(1,3) dl'_def finite_below_finite least_iff_minimal minimal_solution_def strat_wf_mod_if_strat_wf)
 qed
 
+lemma meaning_lh_least':
+  assumes "finite dl"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
+  assumes "strat_wf s dl"
+  assumes "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+  shows "\<exists>c \<in> dl. lh_consequence \<rho> c ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
+  using assms meaning_PosLit_least' by fastforce
+
+lemma meaning_lh_least:
+  assumes "finite dl"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
+  assumes "strat_wf s dl"
+  shows "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma> \<longleftrightarrow> (\<exists>c \<in> dl. lh_consequence \<rho> c ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>))"
+proof
+  assume "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+  then show "\<exists>c \<in> dl. lh_consequence \<rho> c ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
+    by (meson assms meaning_lh_least')
+next
+  assume "\<exists>c \<in> dl. lh_consequence \<rho> c ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
+  then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+    unfolding lh_consequence_def
+    using assms(2) eval_ids_is_substv_ids least_solution_def meaning_cls.simps meaning_lh.simps solves_cls_def 
+      solves_program_def clause.exhaust clause.sel(3)
+      prod.inject substv_lh.simps the_lh.simps by metis
+qed
+
 lemma meaning_PosLit_least:
   assumes "finite dl"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
@@ -1772,7 +1798,7 @@ lemma meaning_PosLit_least:
 proof
   assume "\<lbrakk>\<^bold>+ p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
   then show "\<exists>c \<in> dl. lh_consequence \<rho> c ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
-    by (meson assms(1) assms(2) assms(3) meaning_PosLit_least')
+    by (meson assms(1,2,3) meaning_PosLit_least')
 next
   assume "\<exists>c \<in> dl. lh_consequence \<rho> c ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
   then show "\<lbrakk>\<^bold>+ p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
@@ -1781,6 +1807,13 @@ next
       solves_program_def clause.exhaust clause.sel(3) meaning_rh.simps(3) 
       prod.inject substv_lh.simps the_lh.simps by metis
 qed
+
+lemma meaning_NegLit_least:
+  assumes "finite dl"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
+  assumes "strat_wf s dl"
+  shows "\<lbrakk>\<^bold>\<not> p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> (\<not>(\<exists>c \<in> dl. lh_consequence \<rho> c ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)))"
+  by (metis assms(1,2,3) meaning_PosLit_least meaning_rh.simps(3) meaning_rh.simps(4))
 
 lemma solves_PosLit_least:
   assumes "finite dl"
@@ -1792,15 +1825,21 @@ proof -
   have "\<forall>\<sigma>. ((p, ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) = (p, ids)"
     using assms(4) by (induction ids) (auto simp add: is_Cst_def)
   then show ?thesis
-    by (metis assms(1) assms(2) assms(3) meaning_PosLit_least solves_rh.simps)
+    by (metis assms(1,2,3) meaning_PosLit_least solves_rh.simps)
 qed
 
-lemma meaning_NegLit_least:
+lemma solves_lh_least:
   assumes "finite dl"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
   assumes "strat_wf s dl"
-  shows "\<lbrakk>\<^bold>\<not> p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma> \<longleftrightarrow> (\<not>(\<exists>c \<in> dl. lh_consequence \<rho> c ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)))"
-  by (metis assms(1) assms(2) assms(3) meaning_PosLit_least meaning_rh.simps(3) meaning_rh.simps(4))
+  assumes "\<forall>a \<in> set ids. is_Cst a"
+  shows "\<rho> \<Turnstile>\<^sub>l\<^sub>h (p, ids) \<longleftrightarrow> (\<exists>c \<in> dl. lh_consequence \<rho> c (p,ids))"
+proof -
+  have "\<forall>\<sigma>. ((p, ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) = (p, ids)"
+    using assms(4) by (induction ids) (auto simp add: is_Cst_def)
+  then show ?thesis
+    by (metis assms(1,2,3) meaning_lh_least solves_lh.simps)
+qed
 
 lemma solves_NegLit_least:
   assumes "finite dl"
@@ -1812,7 +1851,7 @@ proof -
   have "\<forall>\<sigma>. ((p, ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) = (p, ids)"
     using assms(4) by (induction ids) (auto simp add: is_Cst_def)
   then show ?thesis
-    by (metis assms(1) assms(2) assms(3) meaning_NegLit_least solves_rh.simps)
+    by (metis assms(1,2,3) meaning_NegLit_least solves_rh.simps)
 qed
 
 end
