@@ -127,6 +127,70 @@ fun substv_cls :: "('p,'x,'c) clause \<Rightarrow> ('x,'c) var_val \<Rightarrow>
 
 section \<open>Datalog lemmas\<close>
 
+subsection \<open>Variable valuations\<close>
+
+lemma substv_id_is_Cst_eval_id:
+  "a' \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>' = Cst (\<lbrakk>a'\<rbrakk>\<^sub>i\<^sub>d \<sigma>')"
+  by (cases a') auto
+
+lemma eval_id_is_substv_id:
+  "\<lbrakk>a'\<rbrakk>\<^sub>i\<^sub>d \<sigma>' = \<lbrakk>a\<rbrakk>\<^sub>i\<^sub>d \<sigma> \<longleftrightarrow> (a' \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>') = (a \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>)"
+  by (cases a'; cases a) auto
+
+lemma eval_ids_is_substv_ids:
+  "\<lbrakk>ids'\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma>' = \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<longleftrightarrow> (ids' \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>') = (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>)"
+proof (induction ids' arbitrary: ids)
+  case Nil
+  then show ?case 
+    by auto
+next
+  case (Cons a ids')
+  note Cons_outer = Cons
+  show ?case
+  proof (cases ids)
+    case Nil
+    then show ?thesis
+      using Cons_outer by auto
+  next
+    case (Cons a list)
+    then show ?thesis
+      using eval_id_is_substv_id Cons_outer by force
+  qed
+qed
+
+lemma solves_rh_substv_rh_if_meaning_rh:
+  assumes "\<lbrakk>a\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
+  shows "\<rho> \<Turnstile>\<^sub>r\<^sub>h (a \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma>)"
+using assms proof (induction a)
+  case (Eql a a')
+  then show ?case 
+    by (auto simp add: eval_id_is_substv_id)
+next
+  case (Neql a a')
+  then show ?case
+    using eval_id_is_substv_id by (auto simp add: substv_id_is_Cst_eval_id) 
+next
+  case (PosLit p ids)
+  then show ?case 
+    by (auto simp add: substv_id_is_Cst_eval_id comp_def eval_id_is_substv_id) 
+next
+  case (NegLit p ids)
+  then show ?case 
+    by (auto simp add: substv_id_is_Cst_eval_id comp_def eval_id_is_substv_id) 
+qed
+
+lemma solves_lh_substv_lh_if_meaning_lh:
+  assumes "\<lbrakk>a\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+  shows "\<rho> \<Turnstile>\<^sub>l\<^sub>h (a \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
+proof -
+  obtain p ids where a_split: "a = (p, ids)"
+    by (cases a)
+  show ?thesis
+    using assms unfolding a_split
+    by (auto simp add: substv_id_is_Cst_eval_id comp_def eval_id_is_substv_id) 
+qed
+
+
 subsection \<open>Solve lhs\<close>
 
 lemma solves_lh_iff_solves_lh: "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids [] \<longleftrightarrow> \<rho> \<Turnstile>\<^sub>r\<^sub>h (\<^bold>+ p ids)"
@@ -1563,31 +1627,6 @@ qed
 
 
 subsection \<open>Negation\<close>
-
-lemma eval_id_is_substv_id:
-  "\<lbrakk>ids'\<rbrakk>\<^sub>i\<^sub>d \<sigma>' = \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d \<sigma> \<longleftrightarrow> (ids' \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>') = (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>)"
-  by (cases ids'; cases ids) auto
-
-lemma eval_ids_is_substv_ids:
-  "\<lbrakk>ids'\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma>' = \<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma> \<longleftrightarrow> (ids' \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>') = (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>)"
-proof (induction ids' arbitrary: ids)
-  case Nil
-  then show ?case 
-    by auto
-next
-  case (Cons a ids')
-  note Cons_outer = Cons
-  show ?case
-  proof (cases ids)
-    case Nil
-    then show ?thesis
-      using Cons_outer by auto
-  next
-    case (Cons a list)
-    then show ?thesis
-      using eval_id_is_substv_id Cons_outer by force
-  qed
-qed
 
 definition agree_var_val :: "'x set \<Rightarrow> ('x, 'c) var_val \<Rightarrow> ('x, 'c) var_val \<Rightarrow> bool " where
   "agree_var_val xs \<sigma> \<sigma>' \<longleftrightarrow> (\<forall>x \<in> xs. \<sigma> x = \<sigma>' x)"

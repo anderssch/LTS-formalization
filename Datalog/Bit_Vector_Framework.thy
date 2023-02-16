@@ -1164,33 +1164,6 @@ proof -
     using \<open>d = Cst d'\<close> \<open>d' = Elem d''\<close> assms(1) assms(2) in_analysis_dom_if_anadom' by auto
 qed
 
-
-lemma XXXX:
-  assumes "\<lbrakk>a\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
-  shows "\<rho> \<Turnstile>\<^sub>r\<^sub>h (a \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma>)"
-  using assms
-  apply auto
-  subgoal for \<sigma>'
-    apply (induction a)
-       apply (simp add: eval_id_is_substv_id)
-      apply (metis eval_id.simps(2) eval_id_is_substv_id meaning_rh.simps(2) substv_id.simps(2) substv_rh.simps(2))
-     apply auto
-     apply (smt (verit, ccfv_SIG) comp_apply eval_id.elims eval_id.simps(2) map_eq_conv substv_id.simps(1) substv_id.simps(2))
-    apply (smt (verit, best) comp_apply eval_id.elims eval_id_is_substv_id map_eq_conv substv_id.simps(1) substv_id.simps(2))
-    done
-  done
-
-lemma XXXX2:
-  assumes "\<lbrakk>a\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
-  shows "\<rho> \<Turnstile>\<^sub>l\<^sub>h (a \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
-  using assms
-  apply (cases a)
-  apply auto
-  subgoal for p ids \<sigma>'
-    apply (smt (verit) comp_apply eval_id.elims eval_id.simps(2) map_eq_conv substv_id.simps(1) substv_id.simps(2))
-    done
-  done 
-
 lemma must_fst_id_is_Cst:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q,d]\<rangle>."
@@ -1203,7 +1176,7 @@ proof (rule ccontr)
     using assms
     by auto
   then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[Cst\<^sub>A undefined, d \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined)]\<rangle>."
-    using XXXX2[of "must\<langle>[q, d]\<rangle>." \<rho> "(\<lambda>x. Action undefined)"] qu by auto
+    using solves_lh_substv_lh_if_meaning_lh[of "must\<langle>[q, d]\<rangle>." \<rho> "(\<lambda>x. Action undefined)"] qu by auto
   moreover
   have "is_Cst (Cst\<^sub>A undefined)"
     by auto
@@ -1233,7 +1206,7 @@ proof (rule ccontr)
     using assms
     by auto
   then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined), Cst\<^sub>A undefined]\<rangle>."
-    using XXXX2[of "must\<langle>[q, d]\<rangle>." \<rho> "(\<lambda>x. Action undefined)"] qu by auto
+    using solves_lh_substv_lh_if_meaning_lh[of "must\<langle>[q, d]\<rangle>." \<rho> "(\<lambda>x. Action undefined)"] qu by auto
   moreover
   have "is_Cst (Cst\<^sub>A undefined)"
     by auto
@@ -1267,7 +1240,7 @@ proof (rule ccontr)
   then have "\<sigma>' the_\<uu> = Action undefined"
     by auto
   then have "\<rho> \<Turnstile>\<^sub>r\<^sub>h anadom[(Cst\<^sub>A undefined)]"
-    using \<sigma>'_p(2) XXXX XXXX2 by auto
+    using \<sigma>'_p(2) solves_rh_substv_rh_if_meaning_rh  by auto
   then show False
     using assms(1) not_anadom_action by auto
 qed
@@ -1315,15 +1288,15 @@ proof -
   from \<sigma>_p(2) have "\<lbrakk>\<^bold>\<not>may[Cst\<^sub>N q', \<uu>]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
     by auto
   then have "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>may[q, d]"
-    using XXXX \<open>\<sigma> the_\<uu> = d'\<close> \<open>d = Cst d'\<close> \<open>q = Cst\<^sub>N q'\<close> by force 
+    using solves_rh_substv_rh_if_meaning_rh \<open>\<sigma> the_\<uu> = d'\<close> \<open>d = Cst d'\<close> \<open>q = Cst\<^sub>N q'\<close> by force 
   have "\<lbrakk>anadom[\<uu>]\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
     using \<sigma>_p(2) by auto
   then have "\<rho> \<Turnstile>\<^sub>r\<^sub>h anadom[d]"
-    using XXXX \<open>\<sigma> the_\<uu> = d'\<close> \<open>d = Cst d'\<close> \<open>q = Cst\<^sub>N q'\<close> by force
+    using solves_rh_substv_rh_if_meaning_rh \<open>\<sigma> the_\<uu> = d'\<close> \<open>d = Cst d'\<close> \<open>q = Cst\<^sub>N q'\<close> by force
   then have "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom \<and> is_Elem\<^sub>i\<^sub>d d"
     using in_analysis_dom_if_anadom[of \<rho> d] assms by fastforce
   show ?thesis
-    using \<open>\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>may [q, d]\<close> \<open>\<rho> \<Turnstile>\<^sub>r\<^sub>h anadom [d]\<close> \<open>q = Cst\<^sub>N q'\<close> 
+    using \<open>\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>may [q, d]\<close> \<open>\<rho> \<Turnstile>\<^sub>r\<^sub>h anadom [d]\<close> \<open>q = Cst\<^sub>N q'\<close>
       \<open>the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom \<and> is_Elem\<^sub>i\<^sub>d d\<close> by auto
 qed
 
