@@ -1,7 +1,7 @@
 theory Reachable_Nodes imports Bit_Vector_Framework begin
 
 
-section \<open>Possibly Terminating Nodes\<close>
+section \<open>Reaching Nodes\<close>
 
 fun nodes_on_edge :: "('n,'v) edge \<Rightarrow> 'n set" where
   "nodes_on_edge (q1, \<alpha>, q2) = {q1, q2}"
@@ -12,39 +12,39 @@ definition node_on_edge_list :: "('n,'v) edge list \<Rightarrow> 'n \<Rightarrow
 definition nodes_on_path :: "'n list \<times> 'v action list \<Rightarrow> 'n set" where
   "nodes_on_path \<pi> = {q. node_on_edge_list (LTS.transition_list \<pi>) q}"
 
-locale analysis_PTN = finite_program_graph pg
+locale analysis_RN = finite_program_graph pg
   for pg :: "('n::finite,'v::finite) program_graph" 
 begin
 
 interpretation LTS edge_set .
 
-definition analysis_dom_PTN :: "'n set" where
-  "analysis_dom_PTN = UNIV"
+definition analysis_dom_RN :: "'n set" where
+  "analysis_dom_RN = UNIV"
 
-fun kill_set_PTN :: "('n,'v) edge \<Rightarrow> 'n set" where
-  "kill_set_PTN (q\<^sub>o, \<alpha>, q\<^sub>s) = {}"
+fun kill_set_RN :: "('n,'v) edge \<Rightarrow> 'n set" where
+  "kill_set_RN (q\<^sub>o, \<alpha>, q\<^sub>s) = {}"
 
-fun gen_set_PTN :: "('n,'v) edge \<Rightarrow> 'n set" where
-  "gen_set_PTN (q\<^sub>o, \<alpha>, q\<^sub>s) = {q\<^sub>o}"
+fun gen_set_RN :: "('n,'v) edge \<Rightarrow> 'n set" where
+  "gen_set_RN (q\<^sub>o, \<alpha>, q\<^sub>s) = {q\<^sub>o}"
 
-definition d_init_PTN :: "'n set" where
-  "d_init_PTN = {end}"
+definition d_init_RN :: "'n set" where
+  "d_init_RN = {end}"
 
-interpretation bw_may: analysis_BV_backward_may pg analysis_dom_PTN kill_set_PTN gen_set_PTN d_init_PTN
-  using analysis_BV_backward_may.intro[of pg analysis_dom_PTN kill_set_PTN gen_set_PTN d_init_PTN]
-    analysis_BV_backward_may_axioms_def[of pg analysis_dom_PTN] finite_program_graph_axioms 
-    finite_program_graph_axioms finite_program_graph_def[of pg] analysis_dom_PTN_def by auto
+interpretation bw_may: analysis_BV_backward_may pg analysis_dom_RN kill_set_RN gen_set_RN d_init_RN
+  using analysis_BV_backward_may.intro[of pg analysis_dom_RN kill_set_RN gen_set_RN d_init_RN]
+    analysis_BV_backward_may_axioms_def[of pg analysis_dom_RN] finite_program_graph_axioms 
+    finite_program_graph_axioms finite_program_graph_def[of pg] analysis_dom_RN_def by auto
 
 lemma node_on_edge_list_S_hat_edge_list:
   assumes "ts \<in> transition_list_path"
   assumes "trans_tl (last ts) = end"
   assumes "node_on_edge_list ts q"
-  shows "q \<in> bw_may.S_hat_edge_list ts d_init_PTN"
+  shows "q \<in> bw_may.S_hat_edge_list ts d_init_RN"
   using assms
 proof (induction rule: LTS.transition_list_path.induct[OF assms(1)])
   case (1 q' l q'')
   then show ?case
-    by (simp add: d_init_PTN_def Cons_eq_append_conv bw_may.S_hat_def node_on_edge_list_def)
+    by (simp add: d_init_RN_def Cons_eq_append_conv bw_may.S_hat_def node_on_edge_list_def)
 next
   case (2 q' l q'' l' q''' ts)
   from 2(6) obtain \<pi>1 \<pi>2 e where 
@@ -65,14 +65,14 @@ next
         unfolding bw_may.S_hat_edge_list.simps bw_may.S_hat_def by auto
     next
       assume "q = q''"
-      then have "q \<in> bw_may.S_hat_edge_list ((q'', l', q''') # ts) d_init_PTN"
+      then have "q \<in> bw_may.S_hat_edge_list ((q'', l', q''') # ts) d_init_RN"
         using "2.IH" "2.hyps"(2) "2.prems"(2) node_on_edge_list_def by fastforce
       then show ?case
         unfolding bw_may.S_hat_edge_list.simps bw_may.S_hat_def by auto
     qed
   next
     assume "e \<in> set ((q'', l', q''') # ts)"
-    then have "q \<in> bw_may.S_hat_edge_list ((q'', l', q''') # ts) d_init_PTN"
+    then have "q \<in> bw_may.S_hat_edge_list ((q'', l', q''') # ts) d_init_RN"
       by (metis "2.IH" "2.hyps"(2) "2.prems"(2) \<open>q \<in> nodes_on_edge e\<close> append_Cons append_Nil in_set_conv_decomp last.simps list.distinct(1) node_on_edge_list_def)
     then show ?case
       unfolding bw_may.S_hat_edge_list.simps bw_may.S_hat_def by auto
@@ -83,7 +83,7 @@ qed
 lemma S_hat_edge_list_node_on_edge_list:
   assumes "\<pi> \<noteq> []"
   assumes "trans_tl (last \<pi>) = end"
-  assumes "q \<in> bw_may.S_hat_edge_list \<pi> d_init_PTN"
+  assumes "q \<in> bw_may.S_hat_edge_list \<pi> d_init_RN"
   shows "node_on_edge_list \<pi> q"
   using assms 
 proof (induction \<pi>)
@@ -93,12 +93,12 @@ proof (induction \<pi>)
 next
   case (Cons e \<pi>)
   from Cons(4) have 
-    "q \<in> bw_may.S_hat_edge_list \<pi> d_init_PTN - kill_set_PTN e \<or>
-     q \<in> gen_set_PTN e"
+    "q \<in> bw_may.S_hat_edge_list \<pi> d_init_RN - kill_set_RN e \<or>
+     q \<in> gen_set_RN e"
     using bw_may.S_hat_def by auto
   then show ?case
   proof 
-    assume q_Shat: "q \<in> bw_may.S_hat_edge_list \<pi> d_init_PTN - kill_set_PTN e"
+    assume q_Shat: "q \<in> bw_may.S_hat_edge_list \<pi> d_init_RN - kill_set_RN e"
     have "\<pi> \<noteq> [] \<or> \<pi> = []"
       by auto
     then show ?thesis
@@ -110,14 +110,14 @@ next
     next
       assume "\<pi> = []"
       then show "node_on_edge_list (e # \<pi>) q"
-        using d_init_PTN_def q_Shat
-        by (metis Cons.prems(2) Diff_empty append.left_neutral append_Cons bw_may.S_hat_edge_list.simps(1) insertI1 insert_commute kill_set_PTN.elims last_ConsL nodes_on_edge.elims node_on_edge_list_def singleton_iff trans_tl.simps)   
+        using d_init_RN_def q_Shat
+        by (metis Cons.prems(2) Diff_empty append.left_neutral append_Cons bw_may.S_hat_edge_list.simps(1) insertI1 insert_commute kill_set_RN.elims last_ConsL nodes_on_edge.elims node_on_edge_list_def singleton_iff trans_tl.simps)   
  qed
   next
-    assume "q \<in> gen_set_PTN e"
+    assume "q \<in> gen_set_RN e"
     then show ?thesis
       unfolding node_on_edge_list_def
-      by (metis append.left_neutral append_Cons empty_iff gen_set_PTN.elims insert_iff nodes_on_edge.simps)
+      by (metis append.left_neutral append_Cons empty_iff gen_set_RN.elims insert_iff nodes_on_edge.simps)
   qed
 qed
 
@@ -125,7 +125,7 @@ lemma node_on_edge_list_UNIV_S_hat_edge_list:
   assumes "\<pi> \<in> transition_list_path"
   assumes "\<pi> \<noteq> []"
   assumes "trans_tl (last \<pi>) = end"
-  shows "{q. node_on_edge_list \<pi> q} = bw_may.S_hat_edge_list \<pi> d_init_PTN"
+  shows "{q. node_on_edge_list \<pi> q} = bw_may.S_hat_edge_list \<pi> d_init_RN"
   using assms node_on_edge_list_S_hat_edge_list S_hat_edge_list_node_on_edge_list by auto
 
 lemma nodes_singleton_if_path_with_word_empty':
@@ -295,7 +295,7 @@ lemma nodes_on_path_S_hat_path:
   assumes "\<pi> \<in> path_with_word"
   assumes "snd \<pi> \<noteq> []"
   assumes "last (fst \<pi>) = end"
-  shows "nodes_on_path \<pi> = bw_may.S_hat_path \<pi> d_init_PTN"
+  shows "nodes_on_path \<pi> = bw_may.S_hat_path \<pi> d_init_RN"
 proof -
   have "trans_tl (last (LTS.transition_list \<pi>)) = end"
     using assms(1,2,3) last_trans_tl[of "fst \<pi>" "snd \<pi>"] by auto
@@ -311,13 +311,13 @@ proof -
     by (simp add: bw_may.S_hat_path_def node_on_edge_list_UNIV_S_hat_edge_list nodes_on_path_def)
 qed
 
-definition summarizes_PTN where
-  "summarizes_PTN \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> path_with_word_to end \<longrightarrow> d \<in> nodes_on_path \<pi> \<longrightarrow> 
+definition summarizes_RN where
+  "summarizes_RN \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> path_with_word_to end \<longrightarrow> d \<in> nodes_on_path \<pi> \<longrightarrow> 
                          \<rho> \<Turnstile>\<^sub>l\<^sub>h may\<langle>[Cst\<^sub>N (start_of \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
-theorem PTN_sound:
+theorem RN_sound:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t bw_may.ana_pg_bw_may s_BV"
-  shows "summarizes_PTN \<rho>"
+  shows "summarizes_RN \<rho>"
 proof -
   from assms have summary: "bw_may.summarizes_bw_may \<rho>"
     using bw_may.sound_ana_pg_bw_may[of \<rho>] by auto
@@ -331,7 +331,7 @@ proof -
       using \<pi>_path_to_end end_def end_def by fastforce
     then have "last (fst \<pi>) = end"
       using end_def end_def end_of_def by auto
-    then have "d \<in> bw_may.S_hat_path \<pi> d_init_PTN"
+    then have "d \<in> bw_may.S_hat_path \<pi> d_init_RN"
       using \<pi>_path_to_end d_on_path nodes_on_path_S_hat_path[of \<pi>] Nil_is_append_conv list.discI 
         mem_Collect_eq node_on_edge_list_def nodes_on_path_def prod.exhaust_sel 
         transition_list.simps(2) nodes_singleton_if_path_with_word_empty
@@ -341,7 +341,7 @@ proof -
   }
 
   then show ?thesis
-    unfolding summarizes_PTN_def by auto
+    unfolding summarizes_RN_def by auto
 qed
 
 end
