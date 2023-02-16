@@ -1172,21 +1172,115 @@ lemma XXXX:
   apply auto
   subgoal for \<sigma>'
     apply (induction a)
-    apply (simp add: eval_id_is_substv_id)
-    apply (metis eval_id.simps(2) eval_id_is_substv_id meaning_rh.simps(2) substv_id.simps(2) substv_rh.simps(2))
-    apply auto
-    apply (smt (verit, ccfv_SIG) comp_apply eval_id.elims eval_id.simps(2) map_eq_conv substv_id.simps(1) substv_id.simps(2))
-    by (smt (verit, best) comp_apply eval_id.elims eval_id_is_substv_id map_eq_conv substv_id.simps(1) substv_id.simps(2))
+       apply (simp add: eval_id_is_substv_id)
+      apply (metis eval_id.simps(2) eval_id_is_substv_id meaning_rh.simps(2) substv_id.simps(2) substv_rh.simps(2))
+     apply auto
+     apply (smt (verit, ccfv_SIG) comp_apply eval_id.elims eval_id.simps(2) map_eq_conv substv_id.simps(1) substv_id.simps(2))
+    apply (smt (verit, best) comp_apply eval_id.elims eval_id_is_substv_id map_eq_conv substv_id.simps(1) substv_id.simps(2))
+    done
   done
 
+lemma XXXX2:
+  assumes "\<lbrakk>a\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+  shows "\<rho> \<Turnstile>\<^sub>l\<^sub>h (a \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
+  using assms
+  apply (cases a)
+  apply auto
+  subgoal for p ids \<sigma>'
+    apply (smt (verit) comp_apply eval_id.elims eval_id.simps(2) map_eq_conv substv_id.simps(1) substv_id.simps(2))
+    done
+  done 
+
+lemma must_fst_id_is_Cst:
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q,d]\<rangle>."
+  shows "is_Cst q"
+proof (rule ccontr)
+  assume "\<not> is_Cst q"
+  then have qu: "q = \<uu>"
+    by (metis (full_types) id.disc(1) id.exhaust_disc id.expand var.exhaust)
+  then have "\<lbrakk>must\<langle>[q,d]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> (\<lambda>x. Action undefined)" 
+    using assms
+    by auto
+  then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[Cst\<^sub>A undefined, d \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined)]\<rangle>."
+    using XXXX2[of "must\<langle>[q, d]\<rangle>." \<rho> "(\<lambda>x. Action undefined)"] qu by auto
+  moreover
+  have "is_Cst (Cst\<^sub>A undefined)"
+    by auto
+  moreover
+  have "is_Cst (d \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined))"
+    by (metis id.disc(4) substv_id.elims)
+  ultimately
+  have "\<exists>c \<in> ana_pg_fw_must. lh_consequence \<rho> c (must\<langle>[Cst\<^sub>A undefined, d \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined)]\<rangle>.)"
+    using solves_lh_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>A undefined, d \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined)]"
+        the_must]
+    by (simp add: assms(1) fw_may.ana_pg_fw_may_finite fw_may.ana_pg_fw_may_stratified)
+  then show False
+    unfolding fw_may.ana_pg_fw_may_def fw_may.ana_entry_node_def lh_consequence_def
+      fw_may.ana_init_def fw_may.ana_anadom_def fw_may.ana_kill_edge_def fw_may.ana_gen_edge_def
+      fw_may.ana_must_def by auto
+qed
+
+lemma must_snd_id_is_Cst:
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q,d]\<rangle>."
+  shows "is_Cst d"
+proof (rule ccontr)
+  assume "\<not> is_Cst d"
+  then have qu: "d = \<uu>"
+    by (metis (full_types) id.disc(1) id.exhaust_disc id.expand var.exhaust)
+  then have "\<lbrakk>must\<langle>[q,d]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> (\<lambda>x. Action undefined)" 
+    using assms
+    by auto
+  then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined), Cst\<^sub>A undefined]\<rangle>."
+    using XXXX2[of "must\<langle>[q, d]\<rangle>." \<rho> "(\<lambda>x. Action undefined)"] qu by auto
+  moreover
+  have "is_Cst (Cst\<^sub>A undefined)"
+    by auto
+  moreover
+  have "is_Cst (q \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined))"
+    by (metis id.disc(4) substv_id.elims)
+  ultimately
+  have "\<exists>c \<in> ana_pg_fw_must. lh_consequence \<rho> c (must\<langle>[q \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined), Cst\<^sub>A undefined]\<rangle>.)"
+    using solves_lh_least[of ana_pg_fw_must \<rho> s_BV "[q \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined), Cst\<^sub>A undefined]"
+        the_must]
+    by (simp add: assms(1) fw_may.ana_pg_fw_may_finite fw_may.ana_pg_fw_may_stratified)
+    then obtain c where c_p:
+    "c \<in> ana_pg_fw_must"
+    "lh_consequence \<rho> c (must\<langle>[q \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined), Cst\<^sub>A undefined]\<rangle>.)"
+    by auto
+  from this have "\<exists>q'. c = must\<langle>[Cst\<^sub>N q',\<uu>]\<rangle> :- [\<^bold>\<not>may[Cst\<^sub>N q',\<uu>], anadom[\<uu>]]."
+    unfolding fw_may.ana_pg_fw_may_def fw_may.ana_entry_node_def lh_consequence_def
+      fw_may.ana_init_def fw_may.ana_anadom_def fw_may.ana_kill_edge_def fw_may.ana_gen_edge_def
+      fw_may.ana_must_def by auto
+  then obtain q' where "c = must\<langle>[Cst\<^sub>N q',\<uu>]\<rangle> :- [\<^bold>\<not>may[Cst\<^sub>N q',\<uu>], anadom[\<uu>]]."
+    by auto
+  then have "lh_consequence \<rho> (must\<langle>[Cst\<^sub>N q',\<uu>]\<rangle> :- [\<^bold>\<not>may[Cst\<^sub>N q',\<uu>], anadom[\<uu>]].) (must\<langle>[q \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined), Cst\<^sub>A undefined]\<rangle>.)"
+    using c_p(2) by auto
+  then have "\<exists>\<sigma>'. (must\<langle>[Cst\<^sub>N q', \<uu>]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = must\<langle>[q \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined), Cst\<^sub>A undefined]\<rangle>. \<and>
+        \<lbrakk>[\<^bold>\<not>may[Cst\<^sub>N q', \<uu>], anadom[\<uu>]]\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
+    unfolding lh_consequence_def using the_lh.simps clause.sel(3) by metis
+  then obtain \<sigma>' where \<sigma>'_p:
+    "(must\<langle>[Cst\<^sub>N q', \<uu>]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = must\<langle>[q \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined), Cst\<^sub>A undefined]\<rangle>."
+    "\<lbrakk>[\<^bold>\<not>may[Cst\<^sub>N q', \<uu>], anadom[\<uu>]]\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
+    by metis
+  then have "\<sigma>' the_\<uu> = Action undefined"
+    by auto
+  then have "\<rho> \<Turnstile>\<^sub>r\<^sub>h anadom[(Cst\<^sub>A undefined)]"
+    using \<sigma>'_p(2) XXXX XXXX2 by auto
+  then show False
+    using assms(1) not_anadom_action by auto
+qed
+
 lemma if_must:
-  assumes "is_Cst q"
-  assumes "is_Cst d"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q,d]\<rangle>."
   shows "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>may[q, d] \<and> \<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[d]\<rangle>. \<and> is_Node\<^sub>i\<^sub>d q \<and> is_Elem\<^sub>i\<^sub>d d \<and> the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom"
 proof -
-  from assms(1,2,3,4) have "\<exists>c \<in> ana_pg_fw_must. lh_consequence \<rho> c (must\<langle>[q,d]\<rangle>.)"
+  have Csts: "is_Cst q" "is_Cst d"
+    using must_fst_id_is_Cst must_snd_id_is_Cst using assms by auto
+
+  from assms(1,2) Csts have "\<exists>c \<in> ana_pg_fw_must. lh_consequence \<rho> c (must\<langle>[q,d]\<rangle>.)"
     using solves_lh_least[of ana_pg_fw_must \<rho> s_BV "[q,d]" the_must] fw_may.ana_pg_fw_may_finite
       fw_may.ana_pg_fw_may_stratified by fastforce
 
@@ -1227,7 +1321,7 @@ proof -
   then have "\<rho> \<Turnstile>\<^sub>r\<^sub>h anadom[d]"
     using XXXX \<open>\<sigma> the_\<uu> = d'\<close> \<open>d = Cst d'\<close> \<open>q = Cst\<^sub>N q'\<close> by force
   then have "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom \<and> is_Elem\<^sub>i\<^sub>d d"
-    using in_analysis_dom_if_anadom[of \<rho> d] assms(3) by fastforce
+    using in_analysis_dom_if_anadom[of \<rho> d] assms by fastforce
   show ?thesis
     using \<open>\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>may [q, d]\<close> \<open>\<rho> \<Turnstile>\<^sub>r\<^sub>h anadom [d]\<close> \<open>q = Cst\<^sub>N q'\<close> 
       \<open>the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom \<and> is_Elem\<^sub>i\<^sub>d d\<close> by auto
@@ -1242,7 +1336,7 @@ proof -
   have "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[Cst\<^sub>N q, Cst\<^sub>E d]\<rangle>."
     using assms(1) by auto
   then have "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>may [Cst\<^sub>N q, Cst\<^sub>E d]"
-    using if_must[of "Cst\<^sub>N q" "Cst\<^sub>E d" \<rho>] assms(2) by auto
+    using if_must assms(2) by metis
   then show False
     using a by auto
 qed

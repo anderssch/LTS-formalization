@@ -107,7 +107,7 @@ fun substv_id :: "('x,'c) id \<Rightarrow> ('x,'c) var_val \<Rightarrow> ('x,'c)
 | "(Cst e) \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma> = (Cst e)"
 
 fun substv_ids :: "('x,'c) id list \<Rightarrow> ('x,'c) var_val \<Rightarrow> ('x,'c) id list" (infix "\<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s" 50) where
-  "rhs \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma> = map (\<lambda>a. a \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>) rhs"
+  "ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma> = map (\<lambda>a. a \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>) ids"
 
 fun substv_rh :: "('p,'x,'c) rh \<Rightarrow> ('x,'c) var_val \<Rightarrow> ('p,'x,'c) rh" (infix "\<cdot>\<^sub>v\<^sub>r\<^sub>h" 50) where
   "(a \<^bold>= a') \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma> = (a \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma> \<^bold>= a' \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma>)"
@@ -119,7 +119,7 @@ definition substv_rhs :: "('p,'x,'c) rh list \<Rightarrow> ('x,'c) var_val \<Rig
   "rhs \<cdot>\<^sub>v\<^sub>r\<^sub>h\<^sub>s \<sigma> = map (\<lambda>a. a \<cdot>\<^sub>v\<^sub>r\<^sub>h \<sigma>) rhs"
 
 fun substv_lh :: "('p,'x,'c) lh \<Rightarrow> ('x,'c) var_val \<Rightarrow> ('p,'x,'c) lh" (infix "\<cdot>\<^sub>v\<^sub>l\<^sub>h" 50) where
-  "(p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma> = (p,  ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>)"
+  "(p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma> = (p, ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>)"
 
 fun substv_cls :: "('p,'x,'c) clause \<Rightarrow> ('x,'c) var_val \<Rightarrow> ('p,'x,'c) clause" (infix "\<cdot>\<^sub>v\<^sub>c\<^sub>l\<^sub>s" 50) where
   "(Cls p ids rhs) \<cdot>\<^sub>v\<^sub>c\<^sub>l\<^sub>s \<sigma>  = Cls p (ids \<cdot>\<^sub>v\<^sub>i\<^sub>d\<^sub>s \<sigma>) (rhs \<cdot>\<^sub>v\<^sub>r\<^sub>h\<^sub>s \<sigma>)"

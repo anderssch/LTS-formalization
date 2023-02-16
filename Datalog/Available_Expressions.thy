@@ -277,7 +277,7 @@ definition summarizes_AE :: "(pred, ('n, 'a, 'v arith) cst) pred_val \<Rightarro
    "summarizes_AE \<rho> \<longleftrightarrow>
      (\<forall>q d.
          \<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>. \<longrightarrow>
-          (\<forall>\<pi>. \<pi> \<in> path_with_word_from_to start (Decode_Node q) \<longrightarrow> (Decode_Elem d) \<in> aexp_path \<pi>))"
+          (\<forall>\<pi>. \<pi> \<in> path_with_word_from_to start (the_Node\<^sub>i\<^sub>d q) \<longrightarrow> (the_Elem\<^sub>i\<^sub>d d) \<in> aexp_path \<pi>))"
 
 theorem AE_sound:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (fw_must.ana_pg_fw_must) s_BV"
