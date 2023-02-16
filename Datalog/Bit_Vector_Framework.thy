@@ -877,292 +877,189 @@ next
   qed
 qed
 
-  
-
-
-lemma not_init_node:
-  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  shows "\<not>\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[Cst\<^sub>N q]\<rangle>."
-proof -
-  have "finite ana_pg_fw_must"
-    using fw_may.ana_pg_fw_may_finite by auto
-  moreover
-  have "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-    using assms by blast
-  moreover
-  have "strat_wf s_BV ana_pg_fw_must"
-    using fw_may.ana_pg_fw_may_stratified by blast
-  moreover
-  have "\<forall>c\<in>ana_pg_fw_must. 
-            \<forall>\<sigma>'. (the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (init\<langle>[Cst\<^sub>N q]\<rangle>.) \<longrightarrow> \<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
-  proof (rule, rule, rule)
-    fix c :: "(pred, var, ('n, 'v, 'd) cst) clause"
-    fix \<sigma>'
-    assume "(the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (init\<langle>[Cst\<^sub>N q]\<rangle>.)"
-    moreover
-    assume "c \<in> ana_pg_fw_must "
-    ultimately
-    show "\<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
-      unfolding fw_may.ana_pg_fw_may_def fw_may.ana_init_def fw_may.ana_anadom_def fw_may.ana_kill_edge_def fw_may.ana_gen_edge_def fw_may.ana_must_def fw_may.ana_entry_node_def
-      by auto
-  qed
-  then have "(\<not> (\<exists>c\<in>ana_pg_fw_must. \<exists>\<sigma>'. lh_consequence \<rho> c (init\<langle>[Cst\<^sub>N q]\<rangle>.)))"
-    unfolding lh_consequence_def by metis
-  ultimately
-  have "\<rho> \<Turnstile>\<^sub>r\<^sub>h ( \<^bold>\<not> the_init [Cst\<^sub>N q])"
-    using solves_NegLit_least[of ana_pg_fw_must \<rho> s_BV] by auto
-  then show ?thesis
-    by auto
-qed
-
-lemma not_anadom_node:
-  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  shows "\<not>\<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[Cst\<^sub>N q]\<rangle>."
-proof -
-  have "finite ana_pg_fw_must"
-    using fw_may.ana_pg_fw_may_finite by auto
-  moreover
-  have "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-    using assms by blast
-  moreover
-  have "strat_wf s_BV ana_pg_fw_must"
-    using fw_may.ana_pg_fw_may_stratified by blast
-  moreover
-  have "\<forall>c\<in>ana_pg_fw_must. 
-            \<forall>\<sigma>'. (the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (anadom\<langle>[Cst\<^sub>N q]\<rangle>.) \<longrightarrow> \<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
-  proof (rule, rule, rule)
-    fix c :: "(pred, var, ('n, 'v, 'd) cst) clause"
-    fix \<sigma>'
-    assume "(the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (anadom\<langle>[Cst\<^sub>N q]\<rangle>.)"
-    moreover
-    assume "c \<in> ana_pg_fw_must"
-    ultimately
-    show "\<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
-      unfolding fw_may.ana_pg_fw_may_def fw_may.ana_init_def fw_may.ana_anadom_def fw_may.ana_kill_edge_def fw_may.ana_gen_edge_def fw_may.ana_must_def fw_may.ana_entry_node_def
-      by auto
-  qed
-  then have "(\<not> (\<exists>c\<in>ana_pg_fw_must. lh_consequence \<rho> c anadom\<langle>[Cst\<^sub>N q]\<rangle>.))"
-    unfolding lh_consequence_def by metis
-  ultimately
-  have "\<rho> \<Turnstile>\<^sub>r\<^sub>h ( \<^bold>\<not> the_anadom [Cst\<^sub>N q])"
-    using solves_NegLit_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>N q]" the_anadom] by auto
-
-  then show ?thesis
-    by auto
-qed
-
-lemma not_init_action:
-  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  shows "\<not>\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[Cst\<^sub>A q]\<rangle>."
-proof -
-  have "finite ana_pg_fw_must"
-    using fw_may.ana_pg_fw_may_finite by blast
-  moreover
-  have "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-    using assms by blast
-  moreover
-  have "strat_wf s_BV ana_pg_fw_must"
-    using fw_may.ana_pg_fw_may_stratified by blast
-  moreover
-  have "\<forall>c\<in>ana_pg_fw_must. 
-            \<forall>\<sigma>'. (the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (init\<langle>[Cst\<^sub>A q]\<rangle>.) \<longrightarrow> \<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
-  proof (rule, rule, rule)
-    fix c :: "(pred, var, ('n, 'v, 'd) cst) clause"
-    fix \<sigma>'
-    assume "(the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (init\<langle>[Cst\<^sub>A q]\<rangle>.)"
-    moreover
-    assume "c \<in> ana_pg_fw_must"
-    ultimately
-    show "\<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
-      unfolding fw_may.ana_pg_fw_may_def fw_may.ana_init_def fw_may.ana_anadom_def fw_may.ana_kill_edge_def fw_may.ana_gen_edge_def fw_may.ana_must_def fw_may.ana_entry_node_def
-      by auto
-  qed
-  then have "(\<not> (\<exists>c\<in>ana_pg_fw_must. lh_consequence \<rho> c init\<langle>[Cst\<^sub>A q]\<rangle>.))"
-    unfolding lh_consequence_def by metis
-  ultimately
-  have "\<rho> \<Turnstile>\<^sub>r\<^sub>h ( \<^bold>\<not> the_init [Cst\<^sub>A q])"
-    using solves_NegLit_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>A q]" the_init] by auto
-  then show ?thesis
-    by auto
-qed
-
-lemma not_anadom_action:
-  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  shows "\<not>\<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[Cst\<^sub>A q]\<rangle>."
-proof -
-  have "finite ana_pg_fw_must"
-    using fw_may.ana_pg_fw_may_finite by blast
-  moreover
-  have "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-    using assms by blast
-  moreover
-  have "strat_wf s_BV ana_pg_fw_must"
-    using fw_may.ana_pg_fw_may_stratified by blast
-  moreover
-  have "\<forall>c\<in>ana_pg_fw_must . 
-            \<forall>\<sigma>'. (the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (anadom\<langle>[Cst\<^sub>A q]\<rangle>.) \<longrightarrow> \<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
-  proof (rule, rule, rule)
-    fix c :: "(pred, var, ('n, 'v, 'd) cst) clause"
-    fix \<sigma>'
-    assume "(the_lh c \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = (anadom\<langle>[Cst\<^sub>A q]\<rangle>.)"
-    moreover
-    assume "c \<in> (ana_pg_fw_must)"
-    then have "c \<in> (ana_pg_fw_must)"
-      by auto
-    ultimately
-    show "\<not> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
-      unfolding fw_may.ana_pg_fw_may_def fw_may.ana_init_def fw_may.ana_anadom_def fw_may.ana_kill_edge_def fw_may.ana_gen_edge_def fw_may.ana_must_def fw_may.ana_entry_node_def
-      by auto
-  qed
-  then have "(\<not> (\<exists>c\<in>ana_pg_fw_must. lh_consequence \<rho> c anadom\<langle>[Cst\<^sub>A q]\<rangle>.))"
-    unfolding lh_consequence_def by metis
-  ultimately
-  have "\<rho> \<Turnstile>\<^sub>r\<^sub>h (\<^bold>\<not> the_anadom [Cst\<^sub>A q])"
-    using solves_NegLit_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>A q]" the_anadom] by auto
-
-  then show ?thesis
-    by auto
-qed
-
 lemma is_Cst_if_init:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[d]\<rangle>."
   shows "is_Cst d"
-proof (cases d)
-  case (Var x)
-  then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[Var x]\<rangle>."
-    using Var assms(2) by auto
-  then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[Cst\<^sub>N undefined]\<rangle>."
+proof (rule ccontr)
+  assume "\<not> is_Cst d"
+  then have qu: "d = \<uu>"
+    by (metis (full_types) id.disc(1) id.exhaust_disc id.expand var.exhaust)
+  then have "\<lbrakk>init\<langle>[d]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> (\<lambda>x. Action undefined)" 
+    using assms
     by auto
-  then have "False"
-    using assms(1) not_init_node by blast
-  then show ?thesis 
-    by metis
-next
-  case (Cst e)
-  then show ?thesis 
+  then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[d \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined)]\<rangle>."
+    using solves_lh_substv_lh_if_meaning_lh[of "init\<langle>[d]\<rangle>." \<rho> "(\<lambda>x. Action undefined)"] qu by auto
+  moreover
+  have "is_Cst (Cst\<^sub>A undefined)"
     by auto
+  moreover
+  have "is_Cst (d \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined))"
+    by (metis id.disc(4) substv_id.elims)
+  ultimately
+  have "\<exists>c \<in> ana_pg_fw_must. lh_consequence \<rho> c (init\<langle>[Cst\<^sub>A undefined]\<rangle>.)"
+    using solves_lh_least[of ana_pg_fw_must \<rho> s_BV] qu
+    by (simp add: assms(1) fw_may.ana_pg_fw_may_finite fw_may.ana_pg_fw_may_stratified)
+  then show False
+    unfolding fw_may.ana_pg_fw_may_def fw_may.ana_entry_node_def lh_consequence_def
+      fw_may.ana_init_def fw_may.ana_anadom_def fw_may.ana_kill_edge_def fw_may.ana_gen_edge_def
+      fw_may.ana_must_def by auto
 qed
 
 lemma is_Cst_if_anadom:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[d]\<rangle>."
   shows "is_Cst d"
-proof (cases d)
-  case (Var x)
-  then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[Var x]\<rangle>."
-    using Var assms(2) by auto
-  then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[Cst\<^sub>N undefined]\<rangle>."
+proof (rule ccontr)
+  assume "\<not> is_Cst d"
+  then have qu: "d = \<uu>"
+    by (metis (full_types) id.disc(1) id.exhaust_disc id.expand var.exhaust)
+  then have "\<lbrakk>anadom\<langle>[d]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> (\<lambda>x. Action undefined)" 
+    using assms
     by auto
-  then have "False"
-    using assms(1) not_anadom_node by blast
-  then show ?thesis 
-    by metis
-next
-  case (Cst e)
-  then show ?thesis 
+  then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[d \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined)]\<rangle>."
+    using solves_lh_substv_lh_if_meaning_lh[of "anadom\<langle>[d]\<rangle>." \<rho> "(\<lambda>x. Action undefined)"] qu by auto
+  moreover
+  have "is_Cst (Cst\<^sub>A undefined)"
+    by auto
+  moreover
+  have "is_Cst (d \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined))"
+    by (metis id.disc(4) substv_id.elims)
+  ultimately
+  have "\<exists>c \<in> ana_pg_fw_must. lh_consequence \<rho> c (anadom\<langle>[Cst\<^sub>A undefined]\<rangle>.)"
+    using solves_lh_least[of ana_pg_fw_must \<rho> s_BV] qu
+    by (simp add: assms(1) fw_may.ana_pg_fw_may_finite fw_may.ana_pg_fw_may_stratified)
+  then show False
+    unfolding fw_may.ana_pg_fw_may_def fw_may.ana_entry_node_def lh_consequence_def
+      fw_may.ana_init_def fw_may.ana_anadom_def fw_may.ana_kill_edge_def fw_may.ana_gen_edge_def
+      fw_may.ana_must_def by auto
+qed
+
+lemma if_init:
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[d]\<rangle>."
+  shows "is_Elem\<^sub>i\<^sub>d d \<and> the_Elem\<^sub>i\<^sub>d d \<in> (analysis_dom - d_init)"
+proof -
+  have Csts: "is_Cst d"
+    using assms(1) assms(2) is_Cst_if_init by blast
+
+  from assms(1,2) Csts have "\<exists>c \<in> ana_pg_fw_must. lh_consequence \<rho> c (init\<langle>[d]\<rangle>.)"
+    using solves_lh_least[of ana_pg_fw_must \<rho> s_BV "[d]"] fw_may.ana_pg_fw_may_finite
+      fw_may.ana_pg_fw_may_stratified by fastforce
+
+  then obtain c where 
+    "c \<in> ana_pg_fw_must"
+    "lh_consequence \<rho> c (init\<langle>[d]\<rangle>.)"
+    by auto
+  from this have "\<exists>d' \<in> (analysis_dom - d_init). c = init\<langle>[Cst\<^sub>E d']\<rangle> :- []."
+    unfolding fw_may.ana_pg_fw_may_def fw_may.ana_entry_node_def lh_consequence_def
+      fw_may.ana_anadom_def fw_may.ana_kill_edge_def fw_may.ana_gen_edge_def
+      fw_may.ana_must_def fw_may.ana_init_def by auto
+  then obtain d' where "d' \<in> analysis_dom - d_init \<and> c = init\<langle>[Cst\<^sub>E d']\<rangle> :- []."
+    by auto
+  have "lh_consequence \<rho> (init\<langle>[Cst\<^sub>E d']\<rangle> :- [].) (init\<langle>[d]\<rangle>.)"
+    using \<open>d' \<in> analysis_dom - d_init \<and> c = init\<langle>[Cst\<^sub>E d']\<rangle> :- [] .\<close>
+      \<open>lh_consequence \<rho> c init\<langle>[d]\<rangle>.\<close> by fastforce
+  then have "\<exists>\<sigma>. (init\<langle>[Cst\<^sub>E d']\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) = init\<langle>[d]\<rangle>."
+    unfolding lh_consequence_def by auto
+  then obtain \<sigma> where \<sigma>_p:
+    "(init\<langle>[Cst\<^sub>E d']\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) = init\<langle>[d]\<rangle>."
+    by auto
+  then have "d = Cst\<^sub>E d'"
+    by auto
+  then have "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom - d_init \<and> is_Elem\<^sub>i\<^sub>d d"
+    using \<open>d' \<in> analysis_dom - d_init \<and> c = init\<langle>[Cst\<^sub>E d']\<rangle> :- [] .\<close> by auto
+  then show ?thesis
     by auto
 qed
+
+lemma if_anadom:
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[d]\<rangle>."
+  shows "is_Elem\<^sub>i\<^sub>d d \<and> the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom"
+proof -
+  have Csts: "is_Cst d"
+    using assms(1) assms(2) is_Cst_if_anadom by blast
+
+  from assms(1,2) Csts have "\<exists>c \<in> ana_pg_fw_must. lh_consequence \<rho> c (anadom\<langle>[d]\<rangle>.)"
+    using solves_lh_least[of ana_pg_fw_must \<rho> s_BV "[d]"] fw_may.ana_pg_fw_may_finite
+      fw_may.ana_pg_fw_may_stratified by fastforce
+  then obtain c where 
+    "c \<in> ana_pg_fw_must"
+    "lh_consequence \<rho> c (anadom\<langle>[d]\<rangle>.)"
+    by auto
+  from this have "\<exists>d' \<in> analysis_dom. c = anadom\<langle>[Cst\<^sub>E d']\<rangle> :- []."
+    unfolding fw_may.ana_pg_fw_may_def fw_may.ana_entry_node_def lh_consequence_def
+      fw_may.ana_anadom_def fw_may.ana_kill_edge_def fw_may.ana_gen_edge_def
+      fw_may.ana_must_def fw_may.ana_init_def by auto
+  then obtain d' where "d' \<in> analysis_dom \<and> c = anadom\<langle>[Cst\<^sub>E d']\<rangle> :- []."
+    by auto
+  have "lh_consequence \<rho> (anadom\<langle>[Cst\<^sub>E d']\<rangle> :- [].) (anadom\<langle>[d]\<rangle>.)"
+    using \<open>d' \<in> analysis_dom \<and> c = anadom\<langle>[Cst\<^sub>E d']\<rangle> :- [] .\<close>
+      \<open>lh_consequence \<rho> c anadom\<langle>[d]\<rangle>.\<close> by fastforce
+  then have "\<exists>\<sigma>. (anadom\<langle>[Cst\<^sub>E d']\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) = anadom\<langle>[d]\<rangle>."
+    unfolding lh_consequence_def by auto
+  then obtain \<sigma> where \<sigma>_p:
+    "(anadom\<langle>[Cst\<^sub>E d']\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) = anadom\<langle>[d]\<rangle>."
+    by auto
+  then have "d = Cst\<^sub>E d'"
+    by auto
+  then have "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom \<and> is_Elem\<^sub>i\<^sub>d d"
+    using \<open>d' \<in> analysis_dom \<and> c = anadom\<langle>[Cst\<^sub>E d']\<rangle> :- [] .\<close> by auto
+  then show ?thesis
+    by auto
+qed
+
 
 lemma is_elem_if_init:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[Cst d]\<rangle>."
   shows "is_Elem d"
-proof (cases "d")
-  case (Node x1)
-  then show ?thesis
-    using assms(1) assms(2) not_init_node by blast
-next
-  case (Elem x2)
-  then show ?thesis
-    by simp
-next
-  case (Action x3)
-  then show ?thesis
-    using assms(1) assms(2) not_init_action by blast
-qed
+  by (metis if_init assms id.sel(2))
+
+lemma not_init_node:
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
+  shows "\<not>\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[Cst\<^sub>N q]\<rangle>."
+  by (metis if_init assms cst.collapse(2) cst.disc(1) cst.disc(2) id.sel(2))
+
+lemma not_init_action:
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
+  shows "\<not>\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[Cst\<^sub>A q]\<rangle>."
+  by (metis assms cst.collapse(2) cst.simps(9) id.sel(2) if_init)
 
 lemma in_analysis_dom_if_init':
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[Cst\<^sub>E d]\<rangle>."
   shows "d \<in> analysis_dom"
-proof -
-  have "finite ana_pg_fw_must"
-    using fw_may.ana_pg_fw_may_finite by blast
-  moreover
-  have "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-    using assms(1) by blast
-  moreover
-  have "strat_wf s_BV ana_pg_fw_must"
-    using fw_may.ana_pg_fw_may_stratified by blast
-  moreover
-  have "\<rho> \<Turnstile>\<^sub>r\<^sub>h init [Cst\<^sub>E d]"
-    using assms(2) by auto
-  ultimately
-  have "(\<exists>c\<in>ana_pg_fw_must. lh_consequence \<rho> c init\<langle>[Cst\<^sub>E d]\<rangle>.)"
-    using solves_PosLit_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>E d]" the_init] by auto
-  then have "d \<in> analysis_dom - d_init"
-    unfolding lh_consequence_def fw_may.ana_pg_fw_may_def fw_may.ana_init_def  
-      fw_may.ana_anadom_def fw_may.ana_kill_edge_def fw_may.ana_gen_edge_def 
-      fw_may.ana_must_def fw_may.ana_entry_node_def by auto
-  then show "d \<in> analysis_dom"
-    by blast
-qed
-
-lemma in_analysis_dom_if_anadom':
-  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[Cst\<^sub>E d]\<rangle>."
-  shows "d \<in> analysis_dom"
-proof -
-  have "finite ana_pg_fw_must"
-    using fw_may.ana_pg_fw_may_finite by blast
-  moreover
-  have "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-    using assms(1) by blast
-  moreover
-  have "strat_wf s_BV ana_pg_fw_must"
-    using fw_may.ana_pg_fw_may_stratified by blast
-  moreover
-  have "\<rho> \<Turnstile>\<^sub>r\<^sub>h anadom [Cst\<^sub>E d]"
-    using assms(2) by auto
-  ultimately
-  have "(\<exists>c\<in>ana_pg_fw_must. lh_consequence \<rho> c anadom\<langle>[Cst\<^sub>E d]\<rangle>.)"
-    using solves_PosLit_least[of ana_pg_fw_must \<rho> s_BV "[Cst\<^sub>E d]" the_anadom] by auto
-  then show "d \<in> analysis_dom"
-    unfolding lh_consequence_def fw_may.ana_pg_fw_may_def fw_may.ana_init_def  
-      fw_may.ana_anadom_def fw_may.ana_kill_edge_def fw_may.ana_gen_edge_def 
-      fw_may.ana_must_def fw_may.ana_entry_node_def by auto
-qed
+  using assms if_init by force
 
 lemma in_analysis_dom_if_init:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[d]\<rangle>."
   shows "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom"
-proof -
-  have "is_Cst d"
-    using assms(1) assms(2) is_Cst_if_init by blast
-  then obtain d' where "d = Cst d'"
-    by (meson is_Cst_def)
-  then obtain d'' where "d' = Elem d''"
-    using is_elem_if_init not_init_node assms(1) assms(2) not_init_action by (cases d') auto
-  show ?thesis
-    using \<open>d = Cst d'\<close> \<open>d' = Elem d''\<close> assms(1) assms(2) in_analysis_dom_if_init' by auto
-qed
+  using assms if_init by force
+
+lemma not_anadom_node:
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
+  shows "\<not>\<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[Cst\<^sub>N q]\<rangle>."
+  by (metis assms cst.collapse(2) cst.disc(1) cst.disc(2) id.sel(2) if_anadom)
+
+lemma not_anadom_action:
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
+  shows "\<not>\<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[Cst\<^sub>A q]\<rangle>."
+  by (metis assms cst.collapse(2) cst.simps(9) id.sel(2) if_anadom)
+
+lemma in_analysis_dom_if_anadom':
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
+  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[Cst\<^sub>E d]\<rangle>."
+  shows "d \<in> analysis_dom"
+  using assms if_anadom by force
 
 lemma in_analysis_dom_if_anadom:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[d]\<rangle>."
   shows "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom \<and> is_Elem\<^sub>i\<^sub>d d"
-proof -
-  have "is_Cst d"
-    using assms(1) assms(2) is_Cst_if_anadom by blast
-  then obtain d' where "d = Cst d'"
-    by (meson is_Cst_def)
-  then obtain d'' where "d' = Elem d''"
-    using is_elem_if_init assms(1) assms(2) not_anadom_node not_anadom_action by (cases d') auto
-  show ?thesis
-    using \<open>d = Cst d'\<close> \<open>d' = Elem d''\<close> assms(1) assms(2) in_analysis_dom_if_anadom' by auto
-qed
+  using assms if_anadom by force
 
 lemma must_fst_id_is_Cst:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
@@ -1357,12 +1254,6 @@ lemma not_must_element:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   shows "\<not>\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[Cst\<^sub>E q,d]\<rangle>."
   by (metis assms cst.disc(2) id.sel(2) if_must)
-
-lemma is_Cst_if_must_left_arg:
-  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q,d]\<rangle>."
-  shows "is_Cst q"
-  using assms(1) assms(2) if_must by blast
 
 lemma is_encode_node_if_must_left_arg:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
