@@ -564,7 +564,7 @@ definition summarizes_RD :: "(pred, ('n,'v,('n,'v) def) cst) pred_val \<Rightarr
   "summarizes_RD \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> path_with_word_from start \<longrightarrow> d \<in> def_path \<pi> start \<longrightarrow> 
                         \<rho> \<Turnstile>\<^sub>l\<^sub>h may\<langle>[Cst\<^sub>N (end_of \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
-theorem RD_sound_again: 
+theorem RD_sound: 
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t fw_may.ana_pg_fw_may s_BV"
   shows "summarizes_RD \<rho>"
   using assms def_path_S_hat_path fw_may.sound_ana_pg_fw_may unfolding fw_may.summarizes_fw_may_def summarizes_RD.simps

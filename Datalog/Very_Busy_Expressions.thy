@@ -221,7 +221,7 @@ definition summarizes_VB where
          \<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>. \<longrightarrow>
           (\<forall>\<pi>. \<pi> \<in> path_with_word_from_to (the_Node\<^sub>i\<^sub>d q) end \<longrightarrow> the_Elem\<^sub>i\<^sub>d d \<in> vbexp_path \<pi>))"
 
-theorem BV_sound:
+theorem VB_sound:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (bw_must.ana_pg_bw_must) s_BV"
   shows "summarizes_VB \<rho>"
 proof -
