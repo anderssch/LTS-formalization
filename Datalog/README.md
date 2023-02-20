@@ -6,7 +6,7 @@ Anders Schlichtkrull
 René Rydhof Hansen
 Flemming Nielson
 
-## Download version considered in our ITP2023 submission
+## Download the version considered in our ITP2023 submission
 
 ```
 $ git clone --branch ITP2023 https://github.com/anderssch/LTS-formalization/
