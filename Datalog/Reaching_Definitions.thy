@@ -3,7 +3,7 @@ theory Reaching_Definitions imports Bit_Vector_Framework begin
 \<comment> \<open>We encode the Reaching Definitions analysis into Datalog. First we define the analysis, then
     we encode the analysis directly into Datalog and prove the encoding correct. Hereafter we
     encode it into Datalog again, but this time using our Bit-Vector Framework locale. We also prove 
-    this encoding correct.\<close>
+    this encoding correct. This latter encoding is described in our submission. \<close>
 
 
 section \<open>Reaching Definitions\<close>
@@ -69,10 +69,10 @@ abbreviation RD_Cls :: "(RD_var, ('n, 'v) RD_elem) id list \<Rightarrow> (RD_pre
 abbreviation VAR_Cls :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) clause" ("VAR\<langle>_\<rangle> :-.") where
   "VAR\<langle>x\<rangle> :-. == Cls the_VAR [Cst\<^sub>R\<^sub>D\<^sub>V x] []"
 
-abbreviation RD_Fact :: "(RD_var, ('n, 'v) RD_elem) id list \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) lh" ("RD\<langle>_\<rangle>.") where 
+abbreviation RD_lh :: "(RD_var, ('n, 'v) RD_elem) id list \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) lh" ("RD\<langle>_\<rangle>.") where 
   "RD\<langle>args\<rangle>. \<equiv> (the_RD, args)"
 
-abbreviation VAR_Fact :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) lh" ("VAR\<langle>_\<rangle>.") where 
+abbreviation VAR_lh :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) lh" ("VAR\<langle>_\<rangle>.") where 
   "VAR\<langle>x\<rangle>. \<equiv> (the_VAR, [Cst\<^sub>R\<^sub>D\<^sub>V x])"
 
 
