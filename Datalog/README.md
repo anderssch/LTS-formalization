@@ -16,5 +16,5 @@ The files will then be in `LTS-formalization/Datalog`
 
 ## Opening the files
 
-If you already have installed Isabelle2022 (https://isabelle.in.tum.de/website-Isabelle2022/index.html) 
+If you already have installed Isabelle2022 (https://isabelle.in.tum.de/website-Isabelle2022/) 
 then you can simply open Isabelle/jEdit and inspect our proofs.
