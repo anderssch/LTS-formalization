@@ -84,18 +84,67 @@ datatype ('ctr_loc, 'noninit, 'label) state =
   | is_Noninit: Noninit (the_St: 'noninit) (* q \<in> Q \<and> q \<notin> P *)
   | is_Isolated: Isolated (the_Ctr_Loc: 'ctr_loc) (the_Label: 'label) (* q\<^sub>p\<^sub>\<gamma> *)
 
+lemma finitely_many_states:
+  assumes "finite (UNIV :: 'ctr_loc set)"
+  assumes "finite (UNIV :: 'noninit set)"
+  assumes "finite (UNIV :: 'label set)"
+  shows "finite (UNIV :: ('ctr_loc, 'noninit, 'label) state set)"
+proof -
+  define Isolated' :: "('ctr_loc * 'label) \<Rightarrow> ('ctr_loc, 'noninit, 'label) state" where 
+    "Isolated' == \<lambda>(c :: 'ctr_loc, l:: 'label). Isolated c l"
+  define Init' :: "'ctr_loc \<Rightarrow> ('ctr_loc, 'noninit, 'label) state" where
+    "Init' = Init"
+  define Noninit' :: "'noninit \<Rightarrow> ('ctr_loc, 'noninit, 'label) state" where
+    "Noninit' = Noninit"
+
+  have split: "UNIV = (Init' ` UNIV) \<union> (Noninit' ` UNIV) \<union> (Isolated' ` (UNIV :: (('ctr_loc * 'label) set)))"
+    unfolding Init'_def Noninit'_def
+  proof (rule; rule; rule; rule)
+    fix x :: "('ctr_loc, 'noninit, 'label) state"
+    assume "x \<in> UNIV"
+    moreover
+    assume "x \<notin> range Isolated'"
+    moreover
+    assume "x \<notin> range Noninit"
+    ultimately
+    show "x \<in> range Init"
+      by (metis Isolated'_def prod.simps(2) range_eqI state.exhaust)
+  qed
+
+  have "finite (Init' ` (UNIV:: 'ctr_loc set))"
+    using assms by auto
+  moreover
+  have "finite (Noninit' ` (UNIV:: 'noninit set))"
+    using assms by auto
+  moreover
+  have "finite (UNIV :: (('ctr_loc * 'label) set))"
+    using assms by (simp add: finite_Prod_UNIV)
+  then have "finite (Isolated' ` (UNIV :: (('ctr_loc * 'label) set)))"
+    by auto
+  ultimately
+  show "finite (UNIV :: ('ctr_loc, 'noninit, 'label) state set)"
+    unfolding split by auto
+qed
+
+instantiation state :: (finite, finite, finite) finite begin
+  instance by standard (simp add: finitely_many_states)
+end
+
+
 \<comment> \<open>For the semantics of a weighted automaton, labels are lifted to the list-monoid and paired with a weight\<close>
 type_synonym ('label, 'weight) wautomaton_label = "('label list \<times> 'weight)" 
 \<comment> \<open>Weighted automata transitions are modelled as a @{term finfun} from transitions to their weight, 
     where @{term "0::('weight::dioid_one_zero)"} is the default value, indicating no transition.\<close>
 type_synonym ('state, 'label, 'weight) w_transitions = "('state, 'label) transition \<Rightarrow>f 'weight" 
 
+type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list \<times> 'weight)) transition set"
+
 \<comment> \<open>Embed a weighted automata into a monoidLTS. All non-zero transitions are added. The label is lifted to the list-monoid.\<close>
-definition wts_to_monoidLTS :: "(('state, 'label, 'weight::dioid_one_zero) w_transitions) \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
+definition wts_to_monoidLTS :: "(('state, 'label, 'weight::{dioid_one_zero,wqo}) w_transitions) \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
   "wts_to_monoidLTS ts = {(p, ([l],d), q) | p l d q. ts $ (p,l,q) = d \<and> d \<noteq> 0}"
 
 locale W_automata = monoidLTS "wts_to_monoidLTS transition_relation"
-  for transition_relation :: "('state::finite, 'label, 'weight::dioid_one_zero) w_transitions" +
+  for transition_relation :: "('state::finite, 'label, 'weight::{dioid_one_zero,wqo}) w_transitions" +
   fixes initials :: "'state set" and finals :: "'state set"
 begin
 interpretation monoidLTS "wts_to_monoidLTS transition_relation" .
@@ -115,7 +164,7 @@ end
 
 
 locale WPDS_with_W_automata = WPDS \<Delta>
-  for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::dioid_one_zero) rule set"
+  for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::{dioid_one_zero,wqo}) rule set"
     +
   fixes final_inits :: "('ctr_loc::enum) set"
   fixes final_noninits :: "('noninit::finite) set"
@@ -184,9 +233,9 @@ definition pre_star1 :: "(('ctr_loc, 'noninit, 'label) state, 'label, 'weight) w
 
 \<comment> \<open>A weighted automaton is initialized with weights 1 (neutral element along paths) on existing transitions, 
     and a default weight of 0 (neutral element for combining paths) for non-existing transitions.\<close>
-definition ts_to_wts :: "('state, 'label) transition set \<Rightarrow> ('state, 'label, 'weight::dioid_one_zero) w_transitions" where
+definition ts_to_wts :: "('state, 'label) transition set \<Rightarrow> ('state, 'label, 'weight::{dioid_one_zero,wqo}) w_transitions" where
   "ts_to_wts ts = update_wts_set (K$ 0) {(t,1) | t. t \<in> ts}"
-definition wts_to_ts :: "('state, 'label, 'weight::dioid_one_zero) w_transitions \<Rightarrow> ('state, 'label) transition set" where
+definition wts_to_ts :: "('state, 'label, 'weight::{dioid_one_zero,wqo}) w_transitions \<Rightarrow> ('state, 'label) transition set" where
   "wts_to_ts wts = {t | t. wts $ t \<noteq> 0}"
 
 definition "pre_star_loop = while_option (\<lambda>s. update_wts_set s (pre_star1 s) \<noteq> s) (\<lambda>s. update_wts_set s (pre_star1 s))"
@@ -194,6 +243,119 @@ definition "pre_star_exec = the o pre_star_loop"
 definition "pre_star_exec_check A = (if inits \<subseteq> LTS.srcs A then pre_star_loop (ts_to_wts A) else None)"
 
 definition "accept_pre_star_exec_check A c = (if inits \<subseteq> LTS.srcs A then Some (accepts (pre_star_exec (ts_to_wts A)) c) else None)"
+
+theorem pre_star_rule_correct:
+  assumes "inits \<subseteq> LTS.srcs (wts_to_monoidLTS A)"
+  assumes "saturation pre_star_rule A A'"
+  shows "accepts A' = weight_pre_star (accepts A)"
+  
+  oops
+
+
+
+thm less_finfun_def less_eq_finfun_def less_eq_def
+lemma pre_star_saturation_exi:
+  shows "\<exists>ts'::((('ctr_loc, 'noninit::finite, 'label::finite) state, 'label, 'weight::{dioid_one_zero,wqo}) w_transitions). 
+            saturation pre_star_rule ts ts'"
+  apply (rule wqo_class_saturation_exi[of pre_star_rule ts])
+  subgoal for ts ts'
+    apply (induct rule: pre_star_rule.induct)
+    subgoal for p \<gamma> d p' w  d' q ts d''
+      unfolding less_finfun_def less_eq_finfun_def
+      apply simp
+      apply safe
+      subgoal for p'' \<gamma>'' q''
+        apply (cases "(Init p, \<gamma>, q) = (p'', \<gamma>'', q'')")
+         defer
+         apply auto[1]
+        apply simp
+        oops
+  
+  
+
+lemma lemma_3_1_w:
+  assumes "p'w \<Midarrow>d\<Rightarrow>\<^sup>* pv"
+  assumes "accepts A pv = d'"
+  assumes "saturation pre_star_rule A A'"
+  shows "accepts A' p'w \<le> d * d'"
+  using assms
+  sorry
+
+lemma lemma_3_2_a'_w:
+(* assumes "inits \<subseteq> LTS.srcs A"*)
+  assumes "pre_star_rule\<^sup>*\<^sup>* A A'"
+  assumes "(Init p, (w,d), q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')"
+  shows "\<exists>p' w'. (Init p', (w',d'), q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A) \<and> (p, w) \<Midarrow>d''\<Rightarrow>\<^sup>* (p', w') \<and> d'' * d' \<le> d"
+(* Maybe assume d'=1 *)
+  sorry
+
+lemma lemma_3_2_a_w:
+(* assumes "inits \<subseteq> LTS.srcs A" *)
+  assumes "saturation pre_star_rule A A'"
+  assumes "(Init p, (w,d), q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')"
+  shows "\<exists>p' w'. (Init p', (w',d'), q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A) \<and> (p, w) \<Midarrow>d''\<Rightarrow>\<^sup>* (p', w') \<and> d'' * d' \<le> d"
+  using assms lemma_3_2_a'_w saturation_def by metis
+
+\<comment> \<open>Corresponds to one direction of Schwoon's theorem 3.2\<close>
+theorem pre_star_rule_subset_pre_star_lang:
+(*  assumes "inits \<subseteq> LTS.srcs A"*)
+  assumes "pre_star_rule\<^sup>*\<^sup>* A A'"
+  shows "\<forall>c. weight_pre_star (accepts A) c \<le> accepts A' c"
+proof
+  fix c :: "'ctr_loc \<times> 'label list"
+  define d where "d = accepts A' c"
+  define p where "p = fst c"
+  define w where "w = snd c"
+  from p_def w_def d_def have "d = accepts A' (p,w)"
+    by auto
+  then have "\<exists>q \<in> finals. (Init p, (w,d), q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')"
+    unfolding accepts_def sorry
+  (*by auto
+  then obtain q where q_p: "q \<in> finals" "(Init p, w, q) \<in> LTS.trans_star A'"
+    by auto
+  then have "\<exists>p' w'. (p,w) \<Rightarrow>\<^sup>* (p',w') \<and> (Init p', w', q) \<in> LTS.trans_star A"
+    using lemma_3_2_a'_w assms(1) assms(2) by metis
+  then obtain p' w' where p'_w'_p: "(p,w) \<Rightarrow>\<^sup>* (p',w')" "(Init p', w', q) \<in> LTS.trans_star A"
+    by auto
+  then have "(p', w') \<in> lang A"
+    unfolding lang_def unfolding accepts_def using q_p(1) by auto
+  then have "(p,w) \<in> pre_star (lang A)"
+    unfolding pre_star_def using p'_w'_p(1) by auto*)
+  then show "weight_pre_star (accepts A) c \<le> d"
+    unfolding p_def w_def sorry (* by auto*)
+qed
+
+\<comment> \<open>Corresponds to Schwoon's theorem 3.2\<close>
+theorem pre_star_rule_accepts_correct:
+(*  assumes "inits \<subseteq> LTS.srcs A" *)
+  assumes "saturation pre_star_rule A A'"
+  shows "\<forall>c. weight_pre_star (accepts A) c = accepts A' c"
+  unfolding order_eq_iff
+proof (rule; rule)
+  fix c :: "'ctr_loc \<times> 'label list"
+  define p where "p = fst c"
+  define w where "w = snd c"
+  define d where "d = weight_pre_star (accepts A) c"
+  then have "d = weight_pre_star (accepts A) (p,w)"
+    unfolding p_def w_def d_def by auto
+  then have "\<exists>d' p' w'. d \<le> d' * accepts A (p',w') \<and> (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',w')" (* \<Sum>{l*(C (p',w')) | l  (p',w'). (p,w) \<Midarrow>l\<Rightarrow>\<^sup>*  (p',w')} *)
+    unfolding weight_pre_star_def by force
+  then obtain p' w' d' where "d \<le> d' * accepts A (p',w') \<and> (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',w')"
+    by auto
+thm lemma_3_1_w[of "(p,w)" d' "(p',w')"]
+  have "accepts A' (p, w) \<le> d' \<cdot> d'" sorry
+  then have "\<exists>q \<in> finals. (Init p, w, q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')"
+    using lemma_3_1 assms(2) unfolding accepts_def by force
+  then have "accepts A' (p,w) \<le> d"
+    unfolding accepts_def by auto
+  then show "(accepts A') c \<le> d"
+    using p_def w_def sorry (* by auto*)
+next
+  fix c :: "'ctr_loc \<times> 'label list"
+  show "weight_pre_star (accepts A) c \<le> accepts A' c"
+    using pre_star_rule_subset_pre_star_lang assms unfolding saturation_def by blast
+qed
+
 
 \<comment> \<open>Example of a theorem that should hold... 
     We still need to define intersection of weighted automata to state the final correctness theorem.\<close>
