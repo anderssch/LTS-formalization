@@ -1345,13 +1345,13 @@ section \<open>Automata\<close>
 subsection \<open>P-Automaton locale\<close>
 
 locale P_Automaton = LTS transition_relation for transition_relation :: "('state::finite, 'label) transition set" +
-  fixes initials :: "'initial \<Rightarrow> 'state" and finals :: "'state set"
+  fixes initials :: "'state set" and finals :: "'state set"
 begin
 
-definition accepts_aut :: "'initial \<Rightarrow> 'label list \<Rightarrow> bool" where
-  "accepts_aut p w \<equiv> (\<exists>q \<in> finals. (initials p, w, q) \<in> trans_star)"
+definition accepts_aut :: "'state \<Rightarrow> 'label list \<Rightarrow> bool" where
+  "accepts_aut \<equiv> \<lambda>p w. (\<exists>q \<in> finals. p \<in> initials \<and> (p, w, q) \<in> trans_star)"
 
-definition lang_aut :: "('inital * 'label list) set" where
+definition lang_aut :: "('state * 'label list) set" where
   "lang_aut = {(p,w). accepts_aut p w}"
 
 definition nonempty where
