@@ -1,5 +1,5 @@
 theory FinFunWellQuasiOrder 
-  imports "FinFun.FinFun" "Well_Quasi_Orders.Well_Quasi_Orders" 
+  imports "FinFun.FinFun" ReverseWellQuasiOrder 
 begin
 
 unbundle finfun_syntax
@@ -205,5 +205,19 @@ begin
     then show "good (\<le>) f" unfolding wqo_on_def almost_full_on_def less_eq_finfun_def by simp
   qed
 end
+
+\<comment> \<open>Finally make the class instantiation.\<close>
+instantiation finfun :: (finite, reverse_wqo) reverse_wqo
+begin
+  instance proof fix f :: "(nat \<Rightarrow> ('a::finite \<Rightarrow>f 'b::reverse_wqo))"
+    have f:"finite (UNIV::('a set))" by simp
+    have w:"wqo_on (\<ge>) (UNIV::('b::reverse_wqo set))" using reverse_wqo_on_class .
+    have "wqo_on (\<ge>) (UNIV::(('a \<Rightarrow>f 'b) set))"
+      using finite_finfuns_wqo[OF f w] finfuns_UNIV 
+      unfolding finfun_emb_def less_eq_finfun_def by metis
+    then show "good (\<ge>) f" unfolding wqo_on_def almost_full_on_def less_eq_finfun_def by simp
+  qed
+end
+
 
 end

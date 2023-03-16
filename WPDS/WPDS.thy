@@ -1,5 +1,5 @@
 theory WPDS 
-  imports "LTS" "Saturation" "FinFunWellQuasiOrder" "ProdDioid" "Kleene_Algebra.Dioid_Models"
+  imports "LTS" "Saturation" "ReverseWellQuasiOrder" "FinFunWellQuasiOrder" "ProdDioid" "Kleene_Algebra.Dioid_Models"
 begin
 
 \<comment> \<open>Preliminary definition of reflexive and transitive closure over a relation labelled with a monoid, 
@@ -140,11 +140,11 @@ type_synonym ('state, 'label, 'weight) w_transitions = "('state, 'label) transit
 type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list \<times> 'weight)) transition set"
 
 \<comment> \<open>Embed a weighted automata into a monoidLTS. All non-zero transitions are added. The label is lifted to the list-monoid.\<close>
-definition wts_to_monoidLTS :: "(('state, 'label, 'weight::{dioid_one_zero,wqo}) w_transitions) \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
+definition wts_to_monoidLTS :: "(('state, 'label, 'weight::{dioid_one_zero,reverse_wqo}) w_transitions) \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
   "wts_to_monoidLTS ts = {(p, ([l],d), q) | p l d q. ts $ (p,l,q) = d \<and> d \<noteq> 0}"
 
 locale W_automata = monoidLTS "wts_to_monoidLTS transition_relation"
-  for transition_relation :: "('state::finite, 'label, 'weight::{dioid_one_zero,wqo}) w_transitions" +
+  for transition_relation :: "('state::finite, 'label, 'weight::{dioid_one_zero,reverse_wqo}) w_transitions" +
   fixes initials :: "'state set" and finals :: "'state set"
 begin
 interpretation monoidLTS "wts_to_monoidLTS transition_relation" .
@@ -164,7 +164,7 @@ end
 
 
 locale WPDS_with_W_automata = WPDS \<Delta>
-  for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::{dioid_one_zero,wqo}) rule set"
+  for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::{dioid_one_zero,reverse_wqo}) rule set"
     +
   fixes final_inits :: "('ctr_loc::enum) set"
   fixes final_noninits :: "('noninit::finite) set"
@@ -233,9 +233,9 @@ definition pre_star1 :: "(('ctr_loc, 'noninit, 'label) state, 'label, 'weight) w
 
 \<comment> \<open>A weighted automaton is initialized with weights 1 (neutral element along paths) on existing transitions, 
     and a default weight of 0 (neutral element for combining paths) for non-existing transitions.\<close>
-definition ts_to_wts :: "('state, 'label) transition set \<Rightarrow> ('state, 'label, 'weight::{dioid_one_zero,wqo}) w_transitions" where
+definition ts_to_wts :: "('state, 'label) transition set \<Rightarrow> ('state, 'label, 'weight::{dioid_one_zero,reverse_wqo}) w_transitions" where
   "ts_to_wts ts = update_wts_set (K$ 0) {(t,1) | t. t \<in> ts}"
-definition wts_to_ts :: "('state, 'label, 'weight::{dioid_one_zero,wqo}) w_transitions \<Rightarrow> ('state, 'label) transition set" where
+definition wts_to_ts :: "('state, 'label, 'weight::{dioid_one_zero,reverse_wqo}) w_transitions \<Rightarrow> ('state, 'label) transition set" where
   "wts_to_ts wts = {t | t. wts $ t \<noteq> 0}"
 
 definition "pre_star_loop = while_option (\<lambda>s. update_wts_set s (pre_star1 s) \<noteq> s) (\<lambda>s. update_wts_set s (pre_star1 s))"
@@ -251,27 +251,35 @@ theorem pre_star_rule_correct:
   
   oops
 
+lemma finfun_update_less:
+  assumes "ts $ a < ts' $ a"
+  assumes "ts(a $:= d) = ts'"
+  shows "ts < ts'"
+  using assms unfolding less_finfun_def less_eq_finfun_def
+  apply (simp, safe)
+  subgoal for a'
+    apply (cases "a = a'")
+    using order_less_imp_le by (blast, simp)
+  using dual_order.strict_iff_not by blast
 
+lemma pre_star_saturation_less:
+  fixes ts::"((('ctr_loc, 'noninit::finite, 'label::finite) state, 'label, 'weight::{dioid_one_zero,reverse_wqo}) w_transitions)"
+  assumes "ts $ (Init p, \<gamma>, q) + d \<cdot> d' \<noteq> ts $ (Init p, \<gamma>, q)"
+  assumes "ts' = ts((Init p, \<gamma>, q) $:= ts $ (Init p, \<gamma>, q) + d \<cdot> d')"
+  shows "ts < ts'"
+proof -
+  from assms(1) have "ts $ (Init p, \<gamma>, q) < ts $ (Init p, \<gamma>, q) + d \<cdot> d'" 
+    by (simp add: join.sup.strict_order_iff join.sup_commute join.sup_left_commute)
+  then have "ts $ (Init p, \<gamma>, q) < ts' $ (Init p, \<gamma>, q)" using assms(2) by simp
+  then show ?thesis using assms(2) finfun_update_less[of ts "(Init p, \<gamma>, q)" ts'] by blast
+qed
 
-thm less_finfun_def less_eq_finfun_def less_eq_def
 lemma pre_star_saturation_exi:
-  shows "\<exists>ts'::((('ctr_loc, 'noninit::finite, 'label::finite) state, 'label, 'weight::{dioid_one_zero,wqo}) w_transitions). 
-            saturation pre_star_rule ts ts'"
-  apply (rule wqo_class_saturation_exi[of pre_star_rule ts])
-  subgoal for ts ts'
-    apply (induct rule: pre_star_rule.induct)
-    subgoal for p \<gamma> d p' w  d' q ts d''
-      unfolding less_finfun_def less_eq_finfun_def
-      apply simp
-      apply safe
-      subgoal for p'' \<gamma>'' q''
-        apply (cases "(Init p, \<gamma>, q) = (p'', \<gamma>'', q'')")
-         defer
-         apply auto[1]
-        apply simp
-        oops
-  
-  
+  fixes ts ::"(('ctr_loc, 'noninit::finite, 'label::finite) state, 'label, 'weight::{dioid_one_zero,reverse_wqo}) w_transitions"
+  shows "\<exists>ts'. saturation pre_star_rule ts ts'"
+  by (rule reverse_wqo_class_saturation_exi[of pre_star_rule ts])
+     (auto simp add:pre_star_rule.simps pre_star_saturation_less)
+
 
 lemma lemma_3_1_w:
   assumes "p'w \<Midarrow>d\<Rightarrow>\<^sup>* pv"
