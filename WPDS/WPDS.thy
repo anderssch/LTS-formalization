@@ -208,6 +208,19 @@ inductive pre_star_rule :: "(('ctr_loc, 'noninit, 'label) state, 'label, 'weight
       \<Longrightarrow> (d'' + (d * d')) \<noteq> d'' 
       \<Longrightarrow> pre_star_rule ts ts((Init p, \<gamma>, q) $:= d'' + (d * d'))"
 
+thm pre_star_rule.intros[of p' \<gamma>' d p'' w' d' q A d'']
+thm weight_pre_star_def
+
+lemma "accepts (A((Init p', \<gamma>', q) $:= d'' + (d * d'))) (p,w) \<le> weight_pre_star (accepts A) (p,w)"
+
+  unfolding weight_pre_star_def
+  apply simp
+  oops
+
+lemma "\<Sum> {d. \<exists>q. q \<in> finals \<and> (Init p, (w, d), q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')}
+    \<le> \<Sum> {l \<cdot> \<Sum> {d. \<exists>q. q \<in> finals \<and> (Init a, (b, d), q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)} |l a b. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (a, b)}"
+  oops
+
 (* from: https://stackoverflow.com/questions/28633353/converting-a-set-to-a-list-in-isabelle *)
 definition set_to_list :: "'a set \<Rightarrow> 'a list"
   where "set_to_list s = (SOME l. set l = s)"
@@ -288,6 +301,230 @@ lemma lemma_3_1_w:
   shows "accepts A' p'w \<le> d * d'"
   using assms
   sorry
+
+lemma
+  fixes a::'weight and b::'weight and c::'weight
+  assumes "a \<le> c"
+  assumes "b \<le> c"
+  shows "a + b \<le> c"
+  using assms by auto
+
+lemma
+  fixes X :: "'weight set"
+  assumes "Z = X \<union> Y"
+  assumes "X \<inter> Y = {}"
+  shows "\<Sum> X \<le> \<Sum> Z"
+  sorry
+
+lemma 
+  fixes f::"'ctr_loc \<times> 'label list \<Rightarrow> 'weight"
+  shows "\<Sum> {f c' |l c'. p c' \<and> c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> \<Sum> {f c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+  sorry
+
+lemma "(l::'weight) \<cdot> (x+x') = l \<cdot> x + l \<cdot> x'"
+  by (simp add: semiring_class.distrib_left)
+
+lemma cool_lemma_123:
+  assumes "finite X"
+  shows "(l::'weight) \<cdot> \<Sum>X = \<Sum>{l \<cdot> x| x. x \<in> X}"
+  using assms
+proof (induction)
+  case empty
+  then show ?case
+    by auto 
+next
+  case (insert x F)
+  have ff1: "{lx| y lx. lx = l \<cdot> y \<and> y \<in> F} = (\<lambda>y. l \<cdot> y) ` F"
+    by blast
+  then have ff: "finite {lx| y lx. lx = l \<cdot> y \<and> y \<in> F}"
+    by (simp add: insert.hyps(1))
+
+  have "l \<cdot> \<Sum> (insert x F) = l \<cdot> (x + \<Sum>F)"
+    by (simp add: insert.hyps(1) insert.hyps(2))
+  also have "... = l \<cdot> x + l \<cdot> \<Sum>F"
+    by (simp add: semiring_class.distrib_left)
+  also have "... = l \<cdot> x + \<Sum> {l \<cdot> y |y. y \<in> F}"
+    using insert by auto
+  also have "... = l \<cdot> x + \<Sum> {lx| y lx. lx = l \<cdot> y \<and> y \<in> F}"
+    by auto
+  also have "... = \<Sum> {l \<cdot> y |y. y \<in> insert x F}"
+    apply (cases "l \<cdot> x \<in> {lx| y lx. lx = l \<cdot> y \<and> y \<in> F}")
+    subgoal
+      apply (smt (verit, ccfv_SIG) Collect_cong comm_monoid_add_class.sum.insert ff finite_insert insert_iff join.sup.left_idem mem_Collect_eq mk_disjoint_insert)
+      done
+    subgoal
+      using Setcompr_eq_image comm_monoid_add_class.sum.insert ff ff1 Collect_cong image_insert apply (smt (verit))
+      done
+    done
+  finally show ?case 
+    by auto
+qed
+
+
+find_theorems "\<Sum>:: 'weight set \<Rightarrow> 'weight"
+
+term "accepts A' \<le> weight_pre_star (accepts A)"
+
+lemma sum_mono: (* Maybe this is not true, because \<Sum> is defined for only finite sets *)
+  assumes "(X::'weight set) \<subseteq> Y"
+  shows "\<Sum> X \<le> \<Sum> Y"
+  sorry
+
+lemma lemma_3_1_w_alternative:
+  assumes "pre_star_rule A A'"
+  shows "accepts A' pv \<le> weight_pre_star (accepts A) pv"
+proof -
+  from assms have "\<exists>p' \<gamma> d p'' w d' q d''.
+        A' = A((Init p', \<gamma>, q) $:= d'' + d \<cdot> d') \<and>
+        (p', \<gamma>) \<midarrow> d \<hookrightarrow> (p'', w) \<and>
+        (Init p'', (lbl w, d'), q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A) \<and> A $ (Init p', \<gamma>, q) = d'' \<and> d'' + d \<cdot> d' \<noteq> d''"
+    using pre_star_rule.cases[of A A'] by metis
+  then obtain p' \<gamma> d p'' w d' q d'' where properties:
+    "A' = A((Init p', \<gamma>, q) $:= d'' + d \<cdot> d')"
+    "(p', \<gamma>) \<midarrow> d \<hookrightarrow> (p'', w)"
+    "(Init p'', (lbl w, d'), q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)"
+    "A $ (Init p', \<gamma>, q) = d''"
+    "d'' + d \<cdot> d' \<noteq> d''"
+    by auto
+
+  show "accepts A' pv \<le> weight_pre_star (accepts A) pv"
+  proof (cases "\<exists>w'. pv = (p',\<gamma>#w')")
+    case True
+    then obtain w' where "pv = (p',\<gamma>#w')"
+      by auto
+    have BB1: "\<Sum> {d'' \<cdot> d\<^sub>2'''| d\<^sub>2'''. \<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (q, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')} \<le> weight_pre_star (accepts A) (p',\<gamma>#w')"
+    proof -
+      have "\<Sum> {d'' \<cdot> d\<^sub>2'''| d\<^sub>2'''. \<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (q, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')}
+               \<le> \<Sum> {d'' \<cdot> d\<^sub>2'''| d\<^sub>2'''. \<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (q, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)}"
+        sorry (* The path from q to q\<^sub>f will not go through the edge with changed weight. I think this only holds if we assume "wlog" that the p's are sinks modulo self loops *)
+      also have "... \<le> \<Sum> {1 \<cdot> d'' \<cdot> d\<^sub>2'''| d\<^sub>2'''. \<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (q, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)}"
+        by auto
+      also have "... \<le> \<Sum> {1 \<cdot> d'' \<cdot> d\<^sub>2'''| d\<^sub>2'''. (p', \<gamma> # w') \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', \<gamma> # w') \<and> (\<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (q, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A))}"
+        by auto
+      also have "... \<le> \<Sum> {1 \<cdot> d'' \<cdot> d\<^sub>2'''| d\<^sub>2'''. (p', \<gamma> # w') \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', \<gamma> # w') \<and> (\<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (Init p', (\<gamma> # w', d'' \<cdot> d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A))}"
+        sorry
+      also have "... \<le> \<Sum> {l \<cdot> d| d l p''' w''. (p', \<gamma> # w') \<Midarrow> l \<Rightarrow>\<^sup>* (p''', w'') \<and> (\<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (Init p''', (w'', d), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A))}"
+        by (smt (verit) Collect_mono_iff WPDS_with_W_automata.sum_mono mult.assoc)
+        (* This is a bigger sum because for l take 1, for d take d'' \<cdot> d\<^sub>2''' for p''' take p' for w'' take \<gamma> # w'  *)
+      also have "... \<le> \<Sum> {\<Sum> {l \<cdot> d| d. \<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (Init p''', (w'', d), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)} |l p''' w''. (p', \<gamma> # w') \<Midarrow> l \<Rightarrow>\<^sup>* (p''', w'')}"
+        (* Sum of sums rewritten as sum of sums *)
+        sorry
+      also have "... \<le> \<Sum> {l \<cdot> \<Sum> {d. \<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (Init p''', (w'', d), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)} |l p''' w''. (p', \<gamma> # w') \<Midarrow> l \<Rightarrow>\<^sup>* (p''', w'')}"
+        (* Distributive law *)
+        sorry
+      also have "... \<le> \<Sum> {l \<cdot> accepts A c' |l c'. (p', \<gamma> # w') \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+        unfolding accepts_def by simp
+      also have "... \<le> weight_pre_star (accepts A) (p',\<gamma>#w')"
+        unfolding weight_pre_star_def by auto
+      finally
+      show "\<Sum> {d'' \<cdot> d\<^sub>2'''| d\<^sub>2'''. \<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (q, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')} \<le> weight_pre_star (accepts A) (p',\<gamma>#w')"
+        by auto
+    qed
+    have BB2: "\<Sum> {d \<cdot> d' \<cdot> d\<^sub>2'''| d\<^sub>2'''. \<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (q, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')} \<le> weight_pre_star (accepts A) (p',\<gamma>#w')"
+      sorry
+    have BB3: "\<Sum> {d\<^sub>1''' \<cdot> d\<^sub>2'''| d\<^sub>1''' d\<^sub>2'''. \<exists>q\<^sub>f q\<^sub>i. q\<^sub>f \<in> finals \<and> A' $ (Init p', \<gamma>, q\<^sub>i) = d\<^sub>1''' \<and> (q\<^sub>i, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A') \<and> q\<^sub>i \<noteq> q} \<le> weight_pre_star (accepts A) (p',\<gamma>#w')"
+      sorry
+
+    have "accepts A' (p',\<gamma>#w') = \<Sum> {d'''. \<exists>q. q \<in> finals \<and> (Init p', (\<gamma> # w', d'''), q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')}"
+      unfolding accepts_def by simp
+    also 
+    have "... = \<Sum> {(d'' + d \<cdot> d') \<cdot> d\<^sub>2'''| d\<^sub>2'''. \<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (q, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')}
+              + \<Sum> {d\<^sub>1''' \<cdot> d\<^sub>2'''| d\<^sub>1''' d\<^sub>2'''. \<exists>q\<^sub>f q\<^sub>i. q\<^sub>f \<in> finals \<and> A' $ (Init p', \<gamma>, q\<^sub>i) = d\<^sub>1''' \<and> (q\<^sub>i, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A') \<and> q\<^sub>i \<noteq> q}"
+      sorry
+    also
+    have "... = \<Sum> {d'' \<cdot> d\<^sub>2'''| d\<^sub>2'''. \<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (q, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')}
+              + \<Sum> {d \<cdot> d' \<cdot> d\<^sub>2'''| d\<^sub>2'''. \<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (q, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')}
+              + \<Sum> {d\<^sub>1''' \<cdot> d\<^sub>2'''| d\<^sub>1''' d\<^sub>2'''. \<exists>q\<^sub>f q\<^sub>i. q\<^sub>f \<in> finals \<and> A' $ (Init p', \<gamma>, q\<^sub>i) = d\<^sub>1''' \<and> (q\<^sub>i, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A') \<and> q\<^sub>i \<noteq> q}"
+      sorry
+    (* d'' er den gamle værdi for den ændrede kant. Aka den bidrager til \<Longrightarrow>\<^sup>0 vægten for pre* af vores konfiguration. *)
+    (* d * d' \<cdot> d\<^sub>2''': her er d afstanden fra en anden konfiguration ind i vores. Og d' \<cdot> d\<^sub>2''' er vægten af den konfiguration. Så denne sum er et \<Longrightarrow>\<^sup>1 bidrag til pre* af vores konfiguration. *)
+    (* d\<^sub>1''' \<cdot> d\<^sub>2''' er \<Longrightarrow>\<^sup>0 bidrag til vægten af vores konfiguration *)
+    
+
+    (* have "weight_pre_star (accepts A) (p',\<gamma>#w') = undefined"
+      unfolding weight_pre_star_def sorry *)
+
+    finally have BB4: "accepts A' (p',\<gamma>#w') = \<Sum> {d'' \<cdot> d\<^sub>2'''| d\<^sub>2'''. \<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (q, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')}
+              + \<Sum> {d \<cdot> d' \<cdot> d\<^sub>2'''| d\<^sub>2'''. \<exists>q\<^sub>f. q\<^sub>f \<in> finals \<and> (q, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')}
+              + \<Sum> {d\<^sub>1''' \<cdot> d\<^sub>2'''| d\<^sub>1''' d\<^sub>2'''. \<exists>q\<^sub>f q\<^sub>i. q\<^sub>f \<in> finals \<and> A' $ (Init p', \<gamma>, q\<^sub>i) = d\<^sub>1''' \<and> (q\<^sub>i, (w', d\<^sub>2'''), q\<^sub>f) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A') \<and> q\<^sub>i \<noteq> q}"
+      by auto
+    have "accepts A' (p',\<gamma>#w') \<le> weight_pre_star (accepts A) (p',\<gamma>#w')"
+      using BB1 BB2 BB3 BB4 by auto
+    then show ?thesis 
+      sorry
+  next
+    case False
+    have "accepts A' pv = accepts A pv"
+      sorry
+    then show "accepts A' pv \<le> weight_pre_star (accepts A) pv"
+      sorry
+  qed
+qed
+
+lemma lemma_3_1_w_alternative': 
+  assumes "pre_star_rule A A'"
+  shows "accepts A' \<le> weight_pre_star (accepts A)"
+  by (simp add: assms le_funI lemma_3_1_w_alternative)
+
+lemma nice_lemma:
+   "X c \<le> weight_pre_star X c"
+proof -
+  have "X c \<le> 1 \<cdot> X c"
+    by simp
+  have "... \<le> \<Sum> {1 \<cdot> X c}"
+    by simp
+  also have "... \<le> \<Sum> {l \<cdot> X c |l. c \<Midarrow> l \<Rightarrow>\<^sup>* c}"
+    by (smt (verit, del_insts) bot.extremum insert_subsetI local.sum_mono mem_Collect_eq monoid_rtranclp.monoid_rtrancl_refl)
+  also have "... \<le> \<Sum> {l \<cdot> X c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    by (smt (verit) Collect_mono WPDS_with_W_automata.sum_mono)
+  also have "... = weight_pre_star X c"
+    unfolding weight_pre_star_def by auto
+  finally
+  show ?thesis
+    by auto
+qed
+
+lemma nice_lemma2:
+  "X \<le> weight_pre_star X"
+  by (simp add: le_fun_def nice_lemma)
+
+lemma nice_lemma3:
+  "weight_pre_star (weight_pre_star (accepts A)) c = (weight_pre_star (accepts A)) c"
+  unfolding weight_pre_star_def
+  apply auto
+  sorry (* This is true, right? *)
+
+lemma nice_lemma4:
+  "weight_pre_star (weight_pre_star (accepts A)) = (weight_pre_star (accepts A))"
+  using nice_lemma3 by auto
+
+lemma weight_pre_star_mono:
+  assumes "X \<le> Y"
+  shows "weight_pre_star X c \<le> weight_pre_star Y c"
+  using assms unfolding weight_pre_star_def
+  apply auto
+  sorry (* This is true, right? *)
+
+lemma lemma_3_1_w_alternative'':
+  assumes "pre_star_rule\<^sup>*\<^sup>* A A'"
+  shows "accepts A' \<le> weight_pre_star (accepts A)"
+using assms proof (induction)
+  case base
+  then show ?case
+    by (simp add: nice_lemma2)
+next
+  case (step A' A'')
+  then have "accepts A'' \<le> weight_pre_star (accepts A')"
+    using lemma_3_1_w_alternative'[of A' A''] by auto
+  moreover
+  from step(3) have "weight_pre_star (accepts A') \<le> weight_pre_star (weight_pre_star (accepts A))"
+    by (simp add: WPDS_with_W_automata.weight_pre_star_mono le_fun_def)
+  then have "weight_pre_star (accepts A') \<le> weight_pre_star (accepts A)"
+    using nice_lemma4 by auto
+  ultimately
+  show ?case
+    by auto
+qed
 
 lemma lemma_3_2_a'_w:
 (* assumes "inits \<subseteq> LTS.srcs A"*)
