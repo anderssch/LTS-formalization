@@ -1,21 +1,6 @@
 theory WPDS 
-  imports "LTS" "Saturation" "ReverseWellQuasiOrder" "FinFunWellQuasiOrder" "ProdDioid" "Kleene_Algebra.Dioid_Models"
+  imports "LTS" "Saturation" "ReverseWellQuasiOrder" "FinFunWellQuasiOrder" "MonoidClosure"
 begin
-
-\<comment> \<open>Preliminary definition of reflexive and transitive closure over a relation labelled with a monoid, 
-    (and transitive closure over a semigroup-labelled relation)\<close>
-inductive_set monoid_rtrancl :: "('a \<times> 'b::monoid_mult \<times> 'a) set \<Rightarrow> ('a \<times> 'b \<times> 'a) set"
- for r :: "('a \<times> 'b \<times> 'a) set" where
-    monoid_rtrancl_refl [intro!, Pure.intro!, simp]: "(a, 1, a) \<in> monoid_rtrancl r"
-  | monoid_rtrancl_into_rtrancl [Pure.intro]: "(a, w, b) \<in> monoid_rtrancl r \<Longrightarrow> (b, l, c) \<in> r \<Longrightarrow> (a, w*l,c) \<in> monoid_rtrancl r"
-inductive_cases monoid_rtrancl_empty [elim]: "(p, 1, q) \<in> monoid_rtrancl r"
-inductive_cases monoid_rtrancl_extend: "(p, w*l, q) \<in> monoid_rtrancl r"
-
-inductive_set semigroup_trancl :: "('a \<times> 'b::semigroup_mult \<times> 'a) set \<Rightarrow> ('a \<times> 'b \<times> 'a) set"
- for r :: "('a \<times> 'b \<times> 'a) set" where
-    semigroup_trancl_refl [intro!, Pure.intro!, simp]: "(a, l, b) \<in> r \<Longrightarrow> (a, l, b) \<in> semigroup_trancl r"
-  | semigroup_trancl_into_rtrancl [Pure.intro]: "(a, w, b) \<in> semigroup_trancl r \<Longrightarrow> (b, l, c) \<in> r \<Longrightarrow> (a, w*l,c) \<in> semigroup_trancl r"
-
 
 \<comment> \<open>If the @{typ 'label} of a LTS is a monoid, we can express the monoid product of labels over a path.\<close>
 locale monoidLTS = LTS transition_relation 
@@ -31,6 +16,11 @@ end
 
 lemma monoid_star_is_monoid_rtrancl[simp]: "monoidLTS.monoid_star = monoid_rtrancl"
   unfolding monoidLTS.monoid_star_def monoidLTS.l_step_relp_def monoid_rtrancl_def by simp
+
+lemma monoidLTS_monoid_star_mono:
+  "mono monoidLTS.monoid_star"
+  using monoid_star_is_monoid_rtrancl monoid_rtrancl_is_mono
+  by simp
 
 \<comment> \<open>If the @{typ 'label} of a LTS is a dioid with additive and multiplicative identities, 
     we can express the meet-over-all-paths value as a generalization of pre-star and post-star.\<close>
@@ -148,6 +138,29 @@ type_synonym ('ctr_loc, 'noninit, 'label) final_trace = "('ctr_loc, 'label) trac
 \<comment> \<open>Embed a weighted automata into a monoidLTS. All non-zero transitions are added. The label is lifted to the list-monoid.\<close>
 definition wts_to_monoidLTS :: "(('state, 'label, 'weight::{dioid_one_zero,reverse_wqo}) w_transitions) \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
   "wts_to_monoidLTS ts = {(p, ([l],d), q) | p l d q. ts $ (p,l,q) = d \<and> d \<noteq> 0}"
+
+lemma less_eq_finfun_elem: 
+  fixes x :: "'a \<Rightarrow>f 'weight::dioid_one_zero"
+  assumes "x \<le> y"
+  shows "x $ c \<le> y $ c"
+  using assms unfolding less_eq_finfun_def by simp
+
+lemma less_eq_finfun_not_zero: 
+  fixes x :: "'a \<Rightarrow>f 'weight::dioid_one_zero"
+  assumes "x \<le> y"
+  assumes "x $ c \<noteq> 0"
+  shows "y $ c \<noteq> 0"
+  using less_eq_finfun_elem[OF assms(1)] assms(2) join.bot.extremum_unique
+  by metis
+
+lemma wts_to_monoidLTS_less_eq:
+  assumes "x \<le> y"
+  assumes "(p, (l,d), q) \<in> wts_to_monoidLTS x"
+  shows "(\<exists>d'. (p, (l,d'), q) \<in> wts_to_monoidLTS y \<and> d \<le> d') \<and> (\<forall>d'. (p, (l,d'), q) \<in> wts_to_monoidLTS y \<longrightarrow> d \<le> d')"
+  using assms(2) unfolding wts_to_monoidLTS_def
+  using less_eq_finfun_elem[OF assms(1)] less_eq_finfun_not_zero[OF assms(1)] by blast
+
+lemma wts_to_monoidLTS_mono: "mono wts_to_monoidLTS" oops (* Not true *)
 
 locale W_automata = monoidLTS "wts_to_monoidLTS transition_relation"
   for transition_relation :: "('state::finite, 'label, 'weight::{dioid_one_zero,reverse_wqo}) w_transitions" +
@@ -284,7 +297,7 @@ lemma finfun_update_less:
     using order_less_imp_le by (blast, simp)
   using dual_order.strict_iff_not by blast
 
-lemma pre_star_saturation_less:
+lemma pre_star_rule_less_aux:
   fixes ts::"((('ctr_loc, 'noninit::finite, 'label::finite) state, 'label, 'weight::{dioid_one_zero,reverse_wqo}) w_transitions)"
   assumes "ts $ (Init p, \<gamma>, q) + d \<cdot> d' \<noteq> ts $ (Init p, \<gamma>, q)"
   assumes "ts' = ts((Init p, \<gamma>, q) $:= ts $ (Init p, \<gamma>, q) + d \<cdot> d')"
@@ -296,12 +309,30 @@ proof -
   then show ?thesis using assms(2) finfun_update_less[of ts "(Init p, \<gamma>, q)" ts'] by blast
 qed
 
+lemma pre_star_rule_less:
+  assumes "pre_star_rule A B"
+  shows "A < B"
+  using assms by (auto simp add:pre_star_rule.simps pre_star_rule_less_aux)
+
+lemma pre_star_rule_less_eq:
+  assumes "pre_star_rule A B"
+  shows "A \<le> B"
+  using pre_star_rule_less[OF assms(1)] by simp
+
 lemma pre_star_saturation_exi:
-  fixes ts ::"(('ctr_loc, 'noninit::finite, 'label::finite) state, 'label, 'weight::{dioid_one_zero,reverse_wqo}) w_transitions"
   shows "\<exists>ts'. saturation pre_star_rule ts ts'"
   by (rule reverse_wqo_class_saturation_exi[of pre_star_rule ts])
-     (auto simp add:pre_star_rule.simps pre_star_saturation_less)
+     (simp add: pre_star_rule_less)
 
+lemma saturation_rtranclp_pre_star_rule_incr: "pre_star_rule\<^sup>*\<^sup>* A B \<Longrightarrow> A \<le> B"
+proof (induction rule: rtranclp_induct)
+  case base
+  then show ?case by auto
+next
+  case (step y z)
+  then show ?case
+    using pre_star_rule_less by fastforce
+qed
 
 lemma wts_label_exist: "(p, w, q) \<in> wts_to_monoidLTS ts \<Longrightarrow> \<exists>l. fst w = [l]"
   unfolding wts_to_monoidLTS_def by fastforce
@@ -539,13 +570,157 @@ lemma "accepts A (p,w) = \<Sigma>{final_trace_weight_sum t | t::(('ctr_loc, 'non
   oops
 
 
+definition wts_trans_star_less_eq :: "('state, 'label, 'weight) w_transition_set \<Rightarrow> ('state, 'label, 'weight) w_transition_set \<Rightarrow> bool" where
+  "wts_trans_star_less_eq A A' \<equiv> (\<forall>p w d q. (p,(w,d),q) \<in> A \<longrightarrow> (\<exists>d'. (p,(w,d'),q) \<in> A' \<and> d \<le> d') \<and> (\<forall>d'. (p, (w,d'), q) \<in> A' \<longrightarrow> d \<le> d'))"
+
+lemma wts_to_monoidLTS_less_eq: "A \<le> A' \<Longrightarrow> wts_trans_star_less_eq (wts_to_monoidLTS A) (wts_to_monoidLTS A')"
+  unfolding wts_trans_star_less_eq_def
+  apply safe
+  subgoal for p w d q
+    using wts_to_monoidLTS_less_eq[of A A' p w d q]
+    by fastforce
+  subgoal for p w d q
+    using wts_to_monoidLTS_less_eq[of A A' p w d q]
+    by fastforce
+  done
+
+lemma monoid_rtrancl_invariant_less: "wts_trans_star_less_eq A A' \<Longrightarrow> wts_trans_star_less_eq (monoid_rtrancl A) (monoid_rtrancl A')"
+  unfolding wts_trans_star_less_eq_def
+  apply safe
+  sorry
+
+lemma wts_to_monoid_rtrancl_mono: "A \<le> A' \<Longrightarrow> wts_trans_star_less_eq (monoid_rtrancl (wts_to_monoidLTS A)) (monoid_rtrancl (wts_to_monoidLTS A'))"
+  using wts_to_monoidLTS_less_eq monoid_rtrancl_invariant_less
+  by fast
+
+lemma 
+  fixes A A' :: "('b :: dioid_one_zero) set"
+  assumes "\<forall>d. d \<in> A \<longrightarrow> (\<exists>d'. d' \<in> A' \<and> d \<le> d') \<and> (\<forall>d'. d' \<in> A' \<longrightarrow> d \<le> d')"
+  shows "\<Sum>{d. d \<in> A} \<le> \<Sum>{d. d \<in> A'}"
+  using assms
+  apply simp
+  nitpick
+  oops (* Not enough. We need to also talk about the set of paths being monotone and then only adding paths or updating weight of path...*)
+
+lemma 
+  fixes A A' :: "('a \<times> 'b :: dioid_one_zero) set"
+  assumes "\<forall>c d. (c, d) \<in> A \<longrightarrow> (\<exists>d'. (c, d') \<in> A' \<and> d \<le> d') \<and> (\<forall>d'. (c,d') \<in> A' \<longrightarrow> d \<le> d')"
+  shows "\<Sum>{d. (c, d) \<in> A} \<le> \<Sum>{d. (c, d) \<in> A'}"
+  using assms
+  apply -
+  oops
+
+lemma 
+  assumes "\<forall>p w d q. (p, (w, d), q) \<in> A \<longrightarrow> (\<exists>d'. (p, (w, d'), q) \<in> A' \<and> d \<le> d') \<and> (\<forall>d'. (p, (w,d'), q) \<in> A' \<longrightarrow> d \<le> d')"
+  shows "\<Sum>{d. \<exists>q. q \<in> finals \<and> (Init p, (w, d), q) \<in> A} \<le> \<Sum>{d. \<exists>q. q \<in> finals \<and> (Init p, (w, d), q) \<in> A'}"
+  using assms
+  apply safe
+  oops
+
+lemma 
+  assumes "A \<le> A'"
+  shows "accepts A (p,w) \<le> accepts A' (p,w)"
+  using wts_to_monoid_rtrancl_mono[OF assms(1)]
+  unfolding wts_trans_star_less_eq_def accepts_def
+  apply simp
+  apply auto
+  oops
+
+lemma "mono accepts"
+  unfolding mono_def
+ unfolding accepts_def
+  apply safe
+  subgoal for A A'
+    using wts_to_monoid_rtrancl_mono[of A A']
+    unfolding wts_trans_star_less_eq_def
+    apply simp
+    apply auto
+    oops
+  
+
+
+
+lemma pre_star'_incr_trans_star:
+  assumes "pre_star_rule\<^sup>*\<^sup>* A A'"
+  shows "wts_trans_star_less_eq (monoidLTS.monoid_star (wts_to_monoidLTS A)) (monoidLTS.monoid_star (wts_to_monoidLTS A'))"
+  using assms monoidLTS_monoid_star_mono wts_to_monoidLTS_less_eq saturation_rtranclp_pre_star_rule_incr
+  unfolding mono_def
+  apply auto
+  oops
+
+lemma pre_star_lim'_incr_trans_star:
+  assumes "saturation pre_star_rule A A'"
+  shows "monoidLTS.monoid_star (wts_to_monoidLTS A) \<le> monoidLTS.monoid_star (wts_to_monoidLTS A')"
+  using assms
+  by (simp add: pre_star'_incr_trans_star saturation_def)
+
 lemma lemma_3_1_w:
   assumes "p'w \<Midarrow>d\<Rightarrow>\<^sup>* pv"
   assumes "accepts A pv = d'"
   assumes "saturation pre_star_rule A A'"
   shows "accepts A' p'w \<le> d * d'"
   using assms
-  sorry
+proof (induct rule: monoid_rtranclp.induct)
+  case (monoid_rtrancl_refl a)
+  then show ?case using pre_star_lim'_incr_trans_star accepts_def sorry
+next
+  case (monoid_rtrancl_into_rtrancl a w b l c)
+  then show ?case sorry
+qed
+lemma lemma_3_1_w:
+  assumes "p'w \<Midarrow>d\<Rightarrow>\<^sup>* pv"
+  assumes "accepts A pv = d'"
+  assumes "saturation pre_star_rule A A'"
+  shows "accepts A' p'w \<le> d * d'"
+  using assms
+proof (induct rule: converse_rtranclp_induct)
+  case base
+  define p where "p = fst pv"
+  define v where "v = snd pv"
+  from base have "\<exists>q \<in> finals. (Init p, v, q) \<in> LTS.trans_star A'"
+    unfolding lang_def p_def v_def using pre_star_lim'_incr_trans_star accepts_def by fastforce 
+  then show ?case
+    unfolding accepts_def p_def v_def by auto
+next
+  case (step p'w p''u) 
+  define p' where "p' = fst p'w"
+  define w  where "w = snd p'w"
+  define p'' where "p'' = fst p''u"
+  define u  where "u = snd p''u"
+  have p'w_def: "p'w = (p', w)"
+    using p'_def w_def by auto
+  have p''u_def: "p''u = (p'', u)"
+    using p''_def u_def by auto
+
+  then have "accepts A' (p'', u)" 
+    using step by auto
+  then obtain q where q_p: "q \<in> finals \<and> (Init p'', u, q) \<in> LTS.trans_star A'"
+    unfolding accepts_def by auto
+  have "\<exists>\<gamma> w1 u1. w=\<gamma>#w1 \<and> u=lbl u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)"
+    using p''u_def p'w_def step.hyps(1) step_relp_def2 by auto
+  then obtain \<gamma> w1 u1 where \<gamma>_w1_u1_p: "w=\<gamma>#w1 \<and> u=lbl u1@w1 \<and> (p', \<gamma>) \<hookrightarrow> (p'', u1)"
+    by blast
+
+  then have "\<exists>q1. (Init p'', lbl u1, q1) \<in> LTS.trans_star A' \<and> (q1, w1, q) \<in> LTS.trans_star A'"
+    using q_p LTS.trans_star_split by auto
+
+  then obtain q1 where q1_p: "(Init p'', lbl u1, q1) \<in> LTS.trans_star A' \<and> (q1, w1, q) \<in> LTS.trans_star A'"
+    by auto
+
+  then have in_A': "(Init p', \<gamma>, q1) \<in> A'"
+    using \<gamma>_w1_u1_p add_trans[of p' \<gamma> p'' u1 q1 A'] saturated_def saturation_def step.prems by metis
+
+  then have "(Init p', \<gamma>#w1, q) \<in> LTS.trans_star A'"
+    using LTS.trans_star.trans_star_step q1_p by meson
+  then have t_in_A': "(Init p', w, q) \<in> LTS.trans_star A'"
+    using \<gamma>_w1_u1_p by blast
+
+  from q_p t_in_A' have "q \<in> finals \<and> (Init p', w, q) \<in> LTS.trans_star A'"
+    by auto
+  then show ?case
+    unfolding accepts_def p'w_def by auto 
+qed
+
 
 lemma lemma_3_2_a'_w:
 (* assumes "inits \<subseteq> LTS.srcs A"*)
