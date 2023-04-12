@@ -29,6 +29,9 @@ definition monoid_star :: "('state \<times> 'label \<times> 'state) set" where
   "monoid_star = {(c,l,c'). c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
 end
 
+lemma monoid_star_is_monoid_rtrancl[simp]: "monoidLTS.monoid_star = monoid_rtrancl"
+  unfolding monoidLTS.monoid_star_def monoidLTS.l_step_relp_def monoid_rtrancl_def by simp
+
 \<comment> \<open>If the @{typ 'label} of a LTS is a dioid with additive and multiplicative identities, 
     we can express the meet-over-all-paths value as a generalization of pre-star and post-star.\<close>
 locale dioidLTS = monoidLTS transition_relation 
