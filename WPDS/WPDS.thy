@@ -215,7 +215,7 @@ notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 notation l_step_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80)
 notation monoid_star_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [90,90,100] 100) 
 
-\<comment> \<open>Generalization of @{term PDS_with_P_automata.accepts} that computes the meet-over-all-paths in the W-automaton.\<close>
+\<comment> \<open>Generalization of PDS_with_P_automata.accepts that computes the meet-over-all-paths in the W-automaton.\<close>
 definition accepts :: "(('ctr_loc, 'noninit, 'label) state, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
   "accepts ts \<equiv> \<lambda>(p,w). (\<Sum>{d | d q. q \<in> finals \<and> (Init p,(w,d),q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS ts)})"
 
@@ -226,12 +226,12 @@ lemma "(pop_seq p \<gamma> p') \<le> \<Sum>{d. (p,\<gamma>#w) \<Midarrow>d\<Righ
   using step_relp_def2[of p "\<gamma>#w" _ p' w]
   apply simp
   unfolding pop_seq_def
-  apply auto
+  (* apply auto *)
   oops
 
 lemma "(pop_seq p \<gamma> p') * (pop_seq p' \<gamma>' p'') \<le> \<Sum>{d. (p,[\<gamma>,\<gamma>']) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[])}"
   unfolding pop_seq_def
-  apply simp
+  (* apply simp *)
   oops
 
 
@@ -525,11 +525,11 @@ lemma
   using assms
   oops
 
-lemma
+(* lemma
   assumes "inits \<subseteq> LTS.srcs (wts_to_monoidLTS A)"
   shows   "accepts A (Noninit q, w) = 1"
   using assms
-  oops
+  oops *)
 
 lemma 
   assumes "inits \<subseteq> LTS.srcs (wts_to_monoidLTS A)"
@@ -614,7 +614,7 @@ lemma
   assumes "\<forall>p w d q. (p, (w, d), q) \<in> A \<longrightarrow> (\<exists>d'. (p, (w, d'), q) \<in> A' \<and> d \<le> d') \<and> (\<forall>d'. (p, (w,d'), q) \<in> A' \<longrightarrow> d \<le> d')"
   shows "\<Sum>{d. \<exists>q. q \<in> finals \<and> (Init p, (w, d), q) \<in> A} \<le> \<Sum>{d. \<exists>q. q \<in> finals \<and> (Init p, (w, d), q) \<in> A'}"
   using assms
-  apply safe
+  (* apply safe *)
   oops
 
 lemma 
@@ -623,7 +623,7 @@ lemma
   using wts_to_monoid_rtrancl_mono[OF assms(1)]
   unfolding wts_trans_star_less_eq_def accepts_def
   apply simp
-  apply auto
+  (* apply auto *)
   oops
 
 lemma "mono accepts"
@@ -634,7 +634,7 @@ lemma "mono accepts"
     using wts_to_monoid_rtrancl_mono[of A A']
     unfolding wts_trans_star_less_eq_def
     apply simp
-    apply auto
+    (* apply auto *)
     oops
   
 
@@ -652,7 +652,8 @@ lemma pre_star_lim'_incr_trans_star:
   assumes "saturation pre_star_rule A A'"
   shows "monoidLTS.monoid_star (wts_to_monoidLTS A) \<le> monoidLTS.monoid_star (wts_to_monoidLTS A')"
   using assms
-  by (simp add: pre_star'_incr_trans_star saturation_def)
+  oops
+  (* by (simp add: pre_star'_incr_trans_star saturation_def) *)
 
 lemma lemma_3_1_w:
   assumes "p'w \<Midarrow>d\<Rightarrow>\<^sup>* pv"
@@ -660,20 +661,22 @@ lemma lemma_3_1_w:
   assumes "saturation pre_star_rule A A'"
   shows "accepts A' p'w \<le> d * d'"
   using assms
-proof (induct rule: monoid_rtranclp.induct)
+  oops
+(* proof (induct rule: monoid_rtranclp.induct)
   case (monoid_rtrancl_refl a)
   then show ?case using pre_star_lim'_incr_trans_star accepts_def sorry
 next
   case (monoid_rtrancl_into_rtrancl a w b l c)
   then show ?case sorry
-qed
+qed *)
 lemma lemma_3_1_w:
   assumes "p'w \<Midarrow>d\<Rightarrow>\<^sup>* pv"
   assumes "accepts A pv = d'"
   assumes "saturation pre_star_rule A A'"
   shows "accepts A' p'w \<le> d * d'"
   using assms
-proof (induct rule: converse_rtranclp_induct)
+  sorry
+(* proof (induct rule: converse_rtranclp_induct)
   case base
   define p where "p = fst pv"
   define v where "v = snd pv"
@@ -719,7 +722,7 @@ next
     by auto
   then show ?case
     unfolding accepts_def p'w_def by auto 
-qed
+qed *)
 
 
 lemma lemma_3_2_a'_w:
@@ -780,17 +783,20 @@ proof (rule; rule)
   then have "d = weight_pre_star (accepts A) (p,w)"
     unfolding p_def w_def d_def by auto
   then have "\<exists>d' p' w'. d \<le> d' * accepts A (p',w') \<and> (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',w')" (* \<Sum>{l*(C (p',w')) | l  (p',w'). (p,w) \<Midarrow>l\<Rightarrow>\<^sup>*  (p',w')} *)
-    unfolding weight_pre_star_def by force
+    unfolding weight_pre_star_def sorry 
+    (* by force *)
   then obtain p' w' d' where "d \<le> d' * accepts A (p',w') \<and> (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',w')"
     by auto
-thm lemma_3_1_w[of "(p,w)" d' "(p',w')"]
+(* thm lemma_3_1_w[of "(p,w)" d' "(p',w')"] *)
   have "accepts A' (p, w) \<le> d' \<cdot> d'" sorry
-  then have "\<exists>q \<in> finals. (Init p, w, q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')"
-    using lemma_3_1 assms(2) unfolding accepts_def by force
+  then have "\<exists>q \<in> finals. (Init p, (w,d), q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A')"
+    using lemma_3_1_w[of "(p,w)" d' "(p',w')"] assms(1) unfolding accepts_def sorry 
+    (*by force*)
   then have "accepts A' (p,w) \<le> d"
-    unfolding accepts_def by auto
+    unfolding accepts_def sorry
+    (* by auto *)
   then show "(accepts A') c \<le> d"
-    using p_def w_def sorry (* by auto*)
+    using p_def w_def by auto
 next
   fix c :: "'ctr_loc \<times> 'label list"
   show "weight_pre_star (accepts A) c \<le> accepts A' c"
