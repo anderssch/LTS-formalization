@@ -141,4 +141,13 @@ lemma saturation_exi:
   using assms wqo_saturation_exi[of "\<lambda>x y. card x \<ge> card y" "rule" "ts"] finite_card_le_wqo
   by (metis (mono_tags, lifting) finite_class.finite_UNIV nle_le not_less_eq_eq)
 
+
+
+lemma saturation_invariant_property:
+  assumes "\<And>val val'. rule val val' \<Longrightarrow> P (f val) = P (f val')"
+      and "\<And>val. saturated rule val \<Longrightarrow> P (f val) = f val"
+    shows "saturation rule val val' \<Longrightarrow> P (f val) = f val'"
+  unfolding saturation_def
+  by (safe, induct rule: converse_rtranclp_induct) (simp_all add: assms)
+
 end

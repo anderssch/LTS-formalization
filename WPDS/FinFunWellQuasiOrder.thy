@@ -219,5 +219,30 @@ begin
   qed
 end
 
+\<comment> \<open>Extra lemmas\<close>
+lemma finfun_update_less:
+  assumes "f $ a < f' $ a"
+  assumes "f(a $:= d) = f'"
+  shows "f < f'"
+  using assms unfolding less_finfun_def less_eq_finfun_def
+  apply (simp, safe)
+  subgoal for a'
+    apply (cases "a = a'")
+    using order_less_imp_le by (blast, simp)
+  using dual_order.strict_iff_not by blast
+
+lemma less_eq_finfun_elem: 
+  fixes x :: "'a \<Rightarrow>f 'weight::preorder"
+  assumes "x \<le> y"
+  shows "x $ c \<le> y $ c"
+  using assms unfolding less_eq_finfun_def by simp
+
+lemma less_eq_finfun_not_zero: 
+  fixes x :: "'a \<Rightarrow>f 'weight::bounded_semilattice_sup_bot"
+  assumes "x \<le> y"
+  assumes "x $ c \<noteq> bot"
+  shows "y $ c \<noteq> bot"
+  using less_eq_finfun_elem[OF assms(1)] assms(2) bot.extremum_unique
+  by metis                                                      
 
 end
