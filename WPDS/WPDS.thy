@@ -16,6 +16,7 @@ inductive_set semigroup_trancl :: "('a \<times> 'b::semigroup_mult \<times> 'a) 
     semigroup_trancl_refl [intro!, Pure.intro!, simp]: "(a, l, b) \<in> r \<Longrightarrow> (a, l, b) \<in> semigroup_trancl r"
   | semigroup_trancl_into_rtrancl [Pure.intro]: "(a, w, b) \<in> semigroup_trancl r \<Longrightarrow> (b, l, c) \<in> r \<Longrightarrow> (a, w*l,c) \<in> semigroup_trancl r"
 
+(* \<Sqinter> *)
 
 \<comment> \<open>If the @{typ 'label} of a LTS is a monoid, we can express the monoid product of labels over a path.\<close>
 locale monoidLTS = LTS transition_relation 
