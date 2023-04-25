@@ -177,6 +177,58 @@ lemma pre_star_rule_update_spec:
 definition sound :: "(('ctr_loc, 'label, 'weight) w_transitions) \<Rightarrow> bool" where
   "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A) \<longrightarrow> d \<le> \<Sum>{d'. (p,[\<gamma>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])})"
 
+lemma sound_def2':
+  assumes "sound A"
+  assumes "(p, (w,d), p') \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)"
+  shows "d \<le> \<Sum>{d'. (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
+  using assms(2) 
+proof (induction w arbitrary: d p)
+  case Nil
+  then show ?case sorry
+next
+  case (Cons a w)
+  then show ?case sorry
+qed
+
+lemma monoid_star_intros_step':
+  assumes "(a,b,c) \<in> wts_to_monoidLTS A"
+  shows "(a,b,c) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)"
+proof -
+  define w :: "'b list \<times> 'c" where "w = 1" (* eller 0? *)
+  define l :: "'b list \<times> 'c" where "l = b" (* eller 0? *)
+  have "b = w \<cdot> l"
+    by (simp add: l_def w_def)
+  have "monoid_rtranclp (monoidLTS.l_step_relp (wts_to_monoidLTS A)) a w a"
+    using w_def by force
+  have "monoidLTS.l_step_relp (wts_to_monoidLTS A) a b c"
+    by (simp add: assms monoidLTS.l_step_relp_def)
+  have "monoid_rtranclp (monoidLTS.l_step_relp (wts_to_monoidLTS A)) a b c"
+    using assms unfolding monoidLTS.monoid_star_def using monoid_rtranclp.intros(2)[of "(monoidLTS.l_step_relp (wts_to_monoidLTS A))" a w a b c]
+    using \<open>b = w \<cdot> l\<close> \<open>monoidLTS.l_step_relp (wts_to_monoidLTS A) a b c\<close> \<open>monoid_rtranclp (monoidLTS.l_step_relp (wts_to_monoidLTS A)) a w a\<close> l_def by fastforce
+  then show ?thesis
+    unfolding monoidLTS.monoid_star_def by auto
+qed
+
+lemma monoid_star_intros_step:
+  assumes "a \<in> wts_to_monoidLTS A"
+  shows "a \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)"
+  using assms monoid_star_intros_step' rev_edge.cases by (cases a) auto
+
+lemma sound_def2'':
+  assumes "(\<forall>p p' w d. (p, (w,d), p') \<in> monoidLTS.monoid_star (wts_to_monoidLTS A) \<longrightarrow> d \<le> \<Sum>{d'. (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])})"
+  assumes "(p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A)"
+  shows "d \<le> \<Sum>{d'. (p,[\<gamma>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
+proof -
+  have "(p, ([\<gamma>],d), p') \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)"
+    using assms(2) monoid_star_intros_step by blast
+  then show "d \<le> \<Sum>{d'. (p,[\<gamma>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
+    using assms(1) by auto
+qed
+
+lemma sound_def2:
+  "sound A \<longleftrightarrow> (\<forall>p p' w d. (p, (w,d), p') \<in> monoidLTS.monoid_star (wts_to_monoidLTS A) \<longrightarrow> d \<le> \<Sum>{d'. (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])})"
+  using sound_def2'' sound_def2' unfolding sound_def by metis
+
 lemma soundness:
   assumes "sound A"
   assumes "pre_star_rule A A'"
