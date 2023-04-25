@@ -457,7 +457,10 @@ proof -
     case False
     have "accepts A' pv = accepts A pv"
       sorry
-    then show "accepts A' pv \<le> weight_pre_star (accepts A) pv"
+    show "accepts A' pv \<le> weight_pre_star (accepts A) pv"
+      apply (cases pv)
+      subgoal for p v
+      unfolding weight_pre_star_def unfolding accepts_def[of A] apply auto
       sorry
   qed
 qed
