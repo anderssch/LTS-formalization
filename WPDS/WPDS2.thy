@@ -427,6 +427,81 @@ proof -
   qed
 qed
 
+lemma sum_mono: (* Maybe this is not true, because \<Sum> is defined for only finite sets *)
+  assumes "(X::'weight set) \<subseteq> Y"
+  shows "\<Sum> X \<le> \<Sum> Y"
+  sorry
+
+lemma lemma_3_1_w_alternative:
+  assumes "pre_star_rule A A'"
+  shows "accepts A' pv \<le> weight_pre_star (accepts A) pv"
+  sorry
+
+lemma lemma_3_1_w_alternative': 
+  assumes "pre_star_rule A A'"
+  shows "accepts A' \<le> weight_pre_star (accepts A)"
+  by (simp add: assms le_funI lemma_3_1_w_alternative)
+
+lemma nice_lemma:
+   "X c \<le> weight_pre_star X c"
+proof -
+  have "X c \<le> 1 \<cdot> X c"
+    by simp
+  have "... \<le> \<Sum> {1 \<cdot> X c}"
+    by simp
+  also have "... \<le> \<Sum> {l \<cdot> X c |l. c \<Midarrow> l \<Rightarrow>\<^sup>* c}"
+    by (smt (verit, del_insts) bot.extremum insert_subsetI local.sum_mono mem_Collect_eq monoid_rtranclp.monoid_rtrancl_refl)
+  also have "... \<le> \<Sum> {l \<cdot> X c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    by (smt (verit) Collect_mono WPDS_with_W_automata.sum_mono)
+  also have "... = weight_pre_star X c"
+    unfolding weight_pre_star_def by auto
+  finally
+  show ?thesis
+    by auto
+qed
+
+lemma nice_lemma2:
+  "X \<le> weight_pre_star X"
+  by (simp add: le_fun_def nice_lemma)
+
+lemma nice_lemma3:
+  "weight_pre_star (weight_pre_star (accepts A)) c = (weight_pre_star (accepts A)) c"
+  unfolding weight_pre_star_def
+  apply auto
+  sorry (* This is true, right? *)
+
+lemma nice_lemma4:
+  "weight_pre_star (weight_pre_star (accepts A)) = (weight_pre_star (accepts A))"
+  using nice_lemma3 by auto
+
+lemma weight_pre_star_mono:
+  assumes "X \<le> Y"
+  shows "weight_pre_star X c \<le> weight_pre_star Y c"
+  using assms unfolding weight_pre_star_def
+  apply auto
+  sorry (* This is true, right? *)
+
+lemma lemma_3_1_w_alternative'':
+  assumes "pre_star_rule\<^sup>*\<^sup>* A A'"
+  shows "accepts A' \<le> weight_pre_star (accepts A)"
+using assms proof (induction)
+  case base
+  then show ?case
+    by (simp add: nice_lemma2)
+next
+  case (step A' A'')
+  then have "accepts A'' \<le> weight_pre_star (accepts A')"
+    using lemma_3_1_w_alternative'[of A' A''] by auto
+  moreover
+  from step(3) have "weight_pre_star (accepts A') \<le> weight_pre_star (weight_pre_star (accepts A))"
+    by (simp add: WPDS_with_W_automata.weight_pre_star_mono le_fun_def)
+  then have "weight_pre_star (accepts A') \<le> weight_pre_star (accepts A)"
+    using nice_lemma4 by auto
+  ultimately
+  show ?case
+    by auto
+qed
+
 end
 
 end
