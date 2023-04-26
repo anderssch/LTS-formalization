@@ -177,26 +177,14 @@ lemma pre_star_rule_update_spec:
 definition sound :: "(('ctr_loc, 'label, 'weight) w_transitions) \<Rightarrow> bool" where
   "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A) \<longrightarrow> d \<le> \<Sum>{d'. (p,[\<gamma>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])})"
 
-lemma sound_def2':
-  assumes "sound A"
-  assumes "(p, (w,d), p') \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)"
-  shows "d \<le> \<Sum>{d'. (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
-  using assms(2) 
-proof (induction w arbitrary: d p)
-  case Nil
-  then show ?case
-    sorry
-next
-  case (Cons a w)
-  then show ?case sorry
-qed
+
 
 lemma monoid_star_intros_step':
   assumes "(a,b,c) \<in> wts_to_monoidLTS A"
   shows "(a,b,c) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)"
 proof -
-  define w :: "'b list \<times> 'c" where "w = 1" (* eller 0? *)
-  define l :: "'b list \<times> 'c" where "l = b" (* eller 0? *)
+  define w :: "'b list \<times> 'c" where "w = 1"
+  define l :: "'b list \<times> 'c" where "l = b"
   have "b = w \<cdot> l"
     by (simp add: l_def w_def)
   have "monoid_rtranclp (monoidLTS.l_step_relp (wts_to_monoidLTS A)) a w a"
@@ -224,6 +212,67 @@ proof -
     using assms(2) monoid_star_intros_step by blast
   then show "d \<le> \<Sum>{d'. (p,[\<gamma>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
     using assms(1) by auto
+qed
+
+lemma baba:
+  assumes "(p, ([], d), p') \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)"
+  shows "d = 1"
+proof -
+  from assms have "monoid_rtranclp (monoidLTS.l_step_relp (wts_to_monoidLTS A)) p ([], d) p'"
+    unfolding monoidLTS.monoid_star_def by auto
+  then show "d = 1"
+  proof (cases rule: monoid_rtranclp.cases)
+    case monoid_rtrancl_refl
+    then show ?thesis
+      by (metis assms monoid_star_is_monoid_rtrancl mstar_wts_empty_one)
+  next
+    case (monoid_rtrancl_into_rtrancl w b l)
+    then show ?thesis
+      by (metis assms monoid_star_is_monoid_rtrancl mstar_wts_empty_one)
+  qed
+qed
+
+lemma sound_def2':
+  assumes "sound A"
+  assumes "(p, (w,d), p') \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)"
+  shows "d \<le> \<Sum>{d'. (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
+  using assms(2) 
+proof (induction w arbitrary: d p)
+  case Nil
+  then have "d = 1"
+    by (simp add: baba)
+  have "(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])"
+    by (metis WPDS.lbl.simps(1) WPDS_with_W_automata.monoid_star_pop local.Nil monoid_rtranclp.simps)
+  have "d \<le> \<Sum> {d'. d' = 1 \<and> (p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])}"
+    sorry
+  also
+  have "... \<le> \<Sum> {d'. (p, []) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
+    sorry
+  finally 
+  show ?case 
+    .
+next
+  case (Cons a w)
+  from Cons(2) obtain pi d1 d2 where
+    "d = d1 \<cdot> d2"
+    "(pi, (w, d2), p') \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)"
+    "(p, ([a], d1), pi) \<in> (wts_to_monoidLTS A)"
+    sorry
+  then have d2l: "d2 \<le> \<Sum> {d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}" 
+    using Cons(1)[of pi d2] by auto
+  have "d = d1 \<cdot> d2"
+    using \<open>d = d1 \<cdot> d2\<close> . 
+  also have "... \<le> d1 \<cdot> \<Sum> {d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
+    using d2l pre_dioid_class.mult_isol[of d2 "\<Sum> {d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}" d1]  by auto
+  also have "... \<le>  \<Sum> {d1 \<cdot> d'| d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
+    sorry
+  also have "... \<le>  \<Sum> {d1 \<cdot> d'| d'. (p, [a]) \<Midarrow> d1 \<Rightarrow>\<^sup>* (pi, []) \<and> (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
+    sorry
+  also have "... \<le>  \<Sum> {d'. (p, a # w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
+    sorry
+  finally
+  show ?case
+    .
 qed
 
 lemma sound_def2:
