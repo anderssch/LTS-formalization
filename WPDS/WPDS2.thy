@@ -184,7 +184,8 @@ lemma sound_def2':
   using assms(2) 
 proof (induction w arbitrary: d p)
   case Nil
-  then show ?case sorry
+  then show ?case
+    sorry
 next
   case (Cons a w)
   then show ?case sorry
