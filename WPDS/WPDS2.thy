@@ -153,6 +153,8 @@ next
   then show ?thesis using monoid_star_push[OF assms(1)] by simp
 qed
 
+term "\<Sum>(A :: nat set)"
+
 lemma pre_star_rule_exhaust:
   assumes "(p, (lbl w, d), q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS ts)"
   obtains        "q = p" "d = 1" "w = pop"
@@ -176,8 +178,6 @@ lemma pre_star_rule_update_spec:
 
 definition sound :: "(('ctr_loc, 'label, 'weight) w_transitions) \<Rightarrow> bool" where
   "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A) \<longrightarrow> d \<le> \<Sum>{d'. (p,[\<gamma>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])})"
-
-
 
 lemma monoid_star_intros_step':
   assumes "(a,b,c) \<in> wts_to_monoidLTS A"
@@ -432,10 +432,55 @@ lemma sum_mono: (* Maybe this is not true, because \<Sum> is defined for only fi
   shows "\<Sum> X \<le> \<Sum> Y"
   sorry
 
+find_theorems monoidLTS.monoid_star monoid_rtrancl
+
 lemma lemma_3_1_w_alternative:
+  assumes "sound A"
   assumes "pre_star_rule A A'"
   shows "accepts A' pv \<le> weight_pre_star (accepts A) pv"
-  sorry
+proof -
+  have soundA': "sound A'"
+    using soundness[of A A', OF assms] .
+
+  obtain p v where pv_split: 
+    "pv = (p, v)"
+    by (cases pv)
+
+  obtain pa \<gamma> d p' w d' q ts d'' where
+    "A = ts"
+    "A' = ts((pa, \<gamma>, q) $:= d'' + d \<cdot> d')"
+    "(pa, \<gamma>) \<midarrow> d \<hookrightarrow> (p', w)"
+    "(p', (lbl w, d'), q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS ts)"
+    "ts $ (pa, \<gamma>, q) = d''"
+    "d'' + d \<cdot> d' \<noteq> d''"
+    using pre_star_rule.cases[of A A', OF assms(2)] by metis
+
+
+  have "accepts A' (p,v) \<le> \<Sum> {d |d p'. p' \<in> finals \<and> (p, (v, d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A')}"
+    unfolding accepts_def by (simp split: prod.split) 
+  also
+  have "... \<le> \<Sum> {d''' \<cdot> d' |d''' d' p'' u p' w. p' \<in> finals \<and> (p, (u, d'''), p'') \<in> monoid_rtrancl (wts_to_monoidLTS A')
+                                                             \<and> (p'', (w, d'), p') \<in> monoid_rtrancl (wts_to_monoidLTS A')
+                                                             \<and> v = u@w \<and> \<gamma> \<notin> set w}"
+    sorry
+  also
+  have "... \<le> \<Sum> {d''' \<cdot> d' |d''' d' p'' u p' w. p' \<in> finals \<and> (p, (u, d'''), p'') \<in> monoid_rtrancl (wts_to_monoidLTS A')
+                                                             \<and> (p'', (w, d'), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)
+                                                             \<and> v = u@w \<and> \<gamma> \<notin> set w}"
+    sorry
+  also
+  have "... \<le> \<Sum> {d''' \<cdot> d' |d''' d' p'' u p' w. p' \<in> finals \<and> (p'', u) \<Midarrow>d'''\<Rightarrow>\<^sup>* (p'', [])
+                                                             \<and> (p'', (w, d'), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)
+                                                             \<and> v = u@w \<and> \<gamma> \<notin> set w}"
+    using sound_def2'[OF soundA']
+    sorry
+  also
+  have "... \<le> undefined"
+    sorry
+
+  show ?thesis
+    sorry
+qed
 
 lemma lemma_3_1_w_alternative': 
   assumes "pre_star_rule A A'"
