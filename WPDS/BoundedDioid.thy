@@ -207,6 +207,11 @@ lemma summable_bounded_dioid:
   by (fact eventually_stable_sum)
 
 
+(* TODO *)
+lemma Suminf_lower: "x \<in> A \<Longrightarrow> \<Sum>A \<le> x" oops
+lemma Suminf_greatest: "(\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> \<Sum>A" oops
+lemma Suminf_empty [simp]: "\<Sum>{} = 0" oops
+
 class bounded_dioid = Inf + bounded_idempotent_semiring
 begin
 
