@@ -20,13 +20,13 @@ fun def_action :: "'v action \<Rightarrow> 'v set" where
 | "def_action (Bool b) = {}"
 | "def_action Skip = {}"
 
-abbreviation def_edge :: "('n,'v) edge \<Rightarrow> 'v set" where
+abbreviation def_edge :: "('n,'v action) edge \<Rightarrow> 'v set" where
   "def_edge == \<lambda>(q1, \<alpha>, q2). def_action \<alpha>"
 
-definition def_of :: "'v \<Rightarrow> ('n,'v) edge \<Rightarrow> ('n,'v) def" where
+definition def_of :: "'v \<Rightarrow> ('n,'v action) edge \<Rightarrow> ('n,'v) def" where
   "def_of == (\<lambda>x (q1, \<alpha>, q2). (x, Some q1, q2))"
 
-definition def_var :: "('n,'v) edge list \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> ('n,'v) def" where
+definition def_var :: "('n,'v action) edge list \<Rightarrow> 'v \<Rightarrow> 'n \<Rightarrow> ('n,'v) def" where
   "def_var \<pi> x start = (if (\<exists>e \<in> set \<pi>. x \<in> def_edge e)
                         then (def_of x (last (filter (\<lambda>e. x \<in> def_edge e) \<pi>)))
                         else (x, None, start))"
@@ -79,16 +79,16 @@ abbreviation VAR_lh :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) lh"
 abbreviation "RD == PosLit the_RD"
 abbreviation "VAR == PosLit the_VAR"
 
-abbreviation \<u> :: "(RD_var, 'a) id" where
+abbreviation \<u> :: "(RD_var, 'aa) id" where
   "\<u> == Var the_\<u>"
 
-abbreviation \<v> :: "(RD_var, 'a) id" where
+abbreviation \<v> :: "(RD_var, 'aa) id" where
   "\<v> == Var the_\<v>"
 
-abbreviation \<w> :: "(RD_var, 'a) id" where
+abbreviation \<w> :: "(RD_var, 'aa) id" where
   "\<w> == Var the_\<w>"
 
-fun ana_edge :: "('n, 'v) edge \<Rightarrow> (RD_pred, RD_var, ('n,'v) RD_elem) clause set" where
+fun ana_edge :: "('n, 'v action) edge \<Rightarrow> (RD_pred, RD_var, ('n,'v) RD_elem) clause set" where
   "ana_edge (q\<^sub>o, x ::= a, q\<^sub>s) =
      {
         RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N q\<^sub>s, \<u>, \<v>, \<w>]\<rangle> :-
@@ -124,7 +124,7 @@ definition ana_entry_node :: "'n \<Rightarrow> (RD_pred, RD_var, ('n,'v) RD_elem
      }"
 
 
-fun ana_RD :: "('n, 'v) program_graph \<Rightarrow> (RD_pred, RD_var, ('n,'v) RD_elem) clause set" where
+fun ana_RD :: "('n, 'v action) program_graph \<Rightarrow> (RD_pred, RD_var, ('n,'v) RD_elem) clause set" where
   "ana_RD (es,start,end) = \<Union>(ana_edge ` es) \<union> ana_entry_node start"
 
 definition var_contraints :: "(RD_pred, RD_var, ('n,'v) RD_elem) clause set" where
@@ -132,7 +132,7 @@ definition var_contraints :: "(RD_pred, RD_var, ('n,'v) RD_elem) clause set" whe
 
 type_synonym ('n,'v) quadruple = "'n *'v * 'n option * 'n"
 
-fun summarizes_RD :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('n,'v) program_graph \<Rightarrow> bool" where
+fun summarizes_RD :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('n,'v action) program_graph \<Rightarrow> bool" where
   "summarizes_RD \<rho> (es, start, end) =
     (\<forall>\<pi> x q1 q2.
        \<pi> \<in> LTS.path_with_word_from es start \<longrightarrow>
@@ -358,7 +358,7 @@ section \<open>Reaching Definitions as Bit-Vector Framework analysis\<close>
 \<comment> \<open>Encoding of Reaching Definitions into Datalog using the Bit-Vector Framework.\<close>
 
 locale analysis_RD = finite_program_graph pg
-  for pg :: "('n::finite,'v::finite) program_graph" +
+  for pg :: "('n::finite,'v::finite action) program_graph" +
   assumes "finite edge_set"
 begin
 
@@ -367,12 +367,12 @@ interpretation LTS edge_set .
 definition analysis_dom_RD :: "('n,'v) def set" where
   "analysis_dom_RD = UNIV \<times> UNIV \<times> UNIV"
 
-fun kill_set_RD :: "('n,'v) edge \<Rightarrow> ('n,'v) def set" where
+fun kill_set_RD :: "('n,'v action) edge \<Rightarrow> ('n,'v) def set" where
   "kill_set_RD (q\<^sub>o, x ::= a, q\<^sub>s) = {x} \<times> UNIV \<times> UNIV"
 | "kill_set_RD (q\<^sub>o, Bool b, q\<^sub>s) = {}"
 | "kill_set_RD (v, Skip, vc) = {}"
 
-fun gen_set_RD :: "('n,'v) edge \<Rightarrow> ('n,'v) def set" where
+fun gen_set_RD :: "('n,'v action) edge \<Rightarrow> ('n,'v) def set" where
   "gen_set_RD (q\<^sub>o, x ::= a, q\<^sub>s) = {x} \<times> {Some q\<^sub>o} \<times> {q\<^sub>s}"
 | "gen_set_RD (q\<^sub>o, Bool b, q\<^sub>s) = {}"
 | "gen_set_RD (v, Skip, vc) = {} "
@@ -397,8 +397,7 @@ lemma kill_RD_subset_analysis_dom: "kill_set_RD e \<subseteq> analysis_dom_RD"
 interpretation fw_may: analysis_BV_forward_may pg analysis_dom_RD kill_set_RD gen_set_RD d_init_RD 
   using analysis_BV_forward_may_def analysis_RD_axioms analysis_RD_def
     d_init_RD_subset_analysis_dom_RD finite_analysis_dom_RD gen_RD_subset_analysis_dom 
-    kill_RD_subset_analysis_dom analysis_BV_forward_may_axioms.intro finite_program_graph_def
-  by metis
+    kill_RD_subset_analysis_dom analysis_BV_forward_may_axioms.intro by metis
 
 lemma def_var_def_edge_S_hat:
   assumes "def_var \<pi> x start \<in> R"
@@ -560,7 +559,7 @@ qed
 lemma def_path_S_hat_path: "def_path \<pi> start = fw_may.S_hat_path \<pi> d_init_RD"
   using fw_may.S_hat_path_def def_path_def def_var_UNIV_S_hat_edge_list by metis
 
-definition summarizes_RD :: "(pred, ('n,'v,('n,'v) def) cst) pred_val \<Rightarrow> bool" where
+definition summarizes_RD :: "(pred, ('n,'v action,('n,'v) def) cst) pred_val \<Rightarrow> bool" where
   "summarizes_RD \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> path_with_word_from start \<longrightarrow> d \<in> def_path \<pi> start \<longrightarrow> 
                         \<rho> \<Turnstile>\<^sub>l\<^sub>h may\<langle>[Cst\<^sub>N (end_of \<pi>), Cst\<^sub>E d]\<rangle>.)"
 

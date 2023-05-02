@@ -33,10 +33,10 @@ fun s_BV :: "pred \<Rightarrow> nat" where
 | "s_BV the_may = 1"
 | "s_BV the_must = 2"
 
-datatype ('n,'v,'d) cst =
+datatype ('n,'a,'d) cst =
   is_Node: Node (the_Node: 'n)
   | is_Elem: Elem (the_Elem: 'd)
-  | is_Action: Action (the_Action: "'v action")
+  | is_Action: Action (the_Action: "'a")
 
 abbreviation may_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("may\<langle>_\<rangle> :- _ .") where 
    "may\<langle>ids\<rangle> :- ls. \<equiv> Cls the_may ids ls"
@@ -71,41 +71,41 @@ abbreviation dom_lh :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, 
 abbreviation \<uu> :: "(var, 'a) id" where
   "\<uu> == Var the_\<uu>"
 
-abbreviation Cst\<^sub>N :: "'n \<Rightarrow> (var, ('n, 'v, 'd) cst) id" where
+abbreviation Cst\<^sub>N :: "'n \<Rightarrow> (var, ('n, 'a, 'd) cst) id" where
   "Cst\<^sub>N q == Cst (Node q)"
 
-abbreviation Cst\<^sub>E :: "'d \<Rightarrow> (var, ('n, 'v, 'd) cst) id" where
+abbreviation Cst\<^sub>E :: "'d \<Rightarrow> (var, ('n, 'a, 'd) cst) id" where
   "Cst\<^sub>E e == Cst (Elem e)"
 
-abbreviation Cst\<^sub>A :: "'v action \<Rightarrow> (var, ('n, 'v, 'd) cst) id" where
+abbreviation Cst\<^sub>A :: "'a \<Rightarrow> (var, ('n, 'a, 'd) cst) id" where
   "Cst\<^sub>A \<alpha> == Cst (Action \<alpha>)"
 
-abbreviation the_Node\<^sub>i\<^sub>d :: "(var, ('n, 'v, 'd) cst) id \<Rightarrow> 'n" where
+abbreviation the_Node\<^sub>i\<^sub>d :: "(var, ('n, 'a, 'd) cst) id \<Rightarrow> 'n" where
   "the_Node\<^sub>i\<^sub>d ident == the_Node (the_Cst ident)"
 
-abbreviation the_Elem\<^sub>i\<^sub>d :: "(var, ('n, 'v, 'd) cst) id \<Rightarrow> 'd" where
+abbreviation the_Elem\<^sub>i\<^sub>d :: "(var, ('n, 'a, 'd) cst) id \<Rightarrow> 'd" where
   "the_Elem\<^sub>i\<^sub>d ident == the_Elem (the_Cst ident)"
 
-abbreviation the_Action\<^sub>i\<^sub>d :: "(var, ('n, 'v, 'd) cst) id \<Rightarrow> 'v action" where
+abbreviation the_Action\<^sub>i\<^sub>d :: "(var, ('n, 'a, 'd) cst) id \<Rightarrow> 'a" where
   "the_Action\<^sub>i\<^sub>d ident == the_Action (the_Cst ident)"
 
-abbreviation is_Elem\<^sub>i\<^sub>d :: "(var, ('n, 'v, 'd) cst) id \<Rightarrow> bool" where
+abbreviation is_Elem\<^sub>i\<^sub>d :: "(var, ('n, 'a, 'd) cst) id \<Rightarrow> bool" where
   "is_Elem\<^sub>i\<^sub>d ident == is_Cst ident \<and> is_Elem (the_Cst ident)"
 
-abbreviation is_Node\<^sub>i\<^sub>d :: "(var, ('n, 'v, 'd) cst) id \<Rightarrow> bool" where
+abbreviation is_Node\<^sub>i\<^sub>d :: "(var, ('n, 'a, 'd) cst) id \<Rightarrow> bool" where
   "is_Node\<^sub>i\<^sub>d ident == is_Cst ident \<and> is_Node (the_Cst ident)"
 
-abbreviation is_Action\<^sub>i\<^sub>d :: "(var, ('n, 'v, 'd) cst) id \<Rightarrow> bool" where
+abbreviation is_Action\<^sub>i\<^sub>d :: "(var, ('n, 'a, 'd) cst) id \<Rightarrow> bool" where
   "is_Action\<^sub>i\<^sub>d ident == is_Cst ident \<and> is_Action (the_Cst ident)"
 
 
 section \<open>Forward may-analysis\<close>       
 
 locale analysis_BV_forward_may = finite_program_graph pg 
-  for pg :: "('n::finite,'v) program_graph" +
+  for pg :: "('n::finite,'a) program_graph" +
   fixes analysis_dom :: "'d set"
-  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
-  fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes kill_set :: "('n,'a) edge \<Rightarrow> 'd set"
+  fixes gen_set :: "('n,'a) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
   assumes "finite analysis_dom"
   assumes "d_init \<subseteq> analysis_dom"
@@ -118,7 +118,7 @@ lemma finite_d_init: "finite d_init"
 
 interpretation LTS edge_set .
 
-definition "S_hat" :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<lbrakk>_\<rbrakk> _") where
+definition "S_hat" :: "('n,'a) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<lbrakk>_\<rbrakk> _") where
   "S^\<^sub>E\<lbrakk>e\<rbrakk> R = (R - kill_set e) \<union> gen_set e"
 
 lemma S_hat_mono:
@@ -126,7 +126,7 @@ lemma S_hat_mono:
   shows "S^\<^sub>E\<lbrakk>e\<rbrakk> d1 \<subseteq> S^\<^sub>E\<lbrakk>e\<rbrakk> d2"
   using assms unfolding S_hat_def by auto
 
-fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
+fun S_hat_edge_list :: "('n,'a) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
   "S^\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R" |
   "S^\<^sub>E\<^sub>s\<lbrakk>e # \<pi>\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> (S^\<^sub>E\<lbrakk>e\<rbrakk> R)"
 
@@ -159,7 +159,7 @@ next
     using assms by (simp add: S_hat_mono)
 qed
 
-definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>P\<lbrakk>_\<rbrakk> _") where
+definition S_hat_path :: "('n list \<times> 'a list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>P\<lbrakk>_\<rbrakk> _") where
   "S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>LTS.transition_list \<pi>\<rbrakk> R"
 
 lemma S_hat_path_mono:
@@ -167,34 +167,34 @@ lemma S_hat_path_mono:
   shows "S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R1 \<subseteq> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R2"
   unfolding S_hat_path_def using assms S_hat_edge_list_mono by auto
 
-fun ana_kill_edge_d :: "('n, 'v) edge \<Rightarrow> 'd \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause" where
+fun ana_kill_edge_d :: "('n, 'a) edge \<Rightarrow> 'd \<Rightarrow> (pred, var, ('n, 'a, 'd) cst) clause" where
   "ana_kill_edge_d (q\<^sub>o, \<alpha>, q\<^sub>s) d = kill\<langle>[Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, Cst\<^sub>E d]\<rangle> :- []."
 
-definition ana_kill_edge :: "('n, 'v) edge \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause set" where
+definition ana_kill_edge :: "('n, 'a) edge \<Rightarrow> (pred, var, ('n, 'a, 'd) cst) clause set" where
   "ana_kill_edge e = ana_kill_edge_d e ` (kill_set e)"
 
 lemma kill_set_eq_kill_set_inter_analysis_dom: "kill_set e = kill_set e \<inter> analysis_dom"
   by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def analysis_BV_forward_may_def inf.orderE)
 
-fun ana_gen_edge_d :: "('n, 'v) edge \<Rightarrow> 'd \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause" where
+fun ana_gen_edge_d :: "('n, 'a) edge \<Rightarrow> 'd \<Rightarrow> (pred, var, ('n, 'a, 'd) cst) clause" where
   "ana_gen_edge_d (q\<^sub>o, \<alpha>, q\<^sub>s) d = gen\<langle>[Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, Cst\<^sub>E d]\<rangle> :- []."
 
-definition ana_gen_edge :: "('n, 'v) edge \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause set" where
+definition ana_gen_edge :: "('n, 'a) edge \<Rightarrow> (pred, var, ('n, 'a, 'd) cst) clause set" where
   "ana_gen_edge e = ana_gen_edge_d e ` (gen_set e)"
 
 lemma gen_set_eq_gen_set_inter_analysis_dom: "gen_set e = gen_set e \<inter> analysis_dom"
   by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def analysis_BV_forward_may_def inf.orderE)
 
-definition ana_init :: "'d \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause" where
+definition ana_init :: "'d \<Rightarrow> (pred, var, ('n, 'a, 'd) cst) clause" where
   "ana_init d = init\<langle>[Cst\<^sub>E d]\<rangle> :- []."
 
-definition ana_anadom :: "'d \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause" where
+definition ana_anadom :: "'d \<Rightarrow> (pred, var, ('n, 'a, 'd) cst) clause" where
   "ana_anadom d = anadom\<langle>[Cst\<^sub>E d]\<rangle> :- []."
 
-definition ana_entry_node :: "(pred, var, ('n,'v, 'd) cst) clause" where
+definition ana_entry_node :: "(pred, var, ('n, 'a, 'd) cst) clause" where
   "ana_entry_node = may\<langle>[Cst\<^sub>N start,\<uu>]\<rangle> :- [init[\<uu>]]."
 
-fun ana_edge :: "('n, 'v) edge \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause set" where
+fun ana_edge :: "('n, 'a) edge \<Rightarrow> (pred, var, ('n, 'a, 'd) cst) clause set" where
   "ana_edge (q\<^sub>o, \<alpha>, q\<^sub>s) =
      {
         may\<langle>[Cst\<^sub>N q\<^sub>s, \<uu>]\<rangle> :-
@@ -206,7 +206,7 @@ fun ana_edge :: "('n, 'v) edge \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) claus
         may\<langle>[Cst\<^sub>N q\<^sub>s, \<uu>]\<rangle> :- [gen[Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, \<uu>]].
      }"
 
-definition ana_must :: "'n \<Rightarrow> (pred, var, ('n, 'v, 'd) cst) clause" where
+definition ana_must :: "'n \<Rightarrow> (pred, var, ('n, 'a, 'd) cst) clause" where
   "ana_must q = must\<langle>[Cst\<^sub>N q,\<uu>]\<rangle> :- [\<^bold>\<not>may[Cst\<^sub>N q,\<uu>], anadom[\<uu>]]."
 
 lemma ana_must_meta_var:
@@ -220,7 +220,7 @@ proof -
     unfolding \<mu>_def by auto
 qed
 
-definition ana_pg_fw_may :: "(pred, var, ('n, 'v, 'd) cst) clause set" where
+definition ana_pg_fw_may :: "(pred, var, ('n, 'a, 'd) cst) clause set" where
   "ana_pg_fw_may = \<Union>(ana_edge ` edge_set)
                \<union> ana_init ` d_init
                \<union> ana_anadom ` analysis_dom
@@ -240,7 +240,7 @@ proof -
     unfolding \<mu>_def by auto
 qed
 
-definition summarizes_fw_may :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
+definition summarizes_fw_may :: "(pred, ('n, 'a, 'd) cst) pred_val \<Rightarrow> bool" where
   "summarizes_fw_may \<rho> \<longleftrightarrow> 
      (\<forall>\<pi> d. \<pi> \<in> path_with_word_from start \<longrightarrow> d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init \<longrightarrow> 
         \<rho> \<Turnstile>\<^sub>l\<^sub>h (may\<langle>[Cst\<^sub>N (LTS.end_of \<pi>), Cst\<^sub>E d]\<rangle>.))"
@@ -322,7 +322,7 @@ fun vars_lh :: "('p,'x,'e) lh \<Rightarrow> 'x set" where
   "vars_lh (p,ids) = vars_ids ids"
 
 lemma not_kill:
-  fixes \<rho> :: "(pred, ('n, 'v, 'd) cst) pred_val"
+  fixes \<rho> :: "(pred, ('n, 'a, 'd) cst) pred_val"
   assumes "d \<notin> kill_set(q\<^sub>o, \<alpha>, q\<^sub>s)"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_may s_BV"
   shows "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>kill[Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, Cst\<^sub>E d]"
@@ -487,10 +487,10 @@ end
 section \<open>Backward may-analysis\<close>
 
 locale analysis_BV_backward_may = finite_program_graph pg
-  for pg :: "('n::finite,'v) program_graph" +
+  for pg :: "('n::finite,'a) program_graph" +
   fixes analysis_dom :: "'d set"
-  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
-  fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes kill_set :: "('n,'a) edge \<Rightarrow> 'd set"
+  fixes gen_set :: "('n,'a) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
   assumes "finite edge_set"
   assumes "finite analysis_dom"
@@ -503,7 +503,7 @@ begin
 
 interpretation LTS edge_set .
 
-definition S_hat :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<lbrakk>_\<rbrakk> _") where
+definition S_hat :: "('n,'a) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<lbrakk>_\<rbrakk> _") where
   "S^\<^sub>E\<lbrakk>e\<rbrakk> R = (R - kill_set e) \<union> gen_set e"
 
 lemma S_hat_mono:
@@ -511,7 +511,7 @@ lemma S_hat_mono:
   shows "S^\<^sub>E\<lbrakk>e\<rbrakk> R1 \<subseteq> S^\<^sub>E\<lbrakk>e\<rbrakk> R2"
   using assms unfolding S_hat_def by auto
 
-fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
+fun S_hat_edge_list :: "('n,'a) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
   "S^\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R" |
   "S^\<^sub>E\<^sub>s\<lbrakk>(e # \<pi>)\<rbrakk> R = S^\<^sub>E\<lbrakk>e\<rbrakk> (S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R)"
 
@@ -544,10 +544,10 @@ next
     using assms by (simp add: S_hat_mono)
 qed
 
-definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>P\<lbrakk>_\<rbrakk> _") where
+definition S_hat_path :: "('n list \<times> 'a list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>P\<lbrakk>_\<rbrakk> _") where
   "S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>(transition_list \<pi>)\<rbrakk> R"
 
-definition summarizes_bw_may :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
+definition summarizes_bw_may :: "(pred, ('n, 'a, 'd) cst) pred_val \<Rightarrow> bool" where
   "summarizes_bw_may \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> path_with_word_to end \<longrightarrow> d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init \<longrightarrow> 
                              \<rho> \<Turnstile>\<^sub>l\<^sub>h may\<langle>[Cst\<^sub>N (start_of \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
@@ -653,10 +653,10 @@ end
 section \<open>Forward must-analysis\<close>
                                             
 locale analysis_BV_forward_must = finite_program_graph pg
-  for pg :: "('n::finite,'v) program_graph" +
+  for pg :: "('n::finite,'a) program_graph" +
   fixes analysis_dom :: "'d set"
-  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
-  fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes kill_set :: "('n,'a) edge \<Rightarrow> 'd set"
+  fixes gen_set :: "('n,'a) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
   assumes "finite analysis_dom"
   assumes "d_init \<subseteq> analysis_dom"
@@ -668,7 +668,7 @@ lemma finite_d_init: "finite d_init"
 
 interpretation LTS edge_set .
 
-definition S_hat :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<lbrakk>_\<rbrakk> _") where
+definition S_hat :: "('n,'a) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<lbrakk>_\<rbrakk> _") where
   "S^\<^sub>E\<lbrakk>e\<rbrakk> R = (R - kill_set e) \<union> gen_set e"
 
 lemma S_hat_mono:
@@ -676,7 +676,7 @@ lemma S_hat_mono:
   shows "S^\<^sub>E\<lbrakk>e\<rbrakk> R1 \<subseteq> S^\<^sub>E\<lbrakk>e\<rbrakk> R2"
   using assms unfolding S_hat_def by auto
 
-fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
+fun S_hat_edge_list :: "('n,'a) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
   "S^\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R" |
   "S^\<^sub>E\<^sub>s\<lbrakk>(e # \<pi>)\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> (S^\<^sub>E\<lbrakk>e\<rbrakk> R)"
 
@@ -709,7 +709,7 @@ next
     using assms by (simp add: S_hat_mono)
 qed
 
-definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>P\<lbrakk>_\<rbrakk> _") where
+definition S_hat_path :: "('n list \<times> 'a list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>P\<lbrakk>_\<rbrakk> _") where
   "S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>LTS.transition_list \<pi>\<rbrakk> R"
 
 lemma S_hat_path_mono:
@@ -717,7 +717,7 @@ lemma S_hat_path_mono:
   shows "S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R1 \<subseteq> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R2"
   unfolding S_hat_path_def using assms S_hat_edge_list_mono by auto
 
-definition summarizes_fw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where
+definition summarizes_fw_must :: "(pred, ('n, 'a, 'd) cst) pred_val \<Rightarrow> bool" where
    "summarizes_fw_must \<rho> \<longleftrightarrow>
      (\<forall>q d.
          \<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>. \<longrightarrow>
@@ -1305,10 +1305,10 @@ end
 section \<open>Backward must-analysis\<close>
 
 locale analysis_BV_backward_must = finite_program_graph pg
-  for pg :: "('n::finite,'v) program_graph" +
+  for pg :: "('n::finite,'a) program_graph" +
   fixes analysis_dom :: "'d set"
-  fixes kill_set :: "('n,'v) edge \<Rightarrow> 'd set"
-  fixes gen_set :: "('n,'v) edge \<Rightarrow> 'd set"
+  fixes kill_set :: "('n,'a) edge \<Rightarrow> 'd set"
+  fixes gen_set :: "('n,'a) edge \<Rightarrow> 'd set"
   fixes d_init :: "'d set"
   assumes "finite analysis_dom"
   assumes "d_init \<subseteq> analysis_dom"
@@ -1320,7 +1320,7 @@ lemma finite_d_init: "finite d_init"
 
 interpretation LTS edge_set .
 
-definition S_hat :: "('n,'v) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<lbrakk>_\<rbrakk> _") where
+definition S_hat :: "('n,'a) edge \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<lbrakk>_\<rbrakk> _") where
   "S^\<^sub>E\<lbrakk>e\<rbrakk> R = (R - kill_set e) \<union> gen_set e"
 
 lemma S_hat_mono:
@@ -1328,7 +1328,7 @@ lemma S_hat_mono:
   shows "S^\<^sub>E\<lbrakk>e\<rbrakk> R1 \<subseteq> S^\<^sub>E\<lbrakk>e\<rbrakk> R2"
   using assms unfolding S_hat_def by auto
 
-fun S_hat_edge_list :: "('n,'v) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
+fun S_hat_edge_list :: "('n,'a) edge list \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>E\<^sub>s\<lbrakk>_\<rbrakk> _") where
   "S^\<^sub>E\<^sub>s\<lbrakk>[]\<rbrakk> R = R" |
   "S^\<^sub>E\<^sub>s\<lbrakk>(e # \<pi>)\<rbrakk> R = S^\<^sub>E\<lbrakk>e\<rbrakk> (S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> R)"
 
@@ -1361,7 +1361,7 @@ next
     using assms by (simp add: S_hat_mono)
 qed
 
-definition S_hat_path :: "('n list \<times> 'v action list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>P\<lbrakk>_\<rbrakk> _") where
+definition S_hat_path :: "('n list \<times> 'a list) \<Rightarrow> 'd set \<Rightarrow> 'd set" ("S^\<^sub>P\<lbrakk>_\<rbrakk> _") where
   "S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>LTS.transition_list \<pi>\<rbrakk> R"
 
 definition summarizes_bw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow> bool" where

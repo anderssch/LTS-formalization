@@ -53,9 +53,9 @@ section \<open>Program Graphs\<close>
 
 subsection \<open>Types\<close>
 
-type_synonym ('n,'v) edge = "'n \<times> 'v action \<times> 'n"
+type_synonym ('n,'a) edge = "'n \<times> 'a \<times> 'n"
 
-type_synonym ('n,'v) program_graph = "('n,'v) edge set \<times> 'n \<times> 'n"
+type_synonym ('n,'a) program_graph = "('n,'a) edge set \<times> 'n \<times> 'n"
 
 type_synonym ('n,'v) config = "'n * 'v memory"
 
@@ -63,7 +63,7 @@ type_synonym ('n,'v) config = "'n * 'v memory"
 subsection \<open>Program Graph Locale\<close>
 
 locale program_graph = 
-  fixes pg :: "('n,'v) program_graph"
+  fixes pg :: "('n,'a) program_graph"
 begin
 
 definition edge_set where 
@@ -75,9 +75,29 @@ definition start where
 definition "end" where
   "end = snd (snd pg)"
 
-definition pg_rev :: "('n,'v) program_graph" where
+definition pg_rev :: "('n,'a) program_graph" where
   "pg_rev = (rev_edge ` edge_set, end, start)"
 
+end
+
+subsection \<open>Finite Program Graph Locales\<close>
+
+locale finite_program_graph = program_graph pg
+  for pg :: "('n::finite,'v) program_graph" +
+  assumes "finite edge_set"
+begin
+
+lemma finite_pg_rev: "finite (fst pg_rev)"
+  by (metis finite_program_graph_axioms finite_program_graph_def finite_imageI fst_conv pg_rev_def)
+
+end
+
+
+locale finite_action_program_graph = 
+  fixes pg :: "('n,'v action) program_graph"
+begin
+
+interpretation program_graph pg .
 
 subsubsection \<open>Execution Sequences\<close>
 
@@ -89,19 +109,6 @@ fun final_config_of :: "('n,'v) config \<Rightarrow> bool" where
 
 inductive exe_step :: "('n,'v) config \<Rightarrow> 'v action \<Rightarrow> ('n,'v) config \<Rightarrow> bool" where
   "(q1, \<alpha>, q2) \<in> edge_set \<Longrightarrow> sem_action \<alpha> \<sigma> = Some \<sigma>' \<Longrightarrow> exe_step (q1,\<sigma>) \<alpha> (q2,\<sigma>')"
-
-end
-
-
-subsection \<open>Finite Program Graph Locale\<close>
-
-locale finite_program_graph = program_graph pg
-  for pg :: "('n::finite,'v) program_graph" +
-  assumes "finite edge_set"
-begin
-
-lemma finite_pg_rev: "finite (fst pg_rev)"
-  by (metis finite_program_graph_axioms finite_program_graph_def finite_imageI fst_conv pg_rev_def)
 
 end
 

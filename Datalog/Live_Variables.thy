@@ -8,17 +8,17 @@ fun use_action :: "'v action \<Rightarrow> 'v set" where
 | "use_action (Bool b) = fv_boolean b"
 | "use_action Skip = {}"
 
-fun use_edge :: "('n,'v) edge \<Rightarrow> 'v set" where
+fun use_edge :: "('n,'v action) edge \<Rightarrow> 'v set" where
   "use_edge (q1, \<alpha>, q2) = use_action \<alpha>"
 
-definition use_edge_list :: "('n,'v) edge list \<Rightarrow> 'v \<Rightarrow> bool" where
+definition use_edge_list :: "('n,'v action) edge list \<Rightarrow> 'v \<Rightarrow> bool" where
   "use_edge_list \<pi> x = (\<exists>\<pi>1 \<pi>2 e. \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and> x \<in> use_edge e \<and> (\<not>(\<exists>e' \<in> set \<pi>1. x \<in> def_edge e')))"
 
 definition use_path :: "'n list \<times> 'v action list \<Rightarrow> 'v set" where
   "use_path \<pi> = {x. use_edge_list (LTS.transition_list \<pi>) x}"
 
 locale analysis_LV = finite_program_graph pg
-  for pg :: "('n::finite,'v::finite) program_graph" 
+  for pg :: "('n::finite,'v::finite action) program_graph" 
 begin
 
 interpretation LTS edge_set .
@@ -26,12 +26,12 @@ interpretation LTS edge_set .
 definition analysis_dom_LV :: "'v set" where
   "analysis_dom_LV = UNIV"
 
-fun kill_set_LV :: "('n,'v) edge \<Rightarrow> 'v set" where
+fun kill_set_LV :: "('n,'v action) edge \<Rightarrow> 'v set" where
   "kill_set_LV (q\<^sub>o, x ::= a, q\<^sub>s) = {x}"
 | "kill_set_LV (q\<^sub>o, Bool b, q\<^sub>s) = {}"
 | "kill_set_LV (v, Skip, vc) = {}"
 
-fun gen_set_LV :: "('n,'v) edge \<Rightarrow> 'v set" where
+fun gen_set_LV :: "('n,'v action) edge \<Rightarrow> 'v set" where
   "gen_set_LV (q\<^sub>o, x ::= a, q\<^sub>s) = fv_arith a"
 | "gen_set_LV (q\<^sub>o, Bool b, q\<^sub>s) = fv_boolean b"
 | "gen_set_LV (v, Skip, vc) = {}"
@@ -200,7 +200,7 @@ lemma use_edge_list_UNIV_S_hat_edge_list: "{x. use_edge_list \<pi> x} = bw_may.S
 lemma use_path_S_hat_path: "use_path \<pi> = bw_may.S_hat_path \<pi> d_init_LV"
   by (simp add: use_edge_list_UNIV_S_hat_edge_list bw_may.S_hat_path_def use_path_def)
 
-definition summarizes_LV :: "(pred, ('n,'v,'v) cst) pred_val \<Rightarrow> bool" where
+definition summarizes_LV :: "(pred, ('n,'v action,'v) cst) pred_val \<Rightarrow> bool" where
   "summarizes_LV \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> path_with_word_to end \<longrightarrow> d \<in> use_path \<pi> \<longrightarrow> 
                          \<rho> \<Turnstile>\<^sub>l\<^sub>h may\<langle>[Cst\<^sub>N (start_of \<pi>), Cst\<^sub>E d]\<rangle>.)"
 

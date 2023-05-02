@@ -30,16 +30,16 @@ fun aexp_action :: "'v action \<Rightarrow> 'v arith set" where
 lemma finite_aexp_action: "finite (aexp_action \<alpha>)"
   using finite_ae_arith finite_ae_boolean by (cases \<alpha>) auto
 
-fun aexp_edge :: "('n,'v) edge \<Rightarrow> 'v arith set" where
+fun aexp_edge :: "('n,'v action) edge \<Rightarrow> 'v arith set" where
   "aexp_edge (q1, \<alpha>, q2) = aexp_action \<alpha>"
 
 lemma finite_aexp_edge: "finite (aexp_edge (q1, \<alpha>, q2))"
   using finite_aexp_action by auto
 
-fun aexp_pg :: "('n,'v) program_graph \<Rightarrow> 'v arith set" where
+fun aexp_pg :: "('n,'v action) program_graph \<Rightarrow> 'v arith set" where
   "aexp_pg pg = \<Union>(aexp_edge ` (fst pg))"
 
-definition aexp_edge_list :: "('n,'v) edge list \<Rightarrow> 'v arith \<Rightarrow> bool" where
+definition aexp_edge_list :: "('n,'v action) edge list \<Rightarrow> 'v arith \<Rightarrow> bool" where
   "aexp_edge_list \<pi> a = (\<exists>\<pi>1 \<pi>2 e. \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and> a \<in> aexp_edge e \<and> (\<forall>e' \<in> set ([e] @ \<pi>2). fv_arith a \<inter> def_edge e' = {}))"
 
 definition aexp_path :: "'n list \<times> 'v action list \<Rightarrow> 'v arith set" where
@@ -47,7 +47,7 @@ definition aexp_path :: "'n list \<times> 'v action list \<Rightarrow> 'v arith 
 
 
 locale analysis_AE = finite_program_graph pg 
-  for pg :: "('n::finite,'v::finite) program_graph"
+  for pg :: "('n::finite,'v::finite action) program_graph"
 begin
 
 interpretation LTS edge_set .
@@ -64,12 +64,12 @@ proof -
     unfolding analysis_dom_AE_def using edge_set_def by force 
 qed
 
-fun kill_set_AE :: "('n,'v) edge \<Rightarrow> 'v arith set" where
+fun kill_set_AE :: "('n,'v action) edge \<Rightarrow> 'v arith set" where
   "kill_set_AE (q\<^sub>o, x ::= a, q\<^sub>s) = {a'. x \<in> fv_arith a'}"
 | "kill_set_AE (q\<^sub>o, Bool b, q\<^sub>s) = {}"
 | "kill_set_AE (v, Skip, vc) = {}"
 
-fun gen_set_AE :: "('n,'v) edge \<Rightarrow> 'v arith set" where
+fun gen_set_AE :: "('n,'v action) edge \<Rightarrow> 'v arith set" where
   "gen_set_AE (q\<^sub>o, x ::= a, q\<^sub>s) = {a'. a' \<in> ae_arith a \<and> x \<notin> fv_arith a'}"
 | "gen_set_AE (q\<^sub>o, Bool b, q\<^sub>s) = ae_boolean b"
 | "gen_set_AE (v, Skip, vc) = {}"

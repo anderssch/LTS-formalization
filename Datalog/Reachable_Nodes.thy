@@ -15,7 +15,7 @@ definition nodes_on_path :: "'n list \<times> 'v action list \<Rightarrow> 'n se
   "nodes_on_path \<pi> = {q. node_on_edge_list (LTS.transition_list \<pi>) q}"
 
 locale analysis_RN = finite_program_graph pg
-  for pg :: "('n::finite,'v::finite) program_graph" 
+  for pg :: "('n::finite,'v::finite action) program_graph" 
 begin
 
 interpretation LTS edge_set .
@@ -23,10 +23,10 @@ interpretation LTS edge_set .
 definition analysis_dom_RN :: "'n set" where
   "analysis_dom_RN = UNIV"
 
-fun kill_set_RN :: "('n,'v) edge \<Rightarrow> 'n set" where
+fun kill_set_RN :: "('n,'v action) edge \<Rightarrow> 'n set" where
   "kill_set_RN (q\<^sub>o, \<alpha>, q\<^sub>s) = {}"
 
-fun gen_set_RN :: "('n,'v) edge \<Rightarrow> 'n set" where
+fun gen_set_RN :: "('n,'v action) edge \<Rightarrow> 'n set" where
   "gen_set_RN (q\<^sub>o, \<alpha>, q\<^sub>s) = {q\<^sub>o}"
 
 definition d_init_RN :: "'n set" where

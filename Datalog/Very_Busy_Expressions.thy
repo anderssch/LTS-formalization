@@ -3,14 +3,14 @@ theory Very_Busy_Expressions imports Available_Expressions begin
 
 section \<open>Very Busy Expressions\<close>
 
-definition vbexp_edge_list :: "('n,'v) edge list \<Rightarrow> 'v arith \<Rightarrow> bool" where
+definition vbexp_edge_list :: "('n,'v action) edge list \<Rightarrow> 'v arith \<Rightarrow> bool" where
   "vbexp_edge_list \<pi> a = (\<exists>\<pi>1 \<pi>2 e. \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and> a \<in> aexp_edge e \<and> (\<forall>e' \<in> set \<pi>1. fv_arith a \<inter> def_edge e' = {}))"
 
 definition vbexp_path :: "'n list \<times> 'v action list \<Rightarrow> 'v arith set" where
   "vbexp_path \<pi> = {a. vbexp_edge_list (LTS.transition_list \<pi>) a}"
 
 locale analysis_VB = finite_program_graph pg 
-  for pg :: "('n::finite,'v::finite) program_graph"
+  for pg :: "('n::finite,'v::finite action) program_graph"
 begin
 
 interpretation LTS edge_set .
@@ -27,12 +27,12 @@ proof -
     unfolding analysis_dom_VB_def edge_set_def by auto
 qed
  
-fun kill_set_VB :: "('n,'v) edge \<Rightarrow> 'v arith set" where
+fun kill_set_VB :: "('n,'v action) edge \<Rightarrow> 'v arith set" where
   "kill_set_VB (q\<^sub>o, x ::= a, q\<^sub>s) = {a'. x \<in> fv_arith a'}"
 | "kill_set_VB (q\<^sub>o, Bool b, q\<^sub>s) = {}"
 | "kill_set_VB (v, Skip, vc) = {}"
 
-fun gen_set_VB :: "('n,'v) edge \<Rightarrow> 'v arith set" where
+fun gen_set_VB :: "('n,'v action) edge \<Rightarrow> 'v arith set" where
   "gen_set_VB (q\<^sub>o, x ::= a, q\<^sub>s) = ae_arith a"
 | "gen_set_VB (q\<^sub>o, Bool b, q\<^sub>s) = ae_boolean b"
 | "gen_set_VB (v, Skip, vc) = {}"
