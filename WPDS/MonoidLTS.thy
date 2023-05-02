@@ -30,10 +30,18 @@ locale dioidLTS = monoidLTS transition_relation
   for transition_relation :: "('state, 'label::dioid_one_zero) transition set"
 begin
 
+definition SumInf :: "'weight set \<Rightarrow> 'weight" ("\<^bold>\<Sum>") where
+  "\<^bold>\<Sum> W = undefined W"
+
+lemma singleton_sum[simp]: "\<^bold>\<Sum> {w} = w"
+  sorry
+
+
+
 definition weight_pre_star :: "('state \<Rightarrow> 'label) \<Rightarrow> ('state \<Rightarrow> 'label)" where
-  "weight_pre_star C c = \<Sum>{l*(C c') | l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+  "weight_pre_star C c = \<^bold>\<Sum>{l*(C c') | l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
 definition weight_post_star :: "('state \<Rightarrow> 'label) \<Rightarrow> ('state \<Rightarrow> 'label)" where
-  "weight_post_star C c = \<Sum>{(C c')*l | c' l. c' \<Midarrow>l\<Rightarrow>\<^sup>* c}"
+  "weight_post_star C c = \<^bold>\<Sum>{(C c')*l | c' l. c' \<Midarrow>l\<Rightarrow>\<^sup>* c}"
 end
 
 
