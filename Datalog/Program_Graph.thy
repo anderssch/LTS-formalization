@@ -66,8 +66,8 @@ locale program_graph =
   fixes pg :: "('n,'a) program_graph"
 begin
 
-definition edge_set where 
-  "edge_set = fst pg"
+definition edges where 
+  "edges = fst pg"
 
 definition start where
   "start = fst (snd pg)"
@@ -76,7 +76,7 @@ definition "end" where
   "end = snd (snd pg)"
 
 definition pg_rev :: "('n,'a) program_graph" where
-  "pg_rev = (rev_edge ` edge_set, end, start)"
+  "pg_rev = (rev_edge ` edges, end, start)"
 
 end
 
@@ -84,7 +84,7 @@ subsection \<open>Finite Program Graph Locales\<close>
 
 locale finite_program_graph = program_graph pg
   for pg :: "('n::finite,'v) program_graph" +
-  assumes "finite edge_set"
+  assumes "finite edges"
 begin
 
 lemma finite_pg_rev: "finite (fst pg_rev)"
@@ -108,7 +108,7 @@ fun final_config_of :: "('n,'v) config \<Rightarrow> bool" where
   "final_config_of (q,\<sigma>) \<longleftrightarrow> q = end"
 
 inductive exe_step :: "('n,'v) config \<Rightarrow> 'v action \<Rightarrow> ('n,'v) config \<Rightarrow> bool" where
-  "(q1, \<alpha>, q2) \<in> edge_set \<Longrightarrow> sem_action \<alpha> \<sigma> = Some \<sigma>' \<Longrightarrow> exe_step (q1,\<sigma>) \<alpha> (q2,\<sigma>')"
+  "(q1, \<alpha>, q2) \<in> edges \<Longrightarrow> sem_action \<alpha> \<sigma> = Some \<sigma>' \<Longrightarrow> exe_step (q1,\<sigma>) \<alpha> (q2,\<sigma>')"
 
 end
 

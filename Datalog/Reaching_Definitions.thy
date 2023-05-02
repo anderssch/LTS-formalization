@@ -359,10 +359,10 @@ section \<open>Reaching Definitions as Bit-Vector Framework analysis\<close>
 
 locale analysis_RD = finite_program_graph pg
   for pg :: "('n::finite,'v::finite action) program_graph" +
-  assumes "finite edge_set"
+  assumes "finite edges"
 begin
 
-interpretation LTS edge_set .
+interpretation LTS edges .
 
 definition analysis_dom_RD :: "('n,'v) def set" where
   "analysis_dom_RD = UNIV \<times> UNIV \<times> UNIV"
@@ -567,7 +567,7 @@ theorem RD_sound:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t fw_may.ana_pg_fw_may s_BV"
   shows "summarizes_RD \<rho>"
   using assms def_path_S_hat_path fw_may.sound_ana_pg_fw_may unfolding fw_may.summarizes_fw_may_def summarizes_RD.simps
-  using edge_set_def in_mono edge_set_def start_def start_def summarizes_RD_def by fastforce 
+  using edges_def in_mono edges_def start_def start_def summarizes_RD_def by fastforce 
 
 end
 

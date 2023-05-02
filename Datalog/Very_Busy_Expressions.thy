@@ -13,18 +13,18 @@ locale analysis_VB = finite_program_graph pg
   for pg :: "('n::finite,'v::finite action) program_graph"
 begin
 
-interpretation LTS edge_set .
+interpretation LTS edges .
 
 definition analysis_dom_VB :: "'v arith set" where
   "analysis_dom_VB = aexp_pg pg"
 
 lemma finite_analysis_dom_VB: "finite analysis_dom_VB"
 proof -
-  have "finite (\<Union> (aexp_edge ` edge_set))"
+  have "finite (\<Union> (aexp_edge ` edges))"
     by (metis aexp_edge.elims finite_UN finite_aexp_edge finite_program_graph_axioms 
         finite_program_graph_def)
   then show ?thesis
-    unfolding analysis_dom_VB_def edge_set_def by auto
+    unfolding analysis_dom_VB_def edges_def by auto
 qed
  
 fun kill_set_VB :: "('n,'v action) edge \<Rightarrow> 'v arith set" where
@@ -228,7 +228,7 @@ proof -
   from assms have "bw_must.summarizes_bw_must \<rho>"
     using bw_must.sound_ana_pg_bw_must by auto
   then show ?thesis
-    unfolding summarizes_VB_def bw_must.summarizes_bw_must_def edge_set_def edge_set_def
+    unfolding summarizes_VB_def bw_must.summarizes_bw_must_def edges_def edges_def
       end_def end_def vbexp_path_S_hat_path_iff start_def start_def by force
 qed
 

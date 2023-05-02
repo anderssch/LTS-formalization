@@ -21,7 +21,7 @@ locale analysis_LV = finite_program_graph pg
   for pg :: "('n::finite,'v::finite action) program_graph" 
 begin
 
-interpretation LTS edge_set .
+interpretation LTS edges .
 
 definition analysis_dom_LV :: "'v set" where
   "analysis_dom_LV = UNIV"
@@ -211,7 +211,7 @@ proof -
   from assms have "bw_may.summarizes_bw_may \<rho>"
     using bw_may.sound_ana_pg_bw_may[of \<rho>] by auto
   then show ?thesis
-    unfolding summarizes_LV_def bw_may.summarizes_bw_may_def edge_set_def edge_set_def
+    unfolding summarizes_LV_def bw_may.summarizes_bw_may_def edges_def edges_def
       end_def end_def use_path_S_hat_path by blast
 qed
 
