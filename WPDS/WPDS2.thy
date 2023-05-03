@@ -57,6 +57,11 @@ lemma sum_bigger:
   shows "\<^bold>\<Sum> {d \<cdot> d''| d''. X d''} \<le> \<^bold>\<Sum> {d' \<cdot> d''| d''. X d''}"
   sorry
 
+lemma sum_in:
+  assumes "d \<in> W "
+  shows "d \<le> \<^bold>\<Sum>W"
+  sorry
+
 \<comment> \<open>Generalization of PDS_with_P_automata.accepts that computes the meet-over-all-paths in the W-automaton.\<close>
 definition accepts :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
   "accepts ts \<equiv> \<lambda>(p,w). (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS ts)})"
@@ -390,6 +395,33 @@ lemma Sum_of_Sums_mult:
   "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d} \<cdot> d' |d'. Q d'} = \<^bold>\<Sum> {d \<cdot> d' | d d'. P d \<and> Q d'}"
   sorry
 
+lemmas monoid_star_relp_induct = 
+  MonoidClosure.monoid_rtranclp.induct[of l_step_relp "(_,_)" _ "(_,_)"]
+
+lemma step_rule_aux:
+  assumes "(p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)"
+  assumes "c \<Midarrow>d'\<Rightarrow>\<^sup>* (p, \<gamma> # w')"
+  shows "c \<Midarrow>(d'\<cdot>d)\<Rightarrow>\<^sup>* (p', lbl w @ w')"
+  using assms
+  by (meson WPDS.step_relp_def2 monoid_rtranclp.monoid_rtrancl_into_rtrancl)
+
+lemma step_relp_append:
+  assumes "(p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',w')"
+  shows "(p, w @ v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p', w' @ v)"
+  using MonoidClosure.monoid_rtranclp.induct[of "\<lambda>a b c. a\<Midarrow>b\<Rightarrow>c" "(p,w)" d' "(p',w')"  "\<lambda>(p,w) d' (p',w'). (p,w @ v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p', w' @ v)", OF assms(1)]
+        step_rule_aux step_relp_def2 by fastforce
+
+lemma step_relp_seq:
+  assumes "(p, a) \<Midarrow>d1\<Rightarrow>\<^sup>* (pi, [])"
+  assumes "(pi, w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p', [])"
+  shows "(p, a @ w) \<Midarrow>(d1 \<cdot> d')\<Rightarrow>\<^sup>* (p', [])"
+proof -
+  have "(p, a @ w) \<Midarrow> d1 \<Rightarrow>\<^sup>* (pi, w)"
+    using assms(1) using step_relp_append by fastforce
+  show ?thesis
+    by (meson \<open>(p, a @ w) \<Midarrow> d1 \<Rightarrow>\<^sup>* (pi, w)\<close> assms(2) monoid_rtranclp_trans)
+qed
+
 lemma sound_def2':
   assumes "sound A"
   assumes "(p, (w,d), p') \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)"
@@ -444,7 +476,7 @@ next
   also have "... \<le> \<^bold>\<Sum> {d'. (p, a # w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
     apply (rule sum_mono)
     apply auto
-    sorry
+    using step_relp_seq by fastforce
   finally
   show ?case
     .
@@ -503,7 +535,8 @@ proof -
         from 1 have "(p1, [\<mu>]) \<Midarrow>d \<cdot> d'\<Rightarrow> (p2,[])"
           using \<open>d' = 1\<close> \<open>w' = pop\<close> \<open>p2 = p''\<close> by auto
         then have "d \<cdot> d' \<le> \<^bold>\<Sum>{d'. (p1, [\<mu>]) \<Midarrow> d'\<Rightarrow>\<^sup>* (p2,[])}"
-          sorry
+          by (metis mem_Collect_eq monoid_rtranclp.monoid_rtrancl_into_rtrancl mult_1 sum_in 
+              monoid_rtranclp.monoid_rtrancl_refl)
         then show "l \<le> \<^bold>\<Sum> {d'. (p1, [\<mu>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2, [])}"
           using 3 4 by auto
       next
@@ -521,13 +554,13 @@ proof -
           using 6 by (simp add: assms pre_dioid_class.mult_isol)
         also 
         have "... \<le>  \<^bold>\<Sum>{d \<cdot> d'| d'. (p'',[\<mu>']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-          sorry
+          by (simp add: Sum_distr)
         also
         have "... \<le> \<^bold>\<Sum>{d \<cdot> d'| d'. (p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>']) \<and> (p'',[\<mu>']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
           using \<open>(p1, [\<mu>]) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', [\<mu>'])\<close> by fastforce
         also
         have "... \<le> \<^bold>\<Sum>{d'. (p1, [\<mu>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-          sorry
+          by (smt (verit, best) Collect_mono_iff WPDS_with_W_automata.sum_mono monoid_rtranclp_trans)
         finally
         show "l \<le> \<^bold>\<Sum> {d'. (p1, [\<mu>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2, [])}"
           using 3 4 by auto
@@ -568,10 +601,11 @@ proof -
           using bb cc Dioid.pre_dioid_class.mult_isol_var by auto
         also
         have "... \<le> \<^bold>\<Sum>{d1' \<cdot> d2'| d1'  d2'. (p'',[\<mu>']) \<Midarrow>d1'\<Rightarrow>\<^sup>* (pi,[]) \<and> (pi,[\<mu>'']) \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
-          sorry
+          by (simp add: Sum_distr Sum_of_Sums_mult) 
         also
         have "... \<le> \<^bold>\<Sum>{d'. (p'',[\<mu>',\<mu>'']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-          sorry
+          by (smt (verit, ccfv_threshold) Collect_mono_iff WPDS_with_W_automata.sum_mono append_Cons 
+              append_self_conv2 step_relp_seq)
         finally 
         have 6: "d' \<le> \<^bold>\<Sum>{d'. (p'',[\<mu>',\<mu>'']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
           .
@@ -581,13 +615,14 @@ proof -
           using 6 by (simp add: assms pre_dioid_class.mult_isol)
         also 
         have "... \<le> \<^bold>\<Sum>{d \<cdot> d'| d'. (p'',[\<mu>',\<mu>'']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-          sorry
+          by (simp add: Sum_distr)
         also
         have "... \<le> \<^bold>\<Sum>{d \<cdot> d'| d'. (p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>',\<mu>'']) \<and> (p'',[\<mu>',\<mu>'']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
           using \<open>(p1, [\<mu>]) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', [\<mu>',\<mu>''])\<close> by fastforce
         also
         have "... \<le> \<^bold>\<Sum>{d'. (p1, [\<mu>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-          sorry
+          by (smt (verit, ccfv_SIG) Collect_mono_iff WPDS_with_W_automata.sum_mono 
+              monoid_rtranclp_trans)
         finally
         show "l \<le> \<^bold>\<Sum>{d'. (p1, [\<mu>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2, [])}"
           using 3 4 by auto
