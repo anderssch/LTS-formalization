@@ -30,7 +30,7 @@ locale dioidLTS = monoidLTS transition_relation
   for transition_relation :: "('state, 'label::dioid_one_zero) transition set"
 begin
 
-definition SumInf :: "'weight set \<Rightarrow> 'weight" ("\<^bold>\<Sum>") where
+definition SumInf :: "'label set \<Rightarrow> 'label" ("\<^bold>\<Sum>") where
   "\<^bold>\<Sum> W = undefined W"
 
 lemma singleton_sum[simp]: "\<^bold>\<Sum> {w} = w"
