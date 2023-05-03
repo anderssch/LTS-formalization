@@ -15,18 +15,18 @@ definition nodes_on_path :: "'n list \<times> 'v action list \<Rightarrow> 'n se
   "nodes_on_path \<pi> = {q. node_on_edge_list (LTS.transition_list \<pi>) q}"
 
 locale analysis_RN = finite_program_graph pg
-  for pg :: "('n::finite,'v::finite) program_graph" 
+  for pg :: "('n::finite,'v::finite action) program_graph" 
 begin
 
-interpretation LTS edge_set .
+interpretation LTS edges .
 
 definition analysis_dom_RN :: "'n set" where
   "analysis_dom_RN = UNIV"
 
-fun kill_set_RN :: "('n,'v) edge \<Rightarrow> 'n set" where
+fun kill_set_RN :: "('n,'v action) edge \<Rightarrow> 'n set" where
   "kill_set_RN (q\<^sub>o, \<alpha>, q\<^sub>s) = {}"
 
-fun gen_set_RN :: "('n,'v) edge \<Rightarrow> 'n set" where
+fun gen_set_RN :: "('n,'v action) edge \<Rightarrow> 'n set" where
   "gen_set_RN (q\<^sub>o, \<alpha>, q\<^sub>s) = {q\<^sub>o}"
 
 definition d_init_RN :: "'n set" where
@@ -195,7 +195,7 @@ next
     have "last (transition_list (s' # ss, w)) =
         last (transition_list (s # s' # ss, l # w))"
       using path_with_word_append_last[of "s' # ss" w s l] \<open>w \<noteq> []\<close>
-      using \<open>(s' # ss, w) \<in> LTS.path_with_word edge_set\<close> by auto
+      using \<open>(s' # ss, w) \<in> LTS.path_with_word edges\<close> by auto
     ultimately
     show ?thesis
       by auto
@@ -270,7 +270,7 @@ next
       using 2(1) path_with_word_empty_word by blast 
 
     from 2 have "[(s, l, s')] \<in> transition_list_path"
-      using LTS.transition_list_path.intros(1)[of s l s' edge_set] by auto
+      using LTS.transition_list_path.intros(1)[of s l s' edges] by auto
     then show ?thesis
       using True s_empt by auto
   next
@@ -279,7 +279,7 @@ next
       by (cases w) auto
     obtain s'' ss' where ss_eql: "ss = s'' # ss'"
       using 2(1) False two_nodes_if_nonempty_word[of "s' #ss" w] by auto
-    have "(s, l, s') \<in> edge_set"
+    have "(s, l, s') \<in> edges"
       using 2 by auto
     moreover
     have "(s', l', s'') # transition_list (s'' # ss', w') \<in> transition_list_path"
@@ -327,8 +327,8 @@ proof -
     fix \<pi> d
     assume \<pi>_path_to_end: "\<pi> \<in> path_with_word_to end"
     assume d_on_path: "d \<in> nodes_on_path \<pi>"
-    have \<pi>_path: "\<pi> \<in> LTS.path_with_word edge_set"
-      using \<pi>_path_to_end edge_set_def edge_set_def by auto
+    have \<pi>_path: "\<pi> \<in> LTS.path_with_word edges"
+      using \<pi>_path_to_end edges_def edges_def by auto
     have \<pi>_end: "end_of \<pi> = end"
       using \<pi>_path_to_end end_def end_def by fastforce
     then have "last (fst \<pi>) = end"

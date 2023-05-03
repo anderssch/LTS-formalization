@@ -650,7 +650,7 @@ proof -
 qed
 
 (* This corresponds to and slightly generalizes Schwoon's lemma 3.2(b) *)
-lemma word_into_init_empty:
+lemma word_into_init_empty':
   fixes A :: "(('ctr_loc, 'noninit, 'label) state, 'label) transition set"
   assumes "(p, w, Init q) \<in> LTS.trans_star A"
   assumes "inits \<subseteq> LTS.srcs A"

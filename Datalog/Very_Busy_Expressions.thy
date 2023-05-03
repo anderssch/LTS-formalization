@@ -3,36 +3,36 @@ theory Very_Busy_Expressions imports Available_Expressions begin
 
 section \<open>Very Busy Expressions\<close>
 
-definition vbexp_edge_list :: "('n,'v) edge list \<Rightarrow> 'v arith \<Rightarrow> bool" where
+definition vbexp_edge_list :: "('n,'v action) edge list \<Rightarrow> 'v arith \<Rightarrow> bool" where
   "vbexp_edge_list \<pi> a = (\<exists>\<pi>1 \<pi>2 e. \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and> a \<in> aexp_edge e \<and> (\<forall>e' \<in> set \<pi>1. fv_arith a \<inter> def_edge e' = {}))"
 
 definition vbexp_path :: "'n list \<times> 'v action list \<Rightarrow> 'v arith set" where
   "vbexp_path \<pi> = {a. vbexp_edge_list (LTS.transition_list \<pi>) a}"
 
 locale analysis_VB = finite_program_graph pg 
-  for pg :: "('n::finite,'v::finite) program_graph"
+  for pg :: "('n::finite,'v::finite action) program_graph"
 begin
 
-interpretation LTS edge_set .
+interpretation LTS edges .
 
 definition analysis_dom_VB :: "'v arith set" where
   "analysis_dom_VB = aexp_pg pg"
 
 lemma finite_analysis_dom_VB: "finite analysis_dom_VB"
 proof -
-  have "finite (\<Union> (aexp_edge ` edge_set))"
+  have "finite (\<Union> (aexp_edge ` edges))"
     by (metis aexp_edge.elims finite_UN finite_aexp_edge finite_program_graph_axioms 
         finite_program_graph_def)
   then show ?thesis
-    unfolding analysis_dom_VB_def edge_set_def by auto
+    unfolding analysis_dom_VB_def edges_def by auto
 qed
  
-fun kill_set_VB :: "('n,'v) edge \<Rightarrow> 'v arith set" where
+fun kill_set_VB :: "('n,'v action) edge \<Rightarrow> 'v arith set" where
   "kill_set_VB (q\<^sub>o, x ::= a, q\<^sub>s) = {a'. x \<in> fv_arith a'}"
 | "kill_set_VB (q\<^sub>o, Bool b, q\<^sub>s) = {}"
 | "kill_set_VB (v, Skip, vc) = {}"
 
-fun gen_set_VB :: "('n,'v) edge \<Rightarrow> 'v arith set" where
+fun gen_set_VB :: "('n,'v action) edge \<Rightarrow> 'v arith set" where
   "gen_set_VB (q\<^sub>o, x ::= a, q\<^sub>s) = ae_arith a"
 | "gen_set_VB (q\<^sub>o, Bool b, q\<^sub>s) = ae_boolean b"
 | "gen_set_VB (v, Skip, vc) = {}"
@@ -228,7 +228,7 @@ proof -
   from assms have "bw_must.summarizes_bw_must \<rho>"
     using bw_must.sound_ana_pg_bw_must by auto
   then show ?thesis
-    unfolding summarizes_VB_def bw_must.summarizes_bw_must_def edge_set_def edge_set_def
+    unfolding summarizes_VB_def bw_must.summarizes_bw_must_def edges_def edges_def
       end_def end_def vbexp_path_S_hat_path_iff start_def start_def by force
 qed
 
