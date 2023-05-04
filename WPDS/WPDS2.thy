@@ -637,7 +637,6 @@ lemma monoid_rtrancl_split:
     "d = d''' \<cdot> d'"
   by (metis append_is_Nil_conv assms in_set_conv_decomp_first monoid_rtrancl.simps mult.right_neutral one_prod_def times_list_def)
   
-
 lemma lemma_3_1_w_alternative:
   assumes "sound A"
   assumes "pre_star_rule A A'"
@@ -744,7 +743,7 @@ proof -
   also
   have "... \<le> \<^bold>\<Sum>{d''' \<cdot> d' |d''' d' p'' u p' w. p' \<in> finals \<and> (p,u) \<Midarrow>d'''\<Rightarrow>\<^sup>* (p'',[])
                                                              \<and> (p'', (w, d'), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)
-                                                             \<and> v = u@w \<and> \<gamma> \<notin> set w}" (* 7 *) (* e found a proof *)
+                                                             \<and> v = u@w \<and> \<gamma> \<notin> set w}" (* 7 *)
     using sum_of_sums_mult2[of "\<lambda>d _. d" "\<lambda>d (d', p'', u, p', w). (p,u) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[])" "fst"
         "\<lambda>(d', p'', u, p', w). p' \<in> finals \<and> (p'', (w, d'), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> v = u@w \<and> \<gamma> \<notin> set w"
         ]
@@ -768,10 +767,10 @@ proof -
     using sum_of_sums[of "\<lambda>u (d''',p'',w). \<exists>d' p'. u = d''' \<cdot> d' \<and> p' \<in> finals \<and> (p'', (w, d'), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)"
         "\<lambda>(d''',p'',w). (p, v) \<Midarrow> d''' \<Rightarrow>\<^sup>* (p'', w)"]
     apply auto
-    by (smt (verit) Collect_mono_iff WPDS_with_W_automata.sum_mono)
+    by (smt (verit) Collect_mono_iff WPDS_with_W_automata.sum_mono) (* 11 *)
   also
   have "... \<le> \<^bold>\<Sum>{d''' \<cdot> \<^bold>\<Sum>{ d' | d' p'. p' \<in> finals \<and> (p'', (w, d'), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)}| d''' p'' w. (p,v) \<Midarrow>d'''\<Rightarrow>\<^sup>* (p'',w)}"
-    by (simp add: sum_distr) (* 12 *) (* e found a proof *)
+    by (simp add: sum_distr) (* 12 *)
   also
   have "... \<le> \<^bold>\<Sum>{d''' \<cdot> accepts A c'| d''' c'. (p,v) \<Midarrow>d'''\<Rightarrow>\<^sup>* c'}"
     unfolding accepts_def by auto (* 13 *)
