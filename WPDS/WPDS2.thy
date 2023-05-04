@@ -651,7 +651,6 @@ proof -
     by (cases pv)
 
   obtain pa \<gamma> d p' w d' q d'' where pa_p:
-
     "A' = A((pa, \<gamma>, q) $:= d'' + d \<cdot> d')"
     "(pa, \<gamma>) \<midarrow> d \<hookrightarrow> (p', w)"
     "(p', (lbl w, d'), q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)"
@@ -659,7 +658,7 @@ proof -
     "d'' + d \<cdot> d' \<noteq> d''"
     using pre_star_rule.cases[of A A', OF assms(2)] by metis
 
-   have stor_paastand: "\<forall>t. (case t of (d''', d', p'', u, p', w) \<Rightarrow> p' \<in> finals \<and> (p, (u, d'''), p'') \<in> monoid_rtrancl (wts_to_monoidLTS A') \<and> (p'', (w, d'), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> v = u @ w \<and> \<gamma> \<notin> set w) \<longrightarrow>
+  have stor_paastand: "\<forall>t. (case t of (d''', d', p'', u, p', w) \<Rightarrow> p' \<in> finals \<and> (p, (u, d'''), p'') \<in> monoid_rtrancl (wts_to_monoidLTS A') \<and> (p'', (w, d'), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> v = u @ w \<and> \<gamma> \<notin> set w) \<longrightarrow>
         (case t of (d''', d', p'', u, p', w) \<Rightarrow> d''' \<cdot> d') \<le> (case t of (d''', d', p'', u, p', w) \<Rightarrow> \<^bold>\<Sum> {d'. (p, u) \<Midarrow> d' \<Rightarrow>\<^sup>* (p'', [])} \<cdot> d')"
     apply auto
     by (metis monoid_star_is_monoid_rtrancl order_refl pre_dioid_class.mult_isol_var soundA' sound_def2)
