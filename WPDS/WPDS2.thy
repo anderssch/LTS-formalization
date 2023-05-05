@@ -400,8 +400,13 @@ lemma monoid_star_nonempty:
 lemma sum_distr: "d1 \<cdot> \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 \<cdot> d2 | d2. d2 \<in> D}"
   sorry
 
+
 lemma sum_of_sums:
   "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {d | d d'. P d d' \<and> Q d'}"
+  sorry
+
+lemma sum_of_sums2:
+  "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
   sorry
 
 lemma sum_of_sums_mult:
@@ -750,9 +755,41 @@ lemma nice_lemma2:
 
 lemma nice_lemma3:
   "weight_pre_star (weight_pre_star (accepts A)) c = (weight_pre_star (accepts A)) c"
-  unfolding weight_pre_star_def
-  apply auto
-  sorry (* This is true, right? *)
+proof -
+  have "weight_pre_star (weight_pre_star (accepts A)) c = \<^bold>\<Sum> {l \<cdot> \<^bold>\<Sum> {l' \<cdot> accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    unfolding weight_pre_star_def by meson
+  also
+  have "... =  \<^bold>\<Sum> {\<^bold>\<Sum> {l \<cdot> l' \<cdot> accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+  proof -
+    {
+      fix l c'
+      have "l \<cdot> \<^bold>\<Sum> {l' \<cdot> accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} = \<^bold>\<Sum> {l \<cdot> l' \<cdot> accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
+        using sum_distr[of l "{l' \<cdot> accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"]
+        apply (auto)
+        by (metis (no_types, opaque_lifting) mult.assoc)
+    }
+    then show ?thesis
+      by auto
+  qed
+  also
+  have "... = \<^bold>\<Sum> {l \<cdot> l' \<cdot> accepts A c'' |l' c'' l c'. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c'' \<and> c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    using sum_of_sums2[of
+        "\<lambda>(l',c'') (l,c'). l \<cdot> l' \<cdot> accepts A c''"
+        "\<lambda>(l',c'') (l,c').  c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''"
+        "\<lambda>(l,c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'"] by auto
+  also
+  have "... = \<^bold>\<Sum> {l \<cdot> l' \<cdot> accepts A c'' |l' c'' l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<and> c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
+    by meson
+  also
+  have "... = \<^bold>\<Sum> {l'' \<cdot> accepts A c'' |l'' c''. c \<Midarrow> l'' \<Rightarrow>\<^sup>* c''}"
+    by (smt (verit, ccfv_threshold) Collect_cong monoid_rtranclp.monoid_rtrancl_refl monoid_rtranclp_trans mult_1)
+  also
+  have "... = (weight_pre_star (accepts A)) c"
+    by (simp add: dioidLTS.weight_pre_star_def)
+  finally
+  show "?thesis"
+    .
+qed
 
 lemma nice_lemma4:
   "weight_pre_star (weight_pre_star (accepts A)) = (weight_pre_star (accepts A))"
@@ -763,7 +800,17 @@ lemma weight_pre_star_mono:
   shows "weight_pre_star X c \<le> weight_pre_star Y c"
   using assms unfolding weight_pre_star_def
   apply auto
-  sorry (* This is true, right? *)
+  apply (subgoal_tac "\<forall>a b. X (a,b) \<le> Y (a,b)")
+  subgoal
+    using sum_bigger2[of "\<lambda>(l, a, b). c \<Midarrow> l \<Rightarrow>\<^sup>* (a, b)" "\<lambda>(l, a, b). l  \<cdot> X (a, b)"
+        "\<lambda>(l, a, b). l  \<cdot> Y (a, b)"]
+    apply auto
+    using pre_dioid_class.mult_isol apply blast
+    done
+  subgoal
+    apply (simp add: le_funD)
+    done
+  done
 
 lemma lemma_3_1_w_alternative'':
   assumes "sound A"
