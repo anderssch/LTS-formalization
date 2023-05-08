@@ -13,7 +13,7 @@ end
 \<comment> \<open>This class borrows from join_semilattice in AFP theory Kleene_Algebra.Dioid
     (https://www.isa-afp.org/entries/Kleene_Algebra.html)
     but we define the order in the reverse way to follow the definition in [RSJM'05]\<close>
-class idem_ab_semigroup_add_ord = idempotent_ab_semigroup_add + ord +
+class idempotent_ab_semigroup_add_ord = idempotent_ab_semigroup_add + ord +
   assumes less_eq_def: "x \<le> y \<longleftrightarrow> x + y = x"
   and less_def: "x < y \<longleftrightarrow> x \<le> y \<and> x \<noteq> y"
 begin
@@ -48,123 +48,66 @@ next
 qed
 end
 
-\<comment> \<open>An idempotent semiring that follows the definition of [RSJM'05].\<close>
-class idempotent_semiring = semiring_0 + monoid_mult + idempotent_ab_semigroup_add
-begin
-
-end
-
-
-lemma 
-  assumes no_infinite_decending: "\<nexists>f. \<forall>i. (f i) > (f (Suc i))"
-  shows "almost_full_on (\<le>) UNIV"
-  oops
-
-lemma 
-  fixes f::"nat \<Rightarrow> 'a::ord"
-  assumes "almost_full_on (\<le>) (UNIV::'a set)"
-  shows "\<not> antichain_on (\<le>) f UNIV"
-  using almost_full_on_imp_no_antichain_on[OF assms, of f] by simp
-
-class idempotent_semiring_ord = idempotent_semiring + idem_ab_semigroup_add_ord
+\<comment> \<open>Many lemmas and proofs in these classes are heavily inspired from AFP theory Kleene_Algebra.Dioid, 
+    but here adapted for the reverse definition of plus_ord
+    (https://www.isa-afp.org/entries/Kleene_Algebra.html)\<close>
+class idempotent_comm_monoid_add = idempotent_ab_semigroup_add + comm_monoid_add
+class idempotent_comm_monoid_add_ord = idempotent_ab_semigroup_add_ord + comm_monoid_add
 begin
 lemma no_trivial_inverse: "x \<noteq> 0 \<Longrightarrow> \<not>(\<exists>y. x + y = 0)"
   by (metis local.add_0_right local.meet.inf_left_idem)
+
+lemma less_eq_zero: "x \<le> 0" unfolding less_eq_def by simp
+lemma less_zero: "x \<noteq> 0 \<Longrightarrow> x < 0" unfolding less_def using less_eq_def by simp
 end
 
-\<comment> \<open>Definition 5 from [RSJM'05].\<close>
-class bounded_idempotent_semiring = discrete_topology + idempotent_semiring_ord +
-  assumes no_infinite_decending_chains: "almost_full_on (\<le>) UNIV"
+\<comment> \<open>An idempotent semiring that follows the definition of [RSJM'05].\<close>
+class idempotent_semiring = semiring_0 + monoid_mult + idempotent_ab_semigroup_add
+
+class idempotent_semiring_ord = idempotent_semiring + idempotent_ab_semigroup_add_ord
+begin
+lemma mult_isor: "x \<le> y \<Longrightarrow> x \<cdot> z \<le> y \<cdot> z"
+proof -
+  assume "x \<le> y"
+  hence "x + y = x"
+    by (simp add: less_eq_def)
+  hence "(x + y) \<cdot> z = x \<cdot> z"
+    by simp
+  thus "x \<cdot> z \<le> y \<cdot> z"
+    by (simp add: less_eq_def)
+qed
+lemma subdistl: "z \<cdot> (x + y) \<le> z \<cdot> x"
+  by (simp add: distrib_left)
+lemma mult_isol_equiv_subdistl:
+  "(\<forall>x y z. x \<le> y \<longrightarrow> z \<cdot> x \<le> z \<cdot> y) \<longleftrightarrow> (\<forall>x y z. z \<cdot> (x + y) \<le> z \<cdot> x)"
+  by (metis meet.inf_absorb2 local.meet.inf_le1)
+lemma subdistl_var: "z \<cdot> (x + y) \<le> z \<cdot> x + z \<cdot> y"
+  using local.mult_isol_equiv_subdistl local.subdistl by simp
+lemma mult_isol: "x \<le> y \<Longrightarrow> z \<cdot> x \<le> z \<cdot> y"
+proof -
+  assume "x \<le> y"
+  hence "x + y = x" by (simp add: less_eq_def)
+  also have "z \<cdot> (x + y) \<le> z \<cdot> x + z \<cdot> y" using subdistl_var by blast
+  moreover have "z \<cdot> (x + y) = z \<cdot> x" by (simp add: calculation)
+  ultimately show "z \<cdot> x \<le> z \<cdot> y" by auto
+qed
+lemma mult_isol_var: "u \<le> x \<Longrightarrow> v \<le> y \<Longrightarrow> u \<cdot> v \<le> x \<cdot> y"
+  by (meson local.dual_order.trans local.mult_isor mult_isol)
+end
+
+class bounded_idempotent_comm_monoid_add = discrete_topology + idempotent_comm_monoid_add_ord +
+ assumes no_infinite_decending_chains: "almost_full_on (\<le>) UNIV"
 begin
 subclass wqo proof
   fix f
   show "good (\<le>) f" using no_infinite_decending_chains unfolding almost_full_on_def by simp
 qed
-
-subclass t2_space 
-proof
+subclass t2_space proof
   fix x y :: 'a
   assume "x \<noteq> y"
   then show "\<exists>U V. open U \<and> open V \<and> x \<in> U \<and> y \<in> V \<and> U \<inter> V = {}"
     by (intro exI[of _ "{_}"]) (auto intro!: open_discrete)
 qed
-subclass topological_comm_monoid_add proof
-  fix a b :: 'a
-  show "((\<lambda>x. fst x + snd x) \<longlongrightarrow> a + b) (nhds a \<times>\<^sub>F nhds b)" using open_discrete
-    oops
-
-
-
-function seq_sum_aux :: "(nat \<Rightarrow> 'a) \<Rightarrow> nat \<Rightarrow> 'a" where
-  "seq_sum_aux f i = f i + seq_sum_aux f (Suc i)"
-  by auto
-
-definition seq_sum :: "(nat \<Rightarrow> 'a) \<Rightarrow> 'a" where
-  "seq_sum f = seq_sum_aux f 0"
-
-fun plus_seq :: "(nat \<Rightarrow> 'a) \<Rightarrow> (nat \<Rightarrow> 'a)" where
-  "plus_seq f 0 = f 0"
-| "plus_seq f (Suc i) = (f (Suc i)) + (plus_seq f i)"
-
-lemma 
-  assumes "\<forall>a \<in> A. \<forall> b \<in> A. a + b \<in> A"
-  assumes "f \<in> SEQ A"
-  shows "plus_seq f \<in> SEQ A"
-  using assms(2) unfolding SEQ_def
-  apply (simp, safe)
-  subgoal for i
-    apply (induct i, simp)
-    subgoal for j
-      by (simp add: assms(1))
-    done
-  done
-lemma plus_seq_antimono': "i \<le> j \<Longrightarrow> plus_seq f i \<ge> plus_seq f j"
-proof (induct j arbitrary: i)
-  case 0
-  then show ?case by simp
-next
-  case (Suc j)
-  then show ?case
-  proof (cases "i \<le> j")
-    case True
-    then show ?thesis using Suc(1) meet.le_infI2 by auto
-  next
-    case False
-    then have "i = Suc j" using Suc(2) by simp
-    then show ?thesis by blast
-  qed
-qed
-lemma "antimono plus_seq"
-  using plus_seq_antimono'
-  oops
-
-lemma plus_seq_less: "i < j \<Longrightarrow> plus_seq f i \<ge> plus_seq f j"
-  using plus_seq_antimono'[of i j f] by simp
-
-lemma plus_seq_exists_equal: "\<exists>i j. i < j \<and> plus_seq f i = plus_seq f j"
-  using local.good[unfolded good_def, of "plus_seq f"]
-  apply safe
-  subgoal for i j
-    using plus_seq_less[of i j f] antisym_conv by blast
-  done
-
-lemma plus_seq_terminates: "\<exists>i. \<forall>j. i < j \<longrightarrow> plus_seq f i = plus_seq f j"
-  using local.good[unfolded good_def, of "plus_seq f"]
-  apply safe
-  subgoal for i j
-    using plus_seq_less[of i j f] antisym_conv 
-   oops
-
-
-
-lemma strict_less_eq_is_less: "strict (\<le>) = (<)"
-  using less_le_not_le by presburger
-
-lemma "wfp_on (strict (\<le>)) (UNIV::('a set))"
-  using wqo_on_imp_wfp_on[OF wqo_on_class]
-  apply simp
-(* apply assumption *)
-  oops
 
 lemma transp_on_UNIV: "transp_on (\<le>) UNIV"
   unfolding transp_on_def by fastforce
@@ -180,31 +123,100 @@ lemma no_infinite_decending: "\<nexists>f. \<forall>i. (f i) > (f (Suc i))"
   using wfp_on_UNIV
   unfolding wfp_on_def by blast
 
-thm no_infinite_decending[unfolded less_def less_eq_def, simplified]
-
-lemma "\<exists>i. f i + f (Suc i) = f (Suc i) \<longrightarrow> f i = f (Suc i)"
-  using no_infinite_decending[unfolded less_def less_eq_def, simplified] add_commute by metis
-
 end
 
-lemma
-  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_semiring"
-  shows "\<exists>i. \<not> f (Suc i) < f i" 
+lemma sum_prefix_seq_split:
+  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add" 
+  shows "n \<le> m \<Longrightarrow> sum f {x. x < m} = (sum f {x. x < n}) + (sum f {x. n \<le> x \<and> x < m})"
+proof -
+  have "finite {x. x < n}" by blast
+  moreover have "finite {x. n \<le> x \<and> x < m}" by fast
+  moreover have "{x. x < n} \<inter> {x. n \<le> x \<and> x < m} = {}" by auto
+  ultimately have "sum f ({x. x < n} \<union> {x. n \<le> x \<and> x < m}) = sum f {x. x < n} + sum f {x. n \<le> x \<and> x < m}" 
+    using comm_monoid_add_class.sum.union_disjoint by fast
+  moreover assume \<open>n \<le> m\<close>
+  then have "{x. x < m} = {x. x < n} \<union> {x. n \<le> x \<and> x < m}" by fastforce
+  ultimately show ?thesis by presburger
+qed
+
+lemma sum_prefix_seq_greater_eq:
+  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add"
+  assumes "n \<le> m"
+  shows "sum f {x. x < n} \<ge> sum f {x. x < m}"
+  using sum_prefix_seq_split[OF assms, of f] by simp
+
+primrec decreasing_sequence_aux :: "(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add) \<Rightarrow> (nat \<Rightarrow> 'a \<times> nat)" where
+  "decreasing_sequence_aux f 0 = (0,0)"
+| "decreasing_sequence_aux f (Suc i) = (
+    let n = (SOME n. n \<ge> snd (decreasing_sequence_aux f i) \<and> sum f {x. x < n} \<noteq> fst (decreasing_sequence_aux f i)) 
+    in (sum f {x. x < n}, n)
+  )"
+definition decreasing_sequence :: "(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add) \<Rightarrow> (nat \<Rightarrow> 'a)" where
+  "decreasing_sequence f i = fst (decreasing_sequence_aux f i)"
+
+lemma decreasing_sequence_aux_some: 
+  assumes "\<forall>L N. \<exists>n\<ge>N. sum f {x. x < n} \<noteq> L"
+    and "n = (SOME n. snd (decreasing_sequence_aux f i) \<le> n \<and> sum f {x. x < n} \<noteq> fst (decreasing_sequence_aux f i))"
+  shows "snd (decreasing_sequence_aux f i) \<le> n \<and> sum f {x. x < n} \<noteq> fst (decreasing_sequence_aux f i)"
+  using assms(1)
+  apply simp
+  apply (erule allE[of _ "fst (decreasing_sequence_aux f i)"])
+  apply (erule allE[of _ "snd (decreasing_sequence_aux f i)"])
+  using someI_ex assms(2) by simp
+
+lemma divergent_sum_implies_decreasing_sequence:
+  assumes "\<forall>L N. \<exists>n\<ge>N. sum f {x. x < n} \<noteq> L"
+  shows "decreasing_sequence f i > decreasing_sequence f (Suc i)"
+proof -
+  have "sum f {x. x < (SOME n. snd (decreasing_sequence_aux f i) \<le> n \<and> sum f {x. x < n} \<noteq> fst (decreasing_sequence_aux f i))}
+         \<noteq> fst (decreasing_sequence_aux f i)" 
+    using decreasing_sequence_aux_some[OF assms] by blast
+  then have non_repeating: "decreasing_sequence f i \<noteq> decreasing_sequence f (Suc i)" 
+    unfolding decreasing_sequence_def by simp
+  have "snd (decreasing_sequence_aux f i) 
+        \<le> (SOME n. snd (decreasing_sequence_aux f i) \<le> n \<and> sum f {x. x < n} \<noteq> fst (decreasing_sequence_aux f i))" 
+    using decreasing_sequence_aux_some[OF assms] by blast
+  moreover have "fst (decreasing_sequence_aux f i) = sum f {x. x < snd (decreasing_sequence_aux f i)}" 
+    by (induct i, auto)
+  ultimately have weak_decreasing: "decreasing_sequence f i \<ge> decreasing_sequence f (Suc i)"
+    unfolding decreasing_sequence_def using sum_prefix_seq_greater_eq by simp
+  show ?thesis using non_repeating weak_decreasing by simp
+qed
+
+lemma divergent_sum_implies_infinite_descending:
+  assumes "\<exists>f::(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add). \<forall>L N. \<exists>n\<ge>N. sum f {x. x < n} \<noteq> L"
+  shows "\<exists>f::(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add). \<forall>i. (f i) > (f (Suc i))"
+  using assms
+  apply simp
+  apply (erule exE)
+  subgoal for f
+    using divergent_sum_implies_decreasing_sequence[of f] exI[of _ "decreasing_sequence f"] by blast
+  done
+
+lemma eventually_stable_sum': 
+    "\<forall>f::(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add). \<exists>L N. \<forall>n\<ge>N. sum f {x. x < n} = L"
+  apply (rule ccontr, simp)
+  apply (drule divergent_sum_implies_infinite_descending) 
   using no_infinite_decending by blast
 
 lemma eventually_stable_sum:
-  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_semiring"
-  shows "\<exists>L N. \<forall>n\<ge>N. (\<Sum>x | x < n. f x) = L" 
-  using no_infinite_decending
-  apply simp
-  sorry
+  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add"
+  shows "\<exists>L N. \<forall>n\<ge>N. (\<Sum>x | x < n. f x) = L"
+  using eventually_stable_sum' by blast
 
 lemma summable_bounded_dioid:
-  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_semiring"
+  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add"
   shows "summable f"
   unfolding summable_def sums_def lessThan_def
   apply (simp add: tendsto_discrete[of "(\<lambda>n. \<Sum>x | x < n. f x)" _ sequentially] eventually_sequentially)
   by (fact eventually_stable_sum)
+
+
+
+\<comment> \<open>Definition 5 from [RSJM'05].\<close>
+class bounded_idempotent_semiring = bounded_idempotent_comm_monoid_add + idempotent_semiring_ord
+begin
+end
 
 
 (* TODO *)
@@ -219,348 +231,5 @@ begin
 
 end
 
-
-
-(*
-context dioid_one_zero 
-begin
-sublocale semilattice_neutr_order "(+)" "0" "(\<ge>)" "(>)" ..
-sublocale semilattice_inf "(+)" "(\<ge>)" "(>)" by (rule join.dual_semilattice)
-sublocale order_top "(\<ge>)" "(>)" "0" by (standard, simp)
-sublocale bounded_semilattice_inf_top "(+)" "(\<ge>)" "(>)" "0" ..
-end
-
-context bounded_semilattice_inf_top
-begin
-(*
-sublocale plus_ord "inf" "(\<ge>)" "(>)" proof
-  fix x y
-  show "(y \<le> x) = (inf x y = y)" by (rule inf.absorb_iff2)
-  show "(y < x) = (y \<le> x \<and> x \<noteq> y)" by auto
-qed
-
-lemma "x \<ge> inf x y"
-  by simp
-*)
-
-end
-
-
-class wqo_bounded_semilattice = bounded_semilattice_inf_top + wqo
-context wqo_bounded_semilattice
-begin
-
-abbreviation isMinimum :: "'a set \<Rightarrow> 'a \<Rightarrow> bool" where
- "isMinimum A b \<equiv> b \<in> A \<and> (\<forall>a \<in> A. b \<le> a)"
-definition minimum :: "'a set \<Rightarrow> 'a" where
- "minimum A \<equiv> THE b. isMinimum A b"
-definition supr :: "'a set \<Rightarrow> 'a" where
- "supr A \<equiv> minimum (Above (relation_of (\<le>) A) A)"
-
-abbreviation isMaximum :: "'a set \<Rightarrow> 'a \<Rightarrow> bool" where
- "isMaximum A b \<equiv> b \<in> A \<and> (\<forall>a \<in> A. a \<le> b)"
-definition maximum :: "'a set \<Rightarrow> 'a" where
- "maximum A \<equiv> THE b. isMaximum A b"
-definition infi :: "'a set \<Rightarrow> 'a" where
- "infi A \<equiv> maximum (Under (relation_of (\<le>) A) A)"
-
-end
-
-class wqo_plus_ord = reverse_wqo + join_semilattice
-begin
-fun plus_seq :: "(nat \<Rightarrow> 'b::wqo_plus_ord) \<Rightarrow> (nat \<Rightarrow> 'b::wqo_plus_ord)" where
-  "plus_seq f 0 = f 0"
-| "plus_seq f (Suc i) = (f (Suc i)) + (plus_seq f i)"
-
-lemma 
-  assumes "\<forall>a \<in> A. \<forall> b \<in> A. a + b \<in> A"
-  assumes "f \<in> SEQ A"
-  shows "plus_seq f \<in> SEQ A"
-  using assms(2) unfolding SEQ_def
-  apply (simp, safe)
-  subgoal for i
-    apply (induct i, simp)
-    subgoal for j
-      by (simp add: assms(1))
-    done
-  done
-
-lemma "good (\<ge>) (plus_seq f)" by (rule reverse_wqo_class.good)
-lemma "a \<le> a + b" by simp
-
-lemma plus_seq_mono': "i \<le> j \<Longrightarrow> plus_seq f i \<le> plus_seq f j"
-proof (induct j arbitrary: i)
-  case 0
-  then show ?case by simp
-next
-  case (Suc j)
-  then show ?case
-  proof (cases "i \<le> j")
-    case True
-    then show ?thesis using Suc(1) join_semilattice_class.join.le_supI2 by auto
-  next
-    case False
-    then have "i = Suc j" using Suc(2) by simp
-    then show ?thesis by blast
-  qed
-qed
-
-lemma plus_seq_mono: "mono (plus_seq f)"
-  unfolding mono_def monotone_on_def
-  apply (simp, safe)
-  subgoal for i j
-    using plus_seq_mono' by blast
-  done
-
-lemma plus_seq_less: "i < j \<Longrightarrow> plus_seq f i \<le> plus_seq f j"
-  using plus_seq_mono'[of i j f] by simp
-
-lemma plus_seq_exists_equal: "\<exists>i j. i < j \<and> plus_seq f i = plus_seq f j"
-  using reverse_wqo_class.good[unfolded good_def, of "plus_seq f"]
-  apply safe
-  subgoal for i j
-    using plus_seq_mono'[of i j f] by auto
-  done
-
-lemma wqo_on_greater_equal:
-  fixes A :: "'b::wqo_plus_ord set"
-  shows "wqo_on (\<ge>) A"
-  using wqo_on_subset[of A UNIV] by simp
-
-lemma
-  fixes A :: "'b::wqo_plus_ord set"
-  assumes "f \<in> SEQ A"
-  shows "\<exists>i j. i < j \<and> plus_seq f i = plus_seq f j"
-  oops
-
-
-end
-
-locale wqo_bounded_semilattice_on = wqo_bounded_semilattice +
-  fixes A :: "'b::wqo_bounded_semilattice set"
-begin
-
-(*definition is_lub where
-  "is_lub A lub = Above (relation_of (\<ge>) A )"
-end*)
-
-lemma less_eq_wqo_on: "wqo_on (\<le>) A"
-  using wqo_on_subset[of A UNIV] by simp
-lemma less_eq_almost_full_on: "almost_full_on (\<le>) A"
-  using wqo_on_imp_almost_full_on[OF less_eq_wqo_on] by simp
-lemma less_eq_transp_on: "transp_on (\<le>) A"
-  using wqo_on_imp_transp_on[OF less_eq_wqo_on] by simp
-lemma less_eq_reflp_on: "reflp_on (\<le>) A"
-  unfolding reflp_on_def by simp
-
-lemma less_eq_trans_relation_of: "trans (relation_of (\<le>) A)"
-  unfolding trans_def relation_of_def by auto
-lemma less_eq_refl_on_relation_of: "refl_on A (relation_of (\<le>) A)"
-  unfolding refl_on_def relation_of_def by auto
-lemma less_eq_antisym_relation_of: "antisym (relation_of (\<le>) A)"
-  unfolding antisym_def relation_of_def by auto
-lemma less_eq_preorder_on_relation_of: "preorder_on A (relation_of (\<le>) A)"
-  unfolding preorder_on_def using less_eq_trans_relation_of less_eq_refl_on_relation_of by blast
-lemma less_eq_partial_order_on_relation_of: "partial_order_on A (relation_of (\<le>) A)"
-  unfolding partial_order_on_def 
-  using less_eq_preorder_on_relation_of less_eq_antisym_relation_of by blast
-lemma less_eq_Field_relation_of: "Field (relation_of (\<le>) A) = A"
-  by (rule Field_relation_of[OF less_eq_refl_on_relation_of])
-
-lemma Preorder_less_eq: "Preorder (relation_of (\<le>) A)"
-  using less_eq_Field_relation_of less_eq_preorder_on_relation_of by simp
-lemma Partial_order_less_eq: "Partial_order (relation_of (\<le>) A)"
-  using less_eq_Field_relation_of less_eq_partial_order_on_relation_of by simp
-
-lemma "\<forall>f \<in> SEQ A. good (\<le>) f"
-  using less_eq_almost_full_on unfolding almost_full_on_def by blast
-
-
-lemma "inf a b \<le> a" by simp
-lemma "inf (inf a b) c \<le> a" using inf_le1 inf.assoc by presburger
-lemma "inf a (inf b c) \<le> a" by auto
-lemma "inf a (inf b c) \<le> b" by (auto intro: le_infI2)
-lemma "inf a (inf b c) \<le> c" by (auto intro: le_infI2)
-
-fun inf_seq :: "(nat \<Rightarrow> 'b) \<Rightarrow> (nat \<Rightarrow> 'b)" where
-  "inf_seq f 0 = f 0"
-| "inf_seq f (Suc i) = (inf (f (Suc i)) (inf_seq f i))"
-
-lemma "inf_seq f \<in> SEQ A"
-
-
-lemma "f \<in> SEQ A \<Longrightarrow> \<exists>i j. i < j \<and> (f i) \<le> (f j)"
-
-definition upper_bounds where
-  "upper_bounds = Above (relation_of (\<le>) A) A"
-definition lower_bounds where
-  "lower_bounds = Under (relation_of (\<le>) A) A"
-definition supremum :: "'b" where 
-  "supremum \<equiv> minim (upper_bounds)"
-definition infimum :: "'b" where 
-  "infimum \<equiv> maxim (lower_bounds)"
-
-lemma upper_bounds_subset: "upper_bounds \<subseteq> A"
-  unfolding upper_bounds_def Above_def by (simp add: less_eq_Field_relation_of)
-lemma lower_bounds_subset: "lower_bounds \<subseteq> A"
-  unfolding lower_bounds_def Under_def by (simp add: less_eq_Field_relation_of)
-
-lemma "wqo_on (\<le>) upper_bounds"
-  by (rule wqo_on_subset[OF upper_bounds_subset less_eq_wqo_on])
-lemma "wqo_on (\<le>) lower_bounds"
-  by (rule wqo_on_subset[OF lower_bounds_subset less_eq_wqo_on])  
-
-
-
-lemma "\<exists>b. isMaxim (lower_bounds) b"
-  unfolding lower_bounds_def Under_def
-  apply (simp add: less_eq_Field_relation_of)
-proof (rule ccontr)
-
-qed
-  oops
-
-lemma "\<exists>b. isMinim (upper_bounds) b"
-  unfolding upper_bounds_def Above_def
-  apply (simp add: less_eq_Field_relation_of)
-  oops
-
-end
-                             
-class bounded_dioid = dioid_one_zero + reverse_wqo
-                             
-(*
-definition "wqo_rel_on A r \<equiv> preorder_on A r \<and> almost_full_on A r"
-
-locale wqo_rel =
-  fixes r :: "'a rel"
-  assumes WELL: "wqo_on r"
-begin
-
-definition isMinim :: "'a set \<Rightarrow> 'a \<Rightarrow> bool"
-where "isMinim A b \<equiv> b \<in> A \<and> (\<forall>a \<in> A. (b,a) \<in> r)"
-
-definition minim :: "'a set \<Rightarrow> 'a"
-where "minim A \<equiv> THE b. isMinim A b"
-
-definition supr :: "'a set \<Rightarrow> 'a"
-where "supr A \<equiv> minim (Above A)"
-
-definition is_lub where
-  "is_lub A lib = Above (relation_of (\<ge>) A )"
-
-end
-*)
-
-class my_sub_lattice = semilattice_sup + Sup + bot +
-  assumes Sup_upper: "x \<in> A \<Longrightarrow> x \<le> Sup A"
-      and Sup_least: "(\<And>x. x \<in> A \<Longrightarrow> x \<le> z) \<Longrightarrow> Sup A \<le> z"
-      and Sup_empty [simp]: "Sup{} = bot"
-begin
-
-subclass bounded_semilattice_sup_bot proof
-  oops
-
-end
-
-
-
-
-
-lemma "wqo_on (\<ge>) (A::'a::reverse_wqo set)"
-  using reverse_wqo_on_class wqo_on_subset top_greatest oops
-
-lemma "x \<in> (A::'a::{bounded_dioid} set) \<Longrightarrow> \<exists>f\<in> SEQ A. \<exists>i. f i = x"
-  by auto
-
-lemma 
-  fixes A::"'a::{bounded_dioid} set"
-  assumes "x \<in> A"
-  shows "\<exists>f\<in> SEQ A. \<exists>i. f i = x"
-  using assms by auto
-
-lemma obtain_seq_i:
-  fixes A::"'a set"
-  assumes "x \<in> A"
-  obtains f i where "f \<in> SEQ A \<and> (f i = x)"
-  using assms by fast
-
-lemma 
-  fixes A::"'a::{bounded_dioid} set"
-  assumes "x \<in> A"
-  shows "\<exists>f\<in> SEQ A. \<exists>i. f i = x"
-  using assms by auto
-
-
-definition is_lub :: "'a::{bounded_dioid} set \<Rightarrow> 'a \<Rightarrow> bool" where
-  "is_lub A lub \<longleftrightarrow> (\<forall>a \<in> A. a \<le> lub) \<and> (\<forall>ub. (\<forall>a \<in> A. a \<le> ub) \<longrightarrow> lub \<le> ub)"
-
-definition is_witness_set :: "'a::{bounded_dioid} set \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "is_witness_set A W \<equiv> finite W \<and> (\<forall>a\<in>A. \<exists>w. w \<subseteq> W \<and> a = \<Sum>w)"
-
-lemma witness_set_exists:
-  fixes A::"'a::{bounded_dioid} set"
-  shows "\<exists>W. is_witness_set A W"
-  
-  oops
-
-lemma witness_set_unique_sum:
-  fixes A::"'a::{bounded_dioid} set"
-  assumes "is_witness_set A W"
-  assumes "is_witness_set A W'"
-  shows "\<Sum> W = \<Sum> W'"
-  oops
-
-definition witness_set:: "'a::{bounded_dioid} set \<Rightarrow> 'a set" where
-  "witness_set A = (THE W. is_witness_set A W)"
-
-
-lemma 
-  fixes A::"'a::{bounded_dioid} set"
-  shows "\<exists>lub. is_lub A lub"
-  unfolding is_lub_def
-proof
-  have "wqo_on (\<ge>) A" using reverse_wqo_on_class wqo_on_subset top_greatest by blast
-  then have "almost_full_on (\<ge>) A" by (rule wqo_on_imp_almost_full_on)
-  then have "\<exists>lub. is_lub A lub" unfolding is_lub_def wqo_on_def almost_full_on_def good_def SEQ_def
-    apply simp
-    apply (rule exI)
-    apply safe
-    subgoal for a
-    apply simp
-qed
-  apply -
-  oops
-
-
-
-lemma 
-  fixes A::"'a::{bounded_dioid} set"
-  assumes "is_lub A sup1"
-  assumes "is_lub A sup2"
-  shows "sup1 = sup2"
-  using assms unfolding is_lub_def
-  apply -
-  oops
-
-definition lub :: "'a::{bounded_dioid} set \<Rightarrow> 'a" where
-  "lub A = (THE sup. is_lub A sup)"
-
-(*
-definition bounded_dioid_Sup:: "'a::{bounded_dioid} set \<Rightarrow> 'a" where
-  "bounded_dioid_Sup S = \<Sum>(witness_set S)"
-
-lemma "Sup S = bounded_dioid_Sup S"
-  oops
-
-context bounded_dioid 
-begin
-sublocale my_sub_lattice "bounded_dioid_Sup" "(+)" "(\<le>)" "(<)" "0"
-proof
-
-qed
-end
-*)
-*)
 
 end
