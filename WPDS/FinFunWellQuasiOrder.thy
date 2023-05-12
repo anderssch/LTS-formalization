@@ -231,6 +231,17 @@ lemma finfun_update_less:
     using order_less_imp_le by (blast, simp)
   using dual_order.strict_iff_not by blast
 
+lemma finfun_update_greater:
+  assumes "f $ a > f' $ a"
+  assumes "f(a $:= d) = f'"
+  shows "f > f'"
+  using assms unfolding less_finfun_def less_eq_finfun_def
+  apply (simp, safe)
+  subgoal for a'
+    apply (cases "a = a'")
+    using order_less_imp_le by (blast, simp)
+  using dual_order.strict_iff_not by blast
+
 lemma less_eq_finfun_elem: 
   fixes x :: "'a \<Rightarrow>f 'weight::preorder"
   assumes "x \<le> y"

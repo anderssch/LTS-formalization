@@ -1,11 +1,11 @@
 theory MonoidLTS
-  imports "LTS" "MonoidClosure"
+  imports "LTS" "MonoidClosure" "BoundedDioid" "HOL-Library.Countable_Set"
 begin
-
 
 \<comment> \<open>If the @{typ 'label} of a LTS is a monoid, we can express the monoid product of labels over a path.\<close>
 locale monoidLTS = LTS transition_relation 
-  for transition_relation :: "('state, 'label::monoid_mult) transition set"
+  for transition_relation :: "('state::countable, 'label::monoid_mult) transition set" +
+  assumes ts_countable: "countable transition_relation"
 begin
 definition l_step_relp  :: "'state \<Rightarrow> 'label \<Rightarrow> 'state \<Rightarrow> bool" ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80) where
   "c \<Midarrow>l\<Rightarrow> c' \<longleftrightarrow> (c, l, c') \<in> transition_relation"
@@ -13,29 +13,179 @@ abbreviation monoid_star_relp :: "'state \<Rightarrow> 'label \<Rightarrow> 'sta
   "c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<equiv> (monoid_rtranclp l_step_relp) c l c'"
 definition monoid_star :: "('state \<times> 'label \<times> 'state) set" where
   "monoid_star = {(c,l,c'). c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+
+lemma star_to_closure: "c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<Longrightarrow> (c, l, c') \<in> monoid_rtrancl transition_relation"
+  unfolding l_step_relp_def monoid_rtrancl_def by simp
+
+definition monoid_star_witness :: "'state \<Rightarrow> 'label \<Rightarrow> 'state \<Rightarrow> ('state \<times> ('state \<times> 'label \<times> 'state) list)" where
+  "monoid_star_witness c l c' = (SOME trace. fst trace = c \<and> is_trace c (snd trace) c' \<and> trace_weight (snd trace) = l \<and> (snd trace) \<in> lists transition_relation)"
+abbreviation monoid_star_witness_tuple :: "'state \<times> 'label \<times> 'state \<Rightarrow> ('state \<times> ('state \<times> 'label \<times> 'state) list)" where
+  "monoid_star_witness_tuple \<equiv> (\<lambda>(c,l,c'). monoid_star_witness c l c')"
+lemma monoid_star_witness_unfold:
+  assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* c'"
+  assumes "trace = monoid_star_witness c l c'"
+  shows "fst trace = c \<and> is_trace c (snd trace) c' \<and> trace_weight (snd trace) = l \<and> (snd trace) \<in> lists transition_relation"
+  using monoid_rtrancl_exists_trace[OF star_to_closure[OF assms(1)]] assms(2)
+  unfolding monoid_star_witness_def
+  by simp (rule someI_ex, simp)
+
+lemma countable_monoid_star_witness: "countable {monoid_star_witness c l c' | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+proof -
+  have subset: "{monoid_star_witness c l c' | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'} \<subseteq> (UNIV::'state set) \<times> (lists transition_relation)"
+  proof
+    fix x
+    assume assms: "x \<in> {monoid_star_witness c l c' |c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    have "fst x \<in> (UNIV::'state set)" by fast
+    moreover have "snd x \<in> lists transition_relation" using assms monoid_star_witness_unfold by blast
+    ultimately show "x \<in> UNIV \<times> lists transition_relation" by (simp add: mem_Times_iff)
+  qed
+  have "countable ((UNIV::'state set) \<times> (lists transition_relation))"
+    using ts_countable by blast
+  then show ?thesis using countable_subset[OF subset] by blast
+qed
+
+lemma monoid_star_witness_inj_aux:
+  assumes "c \<Midarrow> l \<Rightarrow>\<^sup>* c'"
+    and "c1 \<Midarrow> l1 \<Rightarrow>\<^sup>* c1'"
+    and "monoid_star_witness c l c' = monoid_star_witness c1 l1 c1'"
+  shows "c = c1 \<and> l = l1 \<and> c' = c1'"
+  using monoid_star_witness_unfold[OF assms(1)] monoid_star_witness_unfold[OF assms(2)] 
+        assms(3) is_trace_inj 
+  by (cases "snd (monoid_star_witness c l c') \<noteq> []", fastforce) auto
+lemma monoid_star_witness_inj: "inj_on monoid_star_witness_tuple monoid_star"
+  unfolding monoid_star_def inj_on_def using monoid_star_witness_inj_aux by simp
+lemma monoid_star_witness_bij_betw: 
+  "bij_betw monoid_star_witness_tuple monoid_star (monoid_star_witness_tuple` monoid_star)"
+  unfolding bij_betw_def using monoid_star_witness_inj by blast
+
+lemma countable_monoid_star: "countable monoid_star"
+proof -
+  have subset:"(monoid_star_witness_tuple` monoid_star) \<subseteq> {monoid_star_witness c l c' | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+    unfolding monoid_star_def by fast
+  then have "countable (monoid_star_witness_tuple` monoid_star)"
+    using countable_subset[OF subset countable_monoid_star_witness] by blast
+  then show ?thesis using monoid_star_witness_bij_betw countableI_bij2 by fast
+qed
+
+lemma countable_f_on_set:"countable X \<Longrightarrow> countable {f x | x. x \<in> X}"
+  by (simp add: setcompr_eq_image)
+
+lemma countable_star_f_p: "countable {f (c,l,c') | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<and> P c c'}"
+proof -
+  have subset:"{(c,l,c') | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<and> P c c'} \<subseteq> monoid_star" unfolding monoid_star_def  by blast
+  have "countable {(c,l,c') | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<and> P c c'}" 
+    using countable_subset[OF subset countable_monoid_star] by blast
+  then show ?thesis using countable_f_on_set by fastforce
+qed
+
+lemma monoid_star_is_monoid_rtrancl[simp]: "monoid_star = monoid_rtrancl transition_relation"
+  unfolding monoid_star_def l_step_relp_def monoid_rtrancl_def by simp
 end
 
-lemma monoid_star_is_monoid_rtrancl[simp]: "monoidLTS.monoid_star = monoid_rtrancl"
-  unfolding monoidLTS.monoid_star_def monoidLTS.l_step_relp_def monoid_rtrancl_def by simp
-
+(*
 lemma monoidLTS_monoid_star_mono:
   "mono monoidLTS.monoid_star"
-  using monoid_star_is_monoid_rtrancl monoid_rtrancl_is_mono
+  using monoidLTS.monoid_star_is_monoid_rtrancl monoid_rtrancl_is_mono unfolding mono_def
   by simp
+*)
+
 
 
 \<comment> \<open>If the @{typ 'label} of a LTS is a dioid with additive and multiplicative identities, 
     we can express the meet-over-all-paths value as a generalization of pre-star and post-star.\<close>
-locale dioidLTS = monoidLTS transition_relation 
-  for transition_relation :: "('state, 'label::dioid_one_zero) transition set"
+locale dioidLTS = monoidLTS transition_relation
+  for transition_relation :: "('state::countable, 'label::bounded_idempotent_semiring) transition set"
 begin
+(*
+definition path_seq :: "'state \<Rightarrow> 'state \<Rightarrow> nat \<Rightarrow> 'label" where
+  "path_seq c c' = (SOME f. \<forall>l. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<longleftrightarrow> (\<exists>i. f i = l))"
+*)
+definition path_seq :: "'label set \<Rightarrow> nat \<Rightarrow> 'label" where
+  "path_seq W \<equiv> if W = {} then (\<lambda>_. 0) else SOME f. \<forall>l. l \<in> W \<longleftrightarrow> (\<exists>i. f i = l)"
+
+lemma path_seq_empty[simp]: "path_seq {} i = 0"
+  unfolding path_seq_def by simp
+
+lemma countable_set_exists_seq: "countable W \<Longrightarrow> W \<noteq> {} \<Longrightarrow> \<exists>f::(nat\<Rightarrow>'label). \<forall>l. l \<in> W \<longleftrightarrow> (\<exists>i. f i = l)"
+  by (rule exI[of _ "from_nat_into W"])
+     (meson from_nat_into from_nat_into_to_nat_on)
+
+lemma path_seq_of_countable_set:
+  assumes "countable W"
+  assumes "W \<noteq> {}"
+  shows "\<forall>l. l \<in> W \<longleftrightarrow> (\<exists>i. path_seq W i = l)"
+  unfolding path_seq_def
+  apply (simp add: assms(2))
+  using someI_ex[OF countable_set_exists_seq[OF assms]] 
+  by blast
+
+lemma path_seq_in_set:
+  assumes "countable W"
+  assumes "W \<noteq> {}"
+  shows "path_seq W i \<in> W"
+  using path_seq_of_countable_set[OF assms] by fast
+
+lemma path_seq_notin_set_zero:
+  assumes "countable W"
+  assumes "path_seq W i \<notin> W"
+  shows "path_seq W i = 0"
+  using assms
+  apply (cases "W={}", simp)
+  using path_seq_in_set[OF assms(1)]
+  by simp
+
 
 definition SumInf :: "'label set \<Rightarrow> 'label" ("\<^bold>\<Sum>") where
-  "\<^bold>\<Sum> W = undefined W"
+  "\<^bold>\<Sum> W = suminf (path_seq W)"
+
+lemma SumInf_empty[simp]: "SumInf {} = 0"
+  unfolding SumInf_def using suminf_finite[of "{}", simplified] path_seq_empty by blast
+
+lemma path_seq_insert: "finite F \<Longrightarrow> \<exists>i. path_seq (insert x F) i = x"
+  using path_seq_of_countable_set[OF countable_finite[of "insert x F"]]
+  by blast
+
+lemma "finite F \<Longrightarrow> (\<Sum>a. path_seq (insert x F) a) = x + (\<Sum>a. path_seq F a)"
+  using path_seq_in_set[OF countable_finite, of "insert x F", simplified]
+        path_seq_insert[of F x]
+  apply simp
+  apply auto
+  oops
+thm suminf_mono_reindex[unfolded strict_mono_on_def, simplified]
+
+lemma 
+  assumes "finite W"
+  assumes "W \<noteq> {}"
+  shows "SumInf W = \<Sum>W"
+  unfolding SumInf_def
+  apply (induct rule: finite_induct[OF assms(1)], simp)
+  apply simp
+  subgoal for x F
+    using path_seq_insert[of F x] path_seq_in_set[OF countable_finite, of "insert x F"]
+    apply simp
+    apply auto
+    using path_seq_in_set[OF countable_finite[OF assms(1)] assms(2)] assms(1)
+    apply -
+  oops
+
+lemma "finite W \<Longrightarrow> SumInf W = \<Sum>W"
+  apply (induct rule: finite_induct, simp)
+  apply simp
+  unfolding SumInf_def
+  using path_seq_in_set[OF countable_finite[of W]]
+  using path_seq_of_countable_set[OF countable_finite[of W]]
+  apply simp
+   using sums_If_finite_set
+   apply -
+   oops
 
 lemma singleton_sum[simp]: "\<^bold>\<Sum> {w} = w"
+  unfolding SumInf_def
+  using path_seq_insert[of "{}" w, simplified]
+  using path_seq_notin_set_zero[of "{w}", simplified]
+  apply auto
+  using summable_bounded_dioid[of "(SOME f. \<forall>l. (l = w) = (\<exists>i. f i = l))"]
   sorry
-
 
 
 definition weight_pre_star :: "('state \<Rightarrow> 'label) \<Rightarrow> ('state \<Rightarrow> 'label)" where

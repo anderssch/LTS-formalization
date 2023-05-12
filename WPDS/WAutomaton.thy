@@ -1,26 +1,42 @@
 theory WAutomaton
-  imports "LTS" "Saturation" "ReverseWellQuasiOrder" "FinFunWellQuasiOrder" "MonoidLTS"
+  imports "LTS" "Saturation" "ReverseWellQuasiOrder" "FinFunWellQuasiOrder" "MonoidLTS" "Kleene_Algebra.Dioid_models"
 begin
 
 \<comment> \<open>For the semantics of a weighted automaton, labels are lifted to the list-monoid and paired with a weight\<close>
 type_synonym ('label, 'weight) wautomaton_label = "('label list \<times> 'weight)" 
 
 \<comment> \<open>Weighted automata transitions are modelled as a @{term finfun} from transitions to their weight, 
-    where @{term "0::('weight::dioid_one_zero)"} is the default value, indicating no transition.\<close>
+    where @{term "0::('weight::bounded_idempotent_semiring)"} is the default value, indicating no transition.\<close>
 type_synonym ('state, 'label, 'weight) w_transitions = "('state, 'label) transition \<Rightarrow>f 'weight" 
 
 type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list \<times> 'weight)) transition set"
 
 
 \<comment> \<open>Embed a weighted automata into a monoidLTS. All non-zero transitions are added. The label is lifted to the list-monoid.\<close>
-definition wts_to_monoidLTS :: "(('state, 'label, 'weight::{dioid_one_zero,reverse_wqo}) w_transitions) \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
+definition wts_to_monoidLTS :: "(('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions) \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
   "wts_to_monoidLTS ts = {(p, ([l],d), q) | p l d q. ts $ (p,l,q) = d \<and> d \<noteq> 0}"
 
+lemma finite_wts: 
+  assumes "finfun_default A = 0"
+  shows "finite (wts_to_monoidLTS A)"
+  unfolding wts_to_monoidLTS_def
+proof -
+  have "finite {x. A $ x \<noteq> 0}" 
+    using finite_finfun_default[of A] assms by simp
+  then show "finite {(p, ([l],d), q) | p l d q. A $ (p,l,q) = d \<and> d \<noteq> 0}"
+    using finite_image_set[of "\<lambda>x. A $ x \<noteq> 0" "\<lambda>(p,l,q). (p, ([l], A $ (p,l,q)), q)"] by simp
+qed
+
+lemma countable_wts: 
+  assumes "finfun_default A = 0"
+  shows "countable (wts_to_monoidLTS A)"
+  by (fact countable_finite[OF finite_wts[OF assms]])
+
 locale W_automata = monoidLTS "wts_to_monoidLTS transition_relation"
-  for transition_relation :: "('state::finite, 'label, 'weight::{dioid_one_zero,reverse_wqo}) w_transitions" +
+  for transition_relation :: "('state::finite, 'label, 'weight::bounded_idempotent_semiring) w_transitions" +
   fixes initials :: "'state set" and finals :: "'state set"
 begin
-interpretation monoidLTS "wts_to_monoidLTS transition_relation" .
+interpretation monoidLTS "wts_to_monoidLTS transition_relation" ..
 end
 
 \<comment> \<open>The weighted version of the @{term LTS.reach} function. 
@@ -54,7 +70,7 @@ proof (induct rule: monoid_rtrancl.induct)
 next
   case (monoid_rtrancl_into_rtrancl a w b l c)
   from \<open>(b, l, c) \<in> wts_to_monoidLTS ts\<close> have "fst l \<noteq> []" using wts_label_not_empty by fast
-  then have \<open>fst (w \<cdot> l) \<noteq> []\<close> by (simp add: mult_prod_def times_list_def)
+  then have \<open>fst (w * l) \<noteq> []\<close> by (simp add: mult_prod_def times_list_def)
   then show ?case by (simp add: monoid_rtrancl_into_rtrancl.prems one_list_def)
 qed
 lemma mstar_wts_empty_one: "(p, ([],d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> d = 1"
@@ -72,7 +88,7 @@ proof (induct rule: monoid_rtrancl.induct)
 next
   case (monoid_rtrancl_into_rtrancl a w b l c)
   from \<open>(b, l, c) \<in> wts_to_monoidLTS ts\<close> have "fst l \<noteq> []" using wts_label_not_empty by fast
-  then have \<open>fst (w \<cdot> l) \<noteq> []\<close> by (simp add: mult_prod_def times_list_def)
+  then have \<open>fst (w * l) \<noteq> []\<close> by (simp add: mult_prod_def times_list_def)
   then show ?case by (simp add: monoid_rtrancl_into_rtrancl.prems)
 qed
 
@@ -116,13 +132,13 @@ qed
 
 \<comment> \<open>For the executable pre-star, the saturation rule computes a set of new transition weights, 
     that are updated using the dioid's plus operator to combine with the existing value.\<close>
-definition finfun_update_plus :: "'a \<Rightarrow> 'b \<Rightarrow> ('a \<Rightarrow>f 'b::join_semilattice) \<Rightarrow> ('a \<Rightarrow>f 'b)" where
+definition finfun_update_plus :: "'a \<Rightarrow> 'b \<Rightarrow> ('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add) \<Rightarrow> ('a \<Rightarrow>f 'b)" where
   "finfun_update_plus a b f = f(a $:= (f$a) + b)"
 
-definition finfun_update_plus_pair :: "('a \<times> 'b) \<Rightarrow> ('a \<Rightarrow>f 'b::join_semilattice) \<Rightarrow> ('a \<Rightarrow>f 'b)" where
+definition finfun_update_plus_pair :: "('a \<times> 'b) \<Rightarrow> ('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add) \<Rightarrow> ('a \<Rightarrow>f 'b)" where
   "finfun_update_plus_pair p = finfun_update_plus (fst p) (snd p)"
 
-definition update_wts :: "('a \<Rightarrow>f 'b::join_semilattice_zero) \<Rightarrow> ('a \<times> 'b) set \<Rightarrow> ('a \<Rightarrow>f 'b)" where
+definition update_wts :: "('a \<Rightarrow>f 'b::idempotent_comm_monoid_add) \<Rightarrow> ('a \<times> 'b) set \<Rightarrow> ('a \<Rightarrow>f 'b)" where
   "update_wts = Finite_Set.fold finfun_update_plus_pair"
 
 lemma finfun_update_plus_apply: "finfun_update_plus a b f $ a = f $ a + b"
@@ -137,11 +153,12 @@ lemma finfun_update_plus_pair_apply_other: "a \<noteq> x \<Longrightarrow> finfu
 lemma finfun_update_plus_commute: "finfun_update_plus a b \<circ> finfun_update_plus a' b' = finfun_update_plus a' b' \<circ> finfun_update_plus a b"
   apply (cases "a = a'")
   unfolding finfun_update_plus_def
-   apply (simp add: comp_def join.sup_commute join.sup_left_commute)
+   apply (simp add: comp_def add.commute add.left_commute)
   using FinFun.finfun_comp_aux.upd_commute by fastforce
 
 lemma finfun_update_plus_idem: "finfun_update_plus a b \<circ> finfun_update_plus a b = finfun_update_plus a b"
-  unfolding finfun_update_plus_def comp_def using finfun_upd_apply_same by simp
+  unfolding finfun_update_plus_def comp_def using finfun_upd_apply_same
+  by (simp add: add.commute idempotent_ab_semigroup_add_class.add_left_idem)
 
 lemma finfun_update_plus_pair_idem: "comp_fun_idem finfun_update_plus_pair"
   apply standard
@@ -161,7 +178,7 @@ lemma update_wts_insert:
   by blast
 
 lemma sum_insert_fresh:
-  fixes S::"('a \<times> 'b::comm_monoid_add) set"
+  fixes S::"('a \<times> 'b::idempotent_comm_monoid_add) set"
   assumes "finite S"
       and "(x,y) \<notin> S"
     shows "\<Sum> {b. (x, b) \<in> S} + y = \<Sum> {b. (x, b) \<in> insert (x,y) S}"
@@ -175,7 +192,7 @@ proof -
 qed
 
 lemma finfun_update_plus_pair_insert:
-  fixes S::"('a \<times> 'b::join_semilattice_zero) set"
+  fixes S::"('a \<times> 'b::idempotent_comm_monoid_add) set"
   assumes "finite S"          
   assumes "(x,y) \<notin> S"
   assumes "f' $ a = f $ a + \<Sum> {b. (a, b) \<in> S}"
@@ -212,9 +229,9 @@ theorem update_wts_sum:
 
 \<comment> \<open>A weighted automaton is initialized with weights 1 (neutral element along paths) on existing transitions, 
     and a default weight of 0 (neutral element for combining paths) for non-existing transitions.\<close>
-definition ts_to_wts :: "('state, 'label) transition set \<Rightarrow> ('state, 'label, 'weight::{dioid_one_zero,reverse_wqo}) w_transitions" where
+definition ts_to_wts :: "('state, 'label) transition set \<Rightarrow> ('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions" where
   "ts_to_wts ts = update_wts (K$ 0) {(t,1) | t. t \<in> ts}"
-definition wts_to_ts :: "('state, 'label, 'weight::{dioid_one_zero,reverse_wqo}) w_transitions \<Rightarrow> ('state, 'label) transition set" where
+definition wts_to_ts :: "('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, 'label) transition set" where
   "wts_to_ts wts = {t | t. wts $ t \<noteq> 0}"
 
 lemma empty_ts_to_wts[simp]: "ts_to_wts {} = (K$ 0)" 

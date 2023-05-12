@@ -1,5 +1,5 @@
 theory MonoidClosure
-  imports "ProdDioid" "Kleene_Algebra.Dioid_Models"
+  imports "ProdDioid"
 begin
 
 \<comment> \<open>Preliminary definition of reflexive and transitive closure over a relation labelled with a monoid, 
@@ -25,6 +25,11 @@ lemma predicate3I[intro]:
 lemma predicate3D[dest]:
   "P \<le> Q \<Longrightarrow> P x y z \<Longrightarrow> Q x y z"
   by (erule le_funE)+ (erule le_boolE)
+
+lemma "(a,b,c) \<in> r \<Longrightarrow> (a,b,c) \<in> monoid_rtrancl r"
+  using monoid_rtrancl_def
+  apply -
+  oops
 
 lemma monoid_rtranclp_mono: "r \<le> s \<Longrightarrow> monoid_rtranclp r \<le> monoid_rtranclp s"
   \<comment> \<open>monotonicity of \<open>monoid_rtrancl\<close>\<close>
@@ -52,11 +57,46 @@ lemma monoid_rtrancl_is_mono: "mono monoid_rtrancl"
 lemma monoid_rtranclp_trans:
   assumes "monoid_rtranclp r x u y"
   assumes "monoid_rtranclp r y v z"
-  shows "monoid_rtranclp r x (u\<cdot>v) z"
+  shows "monoid_rtranclp r x (u*v) z"
   using assms(2,1)
   by (induct, simp_all) (metis (no_types, opaque_lifting) monoid_rtranclp.monoid_rtrancl_into_rtrancl mult.assoc)
 
 
+fun is_trace_fn :: "'a \<Rightarrow> ('a \<times> 'b::monoid_mult \<times> 'a) list \<Rightarrow> 'a \<Rightarrow> bool" where
+  "is_trace_fn p [] q = (p = q)"
+| "is_trace_fn p ((p',l,q')#ts) q = (p = p' \<and> is_trace_fn q' ts q)"
+
+primrec is_trace :: "'a \<Rightarrow> ('a \<times> 'b::monoid_mult \<times> 'a) list \<Rightarrow> 'a \<Rightarrow> bool" where
+  "is_trace p [] q = (p = q)"
+| "is_trace p (t#ts) q = (p = fst t \<and> is_trace (snd (snd t)) ts q)"
+primrec trace_weight :: "('a \<times> 'b::monoid_mult \<times> 'a) list \<Rightarrow> 'b" where
+  "trace_weight [] = 1"
+| "trace_weight (t#ts) = fst (snd t) * trace_weight ts"
+
+lemma is_trace_append: "is_trace a x b \<and> is_trace b y c \<Longrightarrow> is_trace a (x @ y) c"
+  by (induct x arbitrary: a, simp_all)
+lemma trace_weight_append: "trace_weight (a @ b) = trace_weight a * trace_weight b"
+  by (induct a, simp_all add: mult.assoc[symmetric])
+
+lemma monoid_rtrancl_exists_trace: 
+  assumes "(p, w, q) \<in> monoid_rtrancl ts"
+  shows "\<exists>l. is_trace p l q \<and> trace_weight l = w \<and> l \<in> lists ts"
+  using assms
+  apply (induct rule: monoid_rtrancl.induct)
+   apply (rule exI[of _ "[]"], simp)
+  apply (erule exE)
+  subgoal for a w b l c ls
+    apply (rule exI[of _ "(ls@[(b,l,c)])"])
+    using trace_weight_append[of "ls" "[(b,l,c)]"] is_trace_append[of _ "ls" _ "[(b,l,c)]"] by simp
+  done
+
+lemma is_trace_inj: "l \<noteq> [] \<and> is_trace a l b \<and> is_trace p l q \<Longrightarrow> a = p \<and> b = q"
+  apply (induct l arbitrary: a p, simp)
+  subgoal for a l aa p
+    by force
+  done
+lemma trace_weight_inj: "trace_weight l = a \<and> trace_weight l = b \<Longrightarrow> a = b"
+  by (induct l arbitrary: a b, simp_all)
 
 (*
 primrec reduce_monoid_list :: "'a::monoid_mult list \<Rightarrow> 'a" where

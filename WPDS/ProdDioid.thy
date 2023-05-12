@@ -1,5 +1,5 @@
 theory ProdDioid 
-  imports "Kleene_Algebra.Dioid"
+  imports "BoundedDioid"
 begin
 
 \<comment> \<open>Definitions\<close>
@@ -39,52 +39,57 @@ instantiation prod :: (semigroup_add, semigroup_add) semigroup_add begin
   instance proof fix a b c :: "('a::semigroup_add \<times> 'b::semigroup_add)"
     show "a + b + c = a + (b + c)" unfolding add_prod_def by(simp add: add.assoc) qed
 end
-instantiation prod :: (monoid_add, monoid_add) monoid_add begin
-  instance proof fix a :: "('a::monoid_add \<times> 'b::monoid_add)"
-      show "0 + a = a" unfolding zero_prod_def add_prod_def by simp
-      show "a + 0 = a" unfolding zero_prod_def add_prod_def by simp
-  qed
-end
 instantiation prod :: (ab_semigroup_add, ab_semigroup_add) ab_semigroup_add begin
   instance proof fix a b c :: "('a::ab_semigroup_add \<times> 'b::ab_semigroup_add)"
     show "a + b = b + a" unfolding add_prod_def by(simp add: add.commute) qed
 end
-instantiation prod :: (plus_ord, plus_ord) plus_ord begin
-instance proof fix a b :: "('a::plus_ord \<times> 'b::plus_ord)"
-    show "(a \<le> b) = (a + b = b)" unfolding less_eq_prod_def add_prod_def 
+instantiation prod :: (comm_monoid_add, comm_monoid_add) comm_monoid_add begin
+  instance proof fix a :: "('a::comm_monoid_add \<times> 'b::comm_monoid_add)"
+      show "0 + a = a" unfolding zero_prod_def add_prod_def by simp
+  qed
+end
+instantiation prod :: (idempotent_ab_semigroup_add, idempotent_ab_semigroup_add) idempotent_ab_semigroup_add begin
+  instance proof fix a :: "('a::idempotent_ab_semigroup_add \<times> 'b::idempotent_ab_semigroup_add)"
+    show "a + a = a" unfolding add_prod_def by simp
+  qed
+end
+instantiation prod :: (idempotent_ab_semigroup_add_ord, idempotent_ab_semigroup_add_ord) idempotent_ab_semigroup_add_ord begin
+  instance proof fix a b :: "('a::idempotent_ab_semigroup_add_ord \<times> 'b::idempotent_ab_semigroup_add_ord)"
+    show "(a \<le> b) = (a + b = a)" unfolding less_eq_prod_def add_prod_def 
       by (metis fst_conv less_eq_def prod.collapse snd_conv)
     show "(a < b) = (a \<le> b \<and> a \<noteq> b)" unfolding less_prod_def less_eq_prod_def by simp
   qed
 end
-instantiation prod :: (order, order) order begin
-instance proof fix a b c :: "('a::order \<times> 'b::order)"
-    show "(a < b) = (a \<le> b \<and> \<not> b \<le> a)" unfolding less_prod_def less_eq_prod_def by (meson antisym prod.expand)
-    show "a \<le> a" unfolding less_eq_prod_def by simp
-    show "a \<le> b \<Longrightarrow> b \<le> c \<Longrightarrow> a \<le> c" unfolding less_eq_prod_def by (metis dual_order.trans)
-    show "a \<le> b \<Longrightarrow> b \<le> a \<Longrightarrow> a = b" unfolding less_eq_prod_def by (simp add: order_antisym_conv prod.expand)
-  qed
-end
 instantiation prod :: (semiring, semiring) semiring begin
   instance proof fix a b c :: "('a::semiring \<times> 'b::semiring)"
-    show "(a + b) * c = a * c + b * c" unfolding add_prod_def mult_prod_def by simp
+    show "(a + b) * c = a * c + b * c" unfolding add_prod_def mult_prod_def 
+      by (simp add: semiring_class.distrib_right)
     show "a * (b + c) = a * b + a * c" unfolding add_prod_def mult_prod_def 
       by (simp add: semiring_class.distrib_left)
   qed
 end
-instantiation prod :: (dioid, dioid) dioid  begin
-  instance proof fix a b :: "('a::dioid \<times> 'b::dioid)"
-    show "a + a = a" unfolding add_prod_def by simp
+instantiation prod :: (semiring_0, semiring_0) semiring_0 begin
+  instance proof fix a :: "('a::semiring_0 \<times> 'b::semiring_0)"
+    show "0 * a = 0" unfolding mult_prod_def zero_prod_def by simp
+    show "a * 0 = 0" unfolding mult_prod_def zero_prod_def by simp
   qed
 end
-instantiation prod :: (dioid_one_zero, dioid_one_zero) dioid_one_zero begin
+instantiation prod :: (idempotent_comm_monoid_add, idempotent_comm_monoid_add) idempotent_comm_monoid_add begin instance .. end
+instantiation prod :: (idempotent_semiring, idempotent_semiring) idempotent_semiring begin instance .. end
+instantiation prod :: (idempotent_semiring_ord, idempotent_semiring_ord) idempotent_semiring_ord begin instance .. end
+instantiation prod :: (discrete_topology, discrete_topology) discrete_topology begin
+instance proof
+    fix A::"('a::discrete_topology \<times> 'b::discrete_topology) set"
+    show "open A" unfolding open_prod_def by (auto intro!: open_discrete)
+  qed
+end
+instantiation prod :: (bounded_idempotent_comm_monoid_add, bounded_idempotent_comm_monoid_add) bounded_idempotent_comm_monoid_add begin
   instance proof
-    fix x :: "('a::dioid_one_zero \<times> 'b::dioid_one_zero)"
-    show "1 * x = x" unfolding one_prod_def mult_prod_def by simp
-    show "x * 1 = x" unfolding one_prod_def mult_prod_def by simp
-    show "0 + x = x" unfolding zero_prod_def add_prod_def by simp
-    show "0 * x = 0" unfolding zero_prod_def mult_prod_def by simp
-    show "x * 0 = 0" unfolding zero_prod_def mult_prod_def by simp
+    show "almost_full_on (\<le>) (UNIV::('a\<times>'b) set)"
+      using almost_full_on_Sigma[OF no_infinite_decending_chains no_infinite_decending_chains]
+      unfolding prod_le_def less_eq_prod_def by (simp add: case_prod_beta')
   qed
 end
+instantiation prod :: (bounded_idempotent_semiring, bounded_idempotent_semiring) bounded_idempotent_semiring begin instance .. end
 
 end

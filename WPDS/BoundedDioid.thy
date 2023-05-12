@@ -1,5 +1,5 @@
 theory BoundedDioid
-  imports "ProdDioid" "ReverseWellQuasiOrder"
+  imports "ReverseWellQuasiOrder"
           "HOL.Lattices" "HOL.Order_Relation" "HOL.Complete_Lattices" "HOL.Series"
 begin
 
@@ -46,6 +46,7 @@ next
   hence "x \<le> c + y" by simp
   thus "x \<le> y" by simp
 qed
+
 end
 
 \<comment> \<open>Many lemmas and proofs in these classes are heavily inspired from AFP theory Kleene_Algebra.Dioid, 
@@ -54,6 +55,9 @@ end
 class idempotent_comm_monoid_add = idempotent_ab_semigroup_add + comm_monoid_add
 class idempotent_comm_monoid_add_ord = idempotent_ab_semigroup_add_ord + comm_monoid_add
 begin
+subclass idempotent_comm_monoid_add ..
+sublocale meet: bounded_semilattice_inf_top "(+)" "(\<le>)" "(<)" 0
+  by unfold_locales (simp add: local.order_prop)
 lemma no_trivial_inverse: "x \<noteq> 0 \<Longrightarrow> \<not>(\<exists>y. x + y = 0)"
   by (metis local.add_0_right local.meet.inf_left_idem)
 
@@ -63,35 +67,38 @@ end
 
 \<comment> \<open>An idempotent semiring that follows the definition of [RSJM'05].\<close>
 class idempotent_semiring = semiring_0 + monoid_mult + idempotent_ab_semigroup_add
+begin
+subclass idempotent_comm_monoid_add ..
+end
 
 class idempotent_semiring_ord = idempotent_semiring + idempotent_ab_semigroup_add_ord
 begin
-lemma mult_isor: "x \<le> y \<Longrightarrow> x \<cdot> z \<le> y \<cdot> z"
+lemma mult_isor: "x \<le> y \<Longrightarrow> x * z \<le> y * z"
 proof -
   assume "x \<le> y"
   hence "x + y = x"
     by (simp add: less_eq_def)
-  hence "(x + y) \<cdot> z = x \<cdot> z"
+  hence "(x + y) * z = x * z"
     by simp
-  thus "x \<cdot> z \<le> y \<cdot> z"
-    by (simp add: less_eq_def)
+  thus "x * z \<le> y * z"
+    by (simp add: distrib_right meet.inf.orderI)
 qed
-lemma subdistl: "z \<cdot> (x + y) \<le> z \<cdot> x"
+lemma subdistl: "z * (x + y) \<le> z * x"
   by (simp add: distrib_left)
 lemma mult_isol_equiv_subdistl:
-  "(\<forall>x y z. x \<le> y \<longrightarrow> z \<cdot> x \<le> z \<cdot> y) \<longleftrightarrow> (\<forall>x y z. z \<cdot> (x + y) \<le> z \<cdot> x)"
+  "(\<forall>x y z. x \<le> y \<longrightarrow> z * x \<le> z * y) \<longleftrightarrow> (\<forall>x y z. z * (x + y) \<le> z * x)"
   by (metis meet.inf_absorb2 local.meet.inf_le1)
-lemma subdistl_var: "z \<cdot> (x + y) \<le> z \<cdot> x + z \<cdot> y"
+lemma subdistl_var: "z * (x + y) \<le> z * x + z * y"
   using local.mult_isol_equiv_subdistl local.subdistl by simp
-lemma mult_isol: "x \<le> y \<Longrightarrow> z \<cdot> x \<le> z \<cdot> y"
+lemma mult_isol: "x \<le> y \<Longrightarrow> z * x \<le> z * y"
 proof -
   assume "x \<le> y"
   hence "x + y = x" by (simp add: less_eq_def)
-  also have "z \<cdot> (x + y) \<le> z \<cdot> x + z \<cdot> y" using subdistl_var by blast
-  moreover have "z \<cdot> (x + y) = z \<cdot> x" by (simp add: calculation)
-  ultimately show "z \<cdot> x \<le> z \<cdot> y" by auto
+  also have "z * (x + y) \<le> z * x + z * y" using subdistl_var by blast
+  moreover have "z * (x + y) = z * x" by (simp add: calculation)
+  ultimately show "z * x \<le> z * y" by auto
 qed
-lemma mult_isol_var: "u \<le> x \<Longrightarrow> v \<le> y \<Longrightarrow> u \<cdot> v \<le> x \<cdot> y"
+lemma mult_isol_var: "u \<le> x \<Longrightarrow> v \<le> y \<Longrightarrow> u * v \<le> x * y"
   by (meson local.dual_order.trans local.mult_isor mult_isol)
 end
 
@@ -143,6 +150,7 @@ lemma sum_prefix_seq_greater_eq:
   fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add"
   assumes "n \<le> m"
   shows "sum f {x. x < n} \<ge> sum f {x. x < m}"
+  apply simp
   using sum_prefix_seq_split[OF assms, of f] by simp
 
 primrec decreasing_sequence_aux :: "(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add) \<Rightarrow> (nat \<Rightarrow> 'a \<times> nat)" where
