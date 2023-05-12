@@ -670,25 +670,19 @@ qed
 lemma accepts_empty_iff: "accepts A (p,[]) = (if p\<in>finals then 1 else 0)"
   by (simp add: final_empty_accept' nonfinal_empty_accept')
 
+lemma sound_empty: "sound (K$ 0)"
+  by (simp add: sound_def wts_to_monoidLTS_def)
+
 lemma lemma_3_1_w_alternative:
-  assumes "sound A"
-  assumes "pre_star_rule A A'"
+  assumes soundA': "sound A'"
   shows "accepts A' pv \<le> weight_pre_star (accepts A) pv"
 proof -
-  have soundA': "sound A'"
-    using soundness[of A A', OF assms] .
+ 
 
   obtain p v where pv_split: 
     "pv = (p, v)"
     by (cases pv)
 
-  obtain pa \<gamma> d p' w d' q d'' where pa_p:
-    "A' = A((pa, \<gamma>, q) $:= d'' + d \<cdot> d')"
-    "(pa, \<gamma>) \<midarrow> d \<hookrightarrow> (p', w)"
-    "(p', (lbl w, d'), q) \<in> monoidLTS.monoid_star (wts_to_monoidLTS A)"
-    "A $ (pa, \<gamma>, q) = d''"
-    "d'' + d \<cdot> d' \<noteq> d''"
-    using pre_star_rule.cases[of A A', OF assms(2)] by metis
 
   have "accepts A' (p,v) = \<^bold>\<Sum>{d |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" (* 1, 2 *)
     unfolding accepts_def by (simp split: prod.split) 
@@ -729,7 +723,7 @@ lemma lemma_3_1_w_alternative':
   assumes "sound A"
   assumes "pre_star_rule A A'"
   shows "accepts A' \<le> weight_pre_star (accepts A)"
-  by (simp add: assms le_funI lemma_3_1_w_alternative)
+  by (meson WPDS_with_W_automata.soundness assms(1) assms(2) le_funI lemma_3_1_w_alternative)
 
 lemma nice_lemma:
    "X c \<le> weight_pre_star X c"
