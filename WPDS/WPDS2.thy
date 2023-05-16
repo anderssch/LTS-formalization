@@ -203,7 +203,7 @@ lemma pre_star_rule_exhaust:
   obtains        "q = p" "d = 1" "w = pop"
     | l    where "ts $ (p,l,q) = d" "w = swap l"
     | l l' q' where "ts $ (p,l,q') * ts $ (q',l',q) = d" "w = push l l'"
-using pre_star_rule_cases[OF assms(1)] by blast
+  using pre_star_rule_cases[OF assms(1)] by blast
 
 lemma pre_star_rule_update_spec:
   assumes "pre_star_rule A A'"
@@ -219,35 +219,25 @@ lemma pre_star_rule_update_spec:
     by (cases "(p,\<gamma>,q) = (p', \<gamma>',q')", auto)
   done
 
+(* TODO: Come up with a good notation, and then use this definition *)
+definition push_seq_weight :: "('ctr_loc * 'label list) \<Rightarrow> 'ctr_loc \<Rightarrow> 'weight" ("\<^bold>\<Sigma>_\<Rightarrow>\<^sup>*_") where
+  "push_seq_weight = (\<lambda>(p,w) p'. \<^bold>\<Sum>{d'. (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])})"
+
 definition sound :: "(('ctr_loc, 'label, 'weight) w_transitions) \<Rightarrow> bool" where
   "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sum>{d'. (p,[\<gamma>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])})"
 
 lemma monoid_star_intros_step':
-  assumes "(a,b,c) \<in> wts_to_monoidLTS A"
-  shows "(a,b,c) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-proof -
-  define w :: "'b list \<times> 'c" where "w = 1"
-  define l :: "'b list \<times> 'c" where "l = b"
-  have "b = w * l"
-    by (simp add: l_def w_def)
-  have "(a, w, a) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-    using w_def by force
-  then have "(a, b, c) \<in> (wts_to_monoidLTS A)"
-    by (simp add: assms)
-  have "(a, b, c) \<in> monoid_rtrancl (wts_to_monoidLTS A)" 
-    thm monoid_rtrancl.intros(2)[of a w a "(wts_to_monoidLTS A)" b c] thm monoid_rtranclp.intros(2)
-    using assms unfolding monoidLTS.monoid_star_def using monoid_rtrancl.intros(2)[of a w a "(wts_to_monoidLTS A)" b c] (* monoid_rtranclp.intros(2)[of "(monoidLTS.l_step_relp (wts_to_monoidLTS A))" a w a b c]*)
-    using \<open>b = w * l\<close> \<open>(a, b, c) \<in> (wts_to_monoidLTS A)\<close> \<open>(a, w, a) \<in> monoid_rtrancl (wts_to_monoidLTS A)\<close> l_def by fastforce
-  then show ?thesis by blast
-qed
+  assumes "(p,w,q) \<in> wts_to_monoidLTS A"
+  shows "(p,w,q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+  using monoid_rtrancl.intros(2)[of p 1 p "(wts_to_monoidLTS A)" w q] assms by fastforce
 
 lemma monoid_star_intros_step:
-  assumes "a \<in> wts_to_monoidLTS A"
-  shows "a \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-  using assms monoid_star_intros_step' by (cases a) auto
+  assumes "pwq \<in> wts_to_monoidLTS A"
+  shows "pwq \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+  using assms monoid_star_intros_step' by (cases pwq) auto
 
 lemma sound_def2'':
-  assumes "(\<forall>p p' w d. (p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sum>{d'. (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])})"
+  assumes "\<forall>p p' w d. (p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sum>{d'. (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
   assumes "(p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A)"
   shows "d \<ge> \<^bold>\<Sum>{d'. (p,[\<gamma>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
 proof -
@@ -259,25 +249,27 @@ qed
 
 lemma monoid_rtrancl_hd_tail:
   assumes "(p, wd, p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-  assumes "length (fst wd) \<ge> 1"
+  assumes "wd = (a#tlw,d)"
   shows "\<exists>d' s d''.
-           (p, ([hd (fst wd)], d'), s) \<in> wts_to_monoidLTS ts \<and>
-           (s, (tl (fst wd), d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
-           (snd wd) = d' * d''"
-using assms proof (induction  rule: monoid_rtrancl.induct)
-  case (monoid_rtrancl_refl a)
+           (p, ([a], d'), s) \<in> wts_to_monoidLTS ts \<and>
+           (s, (tlw, d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
+           d = d' * d''"
+using assms proof (induction arbitrary: tlw a d rule: monoid_rtrancl.induct)
+  case (monoid_rtrancl_refl)
   then show ?case
     by (simp add: one_list_def one_prod_def)
 next
-  case (monoid_rtrancl_into_rtrancl p wd p' l p'')
+  case (monoid_rtrancl_into_rtrancl p wd p' l p'' tlwl a d)
   show ?case
   proof (cases "1 \<le> length (fst wd)")
     case True
     then have "\<exists>d' s d''. (p, ([hd (fst wd)], d'), s) \<in> wts_to_monoidLTS ts \<and> 
                         (s, (tl (fst wd), d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
                         (snd wd) = d' * d''"
-      using monoid_rtrancl_into_rtrancl.IH by blast
-    then obtain d' s d'' where jajajajajaja:
+      using monoid_rtrancl_into_rtrancl.IH
+      by (metis list.exhaust_sel list.size(3) not_one_le_zero prod.exhaust_sel)
+
+    then obtain d' s d'' where props:
       "(p, ([hd (fst wd)], d'), s) \<in> wts_to_monoidLTS ts"
       "(s, (tl (fst wd), d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
       "snd wd = d' * d''"
@@ -289,41 +281,36 @@ next
 
     have "hd (fst (wd * l)) = hd (fst (wd)) "
       using \<open>1 \<le> length (fst wd)\<close>
-      apply auto
       apply (cases wd)
-      apply auto
       apply (cases l)
       apply (auto simp add: mult_prod_def)
       by (metis One_nat_def hd_append list.size(3) not_one_le_zero times_list_def)
 
     have "(p, ([hd (fst (wd * l))], d1), s') \<in> wts_to_monoidLTS ts"
-      using jajajajajaja \<open>hd (fst (wd * l)) = hd (fst wd)\<close> d1_def s'_def by auto
+      using props \<open>hd (fst (wd * l)) = hd (fst wd)\<close> d1_def s'_def by auto
     moreover
     have "(s', (tl (fst (wd * l)), d2), p'') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-
-      using monoid_rtrancl.intros(2)[OF jajajajajaja(2) monoid_rtrancl_into_rtrancl(2)] 
       unfolding d2_def
-      apply (cases wd)
-      apply auto
-      apply (cases l)
+      using props(2) \<open>1 \<le> length (fst wd)\<close> 
+      using monoid_rtrancl.intros(2)[OF _ monoid_rtrancl_into_rtrancl(2)] 
       apply (auto simp add: mult_prod_def)
-      by (metis One_nat_def \<open>1 \<le> length (fst wd)\<close> fst_conv le_antisym less_eq_nat.simps(1) 
+      by (metis le_antisym less_eq_nat.simps(1) 
           list.size(3) n_not_Suc_n s'_def times_list_def tl_append_if)
     moreover
     have "snd (wd * l) = d1 * d2"
-      by (simp add: jajajajajaja d1_def d2_def mult.assoc mult_prod_def)
+      by (simp add: props d1_def d2_def mult.assoc mult_prod_def)
     ultimately
     show ?thesis
-      by auto
+      using monoid_rtrancl_into_rtrancl.prems by auto
   next
     case False
     then have "length (fst wd) = 0"
       by linarith
     then show ?thesis
-      by (metis (no_types, opaque_lifting) length_0_conv list.sel(1) list.sel(3) 
-          monoid_rtrancl.monoid_rtrancl_refl monoid_rtrancl_into_rtrancl.hyps(1) 
-          monoid_rtrancl_into_rtrancl.hyps(2) monoid_star_w0 mstar_wts_empty_one mult.right_neutral 
-          mult_1 mult_prod_def one_list_def prod.collapse wts_label_exist)
+      by (metis fst_conv length_0_conv list.inject monoid_rtrancl.monoid_rtrancl_refl 
+          monoid_rtrancl_into_rtrancl.hyps(1) monoid_rtrancl_into_rtrancl.hyps(2) 
+          monoid_rtrancl_into_rtrancl.prems monoid_star_w0 mstar_wts_empty_one mult.right_neutral 
+          mult_1 one_list_def one_prod_def prod.exhaust_sel wts_label_exist)
   qed
 qed
 
@@ -338,7 +325,6 @@ proof (induct "length (fst wd)" arbitrary: p wd p')
   case 0
   then show ?case
     by (metis length_0_conv monoid_star_w0 mstar_wts_one one_list_def one_prod_def prod.collapse)
-
 next
   case (Suc n)
   show ?case
@@ -372,23 +358,21 @@ next
             (s, (w',d''),p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
             d = d' * d''"
       using Suc(4) False
-      by (smt (verit, ccfv_SIG) Suc.hyps(2) \<gamma>_def d_def le_add1 plus_1_eq_Suc monoid_rtrancl_hd_tail 
-          w'_def w_def) 
+      by (metis d_def monoid_rtrancl_hd_tail prod.exhaust_sel w_def w_split)
     then obtain s d' d'' where
       "(p, ([\<gamma>],d'), s) \<in> wts_to_monoidLTS ts"
       "(s, (w',d''),p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
       "d = d' * d''" by auto
 
     have "P s (w',d'') p'"
-      by (smt (verit, ccfv_SIG) Suc(1) Suc(2) Suc(3) \<open>(s, (w', d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)\<close> assms(2) fst_conv length_Cons nat.inject w_def w_split)
+      using Suc(1,2,3) \<open>(s, (w', d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)\<close> assms(2)
+      by (smt (verit, ccfv_SIG) fst_conv length_Cons nat.inject w_def w_split)
 
     have "P p (([\<gamma>], d') * (w', d'')) p'"
-      using Suc(3)[of p "([\<gamma>],d')" s "(w', d'')" p']
-      using \<open>(p, ([\<gamma>], d'), s) \<in> wts_to_monoidLTS ts\<close> \<open>(s, (w', d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)\<close> \<open>P s (w', d'') p'\<close> by blast 
+      using Suc(3)[of p "([\<gamma>],d')" s "(w', d'')" p'] \<open>(p, ([\<gamma>], d'), s) \<in> wts_to_monoidLTS ts\<close> 
+        \<open>(s, (w', d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)\<close> \<open>P s (w', d'') p'\<close> by blast 
     then have "P p (\<gamma> # w', d' * d'') p'"
-      apply -
-      apply (auto simp add: mult_prod_def times_list_def)
-      done
+      by (auto simp add: mult_prod_def times_list_def)
     then show ?thesis
       using w_split
       using \<open>d = d' * d''\<close> d_def w_def by fastforce
@@ -399,7 +383,8 @@ lemma monoid_star_nonempty:
   assumes "(p, w, p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
   assumes "fst w \<noteq> []"
   shows "\<exists>pi d1 d2. (snd w) = d1 * d2 \<and> (pi, (tl (fst w), d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> (p, ([hd (fst w)], d1), pi) \<in> wts_to_monoidLTS ts"
-  by (metis One_nat_def Suc_leI assms(1) assms(2) gr0I length_0_conv monoid_rtrancl_hd_tail)
+  by (metis assms(1) assms(2) hd_Cons_tl monoid_rtrancl_hd_tail prod.exhaust_sel)
+  
 
 
 lemma sum_distr: "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
@@ -429,21 +414,20 @@ lemma step_rule_aux:
   assumes "(p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)"
   assumes "c \<Midarrow>d'\<Rightarrow>\<^sup>* (p, \<gamma> # w')"
   shows "c \<Midarrow>(d' * d)\<Rightarrow>\<^sup>* (p', lbl w @ w')"
-  using assms
-  by (meson monoid_rtranclp.simps step_relp_def2)
+  using assms by (meson monoid_rtranclp.simps step_relp_def2)
 
 lemma step_relp_append:
   assumes "(p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',w')"
   shows "(p, w @ v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p', w' @ v)"
-  using MonoidClosure.monoid_rtranclp.induct[of "\<lambda>a b c. a\<Midarrow>b\<Rightarrow>c" "(p,w)" d' "(p',w')"  "\<lambda>(p,w) d' (p',w'). (p,w @ v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p', w' @ v)", OF assms(1)]
+  using MonoidClosure.monoid_rtranclp.induct[of "\<lambda>a b c. a\<Midarrow>b\<Rightarrow>c" "(p,w)" d' "(p',w')"  
+      "\<lambda>(p,w) d' (p',w'). (p,w @ v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p', w' @ v)", OF assms(1)]
         step_rule_aux step_relp_def2 by fastforce
 
 lemma step_relp_append2:
   assumes "(p, u) \<Midarrow> d''' \<Rightarrow>\<^sup>* (p'', [])"
   assumes "v = u @ w"
   shows "(p, v) \<Midarrow> d''' \<Rightarrow>\<^sup>* (p'', w)"
-  using assms step_relp_append self_append_conv2
-  by fastforce
+  using assms step_relp_append self_append_conv2 by fastforce
 
 lemma step_relp_seq:
   assumes "(p, a) \<Midarrow>d1\<Rightarrow>\<^sup>* (pi, [])"
@@ -687,7 +671,7 @@ lemma lemma_3_1_w_alternative':
   shows "accepts A' \<ge> weight_pre_star (accepts A)"
   by (meson soundness assms(1) assms(2) le_funI lemma_3_1_w_alternative)
 
-lemma nice_lemma:
+lemma weight_pre_star_leq':
    "X c \<ge> weight_pre_star X c"
 proof -
   have "weight_pre_star X c = \<^bold>\<Sum> {l * X c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
@@ -695,15 +679,19 @@ proof -
   also have "... \<le> \<^bold>\<Sum> {l * X c |l. c \<Midarrow> l \<Rightarrow>\<^sup>* c}"
     by (smt (verit) Collect_mono sum_mono)
   also have "... \<le> \<^bold>\<Sum> {1 * X c}"
-    by (smt (verit, del_insts) bot.extremum insert_subsetI local.sum_mono mem_Collect_eq monoid_rtranclp.monoid_rtrancl_refl)
-  also have "... \<le> 1 * X c" by simp
-  also have "... \<le> X c" by simp
-  finally show ?thesis by auto
+    by (smt (verit, del_insts) bot.extremum insert_subsetI local.sum_mono  mem_Collect_eq 
+        monoid_rtranclp.monoid_rtrancl_refl)
+  also have "... \<le> 1 * X c" 
+    by simp
+  also have "... \<le> X c" 
+    by simp
+  finally show ?thesis 
+    by auto
 qed
 
-lemma nice_lemma2:
+lemma weight_pre_star_leq:
   "X \<ge> weight_pre_star X"
-  by (simp add: le_fun_def nice_lemma)
+  by (simp add: le_fun_def weight_pre_star_leq')
 
 lemma nice_lemma3:
   "weight_pre_star (weight_pre_star (accepts A)) c = (weight_pre_star (accepts A)) c"
@@ -771,7 +759,7 @@ lemma lemma_3_1_w_alternative'':
 using assms(2,1) proof (induction)
   case base
   then show ?case
-    by (simp add: nice_lemma2)
+    by (simp add: weight_pre_star_leq)
 next
   case (step A' A'')
   then have "accepts A'' \<ge> weight_pre_star (accepts A')"
