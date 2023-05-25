@@ -505,6 +505,88 @@ lemma sound_intro:
   shows "sound A"
   unfolding sound_def using assms by auto
 
+lemma nisseminus1:
+  assumes "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])"
+  shows "\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p' \<le> d"
+  by (simp add: assms sum_in)
+
+lemma nisse0:
+  assumes "\<^bold>\<Sigma>(p'', w)\<Rightarrow>\<^sup>*pi \<le> d1"
+  assumes "\<^bold>\<Sigma>(pi, w')\<Rightarrow>\<^sup>*p2 \<le> d2"
+  shows "\<^bold>\<Sigma>(p'', w@w')\<Rightarrow>\<^sup>*p2 \<le> d1 * d2"
+proof -
+  have "(\<^bold>\<Sigma>(p'',w@w') \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d1' * d2'| d1'  d2'. (p'',w) \<Midarrow>d1'\<Rightarrow>\<^sup>* (pi,[]) \<and> (pi,w') \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
+    by (smt (verit, ccfv_threshold) Collect_mono_iff sum_mono append_Cons append_self_conv2 step_relp_seq)
+  also have "... \<le> (\<^bold>\<Sigma>(p'',w) \<Rightarrow>\<^sup>* pi) * (\<^bold>\<Sigma>(pi,w') \<Rightarrow>\<^sup>* p2)"
+    by (simp add: sum_distr sum_of_sums_mult)
+  also have "... \<le> d1 * d2"
+    using assms BoundedDioid.mult_isol_var by auto
+  finally 
+  show ?thesis
+    by auto
+qed
+
+
+lemma nisse2:
+  assumes "\<^bold>\<Sigma>(p'', w')\<Rightarrow>\<^sup>*pi \<le> d1"
+  assumes "\<^bold>\<Sigma>(pi, w'')\<Rightarrow>\<^sup>*p2 \<le> d2"
+  shows "\<^bold>\<Sigma>(p'', w'@w'')\<Rightarrow>\<^sup>*p2 \<le> d1 * d2"
+proof -
+  have "(\<^bold>\<Sigma>(p'',w'@w'') \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d1' * d2'| d1'  d2'. (p'',w') \<Midarrow>d1'\<Rightarrow>\<^sup>* (pi,[]) \<and> (pi,w'') \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
+    by (smt (verit, ccfv_threshold) Collect_mono_iff sum_mono append_Cons append_self_conv2 step_relp_seq)
+  also have "... \<le> (\<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* pi) * (\<^bold>\<Sigma>(pi,w'') \<Rightarrow>\<^sup>* p2)"
+    by (simp add: sum_distr sum_of_sums_mult)
+  also have "... \<le> d1 * d2"
+    using assms BoundedDioid.mult_isol_var by auto
+  finally 
+  show ?thesis 
+    by auto
+qed
+
+lemma nisse:
+  assumes "(p1, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p'', w')"
+  assumes "\<^bold>\<Sigma>(p'', w')\<Rightarrow>\<^sup>*p2 \<le> d'"
+  shows "\<^bold>\<Sigma>(p1, w)\<Rightarrow>\<^sup>*p2 \<le> d * d'"
+proof -
+  have "\<^bold>\<Sigma> (p1, w) \<Rightarrow>\<^sup>* p2 \<le> \<^bold>\<Sum>{d * d'| d'. (p1, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',w') \<and> (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
+    using Collect_mono_iff sum_mono monoid_rtranclp_trans by smt
+  also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
+    using \<open>(p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w')\<close> by fastforce
+  also have "... \<le> d * \<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* p2"
+    by (simp add: sum_distr)
+  also have "... \<le> d * d'"
+    using assms by (simp add: assms BoundedDioid.mult_isol)
+  finally 
+  show ?thesis
+    by auto
+qed
+
+lemma nisse3:
+  assumes "(p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w')"
+  assumes "\<^bold>\<Sigma>(p'', w')\<Rightarrow>\<^sup>*p2 \<le> d'"
+  shows "\<^bold>\<Sigma>(p1, w)\<Rightarrow>\<^sup>*p2 \<le> d * d'"
+proof -
+  have "(\<^bold>\<Sigma>(p1, w)\<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d * d'| d'. (p1, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',w') \<and> (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
+    by (smt (verit, ccfv_SIG) Collect_mono_iff sum_mono monoid_rtranclp_trans)
+  also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
+    using \<open>(p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w')\<close> by fastforce
+  also have "... \<le> d * \<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* p2"
+    by (simp add: sum_distr)
+  also have "... \<le> d * d'"
+    using assms by (simp add: assms BoundedDioid.mult_isol)
+  finally 
+  show ?thesis 
+    by auto
+qed
+
+(* *** *)
+
+lemma nisse2':
+  assumes "\<^bold>\<Sigma>(p'', [\<mu>'])\<Rightarrow>\<^sup>*pi \<le> d1"
+  assumes "\<^bold>\<Sigma>(pi, [\<mu>''])\<Rightarrow>\<^sup>*p2 \<le> d2"
+  shows "\<^bold>\<Sigma>(p'', [\<mu>', \<mu>''])\<Rightarrow>\<^sup>*p2 \<le> d1 * d2"
+  using assms nisse2[of p'' "[\<mu>']" pi d1 "[\<mu>'']" p2 d2] by auto
+
 lemma soundness:
   assumes "sound A"
   assumes "pre_star_rule A A'"
@@ -517,56 +599,47 @@ proof -
     "A' = A((p', \<gamma>', q) $:= d'' + d * d')" 
     "A $ (p', \<gamma>', q) = d''" 
     using assms(2) pre_star_rule.cases by metis
-  note 2 = ps(3)
   show "sound A'"
   proof (rule sound_intro)
     fix p1 p2 \<mu> l
     assume a: "(p1, ([\<mu>], l), p2) \<in> wts_to_monoidLTS A'"      
-    show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>])  \<Rightarrow>\<^sup>* p2"
+    show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
     proof (cases "p1 = p' \<and> \<mu> = \<gamma>' \<and> p2 = q")
       case True
-      then have True1: "p1 = p'" "\<mu> = \<gamma>'" "p2 = q"
+      then have True': "p1 = p'" "\<mu> = \<gamma>'" "p2 = q"
         by auto
-      have 4: "l = d'' + d * d'"
-        using a unfolding ps(4) True1 unfolding wts_to_monoidLTS_def by auto
-      have 3: "d'' \<ge> \<^bold>\<Sigma> (p1,[\<mu>]) \<Rightarrow>\<^sup>* p2"
+      have ldd': "l = d'' + d * d'"
+        using a unfolding ps(4) True' unfolding wts_to_monoidLTS_def by auto
+      have d''_geq: "d'' \<ge> \<^bold>\<Sigma> (p1,[\<mu>]) \<Rightarrow>\<^sup>* p2"
         using ps(5) assms(1) True unfolding sound_def wts_to_monoidLTS_def by force
       have 1: "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow> (p'', lbl w')"
         using ps(1) True step_relp_def2 by auto
       show ?thesis
-      proof (rule pre_star_rule_exhaust[OF ps(3)[unfolded True1[symmetric]]])
+      proof (rule pre_star_rule_exhaust[OF ps(3)[unfolded True'[symmetric]]])
         assume "p2 = p''"
         assume "d' = 1"
         assume "w' = pop"
-        from 2 have "(p'', ([], d'), p2) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-          using True1(3) \<open>w' = pop\<close> by force
         from 1 have "(p1, [\<mu>]) \<Midarrow>d * d'\<Rightarrow> (p2,[])"
           using \<open>d' = 1\<close> \<open>w' = pop\<close> \<open>p2 = p''\<close> by auto
         then have "d * d' \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
           by (metis mem_Collect_eq monoid_rtranclp.monoid_rtrancl_into_rtrancl mult_1 sum_in 
               monoid_rtranclp.monoid_rtrancl_refl)
         then show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
-          using 3 4 by auto
+          using d''_geq ldd' by auto
       next
         fix \<mu>'
         assume "A $ (p'', \<mu>', p2) = d'"
         assume 5: "w' = swap \<mu>'"
-        from 2 have "(p'', ([\<mu>'],d'), p2) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-          using True1(3) \<open>w' = swap \<mu>'\<close> by force
+        from ps(3) have "(p'', ([\<mu>'],d'), p2) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+          using True'(3) \<open>w' = swap \<mu>'\<close> by force
         then have 6: "d' \<ge> \<^bold>\<Sigma> (p'',[\<mu>']) \<Rightarrow>\<^sup>* p2"
           using assms(1) sound_def2' by force
         from 1 have "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>'])"
-          unfolding True1 5 using monoid_rtranclp.monoid_rtrancl_into_rtrancl by fastforce
-        have "\<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2 \<le> \<^bold>\<Sum>{d * d'| d'. (p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>']) \<and> (p'',[\<mu>']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-          using Collect_mono_iff sum_mono monoid_rtranclp_trans by smt
-        also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',[\<mu>']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-          using \<open>(p1, [\<mu>]) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', [\<mu>'])\<close> by fastforce
-        also have "... \<le> d * \<^bold>\<Sigma>(p'',[\<mu>']) \<Rightarrow>\<^sup>* p2"
-          by (simp add: sum_distr)
-        also have "... \<le> d * d'"
-          using 6 by (simp add: assms BoundedDioid.mult_isol)
-        finally show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
-          using 3 4 by auto
+          unfolding True' 5 using monoid_rtranclp.monoid_rtrancl_into_rtrancl by fastforce
+        then have "\<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2 \<le> d * d'"
+          using 6 nisse by auto
+        then show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
+          using d''_geq ldd' by auto
       next
         fix \<mu>' \<mu>'' pi
         assume aa: "A $ (p'', \<mu>', pi) * A $ (pi, \<mu>'', p2) = d'"
@@ -575,32 +648,20 @@ proof -
         define d2 where "d2 = A $ (pi, \<mu>'', p2)"
         have "d' = d1 * d2"
           using d1_def d2_def aa by auto
-        have bb: "d1 \<ge> \<^bold>\<Sigma>(p'',[\<mu>']) \<Rightarrow>\<^sup>* pi"
-          using d1_def assms(1) sound_def by (force simp add: wts_to_monoidLTS_def)
-         
-        have cc: "d2 \<ge> \<^bold>\<Sigma>(pi,[\<mu>'']) \<Rightarrow>\<^sup>* p2"
-          using d2_def assms(1) sound_def  by (force simp add: wts_to_monoidLTS_def)
-        have "d' = d1 * d2"
-          using \<open>d' = d1 * d2\<close> .
-        have "\<^bold>\<Sigma>(p'',[\<mu>',\<mu>'']) \<Rightarrow>\<^sup>* p2 \<le> \<^bold>\<Sum>{d1' * d2'| d1'  d2'. (p'',[\<mu>']) \<Midarrow>d1'\<Rightarrow>\<^sup>* (pi,[]) \<and> (pi,[\<mu>'']) \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
-          by (smt (verit, ccfv_threshold) Collect_mono_iff sum_mono append_Cons append_self_conv2 step_relp_seq)
-        also have "... \<le> \<^bold>\<Sigma>(p'',[\<mu>']) \<Rightarrow>\<^sup>* pi * \<^bold>\<Sigma>(pi,[\<mu>'']) \<Rightarrow>\<^sup>* p2"
-          by (simp add: sum_distr sum_of_sums_mult)
-        also have "... \<le> d1 * d2"
-          using bb cc BoundedDioid.mult_isol_var by auto
-        finally have 6: "(\<^bold>\<Sigma> (p'',[\<mu>',\<mu>''])\<Rightarrow>\<^sup>*p2) \<le> d'" using \<open>d' = d1 * d2\<close> by blast
+
         from 1 have "(p1,[\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>',\<mu>''])"
           using \<open>w' = push \<mu>' \<mu>''\<close> monoid_rtranclp.monoid_rtrancl_into_rtrancl by fastforce
-        have "(\<^bold>\<Sigma>(p1, [\<mu>])\<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d * d'| d'. (p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>',\<mu>'']) \<and> (p'',[\<mu>',\<mu>'']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-          by (smt (verit, ccfv_SIG) Collect_mono_iff sum_mono monoid_rtranclp_trans)
-        also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',[\<mu>',\<mu>'']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-          using \<open>(p1, [\<mu>]) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', [\<mu>',\<mu>''])\<close> by fastforce
-        also have "... \<le> d * \<^bold>\<Sigma>(p'',[\<mu>',\<mu>'']) \<Rightarrow>\<^sup>* p2"
-          by (simp add: sum_distr)
-        also have "... \<le> d * d'"
-          using 6 by (simp add: assms BoundedDioid.mult_isol)
-        finally show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
-          using 3 4 by auto
+        moreover
+        have bb: "d1 \<ge> \<^bold>\<Sigma>(p'',[\<mu>']) \<Rightarrow>\<^sup>* pi"
+          using d1_def assms(1) sound_def by (force simp add: wts_to_monoidLTS_def)
+        moreover
+        have cc: "d2 \<ge> \<^bold>\<Sigma>(pi,[\<mu>'']) \<Rightarrow>\<^sup>* p2"
+          using d2_def assms(1) sound_def  by (force simp add: wts_to_monoidLTS_def)
+        ultimately
+        have "d * d1 * d2 \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
+          by (simp add: mult.assoc nisse2' nisse3)
+        then show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
+          using d''_geq ldd' by (simp add: \<open>d' = d1 * d2\<close> mult.assoc) 
       qed
     next
       case False
