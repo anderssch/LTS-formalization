@@ -453,57 +453,6 @@ proof -
     by (meson \<open>(p, a @ w) \<Midarrow> d1 \<Rightarrow>\<^sup>* (pi, w)\<close> assms(2) monoid_rtranclp_trans)
 qed
 
-lemma sound_def2':
-  assumes "sound A"
-  assumes "(p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-  shows "d \<ge> \<^bold>\<Sigma>(p,w) \<Rightarrow>\<^sup>* p'"
-  using assms(2) 
-proof (induction w arbitrary: d p)
-  case Nil
-  then have "d = 1"
-    by (simp add: mstar_wts_empty_one)
-  have "(p, []) \<Midarrow>1\<Rightarrow>\<^sup>* (p', [])"
-    using Nil monoid_star_pop by fastforce
-  have "d \<ge> \<^bold>\<Sigma>(p, []) \<Rightarrow>\<^sup>* p'" 
-    by (simp add: \<open>(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])\<close> \<open>d = 1\<close> sum_in)
-  then show ?case .
-next
-  case (Cons \<gamma> w)
-  from Cons(2) have
-    "\<exists>pi d1 d2. d = d1 * d2 
-                \<and> (pi, (w, d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)
-                \<and> (p, ([\<gamma>], d1), pi) \<in> (wts_to_monoidLTS A)"
-    unfolding monoid_star_is_monoid_rtrancl
-    using monoid_star_nonempty by fastforce
-  then obtain pi d1 d2 where obt:
-    "d = d1 * d2"
-    "(pi, (w, d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-    "(p, ([\<gamma>], d1), pi) \<in> wts_to_monoidLTS A"
-    by blast
-  then have d2l: "d2 \<ge> \<^bold>\<Sigma>(pi, w) \<Rightarrow>\<^sup>* p'"
-    using Cons(1)[of pi d2] by auto
-
-  have "\<^bold>\<Sigma> (p, \<gamma> # w) \<Rightarrow>\<^sup>* p' \<le>  d1 * d2"
-    using  obt(3) d2l
-    sorry
-
-  have "\<^bold>\<Sigma> (p, \<gamma> # w) \<Rightarrow>\<^sup>* p' \<le> \<^bold>\<Sum> {d1 * d'| d' d1. (p, [\<gamma>]) \<Midarrow>d1\<Rightarrow>\<^sup>* (pi, []) \<and> (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
-    by (smt (verit, ccfv_threshold) Collect_mono_iff append_Cons append_self_conv2 local.sum_mono step_relp_seq)
-  also have "... \<le> \<^bold>\<Sum>{(\<^bold>\<Sigma> (p, [\<gamma>]) \<Rightarrow>\<^sup>* pi) * d'| d'. (pi, w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p', [])}"
-    using sum_of_sums_mult[of "\<lambda>d. (p, [\<gamma>]) \<Midarrow> d \<Rightarrow>\<^sup>* (pi, [])" "\<lambda>d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])"]
-    by (smt (verit, del_insts) Collect_cong Orderings.order_eq_iff)
-  also have "... \<le> \<^bold>\<Sum> {d1 * d'| d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
-    using sum_bigger assms(1) obt(3) sound_def by simp
-  also have "... \<le> d1 * (\<^bold>\<Sigma> (pi, w) \<Rightarrow>\<^sup>* p')"
-    using sum_distr[of d1 "{d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"] by auto
-  also have "... \<le> d" 
-    using \<open>d = d1 * d2\<close> d2l BoundedDioid.mult_isol[of "\<^bold>\<Sigma> (pi, w) \<Rightarrow>\<^sup>* p'" d2 d1] by fast 
-  finally show ?case .
-qed
-
-lemma sound_def2:
-  "sound A \<longleftrightarrow> (\<forall>p p' w d. (p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,w) \<Rightarrow>\<^sup>* p')"
-  using sound_def2'' sound_def2' unfolding sound_def by blast
 
 lemma sound_intro:
   assumes "\<And>p p' \<gamma> d. (p, ([\<gamma>], d), p') \<in> wts_to_monoidLTS A \<Longrightarrow> \<^bold>\<Sigma>(p, [\<gamma>])\<Rightarrow>\<^sup>*p' \<le> d"
@@ -565,6 +514,55 @@ proof -
   show ?thesis
     by auto
 qed
+
+lemma push_seq_weight_trans_Cons:
+  assumes "\<^bold>\<Sigma>(p, [\<gamma>])\<Rightarrow>\<^sup>*pi \<le> d1"
+  assumes "\<^bold>\<Sigma>(pi, w)\<Rightarrow>\<^sup>*p' \<le> d2"
+  shows "\<^bold>\<Sigma>(p, \<gamma> # w)\<Rightarrow>\<^sup>*p' \<le> d1 * d2"
+  using assms push_seq_weight_trans[of p "[\<gamma>]" pi d1 w p' d2] by auto
+
+lemma sound_def2':
+  assumes "sound A"
+  assumes "(p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+  shows "d \<ge> \<^bold>\<Sigma>(p,w) \<Rightarrow>\<^sup>* p'"
+  using assms(2) 
+proof (induction w arbitrary: d p)
+  case Nil
+  then have "d = 1"
+    by (simp add: mstar_wts_empty_one)
+  have "(p, []) \<Midarrow>1\<Rightarrow>\<^sup>* (p', [])"
+    using Nil monoid_star_pop by fastforce
+  have "d \<ge> \<^bold>\<Sigma>(p, []) \<Rightarrow>\<^sup>* p'" 
+    by (simp add: \<open>(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])\<close> \<open>d = 1\<close> sum_in)
+  then show ?case .
+next
+  case (Cons \<gamma> w)
+  from Cons(2) have
+    "\<exists>pi d1 d2. d = d1 * d2 
+                \<and> (pi, (w, d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)
+                \<and> (p, ([\<gamma>], d1), pi) \<in> (wts_to_monoidLTS A)"
+    unfolding monoid_star_is_monoid_rtrancl
+    using monoid_star_nonempty by fastforce
+  then obtain pi d1 d2 where obt:
+    "d = d1 * d2"
+    "(pi, (w, d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+    "(p, ([\<gamma>], d1), pi) \<in> wts_to_monoidLTS A"
+    by blast
+  then have d2l: "d2 \<ge> \<^bold>\<Sigma>(pi, w) \<Rightarrow>\<^sup>* p'"
+    using Cons(1)[of pi d2] by auto
+
+  have "d1 \<ge> (\<^bold>\<Sigma> (p, [\<gamma>]) \<Rightarrow>\<^sup>* pi)"
+    using assms(1) obt(3) sound_def by blast
+  then have "\<^bold>\<Sigma> (p, \<gamma> # w) \<Rightarrow>\<^sup>* p' \<le>  d1 * d2"
+    using d2l push_seq_weight_trans_Cons by auto
+  also have "... = d" 
+    using \<open>d = d1 * d2\<close> by fast 
+  finally show ?case .
+qed
+
+lemma sound_def2:
+  "sound A \<longleftrightarrow> (\<forall>p p' w d. (p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,w) \<Rightarrow>\<^sup>* p')"
+  using sound_def2'' sound_def2' unfolding sound_def by blast
 
 lemma soundness:
   assumes "sound A"
@@ -634,7 +632,7 @@ proof -
           using d1_def assms(1) sound_def by (force simp add: wts_to_monoidLTS_def)
         moreover
         have "d2 \<ge> \<^bold>\<Sigma>(pi,[\<mu>'']) \<Rightarrow>\<^sup>* p2"
-          using d2_def assms(1) sound_def  by (force simp add: wts_to_monoidLTS_def)
+          using d2_def assms(1) sound_def by (force simp add: wts_to_monoidLTS_def)
         ultimately
         have "d * d1 * d2 \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
           by (simp add: mult.assoc push_seq_weight_trans_push monoid_star_relp_push_seq_weight_trans)
