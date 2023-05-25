@@ -468,24 +468,29 @@ proof (induction w arbitrary: d p)
     by (simp add: \<open>(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])\<close> \<open>d = 1\<close> sum_in)
   then show ?case .
 next
-  case (Cons a w)
+  case (Cons \<gamma> w)
   from Cons(2) have
     "\<exists>pi d1 d2. d = d1 * d2 
                 \<and> (pi, (w, d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)
-                \<and> (p, ([a], d1), pi) \<in> (wts_to_monoidLTS A)"
+                \<and> (p, ([\<gamma>], d1), pi) \<in> (wts_to_monoidLTS A)"
     unfolding monoid_star_is_monoid_rtrancl
     using monoid_star_nonempty by fastforce
   then obtain pi d1 d2 where obt:
     "d = d1 * d2"
     "(pi, (w, d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-    "(p, ([a], d1), pi) \<in> wts_to_monoidLTS A"
+    "(p, ([\<gamma>], d1), pi) \<in> wts_to_monoidLTS A"
     by blast
   then have d2l: "d2 \<ge> \<^bold>\<Sigma>(pi, w) \<Rightarrow>\<^sup>* p'"
     using Cons(1)[of pi d2] by auto
-  have "\<^bold>\<Sigma> (p, a # w) \<Rightarrow>\<^sup>* p' \<le> \<^bold>\<Sum> {d1 * d'| d' d1. (p, [a]) \<Midarrow>d1\<Rightarrow>\<^sup>* (pi, []) \<and> (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
+
+  have "\<^bold>\<Sigma> (p, \<gamma> # w) \<Rightarrow>\<^sup>* p' \<le>  d1 * d2"
+    using  obt(3) d2l
+    sorry
+
+  have "\<^bold>\<Sigma> (p, \<gamma> # w) \<Rightarrow>\<^sup>* p' \<le> \<^bold>\<Sum> {d1 * d'| d' d1. (p, [\<gamma>]) \<Midarrow>d1\<Rightarrow>\<^sup>* (pi, []) \<and> (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
     by (smt (verit, ccfv_threshold) Collect_mono_iff append_Cons append_self_conv2 local.sum_mono step_relp_seq)
-  also have "... \<le> \<^bold>\<Sum>{(\<^bold>\<Sigma> (p, [a]) \<Rightarrow>\<^sup>* pi) * d'| d'. (pi, w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p', [])}"
-    using sum_of_sums_mult[of "\<lambda>d. (p, [a]) \<Midarrow> d \<Rightarrow>\<^sup>* (pi, [])" "\<lambda>d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])"]
+  also have "... \<le> \<^bold>\<Sum>{(\<^bold>\<Sigma> (p, [\<gamma>]) \<Rightarrow>\<^sup>* pi) * d'| d'. (pi, w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p', [])}"
+    using sum_of_sums_mult[of "\<lambda>d. (p, [\<gamma>]) \<Midarrow> d \<Rightarrow>\<^sup>* (pi, [])" "\<lambda>d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])"]
     by (smt (verit, del_insts) Collect_cong Orderings.order_eq_iff)
   also have "... \<le> \<^bold>\<Sum> {d1 * d'| d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
     using sum_bigger assms(1) obt(3) sound_def by simp
@@ -505,7 +510,7 @@ lemma sound_intro:
   shows "sound A"
   unfolding sound_def using assms by auto
 
-lemma nisseminus2:
+lemma monoid_star_relp_if_l_step_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow> (p',[])"
   shows "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])"
   by (metis assms monoid_rtranclp.monoid_rtrancl_into_rtrancl monoid_rtranclp.monoid_rtrancl_refl 
@@ -519,25 +524,9 @@ lemma push_seq_weight_if_monoid_star_relp:
 lemma push_seq_weight_if_l_step_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow> (p',[])"
   shows "\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p' \<le> d"
-  by (simp add: assms nisseminus2 push_seq_weight_if_monoid_star_relp)
+  by (simp add: assms monoid_star_relp_if_l_step_relp push_seq_weight_if_monoid_star_relp)
 
-lemma nisse0:
-  assumes "\<^bold>\<Sigma>(p'', w)\<Rightarrow>\<^sup>*pi \<le> d1"
-  assumes "\<^bold>\<Sigma>(pi, w')\<Rightarrow>\<^sup>*p2 \<le> d2"
-  shows "\<^bold>\<Sigma>(p'', w@w')\<Rightarrow>\<^sup>*p2 \<le> d1 * d2"
-proof -
-  have "(\<^bold>\<Sigma>(p'',w@w') \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d1' * d2'| d1'  d2'. (p'',w) \<Midarrow>d1'\<Rightarrow>\<^sup>* (pi,[]) \<and> (pi,w') \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
-    by (smt (verit, ccfv_threshold) Collect_mono_iff sum_mono append_Cons append_self_conv2 step_relp_seq)
-  also have "... \<le> (\<^bold>\<Sigma>(p'',w) \<Rightarrow>\<^sup>* pi) * (\<^bold>\<Sigma>(pi,w') \<Rightarrow>\<^sup>* p2)"
-    by (simp add: sum_distr sum_of_sums_mult)
-  also have "... \<le> d1 * d2"
-    using assms BoundedDioid.mult_isol_var by auto
-  finally 
-  show ?thesis
-    by auto
-qed
-
-lemma nisse2:
+lemma push_seq_weight_trans:
   assumes "\<^bold>\<Sigma>(p'', w')\<Rightarrow>\<^sup>*pi \<le> d1"
   assumes "\<^bold>\<Sigma>(pi, w'')\<Rightarrow>\<^sup>*p2 \<le> d2"
   shows "\<^bold>\<Sigma>(p'', w'@w'')\<Rightarrow>\<^sup>*p2 \<le> d1 * d2"
@@ -553,7 +542,13 @@ proof -
     by auto
 qed
 
-lemma nisse:
+lemma push_seq_weight_trans_push:
+  assumes "\<^bold>\<Sigma>(p'', [\<mu>'])\<Rightarrow>\<^sup>*pi \<le> d1"
+  assumes "\<^bold>\<Sigma>(pi, [\<mu>''])\<Rightarrow>\<^sup>*p2 \<le> d2"
+  shows "\<^bold>\<Sigma>(p'', [\<mu>', \<mu>''])\<Rightarrow>\<^sup>*p2 \<le> d1 * d2"
+  using assms push_seq_weight_trans[of p'' "[\<mu>']" pi d1 "[\<mu>'']" p2 d2] by auto
+
+lemma monoid_star_relp_push_seq_weight_trans:
   assumes "(p1, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p'', w')"
   assumes "\<^bold>\<Sigma>(p'', w')\<Rightarrow>\<^sup>*p2 \<le> d'"
   shows "\<^bold>\<Sigma>(p1, w)\<Rightarrow>\<^sup>*p2 \<le> d * d'"
@@ -570,32 +565,6 @@ proof -
   show ?thesis
     by auto
 qed
-
-lemma nisse3:
-  assumes "(p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w')"
-  assumes "\<^bold>\<Sigma>(p'', w')\<Rightarrow>\<^sup>*p2 \<le> d'"
-  shows "\<^bold>\<Sigma>(p1, w)\<Rightarrow>\<^sup>*p2 \<le> d * d'"
-proof -
-  have "(\<^bold>\<Sigma>(p1, w)\<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d * d'| d'. (p1, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',w') \<and> (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-    by (smt (verit, ccfv_SIG) Collect_mono_iff sum_mono monoid_rtranclp_trans)
-  also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-    using \<open>(p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w')\<close> by fastforce
-  also have "... \<le> d * \<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* p2"
-    by (simp add: sum_distr)
-  also have "... \<le> d * d'"
-    using assms by (simp add: assms BoundedDioid.mult_isol)
-  finally 
-  show ?thesis 
-    by auto
-qed
-
-(* *** *)
-
-lemma nisse2':
-  assumes "\<^bold>\<Sigma>(p'', [\<mu>'])\<Rightarrow>\<^sup>*pi \<le> d1"
-  assumes "\<^bold>\<Sigma>(pi, [\<mu>''])\<Rightarrow>\<^sup>*p2 \<le> d2"
-  shows "\<^bold>\<Sigma>(p'', [\<mu>', \<mu>''])\<Rightarrow>\<^sup>*p2 \<le> d1 * d2"
-  using assms nisse2[of p'' "[\<mu>']" pi d1 "[\<mu>'']" p2 d2] by auto
 
 lemma soundness:
   assumes "sound A"
@@ -622,14 +591,14 @@ proof -
         using a unfolding ps(4) True' unfolding wts_to_monoidLTS_def by auto
       have d''_geq: "d'' \<ge> \<^bold>\<Sigma> (p1,[\<mu>]) \<Rightarrow>\<^sup>* p2"
         using ps(5) assms(1) True unfolding sound_def wts_to_monoidLTS_def by force
-      have 1: "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow> (p'', lbl w')"
+      have p1_to_p''1: "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow> (p'', lbl w')"
         using ps(1) True step_relp_def2 by auto
       show ?thesis
       proof (rule pre_star_rule_exhaust[OF ps(3)[unfolded True'[symmetric]]])
         assume "p2 = p''"
         assume "d' = 1"
         assume "w' = pop"
-        from 1 have "(p1, [\<mu>]) \<Midarrow>d * d'\<Rightarrow> (p2,[])"
+        from p1_to_p''1 have "(p1, [\<mu>]) \<Midarrow>d * d'\<Rightarrow> (p2,[])"
           using \<open>d' = 1\<close> \<open>w' = pop\<close> \<open>p2 = p''\<close> by auto
         then have "d * d' \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
           using push_seq_weight_if_l_step_relp[of p1 "[\<mu>]" "d * d'" p2] by auto
@@ -638,15 +607,15 @@ proof -
       next
         fix \<mu>'
         assume "A $ (p'', \<mu>', p2) = d'"
-        assume 5: "w' = swap \<mu>'"
+        assume w'_swap: "w' = swap \<mu>'"
         from ps(3) have "(p'', ([\<mu>'],d'), p2) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
           using True'(3) \<open>w' = swap \<mu>'\<close> by force
-        then have 6: "d' \<ge> \<^bold>\<Sigma> (p'',[\<mu>']) \<Rightarrow>\<^sup>* p2"
+        then have p''_to_p2: "d' \<ge> \<^bold>\<Sigma> (p'',[\<mu>']) \<Rightarrow>\<^sup>* p2"
           using assms(1) sound_def2' by force
-        from 1 have "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>'])"
-          unfolding True' 5 using monoid_rtranclp.monoid_rtrancl_into_rtrancl by fastforce
+        from p1_to_p''1 have "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>'])"
+          unfolding True' w'_swap using monoid_rtranclp.monoid_rtrancl_into_rtrancl by fastforce
         then have "\<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2 \<le> d * d'"
-          using 6 nisse by auto
+          using p''_to_p2 monoid_star_relp_push_seq_weight_trans by auto
         then show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
           using d''_geq ldd' by auto
       next
@@ -658,17 +627,17 @@ proof -
         have "d' = d1 * d2"
           using d1_def d2_def aa by auto
 
-        from 1 have "(p1,[\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>',\<mu>''])"
+        from p1_to_p''1 have "(p1,[\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>',\<mu>''])"
           using \<open>w' = push \<mu>' \<mu>''\<close> monoid_rtranclp.monoid_rtrancl_into_rtrancl by fastforce
         moreover
-        have bb: "d1 \<ge> \<^bold>\<Sigma>(p'',[\<mu>']) \<Rightarrow>\<^sup>* pi"
+        have "d1 \<ge> \<^bold>\<Sigma>(p'',[\<mu>']) \<Rightarrow>\<^sup>* pi"
           using d1_def assms(1) sound_def by (force simp add: wts_to_monoidLTS_def)
         moreover
-        have cc: "d2 \<ge> \<^bold>\<Sigma>(pi,[\<mu>'']) \<Rightarrow>\<^sup>* p2"
+        have "d2 \<ge> \<^bold>\<Sigma>(pi,[\<mu>'']) \<Rightarrow>\<^sup>* p2"
           using d2_def assms(1) sound_def  by (force simp add: wts_to_monoidLTS_def)
         ultimately
         have "d * d1 * d2 \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
-          by (simp add: mult.assoc nisse2' nisse3)
+          by (simp add: mult.assoc push_seq_weight_trans_push monoid_star_relp_push_seq_weight_trans)
         then show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
           using d''_geq ldd' by (simp add: \<open>d' = d1 * d2\<close> mult.assoc) 
       qed
@@ -780,48 +749,48 @@ lemma weight_pre_star_leq:
   "X \<ge> weight_pre_star X"
   by (simp add: le_fun_def weight_pre_star_leq')
 
-lemma nice_lemma3:
-  "weight_pre_star (weight_pre_star (accepts A)) c = (weight_pre_star (accepts A)) c"
+lemma weight_pre_star_dom_fixedpoint':
+  "weight_pre_star (weight_pre_star C) c = (weight_pre_star C) c"
 proof -
-  have "weight_pre_star (weight_pre_star (accepts A)) c =
-          \<^bold>\<Sum> {l * \<^bold>\<Sum> {l' * accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+  have "weight_pre_star (weight_pre_star C) c =
+          \<^bold>\<Sum> {l * \<^bold>\<Sum> {l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
     unfolding weight_pre_star_def by meson
   also
-  have "... =  \<^bold>\<Sum> {\<^bold>\<Sum> {l * l' * accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+  have "... =  \<^bold>\<Sum> {\<^bold>\<Sum> {l * l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
   proof -
     {
       fix l c'
-      have "l * \<^bold>\<Sum> {l' * accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} =
-              \<^bold>\<Sum> {l * l' * accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
-        using sum_distr[of l "{l' * accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"]
+      have "l * \<^bold>\<Sum> {l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} =
+              \<^bold>\<Sum> {l * l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
+        using sum_distr[of l "{l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"]
          mult.assoc by (smt (verit) Collect_cong mem_Collect_eq)
     }
     then show ?thesis
       by auto
   qed
   also
-  have "... = \<^bold>\<Sum> {l * l' * accepts A c'' |l' c'' l c'. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c'' \<and> c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+  have "... = \<^bold>\<Sum> {l * l' * C c'' |l' c'' l c'. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c'' \<and> c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
     using sum_of_sums2[of
-        "\<lambda>(l',c'') (l,c'). l * l' * accepts A c''"
+        "\<lambda>(l',c'') (l,c'). l * l' * C c''"
         "\<lambda>(l',c'') (l,c').  c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''"
         "\<lambda>(l,c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'"] by auto
   also
-  have "... = \<^bold>\<Sum> {l * l' * accepts A c'' |l' c'' l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<and> c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
+  have "... = \<^bold>\<Sum> {l * l' * C c'' |l' c'' l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<and> c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
     by meson
   also
-  have "... = \<^bold>\<Sum> {l'' * accepts A c'' |l'' c''. c \<Midarrow> l'' \<Rightarrow>\<^sup>* c''}"
+  have "... = \<^bold>\<Sum> {l'' * C c'' |l'' c''. c \<Midarrow> l'' \<Rightarrow>\<^sup>* c''}"
     by (smt (verit, ccfv_threshold) Collect_cong monoid_rtranclp.monoid_rtrancl_refl monoid_rtranclp_trans mult_1)
   also
-  have "... = (weight_pre_star (accepts A)) c"
+  have "... = (weight_pre_star C) c"
     by (simp add: weight_pre_star_def)
   finally
   show "?thesis"
     .
 qed
 
-lemma nice_lemma4:
-  "weight_pre_star (weight_pre_star (accepts A)) = (weight_pre_star (accepts A))"
-  using nice_lemma3 by auto
+lemma weight_pre_star_dom_fixedpoint:
+  "weight_pre_star (weight_pre_star C) = (weight_pre_star C)"
+  using weight_pre_star_dom_fixedpoint' by auto
 
 lemma weight_pre_star_mono:
   assumes "X \<le> Y"
@@ -857,7 +826,7 @@ next
   from step(3) have "weight_pre_star (accepts A') \<ge> weight_pre_star (weight_pre_star (accepts A))"
     by (simp add: le_fun_def step.prems weight_pre_star_mono)
   then have "weight_pre_star (accepts A') \<ge> weight_pre_star (accepts A)"
-    using nice_lemma4 by auto
+    using weight_pre_star_dom_fixedpoint by auto
   ultimately
   show ?case
     by auto
