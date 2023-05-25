@@ -6,10 +6,10 @@ Anders Schlichtkrull
 René Rydhof Hansen
 Flemming Nielson
 
-## Download the version considered in our ITP2023 submission
+## Download the version considered in our FMCAD2023 submission
 
 ```
-$ git clone --branch ITP2023 https://github.com/anderssch/LTS-formalization/
+$ git clone --branch FMCAD2023 https://github.com/anderssch/LTS-formalization/
 ```
 
 The files will then be in `LTS-formalization/Datalog`
