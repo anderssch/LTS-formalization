@@ -793,19 +793,24 @@ lemma weight_pre_star_dom_fixedpoint:
 lemma weight_pre_star_mono:
   assumes "X \<le> Y"
   shows "weight_pre_star X c \<le> weight_pre_star Y c"
-  using assms unfolding weight_pre_star_def
-  apply auto
-  apply (subgoal_tac "\<forall>a b. X (a,b) \<le> Y (a,b)")
-  subgoal
-    using sum_bigger2[of "\<lambda>(l, a, b). c \<Midarrow> l \<Rightarrow>\<^sup>* (a, b)" "\<lambda>(l, a, b). l * X (a, b)"
-        "\<lambda>(l, a, b). l * Y (a, b)"]
-    apply auto
-    using BoundedDioid.mult_isol apply blast
-    done
-  subgoal
-    apply (simp add: le_funD)
-    done
-  done
+proof -
+  have "\<forall>c. X c \<le> Y c"
+    using assms by (simp add: le_funD)
+  then have XY: "\<forall>l c'. l * X c' \<le> l * Y c'"
+    by (simp add: idempotent_semiring_ord_class.mult_isol)
+
+  have "weight_pre_star X c = \<^bold>\<Sum> {l * X c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    unfolding weight_pre_star_def by auto
+  also
+  have "... \<le> \<^bold>\<Sum> {l * Y c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    using sum_bigger2[of "\<lambda>(l, c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>(l, c). l * X c" "\<lambda>(l, c). l * Y c"] XY by auto
+  also 
+  have "... \<le> weight_pre_star Y c"
+    unfolding weight_pre_star_def by auto
+  finally
+  show ?thesis 
+    by auto
+qed
 
 lemma lemma_3_1_w_alternative'':
   assumes "sound A"
