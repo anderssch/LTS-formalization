@@ -505,10 +505,21 @@ lemma sound_intro:
   shows "sound A"
   unfolding sound_def using assms by auto
 
-lemma nisseminus1:
+lemma nisseminus2:
+  assumes "(p,w) \<Midarrow>d\<Rightarrow> (p',[])"
+  shows "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])"
+  by (metis assms monoid_rtranclp.monoid_rtrancl_into_rtrancl monoid_rtranclp.monoid_rtrancl_refl 
+      mult_1)
+
+lemma push_seq_weight_if_monoid_star_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])"
   shows "\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p' \<le> d"
   by (simp add: assms sum_in)
+
+lemma push_seq_weight_if_l_step_relp:
+  assumes "(p,w) \<Midarrow>d\<Rightarrow> (p',[])"
+  shows "\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p' \<le> d"
+  by (simp add: assms nisseminus2 push_seq_weight_if_monoid_star_relp)
 
 lemma nisse0:
   assumes "\<^bold>\<Sigma>(p'', w)\<Rightarrow>\<^sup>*pi \<le> d1"
@@ -526,7 +537,6 @@ proof -
     by auto
 qed
 
-
 lemma nisse2:
   assumes "\<^bold>\<Sigma>(p'', w')\<Rightarrow>\<^sup>*pi \<le> d1"
   assumes "\<^bold>\<Sigma>(pi, w'')\<Rightarrow>\<^sup>*p2 \<le> d2"
@@ -539,7 +549,7 @@ proof -
   also have "... \<le> d1 * d2"
     using assms BoundedDioid.mult_isol_var by auto
   finally 
-  show ?thesis 
+  show ?thesis
     by auto
 qed
 
@@ -622,8 +632,7 @@ proof -
         from 1 have "(p1, [\<mu>]) \<Midarrow>d * d'\<Rightarrow> (p2,[])"
           using \<open>d' = 1\<close> \<open>w' = pop\<close> \<open>p2 = p''\<close> by auto
         then have "d * d' \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
-          by (metis mem_Collect_eq monoid_rtranclp.monoid_rtrancl_into_rtrancl mult_1 sum_in 
-              monoid_rtranclp.monoid_rtrancl_refl)
+          using push_seq_weight_if_l_step_relp[of p1 "[\<mu>]" "d * d'" p2] by auto
         then show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
           using d''_geq ldd' by auto
       next
@@ -717,20 +726,20 @@ proof -
   obtain p v where pv_split: "pv = (p, v)"
     by (cases pv)
   have "weight_pre_star (accepts A) (p,v) = \<^bold>\<Sum>{d' * accepts A c'| d' c'. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* c'}"
-    by (simp add: weight_pre_star_def) (* 14 *)
+    by (simp add: weight_pre_star_def)
   also have "... \<le> \<^bold>\<Sum>{d' * accepts A (p',[])| d' p'. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
     by (smt (verit) Collect_mono_iff sum_mono)
   also have "... = \<^bold>\<Sum>{d' * (if p'\<in>finals then 1 else 0)| d' p'. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
-    unfolding accepts_empty_iff by auto (* 13 *)
-  also have "... \<le> \<^bold>\<Sum>{d' |d' p'. p' \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}" (* 7 *)
+    unfolding accepts_empty_iff by auto
+  also have "... \<le> \<^bold>\<Sum>{d' |d' p'. p' \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
     by (smt (verit) Collect_mono_iff sum_mono mult.right_neutral)
   also have "... = \<^bold>\<Sum>{\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* p' | p'. p' \<in> finals}"
     using sum_of_sums_mult2[of "\<lambda>d p'. d" "\<lambda>d p'. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])" "\<lambda>p'. 1" "\<lambda>p'. p' \<in> finals"]
     apply auto
     by (smt (verit) Collect_cong Orderings.order_eq_iff)
-  also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sigma>(p,v) \<Rightarrow>\<^sup>* q |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" (* 5 *)
-    by (smt (verit) Collect_mono_iff sum_mono) (* 6 *)
-  also have "... \<le> \<^bold>\<Sum>{d |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" (* 1, 2 *)
+  also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sigma>(p,v) \<Rightarrow>\<^sup>* q |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
+    by (smt (verit) Collect_mono_iff sum_mono) 
+  also have "... \<le> \<^bold>\<Sum>{d |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
     using sum_bigger2[of 
         "\<lambda>(d, q). q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')"
         "\<lambda>(d, q). \<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q"
