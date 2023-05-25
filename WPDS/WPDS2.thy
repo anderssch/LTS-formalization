@@ -26,7 +26,7 @@ lemma countable_transition_rel: "countable transition_rel"
 proof -
   have transition_rel_subset: "transition_rel \<subseteq> (UNIV \<times> {d | c d c'. (c,d,c') \<in> transition_rel} \<times> UNIV)" 
     by fast
-  have countable_confs: "countable (UNIV::('ctr_loc, 'label) conf set)" 
+  have countable_confs: "countable (UNIV::('ctr_loc, 'label) conf set)"
     by blast
   have "\<And>c d c'. (c,d,c') \<in> transition_rel \<Longrightarrow> \<exists>p\<gamma> p'w. (p\<gamma>,d,p'w) \<in> \<Delta>"
     by (auto simp add: transition_rel.simps is_rule_def, blast)
@@ -220,11 +220,11 @@ lemma pre_star_rule_update_spec:
   done
 
 (* TODO: Come up with a good notation, and then use this definition *)
-definition push_seq_weight :: "('ctr_loc * 'label list) \<Rightarrow> 'ctr_loc \<Rightarrow> 'weight" ("\<^bold>\<Sigma>_\<Rightarrow>\<^sup>*_") where
-  "push_seq_weight = (\<lambda>(p,w) p'. \<^bold>\<Sum>{d'. (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])})"
+abbreviation push_seq_weight :: "('ctr_loc * 'label list) \<Rightarrow> 'ctr_loc \<Rightarrow> 'weight" ("\<^bold>\<Sigma>_\<Rightarrow>\<^sup>*_") where
+  "push_seq_weight pw p' == \<^bold>\<Sum>{d'. pw \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
 
 definition sound :: "(('ctr_loc, 'label, 'weight) w_transitions) \<Rightarrow> bool" where
-  "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sum>{d'. (p,[\<gamma>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])})"
+  "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,[\<gamma>])\<Rightarrow>\<^sup>*p')"
 
 lemma monoid_star_intros_step':
   assumes "(p,w,q) \<in> wts_to_monoidLTS A"
@@ -237,89 +237,103 @@ lemma monoid_star_intros_step:
   using assms monoid_star_intros_step' by (cases pwq) auto
 
 lemma sound_def2'':
-  assumes "\<forall>p p' w d. (p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sum>{d'. (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
+  assumes "\<forall>p p' w d. (p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,w) \<Rightarrow>\<^sup>* p'"
   assumes "(p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A)"
-  shows "d \<ge> \<^bold>\<Sum>{d'. (p,[\<gamma>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
+  shows "d \<ge> \<^bold>\<Sigma>(p,[\<gamma>])\<Rightarrow>\<^sup>* p'"
 proof -
   have "(p, ([\<gamma>],d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)"
     using assms(2) monoid_star_intros_step by blast
-  then show "d \<ge> \<^bold>\<Sum>{d'. (p,[\<gamma>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
+  then show "d \<ge> \<^bold>\<Sigma>(p,[\<gamma>])\<Rightarrow>\<^sup>*p'"
     using assms(1) by auto
 qed
 
-lemma monoid_rtrancl_hd_tail:
-  assumes "(p, wd, p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-  assumes "wd = (a#tlw,d)"
-  shows "\<exists>d' s d''.
-           (p, ([a], d'), s) \<in> wts_to_monoidLTS ts \<and>
-           (s, (tlw, d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
-           d = d' * d''"
-using assms proof (induction arbitrary: tlw a d rule: monoid_rtrancl.induct)
+lemma monoid_rtrancl_hd_tail':
+  assumes "(p\<^sub>1, w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3, p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  shows "\<exists>d\<^sub>1\<^sub>3. w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = ([],d\<^sub>1\<^sub>3) \<or>
+           (\<exists>p\<^sub>2 d\<^sub>2\<^sub>3 \<gamma>\<^sub>1\<^sub>2 w\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2.
+               w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = (\<gamma>\<^sub>1\<^sub>2#w\<^sub>2\<^sub>3,d\<^sub>1\<^sub>3) \<and>
+               (p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> wts_to_monoidLTS ts \<and>
+               (p\<^sub>2, (w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
+               d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3)"
+  using assms
+proof (induction rule: monoid_rtrancl.induct)
   case (monoid_rtrancl_refl)
   then show ?case
     by (simp add: one_list_def one_prod_def)
 next
-  case (monoid_rtrancl_into_rtrancl p wd p' l p'' tlwl a d)
+  case (monoid_rtrancl_into_rtrancl p\<^sub>1 w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 p\<^sub>3 w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4 p\<^sub>4) (* p\<^sub>1 \<gamma>\<^sub>1\<^sub>2w\<^sub>2\<^sub>3d\<^sub>1\<^sub>3 p\<^sub>3 p\<^sub>4 w\<^sub>2\<^sub>4 \<gamma>\<^sub>1\<^sub>2 d\<^sub>1\<^sub>4 *)
   show ?case
-  proof (cases "1 \<le> length (fst wd)")
-    case True
-    then have "\<exists>d' s d''. (p, ([hd (fst wd)], d'), s) \<in> wts_to_monoidLTS ts \<and> 
-                        (s, (tl (fst wd), d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
-                        (snd wd) = d' * d''"
-      using monoid_rtrancl_into_rtrancl.IH
-      by (metis list.exhaust_sel list.size(3) not_one_le_zero prod.exhaust_sel)
+  proof (cases "(fst w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3)")
+    case (Cons \<gamma>\<^sub>1\<^sub>2 w\<^sub>2\<^sub>3)
+    define d\<^sub>1\<^sub>3 where "d\<^sub>1\<^sub>3 = (snd w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3)"
+    define w\<^sub>3\<^sub>4 where "w\<^sub>3\<^sub>4 = fst w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4"
+    define d\<^sub>3\<^sub>4 where "d\<^sub>3\<^sub>4 = snd w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4"
+    define w\<^sub>2\<^sub>4 where "w\<^sub>2\<^sub>4 = w\<^sub>2\<^sub>3 @ w\<^sub>3\<^sub>4"
 
-    then obtain d' s d'' where props:
-      "(p, ([hd (fst wd)], d'), s) \<in> wts_to_monoidLTS ts"
-      "(s, (tl (fst wd), d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-      "snd wd = d' * d''"
-      by auto
+    have w24_tl: "w\<^sub>2\<^sub>4 = tl (fst (w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 * w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4))"
+      by (simp add: local.Cons mult_prod_def times_list_def w\<^sub>2\<^sub>4_def w\<^sub>3\<^sub>4_def)
 
-    define d1 where "d1 = d'"
-    define d2 where "d2 = d'' * snd l"
-    define s' where "s' = s"
+    have "w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = (\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>3, d\<^sub>1\<^sub>3)"
+      using Cons by (metis d\<^sub>1\<^sub>3_def surjective_pairing) 
 
-    have "hd (fst (wd * l)) = hd (fst (wd)) "
-      using \<open>1 \<le> length (fst wd)\<close>
-      apply (cases wd)
-      apply (cases l)
-      apply (auto simp add: mult_prod_def)
-      by (metis One_nat_def hd_append list.size(3) not_one_le_zero times_list_def)
+    then have "\<exists>d\<^sub>1\<^sub>3. w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = ([], d\<^sub>1\<^sub>3) \<or>
+                (\<exists>p\<^sub>2 d\<^sub>2\<^sub>3 \<gamma>\<^sub>1\<^sub>2 w\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2.
+                   w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = (\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>3, d\<^sub>1\<^sub>3) \<and>
+                   (p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> wts_to_monoidLTS ts \<and> 
+                   (p\<^sub>2, (w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
+                   d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3)"
+      using monoid_rtrancl_into_rtrancl.IH by auto
+    then obtain p\<^sub>2 d\<^sub>2\<^sub>3 \<gamma>\<^sub>1\<^sub>2 w\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2 where props:
+      "((w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = (\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>3, d\<^sub>1\<^sub>3) \<and>
+       (p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> wts_to_monoidLTS ts \<and> 
+       (p\<^sub>2, (w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
+       d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3))"
+      using d\<^sub>1\<^sub>3_def Cons by auto
 
-    have "(p, ([hd (fst (wd * l))], d1), s') \<in> wts_to_monoidLTS ts"
-      using props \<open>hd (fst (wd * l)) = hd (fst wd)\<close> d1_def s'_def by auto
+    define d\<^sub>2\<^sub>4 where "d\<^sub>2\<^sub>4 = d\<^sub>2\<^sub>3 * d\<^sub>3\<^sub>4"
+
+    have "(p\<^sub>2, (w\<^sub>2\<^sub>4, d\<^sub>2\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+      by (smt (verit) d\<^sub>2\<^sub>4_def d\<^sub>3\<^sub>4_def fst_conv list.sel(3) local.Cons monoid_rtrancl.simps 
+          monoid_rtrancl_into_rtrancl.hyps(2) mult_prod_def props snd_conv times_list_def w\<^sub>2\<^sub>4_def 
+          w\<^sub>3\<^sub>4_def)
     moreover
-    have "(s', (tl (fst (wd * l)), d2), p'') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-      unfolding d2_def
-      using props(2) \<open>1 \<le> length (fst wd)\<close> 
-      using monoid_rtrancl.intros(2)[OF _ monoid_rtrancl_into_rtrancl(2)] 
-      apply (auto simp add: mult_prod_def)
-      by (metis le_antisym less_eq_nat.simps(1) 
-          list.size(3) n_not_Suc_n s'_def times_list_def tl_append_if)
+    define d\<^sub>1\<^sub>4 where "d\<^sub>1\<^sub>4 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>4"
     moreover
-    have "snd (wd * l) = d1 * d2"
-      by (simp add: props d1_def d2_def mult.assoc mult_prod_def)
+    have "(p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> wts_to_monoidLTS ts"
+      using props by fastforce
     ultimately
     show ?thesis
-      using monoid_rtrancl_into_rtrancl.prems by auto
+      by (smt (verit) w24_tl props d\<^sub>1\<^sub>3_def d\<^sub>2\<^sub>4_def d\<^sub>3\<^sub>4_def fst_conv hd_append  list.exhaust_sel
+          list.sel(1) list.simps(3) mult.assoc mult_prod_def times_list_def)
   next
-    case False
-    then have "length (fst wd) = 0"
-      by linarith
+    case Nil
     then show ?thesis
-      by (metis fst_conv length_0_conv list.inject monoid_rtrancl.monoid_rtrancl_refl 
-          monoid_rtrancl_into_rtrancl.hyps(1) monoid_rtrancl_into_rtrancl.hyps(2) 
-          monoid_rtrancl_into_rtrancl.prems monoid_star_w0 mstar_wts_empty_one mult.right_neutral 
-          mult_1 one_list_def one_prod_def prod.exhaust_sel wts_label_exist)
+      by (metis monoid_rtrancl.monoid_rtrancl_refl monoid_rtrancl_into_rtrancl.hyps(1)
+          monoid_rtrancl_into_rtrancl.hyps(2) monoid_rtrancl_into_rtrancl.prems monoid_star_w0
+          mstar_wts_empty_one mult.right_neutral mult_1 one_list_def one_prod_def prod.exhaust_sel
+          wts_label_exist)
   qed
 qed
+
+lemma monoid_rtrancl_hd_tail:
+  assumes "(p, (\<gamma>#w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  shows "\<exists>d' s d''.
+           (p, ([\<gamma>], d'), s) \<in> wts_to_monoidLTS ts \<and>
+           (s, (w, d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
+           d = d' * d''"
+  using assms monoid_rtrancl_hd_tail' by fastforce
 
 
 (* We are not using this induction. But it could be useful. *)
 lemma wts_to_monoidLTS_induct_reverse:
   assumes "(p, wd, p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
   assumes "(\<And>a. P a 1 a)"
-  shows "(\<And>p wd p' l p''. (p, wd, p') \<in> (wts_to_monoidLTS ts) \<Longrightarrow> P p' l p'' \<Longrightarrow> (p', l, p'') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> P p (wd * l) p'') \<Longrightarrow> P p wd p'"
+  shows "(\<And>p wd p' l p''.
+             (p, wd, p') \<in> (wts_to_monoidLTS ts) \<Longrightarrow> 
+             P p' l p'' \<Longrightarrow> 
+             (p', l, p'') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow>
+             P p (wd * l) p'') \<Longrightarrow>
+             P p wd p'"
   using assms
 proof (induct "length (fst wd)" arbitrary: p wd p')
   case 0
@@ -327,14 +341,15 @@ proof (induct "length (fst wd)" arbitrary: p wd p')
     by (metis length_0_conv monoid_star_w0 mstar_wts_one one_list_def one_prod_def prod.collapse)
 next
   case (Suc n)
+  note outer_Suc = Suc
   show ?case
-  proof (cases "n = 0")
-    case True
+  proof (cases n)
+    case 0
     then have "P p' 1 p'"
       using Suc(1)[of "1" p' p'] using Suc by blast
     moreover
     have "(p, wd, p') \<in> wts_to_monoidLTS ts"
-      by (smt (verit, best) One_nat_def Suc.hyps(2) Suc.prems(2) True add.commute append_Nil 
+      by (smt (verit, best) One_nat_def Suc.hyps(2) Suc.prems(2) 0 add.commute append_Nil 
           append_eq_append_conv fst_conv list.sel(1) list.size(3) list.size(4) monoid_rtrancl.simps 
           monoid_star_w0 monoid_star_w1 mult_prod_def one_list_def one_neq_zero one_prod_def 
           plus_1_eq_Suc prod.collapse times_list_def wts_label_d' wts_label_exist)
@@ -345,7 +360,7 @@ next
     show ?thesis
       using Suc(3)[of p wd p' 1 p'] by auto
   next
-    case False
+    case (Suc n')
     define w where "w = fst wd"
     define d where "d = snd wd"
     define w' where "w' = tl w"
@@ -357,19 +372,18 @@ next
     have "\<exists>d' s d''.(p, ([\<gamma>],d'), s) \<in> wts_to_monoidLTS ts \<and>
             (s, (w',d''),p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
             d = d' * d''"
-      using Suc(4) False
-      by (metis d_def monoid_rtrancl_hd_tail prod.exhaust_sel w_def w_split)
+      using outer_Suc(4) Suc by (metis d_def monoid_rtrancl_hd_tail prod.exhaust_sel w_def w_split)
     then obtain s d' d'' where
       "(p, ([\<gamma>],d'), s) \<in> wts_to_monoidLTS ts"
       "(s, (w',d''),p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
       "d = d' * d''" by auto
 
     have "P s (w',d'') p'"
-      using Suc(1,2,3) \<open>(s, (w', d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)\<close> assms(2)
+      using outer_Suc(1,2,3) \<open>(s, (w', d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)\<close> assms(2)
       by (smt (verit, ccfv_SIG) fst_conv length_Cons nat.inject w_def w_split)
 
     have "P p (([\<gamma>], d') * (w', d'')) p'"
-      using Suc(3)[of p "([\<gamma>],d')" s "(w', d'')" p'] \<open>(p, ([\<gamma>], d'), s) \<in> wts_to_monoidLTS ts\<close> 
+      using outer_Suc(3)[of p "([\<gamma>],d')" s "(w', d'')" p'] \<open>(p, ([\<gamma>], d'), s) \<in> wts_to_monoidLTS ts\<close> 
         \<open>(s, (w', d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)\<close> \<open>P s (w', d'') p'\<close> by blast 
     then have "P p (\<gamma> # w', d' * d'') p'"
       by (auto simp add: mult_prod_def times_list_def)
@@ -382,14 +396,13 @@ qed
 lemma monoid_star_nonempty:
   assumes "(p, w, p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
   assumes "fst w \<noteq> []"
-  shows "\<exists>pi d1 d2. (snd w) = d1 * d2 \<and> (pi, (tl (fst w), d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> (p, ([hd (fst w)], d1), pi) \<in> wts_to_monoidLTS ts"
+  shows "\<exists>pi d1 d2. (snd w) = d1 * d2 \<and> 
+                    (pi, (tl (fst w), d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
+                    (p, ([hd (fst w)], d1), pi) \<in> wts_to_monoidLTS ts"
   by (metis assms(1) assms(2) hd_Cons_tl monoid_rtrancl_hd_tail prod.exhaust_sel)
-  
-
 
 lemma sum_distr: "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
   sorry
-
 
 lemma sum_of_sums:
   "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {d | d d'. P d d' \<and> Q d'}"
@@ -443,15 +456,15 @@ qed
 lemma sound_def2':
   assumes "sound A"
   assumes "(p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-  shows "d \<ge> \<^bold>\<Sum>{d'. (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
+  shows "d \<ge> \<^bold>\<Sigma>(p,w) \<Rightarrow>\<^sup>* p'"
   using assms(2) 
 proof (induction w arbitrary: d p)
   case Nil
   then have "d = 1"
     by (simp add: mstar_wts_empty_one)
-  have "(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])"
+  have "(p, []) \<Midarrow>1\<Rightarrow>\<^sup>* (p', [])"
     using Nil monoid_star_pop by fastforce
-  have "d \<ge> \<^bold>\<Sum> {d'. (p, []) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}" 
+  have "d \<ge> \<^bold>\<Sigma>(p, []) \<Rightarrow>\<^sup>* p'" 
     by (simp add: \<open>(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])\<close> \<open>d = 1\<close> sum_in)
   then show ?case .
 next
@@ -467,25 +480,30 @@ next
     "(pi, (w, d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)"
     "(p, ([a], d1), pi) \<in> wts_to_monoidLTS A"
     by blast
-  then have d2l: "d2 \<ge> \<^bold>\<Sum> {d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
+  then have d2l: "d2 \<ge> \<^bold>\<Sigma>(pi, w) \<Rightarrow>\<^sup>* p'"
     using Cons(1)[of pi d2] by auto
-  have "\<^bold>\<Sum> {d'. (p, a # w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])} \<le> \<^bold>\<Sum> {d1 * d'| d' d1. (p, [a]) \<Midarrow> d1 \<Rightarrow>\<^sup>* (pi, []) \<and> (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
+  have "\<^bold>\<Sigma> (p, a # w) \<Rightarrow>\<^sup>* p' \<le> \<^bold>\<Sum> {d1 * d'| d' d1. (p, [a]) \<Midarrow>d1\<Rightarrow>\<^sup>* (pi, []) \<and> (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
     by (smt (verit, ccfv_threshold) Collect_mono_iff append_Cons append_self_conv2 local.sum_mono step_relp_seq)
-  also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sum> {d. (p, [a]) \<Midarrow> d \<Rightarrow>\<^sup>* (pi, [])} * d'| d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
+  also have "... \<le> \<^bold>\<Sum>{(\<^bold>\<Sigma> (p, [a]) \<Rightarrow>\<^sup>* pi) * d'| d'. (pi, w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p', [])}"
     using sum_of_sums_mult[of "\<lambda>d. (p, [a]) \<Midarrow> d \<Rightarrow>\<^sup>* (pi, [])" "\<lambda>d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])"]
     by (smt (verit, del_insts) Collect_cong Orderings.order_eq_iff)
   also have "... \<le> \<^bold>\<Sum> {d1 * d'| d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
     using sum_bigger assms(1) obt(3) sound_def by simp
-  also have "... \<le> d1 * \<^bold>\<Sum> {d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"
+  also have "... \<le> d1 * (\<^bold>\<Sigma> (pi, w) \<Rightarrow>\<^sup>* p')"
     using sum_distr[of d1 "{d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}"] by auto
   also have "... \<le> d" 
-    using \<open>d = d1 * d2\<close> d2l BoundedDioid.mult_isol[of "\<^bold>\<Sum> {d'. (pi, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}" d2 d1] by fast 
+    using \<open>d = d1 * d2\<close> d2l BoundedDioid.mult_isol[of "\<^bold>\<Sigma> (pi, w) \<Rightarrow>\<^sup>* p'" d2 d1] by fast 
   finally show ?case .
 qed
 
 lemma sound_def2:
-  "sound A \<longleftrightarrow> (\<forall>p p' w d. (p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sum>{d'. (p,w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])})"
+  "sound A \<longleftrightarrow> (\<forall>p p' w d. (p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,w) \<Rightarrow>\<^sup>* p')"
   using sound_def2'' sound_def2' unfolding sound_def by blast
+
+lemma sound_intro:
+  assumes "\<And>p p' \<gamma> d. (p, ([\<gamma>], d), p') \<in> wts_to_monoidLTS A \<Longrightarrow> \<^bold>\<Sigma>(p, [\<gamma>])\<Rightarrow>\<^sup>*p' \<le> d"
+  shows "sound A"
+  unfolding sound_def using assms by auto
 
 lemma soundness:
   assumes "sound A"
@@ -501,20 +519,18 @@ proof -
     using assms(2) pre_star_rule.cases by metis
   note 2 = ps(3)
   show "sound A'"
-    unfolding sound_def
-  proof (rule allI, rule allI, rule allI, rule allI, rule impI)
+  proof (rule sound_intro)
     fix p1 p2 \<mu> l
     assume a: "(p1, ([\<mu>], l), p2) \<in> wts_to_monoidLTS A'"      
-    show "l \<ge> \<^bold>\<Sum> {d'. (p1, [\<mu>]) \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}"
+    show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>])  \<Rightarrow>\<^sup>* p2"
     proof (cases "p1 = p' \<and> \<mu> = \<gamma>' \<and> p2 = q")
       case True
       then have True1: "p1 = p'" "\<mu> = \<gamma>'" "p2 = q"
         by auto
       have 4: "l = d'' + d * d'"
         using a unfolding ps(4) True1 unfolding wts_to_monoidLTS_def by auto
-      have 3: "d'' \<ge> \<^bold>\<Sum>{d'. (p1,[\<mu>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-        using ps(5) using assms(1) unfolding sound_def unfolding wts_to_monoidLTS_def
-        using True by force
+      have 3: "d'' \<ge> \<^bold>\<Sigma> (p1,[\<mu>]) \<Rightarrow>\<^sup>* p2"
+        using ps(5) assms(1) True unfolding sound_def wts_to_monoidLTS_def by force
       have 1: "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow> (p'', lbl w')"
         using ps(1) True step_relp_def2 by auto
       show ?thesis
@@ -526,10 +542,10 @@ proof -
           using True1(3) \<open>w' = pop\<close> by force
         from 1 have "(p1, [\<mu>]) \<Midarrow>d * d'\<Rightarrow> (p2,[])"
           using \<open>d' = 1\<close> \<open>w' = pop\<close> \<open>p2 = p''\<close> by auto
-        then have "d * d' \<ge> \<^bold>\<Sum>{d'. (p1, [\<mu>]) \<Midarrow> d'\<Rightarrow>\<^sup>* (p2,[])}"
+        then have "d * d' \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
           by (metis mem_Collect_eq monoid_rtranclp.monoid_rtrancl_into_rtrancl mult_1 sum_in 
               monoid_rtranclp.monoid_rtrancl_refl)
-        then show "l \<ge> \<^bold>\<Sum> {d'. (p1, [\<mu>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2, [])}"
+        then show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
           using 3 4 by auto
       next
         fix \<mu>'
@@ -537,19 +553,19 @@ proof -
         assume 5: "w' = swap \<mu>'"
         from 2 have "(p'', ([\<mu>'],d'), p2) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
           using True1(3) \<open>w' = swap \<mu>'\<close> by force
-        then have 6: "d' \<ge> \<^bold>\<Sum>{d'. (p'',[\<mu>']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
+        then have 6: "d' \<ge> \<^bold>\<Sigma> (p'',[\<mu>']) \<Rightarrow>\<^sup>* p2"
           using assms(1) sound_def2' by force
         from 1 have "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>'])"
           unfolding True1 5 using monoid_rtranclp.monoid_rtrancl_into_rtrancl by fastforce
-        have "\<^bold>\<Sum>{d'. (p1, [\<mu>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])} \<le> \<^bold>\<Sum>{d * d'| d'. (p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>']) \<and> (p'',[\<mu>']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
+        have "\<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2 \<le> \<^bold>\<Sum>{d * d'| d'. (p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>']) \<and> (p'',[\<mu>']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
           using Collect_mono_iff sum_mono monoid_rtranclp_trans by smt
         also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',[\<mu>']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
           using \<open>(p1, [\<mu>]) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', [\<mu>'])\<close> by fastforce
-        also have "... \<le> d * \<^bold>\<Sum>{d'. (p'',[\<mu>']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
+        also have "... \<le> d * \<^bold>\<Sigma>(p'',[\<mu>']) \<Rightarrow>\<^sup>* p2"
           by (simp add: sum_distr)
         also have "... \<le> d * d'"
           using 6 by (simp add: assms BoundedDioid.mult_isol)
-        finally show "l \<ge> \<^bold>\<Sum> {d'. (p1, [\<mu>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2, [])}"
+        finally show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
           using 3 4 by auto
       next
         fix \<mu>' \<mu>'' pi
@@ -559,31 +575,31 @@ proof -
         define d2 where "d2 = A $ (pi, \<mu>'', p2)"
         have "d' = d1 * d2"
           using d1_def d2_def aa by auto
-        have bb: "d1 \<ge> \<^bold>\<Sum>{d'. (p'',[\<mu>']) \<Midarrow>d'\<Rightarrow>\<^sup>* (pi,[])}"
+        have bb: "d1 \<ge> \<^bold>\<Sigma>(p'',[\<mu>']) \<Rightarrow>\<^sup>* pi"
           using d1_def assms(1) sound_def by (force simp add: wts_to_monoidLTS_def)
          
-        have cc: "d2 \<ge> \<^bold>\<Sum>{d'. (pi,[\<mu>'']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
+        have cc: "d2 \<ge> \<^bold>\<Sigma>(pi,[\<mu>'']) \<Rightarrow>\<^sup>* p2"
           using d2_def assms(1) sound_def  by (force simp add: wts_to_monoidLTS_def)
         have "d' = d1 * d2"
           using \<open>d' = d1 * d2\<close> .
-        have "\<^bold>\<Sum>{d'. (p'',[\<mu>',\<mu>'']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])} \<le> \<^bold>\<Sum>{d1' * d2'| d1'  d2'. (p'',[\<mu>']) \<Midarrow>d1'\<Rightarrow>\<^sup>* (pi,[]) \<and> (pi,[\<mu>'']) \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
+        have "\<^bold>\<Sigma>(p'',[\<mu>',\<mu>'']) \<Rightarrow>\<^sup>* p2 \<le> \<^bold>\<Sum>{d1' * d2'| d1'  d2'. (p'',[\<mu>']) \<Midarrow>d1'\<Rightarrow>\<^sup>* (pi,[]) \<and> (pi,[\<mu>'']) \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
           by (smt (verit, ccfv_threshold) Collect_mono_iff sum_mono append_Cons append_self_conv2 step_relp_seq)
-        also have "... \<le> \<^bold>\<Sum>{d'. (p'',[\<mu>']) \<Midarrow>d'\<Rightarrow>\<^sup>* (pi,[])} * \<^bold>\<Sum>{d'. (pi,[\<mu>'']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
+        also have "... \<le> \<^bold>\<Sigma>(p'',[\<mu>']) \<Rightarrow>\<^sup>* pi * \<^bold>\<Sigma>(pi,[\<mu>'']) \<Rightarrow>\<^sup>* p2"
           by (simp add: sum_distr sum_of_sums_mult)
         also have "... \<le> d1 * d2"
           using bb cc BoundedDioid.mult_isol_var by auto
-        finally have 6: "\<^bold>\<Sum>{d'. (p'',[\<mu>',\<mu>'']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])} \<le> d'" using \<open>d' = d1 * d2\<close> by blast
+        finally have 6: "(\<^bold>\<Sigma> (p'',[\<mu>',\<mu>''])\<Rightarrow>\<^sup>*p2) \<le> d'" using \<open>d' = d1 * d2\<close> by blast
         from 1 have "(p1,[\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>',\<mu>''])"
           using \<open>w' = push \<mu>' \<mu>''\<close> monoid_rtranclp.monoid_rtrancl_into_rtrancl by fastforce
-        have "\<^bold>\<Sum>{d'. (p1, [\<mu>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])} \<le> \<^bold>\<Sum>{d * d'| d'. (p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>',\<mu>'']) \<and> (p'',[\<mu>',\<mu>'']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
+        have "(\<^bold>\<Sigma>(p1, [\<mu>])\<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d * d'| d'. (p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>',\<mu>'']) \<and> (p'',[\<mu>',\<mu>'']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
           by (smt (verit, ccfv_SIG) Collect_mono_iff sum_mono monoid_rtranclp_trans)
         also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',[\<mu>',\<mu>'']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
           using \<open>(p1, [\<mu>]) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', [\<mu>',\<mu>''])\<close> by fastforce
-        also have "... \<le> d * \<^bold>\<Sum>{d'. (p'',[\<mu>',\<mu>'']) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
+        also have "... \<le> d * \<^bold>\<Sigma>(p'',[\<mu>',\<mu>'']) \<Rightarrow>\<^sup>* p2"
           by (simp add: sum_distr)
         also have "... \<le> d * d'"
           using 6 by (simp add: assms BoundedDioid.mult_isol)
-        finally show "l \<ge> \<^bold>\<Sum>{d'. (p1, [\<mu>]) \<Midarrow>d'\<Rightarrow>\<^sup>* (p2, [])}"
+        finally show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
           using 3 4 by auto
       qed
     next
@@ -603,7 +619,8 @@ lemma monoid_rtrancl_split:
     "(p'', (w, d'), p') \<in> monoid_rtrancl (wts_to_monoidLTS A')"
     "v = u @ w \<and> \<gamma> \<notin> set w"
     "d = d''' * d'"
-  by (metis append_is_Nil_conv assms in_set_conv_decomp_first monoid_rtrancl.simps mult.right_neutral one_prod_def times_list_def)
+  by (metis append_is_Nil_conv assms in_set_conv_decomp_first monoid_rtrancl.simps 
+      mult.right_neutral one_prod_def times_list_def)
 
 lemma final_empty_accept':
   assumes "p \<in> finals"
@@ -646,16 +663,16 @@ proof -
     unfolding accepts_empty_iff by auto (* 13 *)
   also have "... \<le> \<^bold>\<Sum>{d' |d' p'. p' \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}" (* 7 *)
     by (smt (verit) Collect_mono_iff sum_mono mult.right_neutral)
-  also have "... = \<^bold>\<Sum>{\<^bold>\<Sum>{d'. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])} | p'. p' \<in> finals}"
+  also have "... = \<^bold>\<Sum>{\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* p' | p'. p' \<in> finals}"
     using sum_of_sums_mult2[of "\<lambda>d p'. d" "\<lambda>d p'. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])" "\<lambda>p'. 1" "\<lambda>p'. p' \<in> finals"]
     apply auto
     by (smt (verit) Collect_cong Orderings.order_eq_iff)
-  also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sum>{d'. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])} |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" (* 5 *)
+  also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sigma>(p,v) \<Rightarrow>\<^sup>* q |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" (* 5 *)
     by (smt (verit) Collect_mono_iff sum_mono) (* 6 *)
   also have "... \<le> \<^bold>\<Sum>{d |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" (* 1, 2 *)
     using sum_bigger2[of 
         "\<lambda>(d, q). q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')"
-        "\<lambda>(d, q). \<^bold>\<Sum>{d'. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}"
+        "\<lambda>(d, q). \<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q"
         "\<lambda>(d, q). d"
         ]
     using soundA' sound_def2 by force
@@ -696,17 +713,18 @@ lemma weight_pre_star_leq:
 lemma nice_lemma3:
   "weight_pre_star (weight_pre_star (accepts A)) c = (weight_pre_star (accepts A)) c"
 proof -
-  have "weight_pre_star (weight_pre_star (accepts A)) c = \<^bold>\<Sum> {l * \<^bold>\<Sum> {l' * accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+  have "weight_pre_star (weight_pre_star (accepts A)) c =
+          \<^bold>\<Sum> {l * \<^bold>\<Sum> {l' * accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
     unfolding weight_pre_star_def by meson
   also
   have "... =  \<^bold>\<Sum> {\<^bold>\<Sum> {l * l' * accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
   proof -
     {
       fix l c'
-      have "l * \<^bold>\<Sum> {l' * accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} = \<^bold>\<Sum> {l * l' * accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
+      have "l * \<^bold>\<Sum> {l' * accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} =
+              \<^bold>\<Sum> {l * l' * accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
         using sum_distr[of l "{l' * accepts A c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"]
-        apply (auto)
-        by (metis (no_types, opaque_lifting) mult.assoc)
+         mult.assoc by (smt (verit) Collect_cong mem_Collect_eq)
     }
     then show ?thesis
       by auto
