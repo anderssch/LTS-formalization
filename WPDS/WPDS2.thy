@@ -418,7 +418,7 @@ lemma sum_of_sums_mult:
 
 lemma sum_of_sums_mult2:
   "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} * g d' |d'. Q d'} = \<^bold>\<Sum> {f d d' * g d' | d d'. P d d' \<and> Q d'}"
-   sorry 
+  sorry
 
 lemmas monoid_star_relp_induct = 
   MonoidClosure.monoid_rtranclp.induct[of l_step_relp "(_,_)" _ "(_,_)"]
@@ -618,12 +618,12 @@ proof -
           using d''_geq ldd' by auto
       next
         fix \<mu>' \<mu>'' pi
-        assume aa: "A $ (p'', \<mu>', pi) * A $ (pi, \<mu>'', p2) = d'"
+        assume edge_weights: "A $ (p'', \<mu>', pi) * A $ (pi, \<mu>'', p2) = d'"
         assume "w' = push \<mu>' \<mu>''"
         define d1 where "d1 = A $ (p'', \<mu>', pi)"
         define d2 where "d2 = A $ (pi, \<mu>'', p2)"
         have "d' = d1 * d2"
-          using d1_def d2_def aa by auto
+          using d1_def d2_def edge_weights by auto
 
         from p1_to_p''1 have "(p1,[\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>',\<mu>''])"
           using \<open>w' = push \<mu>' \<mu>''\<close> monoid_rtranclp.monoid_rtrancl_into_rtrancl by fastforce
@@ -700,7 +700,7 @@ proof -
     unfolding accepts_empty_iff by auto
   also have "... \<le> \<^bold>\<Sum>{d' |d' p'. p' \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
     by (smt (verit) Collect_mono_iff sum_mono mult.right_neutral)
-  also have "... = \<^bold>\<Sum>{\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* p' | p'. p' \<in> finals}"
+  also have "... = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* p') | p'. p' \<in> finals}"
     using sum_of_sums_mult2[of "\<lambda>d p'. d" "\<lambda>d p'. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])" "\<lambda>p'. 1" "\<lambda>p'. p' \<in> finals"]
     apply auto
     by (smt (verit) Collect_cong Orderings.order_eq_iff)
@@ -816,7 +816,8 @@ lemma lemma_3_1_w_alternative'':
   assumes "sound A"
   assumes "pre_star_rule\<^sup>*\<^sup>* A A'"
   shows "accepts A' \<ge> weight_pre_star (accepts A)"
-using assms(2,1) proof (induction)
+  using assms(2,1)
+proof (induction)
   case base
   then show ?case
     by (simp add: weight_pre_star_leq)
@@ -834,6 +835,11 @@ next
   show ?case
     by auto
 qed
+
+lemma lemma_3_1_w_alternative''':
+  assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
+  shows "accepts A' \<ge> weight_pre_star (accepts (K$ 0))"
+  using assms lemma_3_1_w_alternative'' sound_empty by force
 
 end
 
