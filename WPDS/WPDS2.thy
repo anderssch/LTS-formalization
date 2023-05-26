@@ -219,7 +219,6 @@ lemma pre_star_rule_update_spec:
     by (cases "(p,\<gamma>,q) = (p', \<gamma>',q')", auto)
   done
 
-(* TODO: Come up with a good notation, and then use this definition *)
 abbreviation push_seq_weight :: "('ctr_loc * 'label list) \<Rightarrow> 'ctr_loc \<Rightarrow> 'weight" ("\<^bold>\<Sigma>_\<Rightarrow>\<^sup>*_") where
   "push_seq_weight pw p' == \<^bold>\<Sum>{d'. pw \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
 
@@ -729,7 +728,7 @@ lemma accepts_empty_iff0: "accepts (K$ 0) (p,w) = (if p\<in>finals \<and> w = []
 lemma sound_empty: "sound (K$ 0)"
   by (simp add: sound_def wts_to_monoidLTS_def)
 
-lemma lemma_3_1_w_alternativeBABA:
+lemma lemma_3_1_w_alternative:
   assumes soundA': "sound A'"
   shows "accepts A' pv \<ge> weight_pre_star (accepts (K$ 0)) pv"
 proof -
@@ -821,10 +820,10 @@ proof -
     by auto
 qed
 
-lemma lemma_3_1_w_alternative_NEW_proof:
+lemma lemma_3_1_w_alternative_BONUS:
   assumes soundA': "sound A'"
   shows "accepts A' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
-  using lemma_3_1_w_alternativeBABA[OF soundA', of "(p,v)"]
+  using lemma_3_1_w_alternative[OF soundA', of "(p,v)"]
   apply -
   apply (subgoal_tac "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)")
   subgoal
@@ -837,55 +836,23 @@ lemma lemma_3_1_w_alternative_NEW_proof:
     done
   done
 
-lemma lemma_3_1_w_alternative_OLD_proof:
-  assumes soundA': "sound A'"
-  shows "accepts A' pv \<ge> weight_pre_star (accepts A) pv"
-proof -
-  obtain p v where pv_split: "pv = (p, v)"
-    by (cases pv)
-  have "weight_pre_star (accepts A) (p,v) = \<^bold>\<Sum>{d' * accepts A c'| d' c'. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* c'}"
-    by (simp add: weight_pre_star_def)
-  also have "... \<le> \<^bold>\<Sum>{d' * accepts A (q,[])| d' q. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}"
-    by (smt (verit) Collect_mono_iff sum_mono)
-  also have "... = \<^bold>\<Sum>{d' * (if q\<in>finals then 1 else 0)| d' q. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}"
-    unfolding accepts_empty_iff by auto
-  also have "... \<le> \<^bold>\<Sum>{d' |d' q. q \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}"
-    by (smt (verit) Collect_mono_iff sum_mono mult.right_neutral)
-  also have "... = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
-    using sum_of_sums_mult2[of "\<lambda>d q. d" "\<lambda>d q. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (q,[])" "\<lambda>q. 1" "\<lambda>q. q \<in> finals"]
-    apply auto
-    by (smt (verit) Collect_cong Orderings.order_eq_iff)
-  also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sigma>(p,v) \<Rightarrow>\<^sup>* q |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
-    by (smt (verit) Collect_mono_iff sum_mono) 
-  also have "... \<le> \<^bold>\<Sum>{d |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
-    using sum_bigger2[of 
-        "\<lambda>(d, q). q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')"
-        "\<lambda>(d, q). \<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q"
-        "\<lambda>(d, q). d"
-        ]
-    using soundA' sound_def2 by force
-  also have "... = accepts A' (p,v)"
-    unfolding accepts_def by (simp split: prod.split)
-  finally show ?thesis
-    unfolding pv_split by auto
-qed
-
 lemma lemma_3_1_w_alternative': 
-  assumes "sound A'"
-  assumes "pre_star_rule A' A''"
-  shows "accepts A'' \<ge> weight_pre_star (accepts A)"
-  by (meson soundness assms(1) assms(2) le_funI lemma_3_1_w_alternative_OLD_proof)
-
-lemma lemma_3_1_w_alternative'_NEW_VERSION: 
   assumes "pre_star_rule (K$ 0) A"
   shows "accepts A pv \<ge> weight_pre_star (accepts (K$ 0)) pv"
-  using lemma_3_1_w_alternativeBABA[OF soundness[OF sound_empty assms]] by auto
+  using lemma_3_1_w_alternative[OF soundness[OF sound_empty assms]] by auto
 
-lemma lemma_3_1_w_alternative'x: 
-  assumes "sound A"
-  assumes "pre_star_rule A A'"
-  shows "accepts A' \<ge> weight_pre_star (accepts A)"
-  using lemma_3_1_w_alternative' assms by auto
+lemma lemma_3_1_w_alternative'_BONUS: 
+  assumes soundA': "sound A'"
+  assumes "pre_star_rule A' A''"
+  shows "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
+  apply (subgoal_tac "sound A''")
+  subgoal
+    apply (meson BABABABABABA2 dual_order.trans lemma_3_1_w_alternative weight_pre_star_mono)
+    done
+  subgoal
+    using assms(2) local.soundness soundA' apply blast
+    done
+  done
 
 lemma weight_pre_star_leq':
    "X c \<ge> weight_pre_star X c"
@@ -895,7 +862,7 @@ proof -
   also have "... \<le> \<^bold>\<Sum> {l * X c |l. c \<Midarrow> l \<Rightarrow>\<^sup>* c}"
     by (smt (verit) Collect_mono sum_mono)
   also have "... \<le> \<^bold>\<Sum> {1 * X c}"
-    by (smt (verit, del_insts) bot.extremum insert_subsetI local.sum_mono  mem_Collect_eq 
+    by (smt (verit, del_insts) bot.extremum insert_subsetI local.sum_mono mem_Collect_eq 
         monoid_rtranclp.monoid_rtrancl_refl)
   also have "... \<le> 1 * X c" 
     by simp
@@ -952,27 +919,23 @@ lemma weight_pre_star_dom_fixedpoint: (* Nice. But we don't use it. *)
   "weight_pre_star (weight_pre_star C) = (weight_pre_star C)"
   using weight_pre_star_dom_fixedpoint' by auto
 
-
-lemma lemma_3_1_w_alternative'':
-  assumes "sound A'"
-  assumes "pre_star_rule\<^sup>*\<^sup>* A' A''"
-  shows "accepts A'' \<ge> weight_pre_star (accepts A)"
-proof -
-  have "sound A''"
-    using assms(1) assms(2) soundness2 by blast
-  then show "accepts A'' \<ge> weight_pre_star (accepts A)"
-    by (simp add: le_fun_def lemma_3_1_w_alternative_OLD_proof)
-qed
-
 lemma lemma_3_1_w_alternative''':
   assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
-  shows "accepts A' \<ge> weight_pre_star (accepts A)"
-  using assms lemma_3_1_w_alternative'' sound_empty by force
+  shows "accepts A' (p,v) \<ge> weight_pre_star (accepts (K$ 0)) (p,v)"
+  using soundness2 assms lemma_3_1_w_alternative sound_empty by blast
 
-lemma lemma_3_1_w_alternative'''':
-  assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
-  shows "accepts A' \<ge> weight_pre_star (accepts (K$ 0))"
-  using lemma_3_1_w_alternative''' assms by auto
+lemma lemma_3_1_w_alternative'''_BONUS:
+  assumes soundA': "sound A'"
+  assumes "pre_star_rule\<^sup>*\<^sup>* A' A''"
+  shows "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
+  apply (subgoal_tac "sound A''")
+  subgoal
+    apply (meson BABABABABABA2 dual_order.trans lemma_3_1_w_alternative weight_pre_star_mono)
+    done
+  subgoal
+    using local.soundness2 soundA' assms(2) apply auto
+    done
+  done
 
 end
 
