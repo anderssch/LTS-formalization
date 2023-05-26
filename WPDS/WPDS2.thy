@@ -649,6 +649,21 @@ proof -
   qed
 qed
 
+lemma soundness2:
+  assumes "sound A"
+  assumes "pre_star_rule\<^sup>*\<^sup>* A A'"
+  shows "sound A'"
+  using assms(2,1)
+proof (induction)
+  case base
+  then show ?case
+    .
+next
+  case (step A' A'')
+  then show ?case
+    using local.soundness by blast
+qed
+
 lemma monoid_rtrancl_split:
   assumes "(p, (v, d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A')"
   obtains u w p'' d''' d' where
@@ -694,14 +709,14 @@ proof -
     by (cases pv)
   have "weight_pre_star (accepts A) (p,v) = \<^bold>\<Sum>{d' * accepts A c'| d' c'. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* c'}"
     by (simp add: weight_pre_star_def)
-  also have "... \<le> \<^bold>\<Sum>{d' * accepts A (p',[])| d' p'. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
+  also have "... \<le> \<^bold>\<Sum>{d' * accepts A (q,[])| d' q. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}"
     by (smt (verit) Collect_mono_iff sum_mono)
-  also have "... = \<^bold>\<Sum>{d' * (if p'\<in>finals then 1 else 0)| d' p'. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
+  also have "... = \<^bold>\<Sum>{d' * (if q\<in>finals then 1 else 0)| d' q. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}"
     unfolding accepts_empty_iff by auto
-  also have "... \<le> \<^bold>\<Sum>{d' |d' p'. p' \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
+  also have "... \<le> \<^bold>\<Sum>{d' |d' q. q \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}"
     by (smt (verit) Collect_mono_iff sum_mono mult.right_neutral)
-  also have "... = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* p') | p'. p' \<in> finals}"
-    using sum_of_sums_mult2[of "\<lambda>d p'. d" "\<lambda>d p'. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])" "\<lambda>p'. 1" "\<lambda>p'. p' \<in> finals"]
+  also have "... = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
+    using sum_of_sums_mult2[of "\<lambda>d q. d" "\<lambda>d q. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (q,[])" "\<lambda>q. 1" "\<lambda>q. q \<in> finals"]
     apply auto
     by (smt (verit) Collect_cong Orderings.order_eq_iff)
   also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sigma>(p,v) \<Rightarrow>\<^sup>* q |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
@@ -720,10 +735,16 @@ proof -
 qed
 
 lemma lemma_3_1_w_alternative': 
+  assumes "sound A'"
+  assumes "pre_star_rule A' A''"
+  shows "accepts A'' \<ge> weight_pre_star (accepts A)"
+  by (meson soundness assms(1) assms(2) le_funI lemma_3_1_w_alternative)
+
+lemma lemma_3_1_w_alternative'x: 
   assumes "sound A"
   assumes "pre_star_rule A A'"
   shows "accepts A' \<ge> weight_pre_star (accepts A)"
-  by (meson soundness assms(1) assms(2) le_funI lemma_3_1_w_alternative)
+  using lemma_3_1_w_alternative' assms by auto
 
 lemma weight_pre_star_leq':
    "X c \<ge> weight_pre_star X c"
@@ -743,7 +764,7 @@ proof -
     by auto
 qed
 
-lemma weight_pre_star_leq:
+lemma weight_pre_star_leq: (* Nice. But we don't use it. *)
   "X \<ge> weight_pre_star X"
   by (simp add: le_fun_def weight_pre_star_leq')
 
@@ -786,11 +807,11 @@ proof -
     .
 qed
 
-lemma weight_pre_star_dom_fixedpoint:
+lemma weight_pre_star_dom_fixedpoint: (* Nice. But we don't use it. *)
   "weight_pre_star (weight_pre_star C) = (weight_pre_star C)"
   using weight_pre_star_dom_fixedpoint' by auto
 
-lemma weight_pre_star_mono:
+lemma weight_pre_star_mono: (* Nice. But we don't use it. *)
   assumes "X \<le> Y"
   shows "weight_pre_star X c \<le> weight_pre_star Y c"
 proof -
@@ -813,33 +834,25 @@ proof -
 qed
 
 lemma lemma_3_1_w_alternative'':
-  assumes "sound A"
-  assumes "pre_star_rule\<^sup>*\<^sup>* A A'"
-  shows "accepts A' \<ge> weight_pre_star (accepts A)"
-  using assms(2,1)
-proof (induction)
-  case base
-  then show ?case
-    by (simp add: weight_pre_star_leq)
-next
-  case (step A' A'')
-  then have "accepts A'' \<ge> weight_pre_star (accepts A')"
-    using lemma_3_1_w_alternative'[of A' A'']
-    by (smt (verit, best) local.soundness rtranclp_induct) 
-  moreover
-  from step(3) have "weight_pre_star (accepts A') \<ge> weight_pre_star (weight_pre_star (accepts A))"
-    by (simp add: le_fun_def step.prems weight_pre_star_mono)
-  then have "weight_pre_star (accepts A') \<ge> weight_pre_star (accepts A)"
-    using weight_pre_star_dom_fixedpoint by auto
-  ultimately
-  show ?case
-    by auto
+  assumes "sound A'"
+  assumes "pre_star_rule\<^sup>*\<^sup>* A' A''"
+  shows "accepts A'' \<ge> weight_pre_star (accepts A)"
+proof -
+  have "sound A''"
+    using assms(1) assms(2) soundness2 by blast
+  then show "accepts A'' \<ge> weight_pre_star (accepts A)"
+    by (simp add: le_fun_def lemma_3_1_w_alternative)
 qed
 
 lemma lemma_3_1_w_alternative''':
   assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
-  shows "accepts A' \<ge> weight_pre_star (accepts (K$ 0))"
+  shows "accepts A' \<ge> weight_pre_star (accepts A)"
   using assms lemma_3_1_w_alternative'' sound_empty by force
+
+lemma lemma_3_1_w_alternative'''':
+  assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
+  shows "accepts A' \<ge> weight_pre_star (accepts (K$ 0))"
+  using lemma_3_1_w_alternative''' assms by auto
 
 end
 
