@@ -685,6 +685,11 @@ proof -
     by (simp add: accepts_def)
 qed
 
+lemma final_empty_accept0':
+  assumes "p \<in> finals"
+  shows "accepts (K$ 0) (p,[]) = 1"
+  using final_empty_accept' assms by auto
+
 lemma nonfinal_empty_accept':
   assumes "p \<notin> finals"
   shows "accepts A (p,[]) = 0"
@@ -695,13 +700,144 @@ proof -
     by (smt (verit, ccfv_threshold) Collect_cong accepts_def old.prod.case sum_empty)
 qed
 
+lemma nonfinal_empty_accept0'finals:
+  assumes "p \<notin> finals"
+  shows "accepts (K$ 0) (p,w) = 0"
+proof -
+  have "{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0))} = {}"
+    by (smt (verit) Collect_empty_eq assms finfun_const_apply mem_Collect_eq monoid_rtrancl.simps wts_to_monoidLTS_def)
+  then show ?thesis
+    by (smt (verit, ccfv_SIG) accepts_def empty_Collect_eq old.prod.case sum_empty)
+qed
+
+lemma nonfinal_empty_accept0'nonempty:
+  assumes "w \<noteq> []"
+  shows "accepts (K$ 0) (p,w) = 0"
+proof -
+  have "{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0))} = {}"
+    by (smt (verit) assms equals0I finfun_const_apply list.exhaust_sel mem_Collect_eq monoid_rtrancl_hd_tail wts_to_monoidLTS_def)
+  then show ?thesis
+    by (smt (verit, ccfv_SIG) accepts_def empty_Collect_eq old.prod.case sum_empty)
+qed
+
 lemma accepts_empty_iff: "accepts A (p,[]) = (if p\<in>finals then 1 else 0)"
   by (simp add: final_empty_accept' nonfinal_empty_accept')
+
+lemma accepts_empty_iff0: "accepts (K$ 0) (p,w) = (if p\<in>finals \<and> w = [] then 1 else 0)"
+  by (metis final_empty_accept0' nonfinal_empty_accept0'finals nonfinal_empty_accept0'nonempty)
 
 lemma sound_empty: "sound (K$ 0)"
   by (simp add: sound_def wts_to_monoidLTS_def)
 
-lemma lemma_3_1_w_alternative:
+lemma lemma_3_1_w_alternativeBABA:
+  assumes soundA': "sound A'"
+  shows "accepts A' pv \<ge> weight_pre_star (accepts (K$ 0)) pv"
+proof -
+  obtain p v where pv_split: "pv = (p, v)"
+    by (cases pv)
+  have "weight_pre_star (accepts (K$ 0)) (p,v) = \<^bold>\<Sum>{d' * accepts (K$ 0) (q,w)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"
+    by (simp add: weight_pre_star_def)
+  also have "... = \<^bold>\<Sum>{d' * (if q\<in>finals \<and> w=[] then 1 else 0)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"
+    using accepts_empty_iff0 by presburger
+  also have "... \<le> \<^bold>\<Sum>{d' |d' q. q \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}"
+    by (smt (verit) Collect_mono_iff sum_mono mult.right_neutral)
+  also have "... = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
+    using sum_of_sums_mult2[of "\<lambda>d q. d" "\<lambda>d q. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (q,[])" "\<lambda>q. 1" "\<lambda>q. q \<in> finals"]
+    apply auto
+    by (smt (verit) Collect_cong Orderings.order_eq_iff)
+  also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sigma>(p,v) \<Rightarrow>\<^sup>* q |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
+    by (smt (verit) Collect_mono_iff sum_mono) 
+  also have "... \<le> \<^bold>\<Sum>{d |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
+    using sum_bigger2[of 
+        "\<lambda>(d, q). q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')"
+        "\<lambda>(d, q). \<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q"
+        "\<lambda>(d, q). d"
+        ]
+    using soundA' sound_def2 by force
+  also have "... = accepts A' (p,v)"
+    unfolding accepts_def by (simp split: prod.split)
+  finally show ?thesis
+    unfolding pv_split by auto
+qed
+
+lemma BABABABABABA:
+  shows "accepts A' (p,v) \<le> accepts (K$ 0) (p,v)"
+proof (cases "p \<in> finals \<and> v = []")
+  case True
+  then have "accepts (K$ 0) (p,v) = 1"
+    using accepts_empty_iff0 by auto
+  also have "... \<ge> accepts A' (p,v)"
+    unfolding accepts_def
+    using True accepts_def final_empty_accept' by force
+  finally show ?thesis 
+    by auto
+next
+  case False
+  then have "p \<notin> finals \<or> v \<noteq> []"
+    by auto
+  then show ?thesis
+  proof
+    assume "p \<notin> finals"
+    then have "accepts (K$ 0) (p,v) = 0"
+      using accepts_empty_iff0 by auto
+    also have "... \<ge> accepts A' (p,v)"
+      by simp
+    finally show ?thesis 
+      by auto
+  next
+    assume "v \<noteq> []"
+    then have "accepts (K$ 0) (p,v) = 0"
+      using accepts_empty_iff0 by auto
+    also have "... \<ge> accepts A' (p,v)"
+       by simp
+    finally show ?thesis 
+      by auto
+  qed
+qed
+
+lemma BABABABABABA2:
+  shows "accepts A' \<le> accepts (K$ 0)"
+  using BABABABABABA by (simp add: le_fun_def)
+
+lemma weight_pre_star_mono:
+  assumes "X \<le> Y"
+  shows "weight_pre_star X c \<le> weight_pre_star Y c"
+proof -
+  have "\<forall>c. X c \<le> Y c"
+    using assms by (simp add: le_funD)
+  then have XY: "\<forall>l c'. l * X c' \<le> l * Y c'"
+    by (simp add: idempotent_semiring_ord_class.mult_isol)
+
+  have "weight_pre_star X c = \<^bold>\<Sum> {l * X c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    unfolding weight_pre_star_def by auto
+  also
+  have "... \<le> \<^bold>\<Sum> {l * Y c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    using sum_bigger2[of "\<lambda>(l, c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>(l, c). l * X c" "\<lambda>(l, c). l * Y c"] XY by auto
+  also 
+  have "... \<le> weight_pre_star Y c"
+    unfolding weight_pre_star_def by auto
+  finally
+  show ?thesis 
+    by auto
+qed
+
+lemma lemma_3_1_w_alternative_NEW_proof:
+  assumes soundA': "sound A'"
+  shows "accepts A' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
+  using lemma_3_1_w_alternativeBABA[OF soundA', of "(p,v)"]
+  apply -
+  apply (subgoal_tac "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)")
+  subgoal
+    apply auto
+    done
+  subgoal
+    using 
+      weight_pre_star_mono[OF BABABABABABA2] 
+    apply auto
+    done
+  done
+
+lemma lemma_3_1_w_alternative_OLD_proof:
   assumes soundA': "sound A'"
   shows "accepts A' pv \<ge> weight_pre_star (accepts A) pv"
 proof -
@@ -738,7 +874,12 @@ lemma lemma_3_1_w_alternative':
   assumes "sound A'"
   assumes "pre_star_rule A' A''"
   shows "accepts A'' \<ge> weight_pre_star (accepts A)"
-  by (meson soundness assms(1) assms(2) le_funI lemma_3_1_w_alternative)
+  by (meson soundness assms(1) assms(2) le_funI lemma_3_1_w_alternative_OLD_proof)
+
+lemma lemma_3_1_w_alternative'_NEW_VERSION: 
+  assumes "pre_star_rule (K$ 0) A"
+  shows "accepts A pv \<ge> weight_pre_star (accepts (K$ 0)) pv"
+  using lemma_3_1_w_alternativeBABA[OF soundness[OF sound_empty assms]] by auto
 
 lemma lemma_3_1_w_alternative'x: 
   assumes "sound A"
@@ -811,27 +952,6 @@ lemma weight_pre_star_dom_fixedpoint: (* Nice. But we don't use it. *)
   "weight_pre_star (weight_pre_star C) = (weight_pre_star C)"
   using weight_pre_star_dom_fixedpoint' by auto
 
-lemma weight_pre_star_mono: (* Nice. But we don't use it. *)
-  assumes "X \<le> Y"
-  shows "weight_pre_star X c \<le> weight_pre_star Y c"
-proof -
-  have "\<forall>c. X c \<le> Y c"
-    using assms by (simp add: le_funD)
-  then have XY: "\<forall>l c'. l * X c' \<le> l * Y c'"
-    by (simp add: idempotent_semiring_ord_class.mult_isol)
-
-  have "weight_pre_star X c = \<^bold>\<Sum> {l * X c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-    unfolding weight_pre_star_def by auto
-  also
-  have "... \<le> \<^bold>\<Sum> {l * Y c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-    using sum_bigger2[of "\<lambda>(l, c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>(l, c). l * X c" "\<lambda>(l, c). l * Y c"] XY by auto
-  also 
-  have "... \<le> weight_pre_star Y c"
-    unfolding weight_pre_star_def by auto
-  finally
-  show ?thesis 
-    by auto
-qed
 
 lemma lemma_3_1_w_alternative'':
   assumes "sound A'"
@@ -841,7 +961,7 @@ proof -
   have "sound A''"
     using assms(1) assms(2) soundness2 by blast
   then show "accepts A'' \<ge> weight_pre_star (accepts A)"
-    by (simp add: le_fun_def lemma_3_1_w_alternative)
+    by (simp add: le_fun_def lemma_3_1_w_alternative_OLD_proof)
 qed
 
 lemma lemma_3_1_w_alternative''':
