@@ -820,21 +820,21 @@ proof -
     by auto
 qed
 
+lemma BABABABABABA3:
+  "weight_pre_star (accepts A') c \<le> weight_pre_star (accepts (K$ 0)) c"
+  using weight_pre_star_mono[OF BABABABABABA2] by auto
+
 lemma lemma_3_1_w_alternative_BONUS:
   assumes soundA': "sound A'"
   shows "accepts A' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
-  using lemma_3_1_w_alternative[OF soundA', of "(p,v)"]
-  apply -
-  apply (subgoal_tac "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)")
-  subgoal
-    apply auto
-    done
-  subgoal
-    using 
-      weight_pre_star_mono[OF BABABABABABA2] 
-    apply auto
-    done
-  done
+proof -
+  have "weight_pre_star (accepts A) (p,v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
+    using BABABABABABA3 by auto
+  also have "... \<le> accepts A' (p, v)"
+    using lemma_3_1_w_alternative soundA' by auto
+  finally show ?thesis
+    by auto
+qed
 
 lemma lemma_3_1_w_alternative': 
   assumes "pre_star_rule (K$ 0) A"
@@ -845,14 +845,16 @@ lemma lemma_3_1_w_alternative'_BONUS:
   assumes soundA': "sound A'"
   assumes "pre_star_rule A' A''"
   shows "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
-  apply (subgoal_tac "sound A''")
-  subgoal
-    apply (meson BABABABABABA2 dual_order.trans lemma_3_1_w_alternative weight_pre_star_mono)
-    done
-  subgoal
-    using assms(2) local.soundness soundA' apply blast
-    done
-  done
+proof -
+  have sA'': "sound A''"
+    using soundness soundA' assms(2) by auto
+  have "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
+    using BABABABABABA3 by auto
+  also have "... \<le> accepts A'' (p,v)"
+    using lemma_3_1_w_alternative sA'' by auto
+  finally show "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
+    by auto
+qed
 
 lemma weight_pre_star_leq':
    "X c \<ge> weight_pre_star X c"
@@ -928,14 +930,16 @@ lemma lemma_3_1_w_alternative'''_BONUS:
   assumes soundA': "sound A'"
   assumes "pre_star_rule\<^sup>*\<^sup>* A' A''"
   shows "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
-  apply (subgoal_tac "sound A''")
-  subgoal
-    apply (meson BABABABABABA2 dual_order.trans lemma_3_1_w_alternative weight_pre_star_mono)
-    done
-  subgoal
-    using local.soundness2 soundA' assms(2) apply auto
-    done
-  done
+proof -
+  have sA'': "sound A''"
+    using local.soundness2 soundA' assms(2) by auto
+  have "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
+    using BABABABABABA3 by auto
+  also have "... \<le> accepts A'' (p,v)"
+    using lemma_3_1_w_alternative sA'' by auto
+  finally show "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
+    by auto
+qed
 
 end
 
