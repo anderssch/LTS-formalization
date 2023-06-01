@@ -941,6 +941,34 @@ proof -
     by auto
 qed
 
+lemma a:
+  assumes "\<forall>x \<in> X. x \<ge> d"
+  shows "\<^bold>\<Sum> X \<ge> d"
+  sorry
+
+lemma c:
+  assumes "saturated pre_star_rule A"
+  assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* (p,[])" and "p \<in> finals"
+  shows "accepts A c \<le> l"
+  using assms(2)
+  apply (induct)
+  using assms(1)
+  
+  sorry
+
+lemma b:
+  assumes "saturated pre_star_rule A"
+  assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* c'"
+  shows "accepts A c \<le> l * accepts (K$ 0) c'"
+  using assms c[OF assms(1)] accepts_empty_iff0[of "fst c'" "snd c'"] 
+  by simp (metis prod.collapse)
+lemma
+  assumes "saturated pre_star_rule A"
+  shows "accepts A c \<le> weight_pre_star (accepts (K$ 0)) c"
+  unfolding weight_pre_star_def
+  using a[of "{l * accepts (K$ 0) c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" "accepts A c"] b[OF assms]
+  by blast
+
 end
 
 end
