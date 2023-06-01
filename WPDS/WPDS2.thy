@@ -1065,17 +1065,17 @@ lemma nicenicenice''''''swap:
   by (metis (mono_tags, lifting) antisym empty_iff less_eq_zero sum_AAA sum_empty) (* This proof is stupid *)
 *)
 
-
+(*
 lemma nicenicenice''''''pop:
   assumes "saturated pre_star_rule A"
   assumes "(A $ (p, \<gamma>, q)) = d''"
   shows "\<^bold>\<Sum>{d | d . ((p, \<gamma>) \<midarrow>d\<hookrightarrow> (q, pop))} \<ge> d''"
   using assms nicenicenice'''''' 
   by (metis (mono_tags, lifting) dual_order.eq_iff empty_iff less_eq_zero sum_AAA sum_empty) (* This proof is stupid *)
+*)
 
 
-
-
+(*
 find_theorems  "_ \<Midarrow>_ \<Rightarrow> _"  "_ \<midarrow>_\<hookrightarrow> _"
 lemma nicenicenice''''''pop2:
   assumes "saturated pre_star_rule A"
@@ -1092,6 +1092,7 @@ lemma nicenicenice''''''pop2:
       apply auto
     done
   done
+*)
 
 
 lemma lemma_3_2_w_alternative:
@@ -1119,7 +1120,8 @@ lemma
   using assms(1) assms(2) less_le_not_le by blast
 
 lemma "(a :: 'weight) \<le> 0"
-
+  by simp
+(*
 lemma lemma_3_2_w_alternative:
   assumes "saturated pre_star_rule A"
   shows "accepts A (p,v) \<le> weight_pre_star (accepts (K$ 0)) (p,v)"
@@ -1223,7 +1225,36 @@ proof -
   finally show ?thesis
     by auto
 qed
+*)
 
+lemma c:
+  assumes "saturated pre_star_rule A"
+  assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* (p,[])" and "p \<in> finals"
+  shows "accepts A c \<le> l"
+  using assms(2,3)
+  apply (induct)
+  subgoal for c
+    sorry
+  subgoal
+    find_theorems saturated pre_star_rule
+    using assms(1)
+      nicenicenice[OF assms(1)]
+
+    sorry
+  sorry
+
+lemma b:
+  assumes "saturated pre_star_rule A"
+  assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* c'"
+  shows "accepts A c \<le> l * accepts (K$ 0) c'"
+  using assms c[OF assms(1)] accepts_empty_iff0[of "fst c'" "snd c'"] 
+  by simp (metis prod.collapse)
+lemma
+  assumes "saturated pre_star_rule A"
+  shows "accepts A c \<le> weight_pre_star (accepts (K$ 0)) c"
+  unfolding weight_pre_star_def
+  using sum_AAA[of "{l * accepts (K$ 0) c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" "accepts A c"] b[OF assms]
+  by blast
 
 end
 
