@@ -1,5 +1,5 @@
 theory WPDS2
-  imports "LTS" "Saturation" "ReverseWellQuasiOrder" "FinFunWellQuasiOrder" "WAutomaton"
+  imports "LTS" "Saturation" "FinFunWellFounded" "WAutomaton"
 begin
 
 datatype 'label operation = pop | swap 'label | push 'label 'label
@@ -150,7 +150,7 @@ lemma pre_star_rule_less_eq:
 
 lemma pre_star_saturation_exi:
   shows "\<exists>ts'. saturation pre_star_rule ts ts'"
-  by (rule wqo_class_saturation_exi[of pre_star_rule ts])
+  by (rule wfp_class_saturation_exi[of pre_star_rule ts])
      (simp add: pre_star_rule_less)
 
 lemma saturation_rtranclp_pre_star_rule_incr: "pre_star_rule\<^sup>*\<^sup>* A B \<Longrightarrow> A \<ge> B"

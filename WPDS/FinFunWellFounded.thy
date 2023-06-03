@@ -387,9 +387,10 @@ begin
     then show "good (\<ge>) f" unfolding wqo_on_def almost_full_on_def less_eq_finfun_def by simp
   qed
 end
-
+*)
 \<comment> \<open>Extra lemmas\<close>
 lemma finfun_update_less:
+  fixes f f' :: "'a \<Rightarrow>f 'weight::preorder"
   assumes "f $ a < f' $ a"
   assumes "f(a $:= d) = f'"
   shows "f < f'"
@@ -401,6 +402,7 @@ lemma finfun_update_less:
   using dual_order.strict_iff_not by blast
 
 lemma finfun_update_greater:
+  fixes f f' :: "'a \<Rightarrow>f 'weight::preorder"
   assumes "f $ a > f' $ a"
   assumes "f(a $:= d) = f'"
   shows "f > f'"
@@ -424,5 +426,5 @@ lemma less_eq_finfun_not_zero:
   shows "y $ c \<noteq> bot"
   using less_eq_finfun_elem[OF assms(1)] assms(2) bot.extremum_unique
   by metis                                                      
-*)
+
 end
