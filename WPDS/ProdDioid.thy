@@ -239,43 +239,30 @@ proof -
     from infinite_descending have P1: "\<forall>i. ?P1 (f i) (f (Suc i))" and 
                                   P2: "\<forall>i. ?P2 (f i) (f (Suc i))" and 
                                   sP1P2: "\<forall>i. ?sP1 (f i) (f (Suc i)) \<or> ?sP2 (f i) (f (Suc i))"
-      unfolding prod_le_def
-      apply safe
-      subgoal for i
-        apply (erule allE[of _ i]) by force
-      subgoal for i
-        apply (erule allE[of _ i]) by force
-      subgoal for i
-        apply (erule allE[of _ i]) by force
-      subgoal for i
-        apply (erule allE[of _ i]) by force
-      subgoal for i
-        apply (erule allE[of _ i]) by force
-      subgoal for i
-        apply (erule allE[of _ i]) by force
-      done
+      unfolding prod_le_def 
+        apply -
+      by (erule Meson.all_forward, force)+
     then have "\<forall>i. (strict P1) (?f1 (Suc i)) (?f1 i) \<or> (strict P2) (?f2 (Suc i)) (?f2 i)"
       by simp
     have "\<And>i. fst (f i) \<in> A1" using f
       by (metis SigmaD1 surjective_pairing)
-    then have notStrictEq1: "\<And>i. \<not> ?sP1 (f i) (f (Suc i)) \<Longrightarrow> fst (f (Suc i)) = fst (f i)"
+    then have notStrictEq1: "\<And>i. \<not> ?sP1 (f i) (f (Suc i)) \<Longrightarrow> fst (f i) = fst (f (Suc i))"
       using PnotStrictP[OF assms(1)] P1 by simp
     have "\<And>i. snd (f i) \<in> A2" using f
       by (metis SigmaD2 surjective_pairing)
-    then have notStrictEq2: "\<And>i. \<not> ?sP2 (f i) (f (Suc i)) \<Longrightarrow> snd (f (Suc i)) = snd (f i)"
+    then have notStrictEq2: "\<And>i. \<not> ?sP2 (f i) (f (Suc i)) \<Longrightarrow> snd (f i) =  snd (f (Suc i))"
       using PnotStrictP[OF assms(2)] P2 by simp
     have "\<exists>\<phi>. (\<forall>i. ?sP1 (f (\<phi> i)) (f (\<phi> (Suc i)))) \<or> (\<forall>i. ?sP2 (f (\<phi> i)) (f (\<phi> (Suc i))))"
     proof (cases "finite {i. ?sP1 (f i) (f (Suc i))}")
       case True
       then have "infinite {i. ?sP2 (f i) (f (Suc i))}" 
         using sP1P2 finite_infinite_nat_disj by presburger
-      then show ?thesis using notStrictEq2
-        infinitely_often_implies_subsequence_always[of "\<lambda>x y. (strict P2) y x" ?f2] by fastforce
+      then show ?thesis using infinitely_often_implies_subsequence_always[of "\<lambda>x y. (strict P2) y x" ?f2, OF _ notStrictEq2]
+        by blast
     next
       case False
-      then show ?thesis 
-        using notStrictEq1 infinitely_often_implies_subsequence_always[of "\<lambda>x y. (strict P1) y x" ?f1] 
-        by fastforce
+      then show ?thesis using infinitely_often_implies_subsequence_always[of "\<lambda>x y. (strict P1) y x" ?f1, OF _ notStrictEq1]
+        by blast
     qed
     then obtain \<phi> where \<phi>def: "(\<forall>i. ?sP1 (f (\<phi> i)) (f (\<phi> (Suc i)))) \<or> (\<forall>i. ?sP2 (f (\<phi> i)) (f (\<phi> (Suc i))))" 
       by blast
@@ -299,12 +286,12 @@ proof -
       by metis
   qed
 qed
-(*
-instantiation prod :: (bounded_idempotent_comm_monoid_add, bounded_idempotent_comm_monoid_add) bounded_idempotent_comm_monoid_add begin
+
+instantiation prod :: (wfp, wfp) wfp begin
   lemma less_eq_exists_symmetric:
-    fixes f :: "(nat \<Rightarrow> ('a::bounded_idempotent_comm_monoid_add \<times> 'b::bounded_idempotent_comm_monoid_add))"
+    fixes f :: "(nat \<Rightarrow> ('a::wfp \<times> 'b::wfp))"
     shows "\<exists>i. f (Suc i) \<le> f i \<longrightarrow> f i \<le> f (Suc i)"
-    using wfp_on_Sigma[OF antisymp_on_less_eq antisymp_on_less_eq wfp_on_less_eq wfp_on_less_eq, 
+    using wfp_on_Sigma[OF antisymp_on_less_eq antisymp_on_less_eq wfp_on_class wfp_on_class, 
                        of UNIV UNIV, unfolded wfp_on_def, simplified]
           prod_le_is_less_eq_prod
     by metis
@@ -317,14 +304,15 @@ instantiation prod :: (bounded_idempotent_comm_monoid_add, bounded_idempotent_co
         unfolding less_le using order_antisym by auto
     qed
   qed
-end *)
-instantiation prod :: (bounded_idempotent_comm_monoid_add, bounded_idempotent_comm_monoid_add) bounded_idempotent_comm_monoid_add begin
+end
+instantiation prod :: (bounded_idempotent_comm_monoid_add, bounded_idempotent_comm_monoid_add) bounded_idempotent_comm_monoid_add begin instance .. end
+(*instantiation prod :: (bounded_idempotent_comm_monoid_add, bounded_idempotent_comm_monoid_add) bounded_idempotent_comm_monoid_add begin
   instance proof
     show "almost_full_on (\<le>) (UNIV::('a\<times>'b) set)"
       using almost_full_on_Sigma[OF no_infinite_decending_chains no_infinite_decending_chains]
       unfolding prod_le_def less_eq_prod_def by (simp add: case_prod_beta')
   qed
-end
+end*)
 instantiation prod :: (bounded_idempotent_semiring, bounded_idempotent_semiring) bounded_idempotent_semiring begin instance .. end
 
 end
