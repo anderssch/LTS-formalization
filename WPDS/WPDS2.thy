@@ -246,7 +246,7 @@ proof -
     using assms(1) by auto
 qed
 
-lemma monoid_rtrancl_hd_tail':
+lemma monoid_rtrancl_wts_to_monoidLTS_cases_rev':
   assumes "(p\<^sub>1, w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3, p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
   shows "\<exists>d\<^sub>1\<^sub>3. w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = ([],d\<^sub>1\<^sub>3) \<or>
            (\<exists>p\<^sub>2 d\<^sub>2\<^sub>3 \<gamma>\<^sub>1\<^sub>2 w\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2.
@@ -260,7 +260,7 @@ proof (induction rule: monoid_rtrancl.induct)
   then show ?case
     by (simp add: one_list_def one_prod_def)
 next
-  case (monoid_rtrancl_into_rtrancl p\<^sub>1 w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 p\<^sub>3 w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4 p\<^sub>4) (* p\<^sub>1 \<gamma>\<^sub>1\<^sub>2w\<^sub>2\<^sub>3d\<^sub>1\<^sub>3 p\<^sub>3 p\<^sub>4 w\<^sub>2\<^sub>4 \<gamma>\<^sub>1\<^sub>2 d\<^sub>1\<^sub>4 *)
+  case (monoid_rtrancl_into_rtrancl p\<^sub>1 w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 p\<^sub>3 w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4 p\<^sub>4)
   show ?case
   proof (cases "(fst w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3)")
     case (Cons \<gamma>\<^sub>1\<^sub>2 w\<^sub>2\<^sub>3)
@@ -314,25 +314,24 @@ next
   qed
 qed
 
-lemma monoid_rtrancl_hd_tail:
+lemma monoid_rtrancl_wts_to_monoidLTS_cases_rev:
   assumes "(p, (\<gamma>#w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
   shows "\<exists>d' s d''.
            (p, ([\<gamma>], d'), s) \<in> wts_to_monoidLTS ts \<and>
            (s, (w, d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
            d = d' * d''"
-  using assms monoid_rtrancl_hd_tail' by fastforce
-
+  using assms monoid_rtrancl_wts_to_monoidLTS_cases_rev' by fastforce
 
 (* We are not using this induction. But it could be useful. *)
 lemma wts_to_monoidLTS_induct_reverse:
   assumes "(p, wd, p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
   assumes "(\<And>a. P a 1 a)"
-  shows "(\<And>p wd p' l p''.
+  assumes "(\<And>p wd p' l p''.
              (p, wd, p') \<in> (wts_to_monoidLTS ts) \<Longrightarrow> 
              P p' l p'' \<Longrightarrow> 
              (p', l, p'') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow>
-             P p (wd * l) p'') \<Longrightarrow>
-             P p wd p'"
+             P p (wd * l) p'')"
+  shows "P p wd p'"
   using assms
 proof (induct "length (fst wd)" arbitrary: p wd p')
   case 0
@@ -348,16 +347,16 @@ next
       using Suc(1)[of "1" p' p'] using Suc by blast
     moreover
     have "(p, wd, p') \<in> wts_to_monoidLTS ts"
-      by (smt (verit, best) One_nat_def Suc.hyps(2) Suc.prems(2) 0 add.commute append_Nil 
-          append_eq_append_conv fst_conv list.sel(1) list.size(3) list.size(4) monoid_rtrancl.simps 
-          monoid_star_w0 monoid_star_w1 mult_prod_def one_list_def one_neq_zero one_prod_def 
-          plus_1_eq_Suc prod.collapse times_list_def wts_label_d' wts_label_exist)
+      by (smt (verit, best) "0" One_nat_def diff_Suc_1 fst_conv length_0_conv length_Cons 
+          monoid_rtrancl_wts_to_monoidLTS_cases_rev' monoid_star_w0 monoid_star_w1 one_neq_zero 
+          outer_Suc(2) outer_Suc(3) prod.exhaust_sel wts_label_d)
     moreover
     have "(p', 1, p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
       by simp
     ultimately
     show ?thesis
-      using Suc(3)[of p wd p' 1 p'] by auto
+      using outer_Suc(5)[of p wd p' 1 p']
+      by (metis mult.right_neutral )
   next
     case (Suc n')
     define w where "w = fst wd"
@@ -371,7 +370,9 @@ next
     have "\<exists>d' s d''.(p, ([\<gamma>],d'), s) \<in> wts_to_monoidLTS ts \<and>
             (s, (w',d''),p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
             d = d' * d''"
-      using outer_Suc(4) Suc by (metis d_def monoid_rtrancl_hd_tail prod.exhaust_sel w_def w_split)
+      using outer_Suc(4) Suc
+      by (smt (verit, best) d_def fst_eqD list.discI list.sel(1) list.sel(3) 
+          monoid_rtrancl_wts_to_monoidLTS_cases_rev' outer_Suc(3) snd_eqD w_def w_split)
     then obtain s d' d'' where
       "(p, ([\<gamma>],d'), s) \<in> wts_to_monoidLTS ts"
       "(s, (w',d''),p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
@@ -379,11 +380,12 @@ next
 
     have "P s (w',d'') p'"
       using outer_Suc(1,2,3) \<open>(s, (w', d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)\<close> assms(2)
-      by (smt (verit, ccfv_SIG) fst_conv length_Cons nat.inject w_def w_split)
+      by (smt (verit, best) diff_Suc_1 fst_eqD length_Cons outer_Suc(5) w_def w_split)
 
     have "P p (([\<gamma>], d') * (w', d'')) p'"
-      using outer_Suc(3)[of p "([\<gamma>],d')" s "(w', d'')" p'] \<open>(p, ([\<gamma>], d'), s) \<in> wts_to_monoidLTS ts\<close> 
-        \<open>(s, (w', d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)\<close> \<open>P s (w', d'') p'\<close> by blast 
+      using \<open>(p, ([\<gamma>], d'), s) \<in> wts_to_monoidLTS ts\<close>
+        \<open>(s, (w', d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)\<close> \<open>P s (w', d'') p'\<close> 
+        outer_Suc(5) by blast
     then have "P p (\<gamma> # w', d' * d'') p'"
       by (auto simp add: mult_prod_def times_list_def)
     then show ?thesis
@@ -398,7 +400,7 @@ lemma monoid_star_nonempty:
   shows "\<exists>pi d1 d2. (snd w) = d1 * d2 \<and> 
                     (pi, (tl (fst w), d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
                     (p, ([hd (fst w)], d1), pi) \<in> wts_to_monoidLTS ts"
-  by (metis assms(1) assms(2) hd_Cons_tl monoid_rtrancl_hd_tail prod.exhaust_sel)
+  by (metis assms(1,2) list.collapse monoid_rtrancl_wts_to_monoidLTS_cases_rev surjective_pairing)
 
 lemma sum_distr: "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
   sorry
@@ -714,7 +716,8 @@ lemma nonfinal_empty_accept0'nonempty:
   shows "accepts (K$ 0) (p,w) = 0"
 proof -
   have "{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0))} = {}"
-    by (smt (verit) assms equals0I finfun_const_apply list.exhaust_sel mem_Collect_eq monoid_rtrancl_hd_tail wts_to_monoidLTS_def)
+    by (smt (verit) assms equals0I finfun_const_apply list.exhaust_sel mem_Collect_eq
+        monoid_rtrancl_wts_to_monoidLTS_cases_rev wts_to_monoidLTS_def)
   then show ?thesis
     by (smt (verit, ccfv_SIG) accepts_def empty_Collect_eq old.prod.case sum_empty)
 qed
@@ -728,7 +731,7 @@ lemma accepts_empty_iff0: "accepts (K$ 0) (p,w) = (if p\<in>finals \<and> w = []
 lemma sound_empty: "sound (K$ 0)"
   by (simp add: sound_def wts_to_monoidLTS_def)
 
-lemma lemma_3_1_w_alternative:
+lemma lemma_3_2_w_alternative:
   assumes soundA': "sound A'"
   shows "accepts A' pv \<ge> weight_pre_star (accepts (K$ 0)) pv"
 proof -
@@ -759,7 +762,7 @@ proof -
     unfolding pv_split by auto
 qed
 
-lemma BABABABABABA:
+lemma accepts_lte_accepts_K0':
   shows "accepts A' (p,v) \<le> accepts (K$ 0) (p,v)"
 proof (cases "p \<in> finals \<and> v = []")
   case True
@@ -794,9 +797,9 @@ next
   qed
 qed
 
-lemma BABABABABABA2:
+lemma accepts_lte_accepts_K0:
   shows "accepts A' \<le> accepts (K$ 0)"
-  using BABABABABABA by (simp add: le_fun_def)
+  using accepts_lte_accepts_K0' by (simp add: le_fun_def)
 
 lemma weight_pre_star_mono:
   assumes "X \<le> Y"
@@ -820,28 +823,28 @@ proof -
     by auto
 qed
 
-lemma BABABABABABA3:
+lemma weight_pre_star_accepts_lt_weight_pre_star_accepts_K0:
   "weight_pre_star (accepts A') c \<le> weight_pre_star (accepts (K$ 0)) c"
-  using weight_pre_star_mono[OF BABABABABABA2] by auto
+  using weight_pre_star_mono[OF accepts_lte_accepts_K0] by auto
 
-lemma lemma_3_1_w_alternative_BONUS:
+lemma lemma_3_2_w_alternative_BONUS:
   assumes soundA': "sound A'"
   shows "accepts A' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
 proof -
   have "weight_pre_star (accepts A) (p,v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
-    using BABABABABABA3 by auto
+    using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
   also have "... \<le> accepts A' (p, v)"
-    using lemma_3_1_w_alternative soundA' by auto
+    using lemma_3_2_w_alternative soundA' by auto
   finally show ?thesis
     by auto
 qed
 
-lemma lemma_3_1_w_alternative': 
+lemma lemma_3_2_w_alternative': 
   assumes "pre_star_rule (K$ 0) A"
   shows "accepts A pv \<ge> weight_pre_star (accepts (K$ 0)) pv"
-  using lemma_3_1_w_alternative[OF soundness[OF sound_empty assms]] by auto
+  using lemma_3_2_w_alternative[OF soundness[OF sound_empty assms]] by auto
 
-lemma lemma_3_1_w_alternative'_BONUS: 
+lemma lemma_3_2_w_alternative'_BONUS: 
   assumes soundA': "sound A'"
   assumes "pre_star_rule A' A''"
   shows "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
@@ -849,9 +852,9 @@ proof -
   have sA'': "sound A''"
     using soundness soundA' assms(2) by auto
   have "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
-    using BABABABABABA3 by auto
+    using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
   also have "... \<le> accepts A'' (p,v)"
-    using lemma_3_1_w_alternative sA'' by auto
+    using lemma_3_2_w_alternative sA'' by auto
   finally show "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
     by auto
 qed
@@ -921,12 +924,12 @@ lemma weight_pre_star_dom_fixedpoint: (* Nice. But we don't use it. *)
   "weight_pre_star (weight_pre_star C) = (weight_pre_star C)"
   using weight_pre_star_dom_fixedpoint' by auto
 
-lemma lemma_3_1_w_alternative''':
+lemma lemma_3_2_w_alternative''':
   assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
   shows "accepts A' (p,v) \<ge> weight_pre_star (accepts (K$ 0)) (p,v)"
-  using soundness2 assms lemma_3_1_w_alternative sound_empty by blast
+  using soundness2 assms lemma_3_2_w_alternative sound_empty by blast
 
-lemma lemma_3_1_w_alternative'''_BONUS:
+lemma lemma_3_2_w_alternative'''_BONUS:
   assumes soundA': "sound A'"
   assumes "pre_star_rule\<^sup>*\<^sup>* A' A''"
   shows "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
@@ -934,9 +937,9 @@ proof -
   have sA'': "sound A''"
     using local.soundness2 soundA' assms(2) by auto
   have "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
-    using BABABABABABA3 by auto
+    using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
   also have "... \<le> accepts A'' (p,v)"
-    using lemma_3_1_w_alternative sA'' by auto
+    using lemma_3_2_w_alternative sA'' by auto
   finally show "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
     by auto
 qed
@@ -1095,7 +1098,7 @@ lemma nicenicenice''''''pop2:
 *)
 
 
-lemma lemma_3_2_w_alternative:
+lemma lemma_3_1_w_alternative:
   assumes "saturated pre_star_rule A"
   shows "complete A"
 proof (rule complete_intro)
@@ -1122,7 +1125,7 @@ lemma
 lemma "(a :: 'weight) \<le> 0"
   by simp
 (*
-lemma lemma_3_2_w_alternative:
+lemma lemma_3_1_w_alternative:
   assumes "saturated pre_star_rule A"
   shows "accepts A (p,v) \<le> weight_pre_star (accepts (K$ 0)) (p,v)"
 proof -
@@ -1159,7 +1162,7 @@ proof -
     by auto
 qed
 
-lemma lemma_3_2_w_alternative:
+lemma lemma_3_1_w_alternative:
   assumes "saturated pre_star_rule A"
   shows "accepts A (p,v) \<le> weight_pre_star (accepts A) (p,v)"
 proof -
@@ -1226,6 +1229,10 @@ proof -
     by auto
 qed
 *)
+
+thm monoid_star_relp_induct
+thm wts_to_monoidLTS_induct_reverse
+find_theorems "_ \<Midarrow>_\<Rightarrow>\<^sup>* _" name: induct
 
 lemma c:
   assumes "saturated pre_star_rule A"
