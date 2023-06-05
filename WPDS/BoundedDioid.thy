@@ -174,6 +174,82 @@ proof -
       by simp
     done
 qed
+
+lemma sum_seq_elem:
+  assumes "i < n"
+  shows "sum_seq f n \<le> f i"
+  unfolding less_eq_def 
+proof -
+  have "{x. x < n} = {x. x < n \<and> (x < i \<or> i < x)} \<union> {i}" using assms by fastforce
+  then have "sum_seq f n = sum f ({x. x < n \<and> (x < i \<or> i < x)} \<union> {i})" by presburger
+  then show "sum_seq f n + f i = sum_seq f n"
+  using sum.union_disjoint[of "{x. x < n \<and> (x < i \<or> i < x)}" "{i}" f] assms by fastforce
+qed
+
+definition seq_except :: "(nat \<Rightarrow> 'a) \<Rightarrow> nat \<Rightarrow> (nat \<Rightarrow> 'a)" where
+  "seq_except f i j = (if j < i then f j else f (Suc j))"
+
+
+lemma Suc_interval_img: "Suc ` {x. i \<le> x \<and> x < n} = {x. Suc i \<le> x \<and> x < Suc n}"
+  unfolding image_def
+  apply simp
+  apply safe
+  subgoal for x
+    by presburger
+  done
+
+lemma sum_interval_Suc_transfer: "(\<Sum>x | i \<le> x \<and> x < n. f (Suc x)) = (\<Sum>x | Suc i \<le> x \<and> x < Suc n. f x)"
+proof -
+  have t_Suc_comp:"(\<lambda>x. f (Suc x)) = f o Suc" by fastforce
+  have Suc_inj: "inj_on Suc {x. i \<le> x \<and> x < n}" by simp
+  have "Finite_Set.fold ((+) \<circ> (f \<circ> Suc)) 0 {x. i \<le> x \<and> x < n} = Finite_Set.fold ((+) \<circ> f) 0 (Suc ` {x. i \<le> x \<and> x < n})"
+    using fold_image[OF Suc_inj, of "(+) \<circ> f" 0, symmetric] comp_assoc[of "(+)" f Suc] by argo
+  then show ?thesis unfolding sum.eq_fold
+    using t_Suc_comp Suc_interval_img[of i n] by argo
+qed
+
+
+lemma seq_except_split_sum: 
+  assumes "i < n"
+  shows "sum_seq (seq_except f i) n = sum_seq f i + sum f {x. Suc i \<le> x \<and> x < Suc n}"
+  using sum_prefix_seq_split[of i n "seq_except f i"] assms(1) sum_interval_Suc_transfer
+  unfolding seq_except_def by simp
+
+lemma seq_except_same_sum:
+  assumes "f i = f j"
+      and "i < n"
+      and "j < i"
+    shows "sum_seq f (Suc n) = sum_seq (seq_except f i) n"
+proof -
+  have "\<And>x. i \<le> x \<and> x < Suc i \<longleftrightarrow> i = x" by fastforce
+  then have "(\<Sum>x | i \<le> x \<and> x < Suc i. f x) = f i" by fastforce
+  then have "sum_seq f (Suc n) = sum_seq f i + f i + (\<Sum>x | Suc i \<le> x \<and> x < Suc n. f x)" 
+    using assms(2) by (simp add: sum_prefix_seq_split[of "(Suc i)" "Suc n" f] sum_prefix_seq_split[of i "Suc i" f])
+  moreover have "sum_seq (seq_except f i) n = sum_seq f i + sum f {x. Suc i \<le> x \<and> x < Suc n}" by (simp add: seq_except_split_sum[OF assms(2), of f])
+  ultimately show ?thesis using sum_seq_elem[OF assms(3), of f, unfolded less_eq_def] assms(1) by argo
+qed
+
+lemma exists_inj_sum_seq:
+  "\<exists>f' n'. sum_seq f n = sum_seq f' n' \<and> n' \<le> n \<and> inj_on f' {i. i < n'} \<and> \<Sum> {f i | i. i < n} = \<Sum> {f' i | i. i < n'}"
+  unfolding inj_on_def
+  apply simp
+  using seq_except_same_sum
+  \<comment> \<open>TODO: Prove using idempotence: 
+      If f is not inj_on ==> exists different i and j with f i = f j, 
+      then removing element j from f gives the same sum. 
+      Induction on that.\<close>
+  oops
+
+lemma sum_seq_to_sum_inj: 
+  assumes "inj_on f {x. x < n}"  \<comment> \<open>Note: inj_on should not be needed, but it is used in the current proof.\<close>
+  shows "sum_seq f n = \<Sum> {f i | i. i < n}"
+proof -
+  have "{f i | i. i < n} = f ` {x. x < n}" by blast
+  then show ?thesis unfolding sum.eq_fold
+    by (simp add: comp_id[unfolded id_def, of "(+)"] fold_image[OF assms, of "(+)" 0, symmetric])
+qed
+
+
 end
 
 class bounded_idempotent_comm_monoid_add_topology = discrete_topology + bounded_idempotent_comm_monoid_add
@@ -187,23 +263,6 @@ subclass t2_space proof
     by (intro exI[of _ "{_}"]) (auto intro!: open_discrete)
 qed
 
-(*
-subclass wqo proof
-  fix f
-  show "good (\<le>) f" using no_infinite_decending_chains unfolding almost_full_on_def by simp
-qed
-lemma wqo_on_UNIV: "wqo_on (\<le>) UNIV"
-  unfolding wqo_on_def using transp_on_UNIV no_infinite_decending_chains by presburger
-lemma wfp_on_UNIV:"wfp_on (<) UNIV"
-  using wqo_on_imp_wfp_on[OF wqo_on_UNIV] less_le_not_le[abs_def] by blast
-lemma no_antichain_on_UNIV: "\<not> antichain_on (\<le>) f UNIV"
-  using almost_full_on_imp_no_antichain_on[OF no_infinite_decending_chains] by blast
-
-\<comment> \<open>A more direct formulation of the no_infinite_decending_chain condition\<close>
-lemma no_infinite_decending: "\<nexists>f. \<forall>i. (f i) > (f (Suc i))"
-  using wfp_on_UNIV
-  unfolding wfp_on_def by blast
-*)
 end
 
 primrec decreasing_sequence_aux :: "(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology) \<Rightarrow> (nat \<Rightarrow> 'a \<times> nat)" where
@@ -255,14 +314,14 @@ lemma divergent_sum_implies_infinite_descending:
   done
 
 lemma eventually_stable_sum': 
-    "\<forall>f::(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology). \<exists>L N. \<forall>n\<ge>N. sum f {x. x < n} = L"
+    "\<forall>f::(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology). \<exists>L N. \<forall>n\<ge>N. sum_seq f n = L"
   apply (rule ccontr, simp)
   apply (drule divergent_sum_implies_infinite_descending) 
   using no_infinite_decending by blast
 
 lemma eventually_stable_sum:
   fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
-  shows "\<exists>L N. \<forall>n\<ge>N. (\<Sum>x | x < n. f x) = L"
+  shows "\<exists>L N. \<forall>n\<ge>N. sum_seq f n = L"
   using eventually_stable_sum' by blast
 
 lemma summable_bounded_dioid:
@@ -272,14 +331,61 @@ lemma summable_bounded_dioid:
   apply (simp add: tendsto_discrete[of "(\<lambda>n. \<Sum>x | x < n. f x)" _ sequentially] eventually_sequentially)
   by (fact eventually_stable_sum)
 
-lemma
+lemma stable_sum_is_suminf:
   fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
-  shows "\<exists>N. \<forall>n\<ge>N. (\<Sum>x | x < n. f x) = suminf f"
-  using summable_bounded_dioid[of f]
-    summable_sums[OF summable_bounded_dioid[of f], unfolded sums_def]
-tendsto_discrete[of "(\<lambda>n. \<Sum>x | x < n. f x)" _ sequentially] eventually_sequentially
-  apply simp
-  oops
+  shows "\<exists>N. \<forall>n\<ge>N. sum_seq f n = suminf f"
+  using summable_sums[OF summable_bounded_dioid[of f], unfolded sums_def lessThan_def]
+  by (simp add: tendsto_discrete eventually_sequentially)
+
+lemma sumseq_suminf_obtain_bound:
+  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
+  obtains N where "\<forall>n\<ge>N. sum_seq f n = suminf f"
+  using stable_sum_is_suminf[of f] by blast
+lemma sumseq_suminf_obtain:
+  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
+  obtains n where "sum_seq f n = suminf f"
+  using stable_sum_is_suminf[of f] by blast
+
+lemma stable_sum_eq_to_suminf_eq:
+  fixes f f' :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
+  assumes "\<exists>N. \<forall>n\<ge>N. sum_seq f n = sum_seq f' n"
+  shows "suminf f = suminf f'"
+  using assms stable_sum_is_suminf[of f] stable_sum_is_suminf[of f']
+  apply safe
+  subgoal for N Na Nb
+    apply (erule allE[of _ "max N (max Na Nb)"])
+    by simp
+  done
+
+lemma suminf_elem:
+  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
+  shows "suminf f \<le> f i"
+proof -
+  obtain N where N_def:"\<forall>n\<ge>N. sum_seq f n = suminf f" 
+    by (fact sumseq_suminf_obtain_bound)
+  then obtain n where "sum_seq f n = suminf f" and "i < n" 
+    by - (erule allE[of _ "max N (Suc i)"], simp)
+  then show ?thesis using sum_seq_elem[of i n]
+    by metis
+qed
+
+lemma seqs_same_elems_exists_map:
+  fixes f f' :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
+  assumes "\<And>l. (\<exists>i. f i = l) \<longleftrightarrow> (\<exists>i. f' i = l)"
+  shows "\<exists>g. \<forall>i. f i = f' (g i)"
+proof -
+  have "\<forall>i. \<exists>i'. f i = f' i'"
+    apply safe
+    subgoal for i
+      using assms[of "f i"] by metis
+    done
+  then show ?thesis by metis
+qed
+lemma seqs_same_elems_obtain_map:
+  fixes f f' :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
+  assumes "\<And>l. (\<exists>i. f i = l) \<longleftrightarrow> (\<exists>i. f' i = l)"
+  obtains g where "\<And>i. f i = f' (g i)"
+  using seqs_same_elems_exists_map[OF assms] by blast
 
 
 \<comment> \<open>Definition 5 from [RSJM'05].\<close>

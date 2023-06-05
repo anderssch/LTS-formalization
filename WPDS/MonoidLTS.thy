@@ -113,7 +113,7 @@ lemma countable_set_exists_seq: "countable W \<Longrightarrow> W \<noteq> {} \<L
 lemma path_seq_of_countable_set:
   assumes "countable W"
   assumes "W \<noteq> {}"
-  shows "\<forall>l. l \<in> W \<longleftrightarrow> (\<exists>i. path_seq W i = l)"
+  shows "l \<in> W \<longleftrightarrow> (\<exists>i. path_seq W i = l)"
   unfolding path_seq_def
   apply (simp add: assms(2))
   using someI_ex[OF countable_set_exists_seq[OF assms]] 
@@ -137,6 +137,58 @@ lemma path_seq_notin_set_zero:
 
 definition SumInf :: "'label set \<Rightarrow> 'label" ("\<^bold>\<Sum>") where
   "\<^bold>\<Sum> W = suminf (path_seq W)"
+
+lemma countable_obtain_seq:
+  assumes "countable W"
+  obtains f::"'a \<Rightarrow> nat" where "\<forall>x\<in>W. \<forall>y\<in>W. f x = f y \<longrightarrow> x = y"
+  using assms unfolding countable_def inj_on_def by presburger
+
+lemma countable_suminf_exists_sumseq_bound:
+  assumes "countable W"
+  shows "\<exists>f N. \<forall>n\<ge>N. \<^bold>\<Sum> W = sum_seq f n"
+proof (cases "W = {}")
+  case True
+  then show ?thesis 
+    unfolding SumInf_def path_seq_def
+    by simp (rule exI[of _ "\<lambda>i. 0"], simp)
+next
+  case False
+  then show ?thesis 
+  proof -
+    obtain f :: "nat \<Rightarrow> 'label" and C :: "nat set" where f_bij:"bij_betw f C W" 
+      using countableE_bij[OF assms(1)] by blast
+    then have f_inj:"\<forall>x\<in>C. \<forall>y\<in>C. f x = f y \<longrightarrow> x = y" and f_img:"f ` C = W" 
+      unfolding bij_betw_def inj_on_def by blast+
+    from f_img have "\<And>l. (l \<in> W) \<longleftrightarrow> (\<exists>i\<in>C. f i = l)" by blast
+    then have path_seq_to_f:"\<And>l. (\<exists>i. path_seq W i = l) \<longleftrightarrow> (\<exists>i\<in>C. f i = l)" 
+      using path_seq_of_countable_set[OF assms(1) False] by presburger
+    have "\<exists>h. \<forall>i. (path_seq W) i = f (h i)"
+      proof -
+        have "\<forall>i. \<exists>i'. (path_seq W) i = f i'"
+          apply safe
+          subgoal for i
+            using path_seq_to_f[of "(path_seq W) i"] by metis
+          done
+        then show ?thesis by metis
+      qed
+    then obtain h where "\<And>i. (path_seq W) i = (f o h) i" by force
+    then have path_seq_fh:"(path_seq W) = (f o h)" by fast
+    obtain N where "\<forall>n\<ge>N. sum_seq (f o h) n = suminf (f o h)" by (fact sumseq_suminf_obtain_bound)
+    then have "\<forall>n\<ge>N. SumInf W = sum_seq (f o h) n"
+      unfolding SumInf_def using path_seq_fh by simp
+    then show ?thesis by fast
+  qed
+qed
+
+lemma countable_suminf_obtains_sumseq_bound:
+  assumes "countable W"
+  obtains f and N where "\<forall>n\<ge>N. \<^bold>\<Sum> W = sum_seq f n"
+  using countable_suminf_exists_sumseq_bound[OF assms] by fast
+
+lemma countable_suminf_obtains_sumseq:
+  assumes "countable W"
+  obtains f and n where "\<^bold>\<Sum> W = sum_seq f n"
+  using countable_suminf_exists_sumseq_bound[OF assms] by fast
 
 lemma SumInf_empty[simp]: "SumInf {} = 0"
   unfolding SumInf_def using suminf_finite[of "{}", simplified] path_seq_empty by blast
