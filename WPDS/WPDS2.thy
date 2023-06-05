@@ -246,7 +246,7 @@ proof -
     using assms(1) by auto
 qed
 
-lemma monoid_rtrancl_hd_tail':
+lemma monoid_rtrancl_wts_to_monoidLTS_cases_rev':
   assumes "(p\<^sub>1, w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3, p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
   shows "\<exists>d\<^sub>1\<^sub>3. w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = ([],d\<^sub>1\<^sub>3) \<or>
            (\<exists>p\<^sub>2 d\<^sub>2\<^sub>3 \<gamma>\<^sub>1\<^sub>2 w\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2.
@@ -314,14 +314,13 @@ next
   qed
 qed
 
-lemma monoid_rtrancl_hd_tail:
+lemma monoid_rtrancl_wts_to_monoidLTS_cases_rev:
   assumes "(p, (\<gamma>#w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
   shows "\<exists>d' s d''.
            (p, ([\<gamma>], d'), s) \<in> wts_to_monoidLTS ts \<and>
            (s, (w, d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
            d = d' * d''"
-  using assms monoid_rtrancl_hd_tail' by fastforce
-
+  using assms monoid_rtrancl_wts_to_monoidLTS_cases_rev' by fastforce
 
 (* We are not using this induction. But it could be useful. *)
 lemma wts_to_monoidLTS_induct_reverse:
@@ -348,9 +347,9 @@ next
       using Suc(1)[of "1" p' p'] using Suc by blast
     moreover
     have "(p, wd, p') \<in> wts_to_monoidLTS ts"
-      by (smt (verit, ccfv_SIG) "0" One_nat_def fst_conv length_0_conv length_Cons
-          monoid_rtrancl_hd_tail' monoid_star_w0 monoid_star_w1 old.nat.inject outer_Suc(2) 
-          outer_Suc(3) prod.collapse wts_label_d zero_neq_one)
+      by (smt (verit, best) "0" One_nat_def diff_Suc_1 fst_conv length_0_conv length_Cons 
+          monoid_rtrancl_wts_to_monoidLTS_cases_rev' monoid_star_w0 monoid_star_w1 one_neq_zero 
+          outer_Suc(2) outer_Suc(3) prod.exhaust_sel wts_label_d)
     moreover
     have "(p', 1, p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
       by simp
@@ -372,8 +371,8 @@ next
             (s, (w',d''),p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
             d = d' * d''"
       using outer_Suc(4) Suc
-      by (metis WPDS_with_W_automata.monoid_rtrancl_hd_tail WPDS_with_W_automata_axioms d_def 
-          outer_Suc(3) surjective_pairing w_def w_split)
+      by (smt (verit, best) d_def fst_eqD list.discI list.sel(1) list.sel(3) 
+          monoid_rtrancl_wts_to_monoidLTS_cases_rev' outer_Suc(3) snd_eqD w_def w_split)
     then obtain s d' d'' where
       "(p, ([\<gamma>],d'), s) \<in> wts_to_monoidLTS ts"
       "(s, (w',d''),p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
@@ -401,7 +400,7 @@ lemma monoid_star_nonempty:
   shows "\<exists>pi d1 d2. (snd w) = d1 * d2 \<and> 
                     (pi, (tl (fst w), d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
                     (p, ([hd (fst w)], d1), pi) \<in> wts_to_monoidLTS ts"
-  by (metis assms(1) assms(2) hd_Cons_tl monoid_rtrancl_hd_tail prod.exhaust_sel)
+  by (metis assms(1,2) list.collapse monoid_rtrancl_wts_to_monoidLTS_cases_rev surjective_pairing)
 
 lemma sum_distr: "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
   sorry
@@ -717,7 +716,8 @@ lemma nonfinal_empty_accept0'nonempty:
   shows "accepts (K$ 0) (p,w) = 0"
 proof -
   have "{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0))} = {}"
-    by (smt (verit) assms equals0I finfun_const_apply list.exhaust_sel mem_Collect_eq monoid_rtrancl_hd_tail wts_to_monoidLTS_def)
+    by (smt (verit) assms equals0I finfun_const_apply list.exhaust_sel mem_Collect_eq
+        monoid_rtrancl_wts_to_monoidLTS_cases_rev wts_to_monoidLTS_def)
   then show ?thesis
     by (smt (verit, ccfv_SIG) accepts_def empty_Collect_eq old.prod.case sum_empty)
 qed
