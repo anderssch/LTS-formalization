@@ -327,12 +327,12 @@ lemma monoid_rtrancl_hd_tail:
 lemma wts_to_monoidLTS_induct_reverse:
   assumes "(p, wd, p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
   assumes "(\<And>a. P a 1 a)"
-  shows "(\<And>p wd p' l p''.
+  assumes "(\<And>p wd p' l p''.
              (p, wd, p') \<in> (wts_to_monoidLTS ts) \<Longrightarrow> 
              P p' l p'' \<Longrightarrow> 
              (p', l, p'') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow>
-             P p (wd * l) p'') \<Longrightarrow>
-             P p wd p'"
+             P p (wd * l) p'')"
+  shows "P p wd p'"
   using assms
 proof (induct "length (fst wd)" arbitrary: p wd p')
   case 0
@@ -348,16 +348,16 @@ next
       using Suc(1)[of "1" p' p'] using Suc by blast
     moreover
     have "(p, wd, p') \<in> wts_to_monoidLTS ts"
-      by (smt (verit, best) One_nat_def Suc.hyps(2) Suc.prems(2) 0 add.commute append_Nil 
-          append_eq_append_conv fst_conv list.sel(1) list.size(3) list.size(4) monoid_rtrancl.simps 
-          monoid_star_w0 monoid_star_w1 mult_prod_def one_list_def one_neq_zero one_prod_def 
-          plus_1_eq_Suc prod.collapse times_list_def wts_label_d' wts_label_exist)
+      by (smt (verit, ccfv_SIG) "0" One_nat_def fst_conv length_0_conv length_Cons
+          monoid_rtrancl_hd_tail' monoid_star_w0 monoid_star_w1 old.nat.inject outer_Suc(2) 
+          outer_Suc(3) prod.collapse wts_label_d zero_neq_one)
     moreover
     have "(p', 1, p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
       by simp
     ultimately
     show ?thesis
-      using Suc(3)[of p wd p' 1 p'] by auto
+      using outer_Suc(5)[of p wd p' 1 p']
+      by (metis mult.right_neutral )
   next
     case (Suc n')
     define w where "w = fst wd"
@@ -371,7 +371,9 @@ next
     have "\<exists>d' s d''.(p, ([\<gamma>],d'), s) \<in> wts_to_monoidLTS ts \<and>
             (s, (w',d''),p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
             d = d' * d''"
-      using outer_Suc(4) Suc by (metis d_def monoid_rtrancl_hd_tail prod.exhaust_sel w_def w_split)
+      using outer_Suc(4) Suc
+      by (metis WPDS_with_W_automata.monoid_rtrancl_hd_tail WPDS_with_W_automata_axioms d_def 
+          outer_Suc(3) surjective_pairing w_def w_split)
     then obtain s d' d'' where
       "(p, ([\<gamma>],d'), s) \<in> wts_to_monoidLTS ts"
       "(s, (w',d''),p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
@@ -379,11 +381,12 @@ next
 
     have "P s (w',d'') p'"
       using outer_Suc(1,2,3) \<open>(s, (w', d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)\<close> assms(2)
-      by (smt (verit, ccfv_SIG) fst_conv length_Cons nat.inject w_def w_split)
+      by (smt (verit, best) diff_Suc_1 fst_eqD length_Cons outer_Suc(5) w_def w_split)
 
     have "P p (([\<gamma>], d') * (w', d'')) p'"
-      using outer_Suc(3)[of p "([\<gamma>],d')" s "(w', d'')" p'] \<open>(p, ([\<gamma>], d'), s) \<in> wts_to_monoidLTS ts\<close> 
-        \<open>(s, (w', d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)\<close> \<open>P s (w', d'') p'\<close> by blast 
+      using \<open>(p, ([\<gamma>], d'), s) \<in> wts_to_monoidLTS ts\<close>
+        \<open>(s, (w', d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)\<close> \<open>P s (w', d'') p'\<close> 
+        outer_Suc(5) by blast
     then have "P p (\<gamma> # w', d' * d'') p'"
       by (auto simp add: mult_prod_def times_list_def)
     then show ?thesis
@@ -1226,6 +1229,10 @@ proof -
     by auto
 qed
 *)
+
+thm monoid_star_relp_induct
+thm wts_to_monoidLTS_induct_reverse
+find_theorems "_ \<Midarrow>_\<Rightarrow>\<^sup>* _" name: induct
 
 lemma c:
   assumes "saturated pre_star_rule A"
