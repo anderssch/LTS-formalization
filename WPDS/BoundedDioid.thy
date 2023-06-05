@@ -102,51 +102,28 @@ lemma mult_isol_var: "u \<le> x \<Longrightarrow> v \<le> y \<Longrightarrow> u 
   by (meson local.dual_order.trans local.mult_isor mult_isol)
 end
 
-class bounded_idempotent_comm_monoid_add = discrete_topology + idempotent_comm_monoid_add_ord +
-(*  assumes no_infinite_decending: "\<nexists>f. \<forall>i. (f i) > (f (Suc i))"*)
-  assumes no_infinite_decending_chains: "almost_full_on (\<le>) UNIV"
+class wfp = order +
+  assumes no_infinite_decending: "\<nexists>f. \<forall>i. (f i) > (f (Suc i))"
 begin
-
-subclass t2_space proof
-  fix x y :: 'a
-  assume "x \<noteq> y"
-  then show "\<exists>U V. open U \<and> open V \<and> x \<in> U \<and> y \<in> V \<and> U \<inter> V = {}"
-    by (intro exI[of _ "{_}"]) (auto intro!: open_discrete)
-qed
-subclass wqo proof
-  fix f
-  show "good (\<le>) f" using no_infinite_decending_chains unfolding almost_full_on_def by simp
-qed
 lemma strict_le_is_less:"strict (\<le>) = (<)"
   using dual_order.strict_iff_not by presburger
 lemma transp_on_less_eq: "transp_on (\<le>) A"
   unfolding transp_on_def by fastforce
 
-(* REMOVE START *)
-lemma wqo_on_UNIV: "wqo_on (\<le>) UNIV"
-  unfolding wqo_on_def using transp_on_less_eq no_infinite_decending_chains by presburger
-lemma wfp_on_UNIV:"wfp_on (<) UNIV"
-  using wqo_on_imp_wfp_on[OF wqo_on_UNIV] less_le_not_le[abs_def] by blast
-lemma no_antichain_on_UNIV: "\<not> antichain_on (\<le>) f UNIV"
-  using almost_full_on_imp_no_antichain_on[OF no_infinite_decending_chains] by blast
-
-\<comment> \<open>A more direct formulation of the no_infinite_decending_chain condition\<close>
-lemma no_infinite_decending: "\<nexists>f. \<forall>i. (f i) > (f (Suc i))"
-  using wfp_on_UNIV
-  unfolding wfp_on_def by blast
-(* REMOVE END *)
-
 lemma qo_on_less_eq: "qo_on (\<le>) A"
   unfolding qo_on_def reflp_on_def using transp_on_less_eq by simp
-lemma wfp_on_less_eq: "wfp_on (strict (\<le>)) A"
+lemma wfp_on_class: "wfp_on (strict (\<le>)) A"
   unfolding wfp_on_def using no_infinite_decending strict_le_is_less by blast
 lemma "irreflp_on (strict (\<le>)) A" by (fact irreflp_on_strict)
 
 lemma no_antichain_on_implies_wqo_on: "(\<nexists>f. antichain_on (\<le>) f A) \<Longrightarrow> wqo_on (\<le>) A"
-  using wqo_wf_and_no_antichain_conv[OF qo_on_less_eq] wfp_on_less_eq by simp
+  using wqo_wf_and_no_antichain_conv[OF qo_on_less_eq] wfp_on_class by simp
 lemma no_antichain_on_implies_almost_full_on: "(\<nexists>f. antichain_on (\<le>) f A) \<Longrightarrow> almost_full_on (\<le>) A"
   using no_antichain_on_implies_wqo_on wqo_af_conv[OF qo_on_less_eq] by blast
+end
 
+class bounded_idempotent_comm_monoid_add = wfp + idempotent_comm_monoid_add_ord
+begin
 abbreviation sum_seq :: "(nat \<Rightarrow> 'a) \<Rightarrow> nat \<Rightarrow> 'a" where
   "sum_seq f i \<equiv> sum f {x. x < i}"
 
@@ -197,6 +174,18 @@ proof -
       by simp
     done
 qed
+end
+
+class bounded_idempotent_comm_monoid_add_topology = discrete_topology + bounded_idempotent_comm_monoid_add
+(*  assumes no_infinite_decending_chains: "almost_full_on (\<le>) UNIV"*)
+begin
+
+subclass t2_space proof
+  fix x y :: 'a
+  assume "x \<noteq> y"
+  then show "\<exists>U V. open U \<and> open V \<and> x \<in> U \<and> y \<in> V \<and> U \<inter> V = {}"
+    by (intro exI[of _ "{_}"]) (auto intro!: open_discrete)
+qed
 
 (*
 subclass wqo proof
@@ -217,13 +206,13 @@ lemma no_infinite_decending: "\<nexists>f. \<forall>i. (f i) > (f (Suc i))"
 *)
 end
 
-primrec decreasing_sequence_aux :: "(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add) \<Rightarrow> (nat \<Rightarrow> 'a \<times> nat)" where
+primrec decreasing_sequence_aux :: "(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology) \<Rightarrow> (nat \<Rightarrow> 'a \<times> nat)" where
   "decreasing_sequence_aux f 0 = (0,0)"
 | "decreasing_sequence_aux f (Suc i) = (
     let n = (SOME n. n \<ge> snd (decreasing_sequence_aux f i) \<and> sum f {x. x < n} \<noteq> fst (decreasing_sequence_aux f i)) 
     in (sum f {x. x < n}, n)
   )"
-definition decreasing_sequence :: "(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add) \<Rightarrow> (nat \<Rightarrow> 'a)" where
+definition decreasing_sequence :: "(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology) \<Rightarrow> (nat \<Rightarrow> 'a)" where
   "decreasing_sequence f i = fst (decreasing_sequence_aux f i)"
 
 lemma decreasing_sequence_aux_some: 
@@ -256,8 +245,8 @@ proof -
 qed
 
 lemma divergent_sum_implies_infinite_descending:
-  assumes "\<exists>f::(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add). \<forall>L N. \<exists>n\<ge>N. sum f {x. x < n} \<noteq> L"
-  shows "\<exists>f::(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add). \<forall>i. (f i) > (f (Suc i))"
+  assumes "\<exists>f::(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology). \<forall>L N. \<exists>n\<ge>N. sum f {x. x < n} \<noteq> L"
+  shows "\<exists>f::(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology). \<forall>i. (f i) > (f (Suc i))"
   using assms
   apply simp
   apply (erule exE)
@@ -266,25 +255,25 @@ lemma divergent_sum_implies_infinite_descending:
   done
 
 lemma eventually_stable_sum': 
-    "\<forall>f::(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add). \<exists>L N. \<forall>n\<ge>N. sum f {x. x < n} = L"
+    "\<forall>f::(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology). \<exists>L N. \<forall>n\<ge>N. sum f {x. x < n} = L"
   apply (rule ccontr, simp)
   apply (drule divergent_sum_implies_infinite_descending) 
   using no_infinite_decending by blast
 
 lemma eventually_stable_sum:
-  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add"
+  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
   shows "\<exists>L N. \<forall>n\<ge>N. (\<Sum>x | x < n. f x) = L"
   using eventually_stable_sum' by blast
 
 lemma summable_bounded_dioid:
-  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add"
+  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
   shows "summable f"
   unfolding summable_def sums_def lessThan_def
   apply (simp add: tendsto_discrete[of "(\<lambda>n. \<Sum>x | x < n. f x)" _ sequentially] eventually_sequentially)
   by (fact eventually_stable_sum)
 
 lemma
-  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add"
+  fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
   shows "\<exists>N. \<forall>n\<ge>N. (\<Sum>x | x < n. f x) = suminf f"
   using summable_bounded_dioid[of f]
     summable_sums[OF summable_bounded_dioid[of f], unfolded sums_def]
@@ -294,7 +283,7 @@ tendsto_discrete[of "(\<lambda>n. \<Sum>x | x < n. f x)" _ sequentially] eventua
 
 
 \<comment> \<open>Definition 5 from [RSJM'05].\<close>
-class bounded_idempotent_semiring = bounded_idempotent_comm_monoid_add + idempotent_semiring_ord
+class bounded_idempotent_semiring = bounded_idempotent_comm_monoid_add_topology + idempotent_semiring_ord
 begin
 end
 
