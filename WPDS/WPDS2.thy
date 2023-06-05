@@ -260,7 +260,7 @@ proof (induction rule: monoid_rtrancl.induct)
   then show ?case
     by (simp add: one_list_def one_prod_def)
 next
-  case (monoid_rtrancl_into_rtrancl p\<^sub>1 w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 p\<^sub>3 w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4 p\<^sub>4) (* p\<^sub>1 \<gamma>\<^sub>1\<^sub>2w\<^sub>2\<^sub>3d\<^sub>1\<^sub>3 p\<^sub>3 p\<^sub>4 w\<^sub>2\<^sub>4 \<gamma>\<^sub>1\<^sub>2 d\<^sub>1\<^sub>4 *)
+  case (monoid_rtrancl_into_rtrancl p\<^sub>1 w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 p\<^sub>3 w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4 p\<^sub>4)
   show ?case
   proof (cases "(fst w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3)")
     case (Cons \<gamma>\<^sub>1\<^sub>2 w\<^sub>2\<^sub>3)
@@ -762,7 +762,7 @@ proof -
     unfolding pv_split by auto
 qed
 
-lemma BABABABABABA:
+lemma accepts_lte_accepts_K0':
   shows "accepts A' (p,v) \<le> accepts (K$ 0) (p,v)"
 proof (cases "p \<in> finals \<and> v = []")
   case True
@@ -797,9 +797,9 @@ next
   qed
 qed
 
-lemma BABABABABABA2:
+lemma accepts_lte_accepts_K0:
   shows "accepts A' \<le> accepts (K$ 0)"
-  using BABABABABABA by (simp add: le_fun_def)
+  using accepts_lte_accepts_K0' by (simp add: le_fun_def)
 
 lemma weight_pre_star_mono:
   assumes "X \<le> Y"
@@ -823,16 +823,16 @@ proof -
     by auto
 qed
 
-lemma BABABABABABA3:
+lemma weight_pre_star_accepts_lt_weight_pre_star_accepts_K0:
   "weight_pre_star (accepts A') c \<le> weight_pre_star (accepts (K$ 0)) c"
-  using weight_pre_star_mono[OF BABABABABABA2] by auto
+  using weight_pre_star_mono[OF accepts_lte_accepts_K0] by auto
 
 lemma lemma_3_1_w_alternative_BONUS:
   assumes soundA': "sound A'"
   shows "accepts A' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
 proof -
   have "weight_pre_star (accepts A) (p,v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
-    using BABABABABABA3 by auto
+    using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
   also have "... \<le> accepts A' (p, v)"
     using lemma_3_1_w_alternative soundA' by auto
   finally show ?thesis
@@ -852,7 +852,7 @@ proof -
   have sA'': "sound A''"
     using soundness soundA' assms(2) by auto
   have "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
-    using BABABABABABA3 by auto
+    using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
   also have "... \<le> accepts A'' (p,v)"
     using lemma_3_1_w_alternative sA'' by auto
   finally show "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
@@ -937,7 +937,7 @@ proof -
   have sA'': "sound A''"
     using local.soundness2 soundA' assms(2) by auto
   have "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
-    using BABABABABABA3 by auto
+    using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
   also have "... \<le> accepts A'' (p,v)"
     using lemma_3_1_w_alternative sA'' by auto
   finally show "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
