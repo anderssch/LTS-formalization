@@ -731,7 +731,7 @@ lemma accepts_empty_iff0: "accepts (K$ 0) (p,w) = (if p\<in>finals \<and> w = []
 lemma sound_empty: "sound (K$ 0)"
   by (simp add: sound_def wts_to_monoidLTS_def)
 
-lemma lemma_3_1_w_alternative:
+lemma lemma_3_2_w_alternative:
   assumes soundA': "sound A'"
   shows "accepts A' pv \<ge> weight_pre_star (accepts (K$ 0)) pv"
 proof -
@@ -827,24 +827,24 @@ lemma weight_pre_star_accepts_lt_weight_pre_star_accepts_K0:
   "weight_pre_star (accepts A') c \<le> weight_pre_star (accepts (K$ 0)) c"
   using weight_pre_star_mono[OF accepts_lte_accepts_K0] by auto
 
-lemma lemma_3_1_w_alternative_BONUS:
+lemma lemma_3_2_w_alternative_BONUS:
   assumes soundA': "sound A'"
   shows "accepts A' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
 proof -
   have "weight_pre_star (accepts A) (p,v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
     using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
   also have "... \<le> accepts A' (p, v)"
-    using lemma_3_1_w_alternative soundA' by auto
+    using lemma_3_2_w_alternative soundA' by auto
   finally show ?thesis
     by auto
 qed
 
-lemma lemma_3_1_w_alternative': 
+lemma lemma_3_2_w_alternative': 
   assumes "pre_star_rule (K$ 0) A"
   shows "accepts A pv \<ge> weight_pre_star (accepts (K$ 0)) pv"
-  using lemma_3_1_w_alternative[OF soundness[OF sound_empty assms]] by auto
+  using lemma_3_2_w_alternative[OF soundness[OF sound_empty assms]] by auto
 
-lemma lemma_3_1_w_alternative'_BONUS: 
+lemma lemma_3_2_w_alternative'_BONUS: 
   assumes soundA': "sound A'"
   assumes "pre_star_rule A' A''"
   shows "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
@@ -854,7 +854,7 @@ proof -
   have "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
     using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
   also have "... \<le> accepts A'' (p,v)"
-    using lemma_3_1_w_alternative sA'' by auto
+    using lemma_3_2_w_alternative sA'' by auto
   finally show "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
     by auto
 qed
@@ -924,12 +924,12 @@ lemma weight_pre_star_dom_fixedpoint: (* Nice. But we don't use it. *)
   "weight_pre_star (weight_pre_star C) = (weight_pre_star C)"
   using weight_pre_star_dom_fixedpoint' by auto
 
-lemma lemma_3_1_w_alternative''':
+lemma lemma_3_2_w_alternative''':
   assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
   shows "accepts A' (p,v) \<ge> weight_pre_star (accepts (K$ 0)) (p,v)"
-  using soundness2 assms lemma_3_1_w_alternative sound_empty by blast
+  using soundness2 assms lemma_3_2_w_alternative sound_empty by blast
 
-lemma lemma_3_1_w_alternative'''_BONUS:
+lemma lemma_3_2_w_alternative'''_BONUS:
   assumes soundA': "sound A'"
   assumes "pre_star_rule\<^sup>*\<^sup>* A' A''"
   shows "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
@@ -939,7 +939,7 @@ proof -
   have "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
     using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
   also have "... \<le> accepts A'' (p,v)"
-    using lemma_3_1_w_alternative sA'' by auto
+    using lemma_3_2_w_alternative sA'' by auto
   finally show "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
     by auto
 qed
@@ -1098,7 +1098,7 @@ lemma nicenicenice''''''pop2:
 *)
 
 
-lemma lemma_3_2_w_alternative:
+lemma lemma_3_1_w_alternative:
   assumes "saturated pre_star_rule A"
   shows "complete A"
 proof (rule complete_intro)
@@ -1125,7 +1125,7 @@ lemma
 lemma "(a :: 'weight) \<le> 0"
   by simp
 (*
-lemma lemma_3_2_w_alternative:
+lemma lemma_3_1_w_alternative:
   assumes "saturated pre_star_rule A"
   shows "accepts A (p,v) \<le> weight_pre_star (accepts (K$ 0)) (p,v)"
 proof -
@@ -1162,7 +1162,7 @@ proof -
     by auto
 qed
 
-lemma lemma_3_2_w_alternative:
+lemma lemma_3_1_w_alternative:
   assumes "saturated pre_star_rule A"
   shows "accepts A (p,v) \<le> weight_pre_star (accepts A) (p,v)"
 proof -
