@@ -189,7 +189,6 @@ qed
 definition seq_except :: "(nat \<Rightarrow> 'a) \<Rightarrow> nat \<Rightarrow> (nat \<Rightarrow> 'a)" where
   "seq_except f i j = (if j < i then f j else f (Suc j))"
 
-
 lemma Suc_interval_img: "Suc ` {x. i \<le> x \<and> x < n} = {x. Suc i \<le> x \<and> x < Suc n}"
   unfolding image_def
   apply simp
@@ -208,16 +207,15 @@ proof -
     using t_Suc_comp Suc_interval_img[of i n] by argo
 qed
 
-
 lemma seq_except_split_sum: 
-  assumes "i < n"
+  assumes "i < Suc n"
   shows "sum_seq (seq_except f i) n = sum_seq f i + sum f {x. Suc i \<le> x \<and> x < Suc n}"
   using sum_prefix_seq_split[of i n "seq_except f i"] assms(1) sum_interval_Suc_transfer
   unfolding seq_except_def by simp
 
 lemma seq_except_same_sum:
   assumes "f i = f j"
-      and "i < n"
+      and "i < Suc n"
       and "j < i"
     shows "sum_seq f (Suc n) = sum_seq (seq_except f i) n"
 proof -
@@ -225,28 +223,86 @@ proof -
   then have "(\<Sum>x | i \<le> x \<and> x < Suc i. f x) = f i" by fastforce
   then have "sum_seq f (Suc n) = sum_seq f i + f i + (\<Sum>x | Suc i \<le> x \<and> x < Suc n. f x)" 
     using assms(2) by (simp add: sum_prefix_seq_split[of "(Suc i)" "Suc n" f] sum_prefix_seq_split[of i "Suc i" f])
-  moreover have "sum_seq (seq_except f i) n = sum_seq f i + sum f {x. Suc i \<le> x \<and> x < Suc n}" by (simp add: seq_except_split_sum[OF assms(2), of f])
+  moreover have "sum_seq (seq_except f i) n = sum_seq f i + sum f {x. Suc i \<le> x \<and> x < Suc n}" 
+    by (simp add: seq_except_split_sum[OF assms(2), of f])
   ultimately show ?thesis using sum_seq_elem[OF assms(3), of f, unfolded less_eq_def] assms(1) by argo
 qed
 
-lemma exists_inj_sum_seq:
-  "\<exists>f' n'. sum_seq f n = sum_seq f' n' \<and> n' \<le> n \<and> inj_on f' {i. i < n'} \<and> \<Sum> {f i | i. i < n} = \<Sum> {f' i | i. i < n'}"
-  unfolding inj_on_def
-  apply simp
-  using seq_except_same_sum
-  \<comment> \<open>TODO: Prove using idempotence: 
-      If f is not inj_on ==> exists different i and j with f i = f j, 
-      then removing element j from f gives the same sum. 
-      Induction on that.\<close>
-  oops
+lemma seq_except_same_image:
+  assumes "f i = f j"
+      and "i < Suc n"
+      and "j < i"
+    shows "{f x | x. x < Suc n} = {(seq_except f i) x | x. x < n}"
+  unfolding seq_except_def using assms
+  apply safe
+  subgoal for _ y
+    apply (cases "i = y")
+    apply auto[1]
+    apply (cases "i > y")
+    apply auto[1]
+    by (rule exI[of _ "y - 1"], auto)
+  by auto
 
-lemma sum_seq_to_sum_inj: 
-  assumes "inj_on f {x. x < n}"  \<comment> \<open>Note: inj_on should not be needed, but it is used in the current proof.\<close>
+lemma not_inj_implies_seq_except:
+  assumes "\<not> inj_on f {i. i < Suc n}"
+  shows "\<exists>i. sum_seq f (Suc n) = sum_seq (seq_except f i) n \<and> {f x | x. x < Suc n} = {(seq_except f i) x | x. x < n}"
+  using assms unfolding inj_on_def
+  apply simp
+  apply safe
+  subgoal for i j
+    apply (cases "i < j") 
+    by (auto simp add: seq_except_same_sum[of f j i n]   seq_except_same_sum[of f i j n] 
+                     seq_except_same_image[of f j i n] seq_except_same_image[of f i j n])
+  done
+
+lemma exists_smaller_induct:
+  assumes "\<And>f n::nat. \<not> P f n \<Longrightarrow> \<exists>f'. Q f n = Q f' (n-1)"
+  assumes "\<And>f. P f 0"
+  shows "\<exists>f' n'. n' \<le> n \<and> Q f n = Q f' n' \<and> P f' n'"
+  apply (rule ccontr, simp)
+  apply (induct n arbitrary: f)
+  subgoal for f
+    apply (erule allE[of _ f])
+    by (auto simp add: assms(2))
+  subgoal for n f
+    using assms(1)[of f "Suc n"] by fastforce
+  done
+
+lemma inj_on_0:
+  fixes f :: "nat \<Rightarrow> 'a"
+  shows "inj_on f {i. i < 0}" by simp
+
+lemma not_inj_implies_smaller_sumseq:
+  fixes f :: "nat \<Rightarrow> 'a"
+  assumes "\<not> inj_on f {i. i < n}"
+  shows "\<exists>f'. (sum_seq f n, {f i | i. i < n}) = (sum_seq f' (n - 1), {f' i | i. i < n - 1})"
+  apply (cases "n = 0", simp)
+  using not_inj_implies_seq_except[of f "n - 1"] assms
+  apply simp
+  apply (erule exE)
+  subgoal for i
+    apply (rule exI[of _ "seq_except f i"])
+    by blast
+  done
+
+lemma exists_inj_sum_seq:
+  "\<exists>f' n'. n' \<le> n \<and> sum_seq f n = sum_seq f' n' \<and> {f i | i. i < n} = {f' i | i. i < n'} \<and> inj_on f' {i. i < n'}"
+  using exists_smaller_induct[of "\<lambda>f n. inj_on f {i. i < n}" "\<lambda>f n. (sum_seq f n, {f i | i. i < n})", 
+                              OF not_inj_implies_smaller_sumseq inj_on_0, simplified, of n f]
+  by blast
+
+lemma sum_seq_to_sum:
   shows "sum_seq f n = \<Sum> {f i | i. i < n}"
 proof -
-  have "{f i | i. i < n} = f ` {x. x < n}" by blast
-  then show ?thesis unfolding sum.eq_fold
-    by (simp add: comp_id[unfolded id_def, of "(+)"] fold_image[OF assms, of "(+)" 0, symmetric])
+  obtain f' n' where "n' \<le> n" and 
+       eq:"sum_seq f n = sum_seq f' n'" and 
+       img:"{f i | i. i < n} = {f' i | i. i < n'}" and 
+       inj:"inj_on f' {i. i < n'}"
+    using exists_inj_sum_seq by blast
+  have apply_img:"{f' i | i. i < n'} = f' ` {x. x < n'}" by blast
+  then have "sum_seq f' n' = \<Sum> {f' i | i. i < n'}" unfolding sum.eq_fold 
+    by (simp add: comp_id[unfolded id_def, of "(+)"] fold_image[OF inj, of "(+)" 0, symmetric])
+  then show ?thesis using eq img by argo
 qed
 
 

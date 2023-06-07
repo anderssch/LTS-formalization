@@ -190,6 +190,19 @@ lemma countable_suminf_obtains_sumseq:
   obtains f and n where "\<^bold>\<Sum> W = sum_seq f n"
   using countable_suminf_exists_sumseq_bound[OF assms] by fast
 
+lemma 
+  fixes W :: "'label set"
+  assumes "countable W"
+  shows "\<exists>W'. finite W' \<and> SumInf W = \<Sum> W'"
+proof -
+  obtain f and n where "\<^bold>\<Sum> W = sum_seq f n" by (fact countable_suminf_obtains_sumseq[OF assms])
+  have fin:"finite (f ` {i. i < n})" by simp
+  obtain W' where W'_def:"W' = {f i | i. i < n}" by blast
+  then have "\<Sum> W' = sum_seq f n"
+    using sum_seq_to_sum[of f n] by argo
+  then show ?thesis using fin by force
+qed
+
 lemma SumInf_empty[simp]: "SumInf {} = 0"
   unfolding SumInf_def using suminf_finite[of "{}", simplified] path_seq_empty by blast
 
