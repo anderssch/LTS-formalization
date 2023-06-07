@@ -119,6 +119,12 @@ lemma path_seq_of_countable_set:
   using someI_ex[OF countable_set_exists_seq[OF assms]] 
   by blast
 
+lemma path_seq_elem_exists_index:
+  assumes "countable W"
+  assumes "w \<in> W"
+  shows "\<exists>i. path_seq W i = w"
+  using path_seq_of_countable_set[OF assms(1)] assms(2) by blast
+
 lemma path_seq_in_set:
   assumes "countable W"
   assumes "W \<noteq> {}"
@@ -153,7 +159,7 @@ proof (cases "W = {}")
     by simp (rule exI[of _ "\<lambda>i. 0"], auto)
 next
   case False
-  then show ?thesis 
+  then show ?thesis
   proof -
     obtain f :: "nat \<Rightarrow> 'label" and C :: "nat set" where f_bij:"bij_betw f C W" 
       using countableE_bij[OF assms(1)] by blast
@@ -204,14 +210,17 @@ lemma suminf_obtains_finite_subset:
   obtains W' where "W' \<subseteq> W" and "finite W'" and "\<^bold>\<Sum> W = \<Sum> W'"
   using suminf_exists_finite_subset[OF assms] by blast
 
-lemma suminf_elem:
+lemma countable_suminf_elem:
   fixes W :: "'label set"
   assumes "countable W"
   assumes "w \<in> W"
   shows "\<^bold>\<Sum> W \<le> w"
-  unfolding BoundedDioid.less_eq_def
-  \<comment> \<open>TODO: prove. I think this would nicely complement the finite subset lemmas\<close>
-  oops
+proof -
+  obtain i where "path_seq W i = w" 
+    using path_seq_elem_exists_index[OF assms] by blast
+  then show ?thesis 
+    unfolding SumInf_def using suminf_elem[of "path_seq W" i] by blast
+qed
 
 
 lemma SumInf_empty[simp]: "SumInf {} = 0"
@@ -256,13 +265,20 @@ lemma "finite W \<Longrightarrow> SumInf W = \<Sum>W"
    oops
 
 lemma singleton_sum[simp]: "\<^bold>\<Sum> {w} = w"
-  unfolding SumInf_def
-  using path_seq_insert[of "{}" w, simplified]
-  using path_seq_notin_set_zero[of "{w}", simplified]
-  apply auto
-  using summable_bounded_dioid[of "(SOME f. \<forall>l. (l = w) = (\<exists>i. f i = l))"]
-  sorry
-
+proof -
+  obtain W where subset:"W \<subseteq> {w}" "finite W" and sum_eq:"\<^bold>\<Sum> {w} = \<Sum> W"
+    by (fact suminf_obtains_finite_subset[of "{w}", simplified])
+  then show ?thesis 
+  proof (cases "W = {w}")
+    case True
+    then show ?thesis using sum_eq by auto
+  next
+    case False
+    then have "W = {}" using subset by blast
+    then show ?thesis 
+      using sum_eq countable_suminf_elem[of "{w}" w] unfolding BoundedDioid.less_eq_def by auto
+  qed
+qed
 
 definition weight_pre_star :: "('state \<Rightarrow> 'label) \<Rightarrow> ('state \<Rightarrow> 'label)" where
   "weight_pre_star C c = \<^bold>\<Sum>{l*(C c') | l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
