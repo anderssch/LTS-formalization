@@ -162,15 +162,8 @@ next
     from f_img have "\<And>l. (l \<in> W) \<longleftrightarrow> (\<exists>i\<in>C. f i = l)" by blast
     then have path_seq_to_f:"\<And>l. (\<exists>i. path_seq W i = l) \<longleftrightarrow> (\<exists>i\<in>C. f i = l)" 
       using path_seq_of_countable_set[OF assms(1) False] by presburger
-    have "\<exists>h. \<forall>i. (path_seq W) i = f (h i)"
-      proof -
-        have "\<forall>i. \<exists>i'. (path_seq W) i = f i'"
-          apply safe
-          subgoal for i
-            using path_seq_to_f[of "(path_seq W) i"] by metis
-          done
-        then show ?thesis by metis
-      qed
+    then have "\<forall>i. \<exists>i'. (path_seq W) i = f i'" by metis
+    then have "\<exists>h. \<forall>i. (path_seq W) i = f (h i)" by metis
     then obtain h where "\<And>i. (path_seq W) i = (f o h) i" by force
     then have path_seq_fh:"(path_seq W) = (f o h)" by fast
     obtain N where "\<forall>n\<ge>N. sum_seq (f o h) n = suminf (f o h)" by (fact sumseq_suminf_obtain_bound)
@@ -210,6 +203,16 @@ lemma suminf_obtains_finite_subset:
   assumes "countable W"
   obtains W' where "W' \<subseteq> W" and "finite W'" and "\<^bold>\<Sum> W = \<Sum> W'"
   using suminf_exists_finite_subset[OF assms] by blast
+
+lemma suminf_elem:
+  fixes W :: "'label set"
+  assumes "countable W"
+  assumes "w \<in> W"
+  shows "\<^bold>\<Sum> W \<le> w"
+  unfolding BoundedDioid.less_eq_def
+  \<comment> \<open>TODO: prove. I think this would nicely complement the finite subset lemmas\<close>
+  oops
+
 
 lemma SumInf_empty[simp]: "SumInf {} = 0"
   unfolding SumInf_def using suminf_finite[of "{}", simplified] path_seq_empty by blast
