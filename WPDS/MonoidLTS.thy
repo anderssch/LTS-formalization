@@ -145,12 +145,12 @@ lemma countable_obtain_seq:
 
 lemma countable_suminf_exists_sumseq_bound:
   assumes "countable W"
-  shows "\<exists>f N. \<forall>n\<ge>N. \<^bold>\<Sum> W = sum_seq f n"
+  shows "\<exists>f N. \<forall>n\<ge>N. \<^bold>\<Sum> W = sum_seq f n \<and> {f i | i. i < N} \<subseteq> W"
 proof (cases "W = {}")
   case True
   then show ?thesis 
     unfolding SumInf_def path_seq_def
-    by simp (rule exI[of _ "\<lambda>i. 0"], simp)
+    by simp (rule exI[of _ "\<lambda>i. 0"], auto)
 next
   case False
   then show ?thesis 
@@ -176,32 +176,40 @@ next
     obtain N where "\<forall>n\<ge>N. sum_seq (f o h) n = suminf (f o h)" by (fact sumseq_suminf_obtain_bound)
     then have "\<forall>n\<ge>N. SumInf W = sum_seq (f o h) n"
       unfolding SumInf_def using path_seq_fh by simp
-    then show ?thesis by fast
+    then show ?thesis 
+      using path_seq_in_set[OF assms False] path_seq_fh by auto
   qed
 qed
 
 lemma countable_suminf_obtains_sumseq_bound:
   assumes "countable W"
-  obtains f and N where "\<forall>n\<ge>N. \<^bold>\<Sum> W = sum_seq f n"
+  obtains f and N where "\<forall>n\<ge>N. \<^bold>\<Sum> W = sum_seq f n" and "{f i | i. i < N} \<subseteq> W"
   using countable_suminf_exists_sumseq_bound[OF assms] by fast
 
 lemma countable_suminf_obtains_sumseq:
   assumes "countable W"
-  obtains f and n where "\<^bold>\<Sum> W = sum_seq f n"
+  obtains f and n where "\<^bold>\<Sum> W = sum_seq f n" and "{f i | i. i < n} \<subseteq> W"
   using countable_suminf_exists_sumseq_bound[OF assms] by fast
 
-lemma 
+lemma suminf_exists_finite_subset:
   fixes W :: "'label set"
   assumes "countable W"
-  shows "\<exists>W'. finite W' \<and> SumInf W = \<Sum> W'"
+  shows "\<exists>W'. W' \<subseteq> W \<and> finite W' \<and> \<^bold>\<Sum> W = \<Sum> W'"
 proof -
-  obtain f and n where "\<^bold>\<Sum> W = sum_seq f n" by (fact countable_suminf_obtains_sumseq[OF assms])
-  have fin:"finite (f ` {i. i < n})" by simp
+  obtain f and n where sumW:"\<^bold>\<Sum> W = sum_seq f n" and subsetW:"{f i | i. i < n} \<subseteq> W"
+    by (fact countable_suminf_obtains_sumseq[OF assms])
+  have fin:"finite (f ` {i. i < n})" by blast
   obtain W' where W'_def:"W' = {f i | i. i < n}" by blast
-  then have "\<Sum> W' = sum_seq f n"
-    using sum_seq_to_sum[of f n] by argo
-  then show ?thesis using fin by force
+  then have "W' \<subseteq> W" and "finite W'" and "\<Sum> W' = sum_seq f n" 
+    using subsetW fin sum_seq_to_sum[of f n] by auto
+  then show ?thesis using sumW by metis
 qed
+
+lemma suminf_obtains_finite_subset:
+  fixes W :: "'label set"
+  assumes "countable W"
+  obtains W' where "W' \<subseteq> W" and "finite W'" and "\<^bold>\<Sum> W = \<Sum> W'"
+  using suminf_exists_finite_subset[OF assms] by blast
 
 lemma SumInf_empty[simp]: "SumInf {} = 0"
   unfolding SumInf_def using suminf_finite[of "{}", simplified] path_seq_empty by blast
