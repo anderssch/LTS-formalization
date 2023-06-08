@@ -1219,69 +1219,6 @@ next
 qed
 
 
-  case (monoid_rtrancl_refl a)
-  then show ?case sorry
-next
-  case (monoid_rtrancl_into_rtrancl a w b c w')
-  then show ?case sorry
-qed
-  case (monoid_rtrancl_refl a)
-  then show ?case sorry
-next
-  case (monoid_rtrancl_into_rtrancl a w b l c w' l')
-  then show ?case sorry
-qed
-
-  case (monoid_star_refl a)
-  then show ?case sorry
-next
-  case (monoid_star_into_rtrancl a w b l c w' l')
-  then show ?case sorry
-qed
-  case (1 a)
-  then show ?case sorry
-next
-  case (2 a w b l c w' l')
-  then show ?case sorry
-qed
-  subgoal for a
-    sorry
-  subgoal for b w c 
-    sorry
-  done
-  case (1 a)
-  then show ?case sorry
-next
-  case (2 )
-  then show ?case sorry
-qed
-  case 1
-  then show ?case sorry
-next
-  case (2 a)
-  then show ?case sorry
-next
-  case (3 a w b l c w' l')
-  then show ?case sorry
-qed
-  fix uu4 uua4
-  show 
- 1. (?uu4, ?uua4) \<Midarrow> l \<Rightarrow>\<^sup>* (p, [])
- 2. \<And>a. c \<Midarrow> 1 \<Rightarrow>\<^sup>* a \<Longrightarrow> p \<in> finals \<Longrightarrow> accepts A c \<le> 1
- 3. \<And>a w b l ca w' l'.
-       a \<Midarrow> w \<Rightarrow> b \<Longrightarrow>
-       (c \<Midarrow> w' \<Rightarrow>\<^sup>* ca \<Longrightarrow> p \<in> finals \<Longrightarrow> accepts A c \<le> w') \<Longrightarrow>
-       b \<Midarrow> w' \<Rightarrow>\<^sup>* ca \<Longrightarrow> c \<Midarrow> (w * w') \<Rightarrow>\<^sup>* ca \<Longrightarrow> p \<in> finals \<Longrightarrow> accepts A c \<le> w * w' 
-  case 1
-  then show ?case sorry
-next
-  case (2 a)
-  then show ?case sorry
-next
-  case (3 a w b l c w' l')
-  then show ?case sorry
-qed
-
 lemma b:
   assumes "saturated pre_star_rule A"
   assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* c'"
