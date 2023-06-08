@@ -975,10 +975,24 @@ lemma nicenicenice''':
 lemma "(b :: 'weight) \<ge> a \<Longrightarrow> c \<ge> a \<Longrightarrow> d \<ge> a \<Longrightarrow> b + c + d \<ge> a"
   by simp
 
-lemma sum_AAA: 
-  assumes "\<forall>x \<in> X. x \<ge> d"
+lemma sum_AAA:
+  assumes inf_d: "\<forall>x \<in> X. x \<ge> d"
   shows "\<^bold>\<Sum> X \<ge> d"
-  sorry (* This seems to lead to some strange proofs *)
+proof -
+  have countableX:"countable X" sorry 
+      \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
+
+  obtain W' where subset:"W' \<subseteq> X" and fin:"finite W'" and eq:"\<^bold>\<Sum> X = \<Sum> W'"
+    by (fact suminf_obtains_finite_subset[OF countableX])
+  have "\<forall>x \<in> W'. x \<ge> d" using subset inf_d by blast
+  then have "\<Sum> W' \<ge> d" using fin
+    unfolding BoundedDioid.less_eq_def
+    apply (induct rule: finite_induct[OF fin], simp_all)
+    subgoal for x F
+      using add.assoc[of d x "\<Sum> F"] by simp
+    done
+  then show ?thesis using eq by argo
+qed
 
 lemma nicenicenice'''':
   assumes "saturated pre_star_rule A"

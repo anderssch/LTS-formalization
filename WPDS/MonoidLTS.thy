@@ -119,6 +119,12 @@ lemma path_seq_of_countable_set:
   using someI_ex[OF countable_set_exists_seq[OF assms]] 
   by blast
 
+lemma path_seq_elem_exists_index:
+  assumes "countable W"
+  assumes "w \<in> W"
+  shows "\<exists>i. path_seq W i = w"
+  using path_seq_of_countable_set[OF assms(1)] assms(2) by blast
+
 lemma path_seq_in_set:
   assumes "countable W"
   assumes "W \<noteq> {}"
@@ -145,15 +151,15 @@ lemma countable_obtain_seq:
 
 lemma countable_suminf_exists_sumseq_bound:
   assumes "countable W"
-  shows "\<exists>f N. \<forall>n\<ge>N. \<^bold>\<Sum> W = sum_seq f n"
+  shows "\<exists>f N. \<forall>n\<ge>N. \<^bold>\<Sum> W = sum_seq f n \<and> {f i | i. i < N} \<subseteq> W"
 proof (cases "W = {}")
   case True
   then show ?thesis 
     unfolding SumInf_def path_seq_def
-    by simp (rule exI[of _ "\<lambda>i. 0"], simp)
+    by simp (rule exI[of _ "\<lambda>i. 0"], auto)
 next
   case False
-  then show ?thesis 
+  then show ?thesis
   proof -
     obtain f :: "nat \<Rightarrow> 'label" and C :: "nat set" where f_bij:"bij_betw f C W" 
       using countableE_bij[OF assms(1)] by blast
@@ -162,33 +168,60 @@ next
     from f_img have "\<And>l. (l \<in> W) \<longleftrightarrow> (\<exists>i\<in>C. f i = l)" by blast
     then have path_seq_to_f:"\<And>l. (\<exists>i. path_seq W i = l) \<longleftrightarrow> (\<exists>i\<in>C. f i = l)" 
       using path_seq_of_countable_set[OF assms(1) False] by presburger
-    have "\<exists>h. \<forall>i. (path_seq W) i = f (h i)"
-      proof -
-        have "\<forall>i. \<exists>i'. (path_seq W) i = f i'"
-          apply safe
-          subgoal for i
-            using path_seq_to_f[of "(path_seq W) i"] by metis
-          done
-        then show ?thesis by metis
-      qed
+    then have "\<forall>i. \<exists>i'. (path_seq W) i = f i'" by metis
+    then have "\<exists>h. \<forall>i. (path_seq W) i = f (h i)" by metis
     then obtain h where "\<And>i. (path_seq W) i = (f o h) i" by force
     then have path_seq_fh:"(path_seq W) = (f o h)" by fast
     obtain N where "\<forall>n\<ge>N. sum_seq (f o h) n = suminf (f o h)" by (fact sumseq_suminf_obtain_bound)
     then have "\<forall>n\<ge>N. SumInf W = sum_seq (f o h) n"
       unfolding SumInf_def using path_seq_fh by simp
-    then show ?thesis by fast
+    then show ?thesis 
+      using path_seq_in_set[OF assms False] path_seq_fh by auto
   qed
 qed
 
 lemma countable_suminf_obtains_sumseq_bound:
   assumes "countable W"
-  obtains f and N where "\<forall>n\<ge>N. \<^bold>\<Sum> W = sum_seq f n"
+  obtains f and N where "\<forall>n\<ge>N. \<^bold>\<Sum> W = sum_seq f n" and "{f i | i. i < N} \<subseteq> W"
   using countable_suminf_exists_sumseq_bound[OF assms] by fast
 
 lemma countable_suminf_obtains_sumseq:
   assumes "countable W"
-  obtains f and n where "\<^bold>\<Sum> W = sum_seq f n"
+  obtains f and n where "\<^bold>\<Sum> W = sum_seq f n" and "{f i | i. i < n} \<subseteq> W"
   using countable_suminf_exists_sumseq_bound[OF assms] by fast
+
+lemma suminf_exists_finite_subset:
+  fixes W :: "'label set"
+  assumes "countable W"
+  shows "\<exists>W'. W' \<subseteq> W \<and> finite W' \<and> \<^bold>\<Sum> W = \<Sum> W'"
+proof -
+  obtain f and n where sumW:"\<^bold>\<Sum> W = sum_seq f n" and subsetW:"{f i | i. i < n} \<subseteq> W"
+    by (fact countable_suminf_obtains_sumseq[OF assms])
+  have fin:"finite (f ` {i. i < n})" by blast
+  obtain W' where W'_def:"W' = {f i | i. i < n}" by blast
+  then have "W' \<subseteq> W" and "finite W'" and "\<Sum> W' = sum_seq f n" 
+    using subsetW fin sum_seq_to_sum[of f n] by auto
+  then show ?thesis using sumW by metis
+qed
+
+lemma suminf_obtains_finite_subset:
+  fixes W :: "'label set"
+  assumes "countable W"
+  obtains W' where "W' \<subseteq> W" and "finite W'" and "\<^bold>\<Sum> W = \<Sum> W'"
+  using suminf_exists_finite_subset[OF assms] by blast
+
+lemma countable_suminf_elem:
+  fixes W :: "'label set"
+  assumes "countable W"
+  assumes "w \<in> W"
+  shows "\<^bold>\<Sum> W \<le> w"
+proof -
+  obtain i where "path_seq W i = w" 
+    using path_seq_elem_exists_index[OF assms] by blast
+  then show ?thesis 
+    unfolding SumInf_def using suminf_elem[of "path_seq W" i] by blast
+qed
+
 
 lemma SumInf_empty[simp]: "SumInf {} = 0"
   unfolding SumInf_def using suminf_finite[of "{}", simplified] path_seq_empty by blast
@@ -232,13 +265,20 @@ lemma "finite W \<Longrightarrow> SumInf W = \<Sum>W"
    oops
 
 lemma singleton_sum[simp]: "\<^bold>\<Sum> {w} = w"
-  unfolding SumInf_def
-  using path_seq_insert[of "{}" w, simplified]
-  using path_seq_notin_set_zero[of "{w}", simplified]
-  apply auto
-  using summable_bounded_dioid[of "(SOME f. \<forall>l. (l = w) = (\<exists>i. f i = l))"]
-  sorry
-
+proof -
+  obtain W where subset:"W \<subseteq> {w}" "finite W" and sum_eq:"\<^bold>\<Sum> {w} = \<Sum> W"
+    by (fact suminf_obtains_finite_subset[of "{w}", simplified])
+  then show ?thesis 
+  proof (cases "W = {w}")
+    case True
+    then show ?thesis using sum_eq by auto
+  next
+    case False
+    then have "W = {}" using subset by blast
+    then show ?thesis 
+      using sum_eq countable_suminf_elem[of "{w}" w] unfolding BoundedDioid.less_eq_def by auto
+  qed
+qed
 
 definition weight_pre_star :: "('state \<Rightarrow> 'label) \<Rightarrow> ('state \<Rightarrow> 'label)" where
   "weight_pre_star C c = \<^bold>\<Sum>{l*(C c') | l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
