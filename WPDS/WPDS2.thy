@@ -332,67 +332,7 @@ lemma wts_to_monoidLTS_induct_reverse:
              (p', l, p'') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow>
              P p (wd * l) p'')"
   shows "P p wd p'"
-  using assms
-proof (induct "length (fst wd)" arbitrary: p wd p')
-  case 0
-  then show ?case
-    by (metis length_0_conv monoid_star_w0 mstar_wts_one one_list_def one_prod_def prod.collapse)
-next
-  case (Suc n)
-  note outer_Suc = Suc
-  show ?case
-  proof (cases n)
-    case 0
-    then have "P p' 1 p'"
-      using Suc(1)[of "1" p' p'] using Suc by blast
-    moreover
-    have "(p, wd, p') \<in> wts_to_monoidLTS ts"
-      by (smt (verit, best) "0" One_nat_def diff_Suc_1 fst_conv length_0_conv length_Cons 
-          monoid_rtrancl_wts_to_monoidLTS_cases_rev' monoid_star_w0 monoid_star_w1 one_neq_zero 
-          outer_Suc(2) outer_Suc(3) prod.exhaust_sel wts_label_d)
-    moreover
-    have "(p', 1, p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-      by simp
-    ultimately
-    show ?thesis
-      using outer_Suc(5)[of p wd p' 1 p']
-      by (metis mult.right_neutral )
-  next
-    case (Suc n')
-    define w where "w = fst wd"
-    define d where "d = snd wd"
-    define w' where "w' = tl w"
-    define \<gamma> where "\<gamma> = hd w"
-
-    have w_split: "\<gamma> # w' = w"
-      by (metis Suc.hyps(2) \<gamma>_def list.collapse list.size(3) nat.simps(3) w'_def w_def)
-
-    have "\<exists>d' s d''.(p, ([\<gamma>],d'), s) \<in> wts_to_monoidLTS ts \<and>
-            (s, (w',d''),p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
-            d = d' * d''"
-      using outer_Suc(4) Suc
-      by (smt (verit, best) d_def fst_eqD list.discI list.sel(1) list.sel(3) 
-          monoid_rtrancl_wts_to_monoidLTS_cases_rev' outer_Suc(3) snd_eqD w_def w_split)
-    then obtain s d' d'' where
-      "(p, ([\<gamma>],d'), s) \<in> wts_to_monoidLTS ts"
-      "(s, (w',d''),p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-      "d = d' * d''" by auto
-
-    have "P s (w',d'') p'"
-      using outer_Suc(1,2,3) \<open>(s, (w', d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)\<close> assms(2)
-      by (smt (verit, best) diff_Suc_1 fst_eqD length_Cons outer_Suc(5) w_def w_split)
-
-    have "P p (([\<gamma>], d') * (w', d'')) p'"
-      using \<open>(p, ([\<gamma>], d'), s) \<in> wts_to_monoidLTS ts\<close>
-        \<open>(s, (w', d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)\<close> \<open>P s (w', d'') p'\<close> 
-        outer_Suc(5) by blast
-    then have "P p (\<gamma> # w', d' * d'') p'"
-      by (auto simp add: mult_prod_def times_list_def)
-    then show ?thesis
-      using w_split
-      using \<open>d = d' * d''\<close> d_def w_def by fastforce
-  qed
-qed
+  using assms monoid_rtrancl_list_induct_rev[of p wd] by metis
 
 lemma monoid_star_nonempty:
   assumes "(p, w, p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
@@ -421,8 +361,11 @@ lemma sum_of_sums_mult2:
   "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} * g d' |d'. Q d'} = \<^bold>\<Sum> {f d d' * g d' | d d'. P d d' \<and> Q d'}"
   sorry
 
-lemmas monoid_star_relp_induct = 
-  MonoidClosure.monoid_rtranclp.induct[of l_step_relp "(_,_)" _ "(_,_)"]
+lemmas monoid_star_relp_induct [consumes 1, case_names monoid_star_refl monoid_star_into_rtrancl] = 
+  MonoidClosure.monoid_rtranclp.induct[of l_step_relp ] (* "(_,_)" _ "(_,_)" *)
+
+lemmas monoid_star_relp_induct_rev [consumes 1, case_names monoid_star_refl monoid_star_into_rtrancl] = 
+  MonoidClosure.monoid_rtranclp_list_induct_rev[of l_step_relp ] (*"(_,_)" _ "(_,_)" *)
 
 lemma step_rule_aux:
   assumes "(p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)"
@@ -1027,7 +970,7 @@ lemma nicenicenice''':
   assumes "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
   assumes "(A $ (p, \<gamma>, q)) = d''"
   shows "d * d' \<ge> d''"
-  by (metis assms(1) assms(2) assms(3) assms(4) meet.inf.absorb_iff2 meet.inf_commute nicenicenice)
+  by (metis assms meet.inf.absorb_iff2 meet.inf_commute nicenicenice)
 
 lemma "(b :: 'weight) \<ge> a \<Longrightarrow> c \<ge> a \<Longrightarrow> d \<ge> a \<Longrightarrow> b + c + d \<ge> a"
   by simp
@@ -1234,21 +1177,96 @@ thm monoid_star_relp_induct
 thm wts_to_monoidLTS_induct_reverse
 find_theorems "_ \<Midarrow>_\<Rightarrow>\<^sup>* _" name: induct
 
+lemma c':
+  assumes "saturated pre_star_rule A"
+  assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* c'" and "fst c' \<in> finals" and "snd c' = []"
+  shows "accepts A c \<le> l"
+  using assms(2,3,4)
+proof (induction rule: monoid_star_relp_induct_rev)
+  case (monoid_star_refl c)
+  then show ?case
+    by (metis dual_order.eq_iff final_empty_accept' prod.exhaust_sel)
+next
+  case (monoid_star_into_rtrancl a w b c w')
+  then show ?case sorry
+qed
+
 lemma c:
   assumes "saturated pre_star_rule A"
   assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* (p,[])" and "p \<in> finals"
   shows "accepts A c \<le> l"
   using assms(2,3)
-  apply (induct)
-  subgoal for c
-    sorry
-  subgoal
-    find_theorems saturated pre_star_rule
-    using assms(1)
-      nicenicenice[OF assms(1)]
+proof (induction rule: monoid_star_relp_induct_rev)
+  case (monoid_star_refl c)
+  then show ?case sorry
+next
+  case (monoid_star_into_rtrancl a w b c w')
+  then show ?case sorry
+qed
 
+
+  case (monoid_rtrancl_refl a)
+  then show ?case sorry
+next
+  case (monoid_rtrancl_into_rtrancl a w b c w')
+  then show ?case sorry
+qed
+  case (monoid_rtrancl_refl a)
+  then show ?case sorry
+next
+  case (monoid_rtrancl_into_rtrancl a w b l c w' l')
+  then show ?case sorry
+qed
+
+  case (monoid_star_refl a)
+  then show ?case sorry
+next
+  case (monoid_star_into_rtrancl a w b l c w' l')
+  then show ?case sorry
+qed
+  case (1 a)
+  then show ?case sorry
+next
+  case (2 a w b l c w' l')
+  then show ?case sorry
+qed
+  subgoal for a
     sorry
-  sorry
+  subgoal for b w c 
+    sorry
+  done
+  case (1 a)
+  then show ?case sorry
+next
+  case (2 )
+  then show ?case sorry
+qed
+  case 1
+  then show ?case sorry
+next
+  case (2 a)
+  then show ?case sorry
+next
+  case (3 a w b l c w' l')
+  then show ?case sorry
+qed
+  fix uu4 uua4
+  show 
+ 1. (?uu4, ?uua4) \<Midarrow> l \<Rightarrow>\<^sup>* (p, [])
+ 2. \<And>a. c \<Midarrow> 1 \<Rightarrow>\<^sup>* a \<Longrightarrow> p \<in> finals \<Longrightarrow> accepts A c \<le> 1
+ 3. \<And>a w b l ca w' l'.
+       a \<Midarrow> w \<Rightarrow> b \<Longrightarrow>
+       (c \<Midarrow> w' \<Rightarrow>\<^sup>* ca \<Longrightarrow> p \<in> finals \<Longrightarrow> accepts A c \<le> w') \<Longrightarrow>
+       b \<Midarrow> w' \<Rightarrow>\<^sup>* ca \<Longrightarrow> c \<Midarrow> (w * w') \<Rightarrow>\<^sup>* ca \<Longrightarrow> p \<in> finals \<Longrightarrow> accepts A c \<le> w * w' 
+  case 1
+  then show ?case sorry
+next
+  case (2 a)
+  then show ?case sorry
+next
+  case (3 a w b l c w' l')
+  then show ?case sorry
+qed
 
 lemma b:
   assumes "saturated pre_star_rule A"
@@ -1256,6 +1274,7 @@ lemma b:
   shows "accepts A c \<le> l * accepts (K$ 0) c'"
   using assms c[OF assms(1)] accepts_empty_iff0[of "fst c'" "snd c'"] 
   by simp (metis prod.collapse)
+
 lemma
   assumes "saturated pre_star_rule A"
   shows "accepts A c \<le> weight_pre_star (accepts (K$ 0)) c"

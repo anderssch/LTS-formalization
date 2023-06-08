@@ -355,7 +355,7 @@ lemma monoid_rtrancl_list_embed_ts_cases_rev:
            d = d'' * d'''"
   using assms monoid_rtrancl_list_embed_ts_cases_rev' by fastforce 
 
-lemma monoid_rtrancl_list_embed_ts_induct_reverse:
+lemma monoid_rtrancl_list_embed_ts_induct_rev:
   assumes "(a, (d, l), b) \<in> monoid_rtrancl (list_embed_ts r)"
   assumes "(\<And>a. P a 1 a)"
   assumes "(\<And>a d b l c d' l'. (a, (d,l), b) \<in> list_embed_ts r \<Longrightarrow> P b d' c \<Longrightarrow> 
@@ -385,13 +385,37 @@ next
     using Suc(5)[OF p(1) q p(2)] p by auto
 qed
 
-lemma monoid_rtrancl_list_induct_reverse:
+lemma monoid_rtrancl_list_induct_rev:
   assumes "(a, w, b) \<in> monoid_rtrancl r"
   assumes "(\<And>a. P a 1 a)"
-  assumes "(\<And>a w b l c w' l'. (a, w, b) \<in> r \<Longrightarrow> P b w' c \<Longrightarrow> (b, w', c) \<in> monoid_rtrancl r  \<Longrightarrow> 
+  assumes "(\<And>a w b c w'. (a, w, b) \<in> r \<Longrightarrow> P b w' c \<Longrightarrow> (b, w', c) \<in> monoid_rtrancl r  \<Longrightarrow> 
               P a (w * w') c)"
   shows "P a w b"
   by (smt (verit) assms list_embed_ts_project monoid_rtrancl_if_monoid_rtrancl_list_embed_ts''
-      monoid_rtrancl_list_embed_ts_if_monoid_rtrancl monoid_rtrancl_list_embed_ts_induct_reverse)
+      monoid_rtrancl_list_embed_ts_if_monoid_rtrancl monoid_rtrancl_list_embed_ts_induct_rev)
+
+lemma monoid_rtranclp_list_induct_rev [consumes 1, case_names monoid_rtrancl_refl monoid_rtrancl_into_rtrancl]: 
+  assumes "monoid_rtranclp r a w b"
+  assumes "(\<And>a. P a 1 a)"
+  assumes "(\<And>a w b c w'. r a w b \<Longrightarrow> P b w' c \<Longrightarrow> monoid_rtranclp r b w' c \<Longrightarrow> 
+              P a (w * w') c)"
+  shows "P a w b"
+proof -
+  define r' where "r' = {(a,w,b). r a w b}"
+
+  have A: "(a, w, b) \<in> monoid_rtrancl r'"
+    by (metis (no_types, lifting) \<open>r' \<equiv> {(a, x, y). r a x y}\<close> assms(1) mem_Collect_eq 
+        mono_monoid_rtranclp monoid_rtranclp_monoid_rtrancl_eq split_conv)
+
+  have B: "(\<And>a. P a 1 a)"
+    using assms(2) by auto
+  have C: "(\<And>a w b l c w' l'. (a, w, b) \<in> r' \<Longrightarrow> P b w' c \<Longrightarrow>
+           (b, w', c) \<in> monoid_rtrancl r' \<Longrightarrow> P a (w * w') c)"
+    by (metis (no_types, lifting) \<open>r' \<equiv> {(a, x, y). r a x y}\<close> assms(3) mem_Collect_eq 
+        mono_monoid_rtranclp monoid_rtranclp_monoid_rtrancl_eq split_conv)
+
+  show "P a w b"
+    using A B C using monoid_rtrancl_list_induct_rev[of a w b r'] by metis
+qed
 
 end
