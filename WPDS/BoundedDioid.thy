@@ -223,6 +223,20 @@ lemma sum_seq_elem_ord:
   shows "sum_seq f n \<le> f i"
   unfolding less_eq_def using sum_seq_elem[OF assms] by presburger
 
+lemma sum_superset_less_eq:
+  assumes "B \<subseteq> A" and "finite A"
+    shows "\<Sum> A \<le> \<Sum> B"
+  unfolding less_eq_def using sum.subset_diff[OF assms, of id] by force
+
+lemma sum_greater_elem:
+  assumes "\<And>a. a \<in> A \<Longrightarrow> \<Sum> B \<le> a"
+      and "finite A" and "finite B"
+    shows "\<Sum> B \<le> \<Sum> A"
+  using assms(1)
+  unfolding less_eq_def
+  by (induct rule: finite_induct[OF assms(2)]) (simp_all add: local.add.left_commute local.meet.inf_commute)
+  
+
 end
 
 \<comment> \<open>An idempotent semiring that follows the definition of [RSJM'05].\<close>
@@ -439,6 +453,31 @@ lemma seqs_same_elems_obtain_map:
   assumes "\<And>l. (\<exists>i. f i = l) \<longleftrightarrow> (\<exists>i. f' i = l)"
   obtains g where "\<And>i. f i = f' (g i)"
   using seqs_same_elems_exists_map[OF assms] by blast
+
+
+
+lemma 
+  fixes f f' :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
+  assumes "\<And>l. (\<exists>i. f i = l) \<longleftrightarrow> (\<exists>i. f' i = l)"
+  shows "suminf f \<le> l \<Longrightarrow> suminf f' \<le> l"
+  using assms suminf_elem[of f] suminf_elem[of f']
+  unfolding less_eq_def
+  oops
+
+lemma 
+  fixes f f' :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
+  assumes "\<And>l. (\<exists>i. f i = l) \<longleftrightarrow> (\<exists>i. f' i = l)"
+  shows "suminf f = suminf f'"
+proof -
+  obtain g where "\<And>i. f i = f' (g i)" using seqs_same_elems_obtain_map[OF assms] by blast
+  obtain h where "\<And>i. f' i = f (h i)" using seqs_same_elems_obtain_map[of f' f] assms by blast
+  show ?thesis 
+  using assms suminf_elem 
+  apply -
+  apply (rule stable_sum_eq_to_suminf_eq)
+  using assms eventually_stable_sum[of f] eventually_stable_sum[of f']
+  apply simp
+  oops
 
 
 \<comment> \<open>Definition 5 from [RSJM'05].\<close>

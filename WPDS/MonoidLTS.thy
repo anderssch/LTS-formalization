@@ -222,63 +222,26 @@ proof -
     unfolding SumInf_def using suminf_elem[of "path_seq W" i] by blast
 qed
 
-
-lemma SumInf_empty[simp]: "SumInf {} = 0"
+lemma SumInf_empty[simp]: "\<^bold>\<Sum> {} = 0"
   unfolding SumInf_def using suminf_finite[of "{}", simplified] path_seq_empty by blast
 
-lemma path_seq_insert: "finite F \<Longrightarrow> \<exists>i. path_seq (insert x F) i = x"
-  using path_seq_of_countable_set[OF countable_finite[of "insert x F"]]
-  by blast
-
-lemma "finite F \<Longrightarrow> (\<Sum>a. path_seq (insert x F) a) = x + (\<Sum>a. path_seq F a)"
-  using path_seq_in_set[OF countable_finite, of "insert x F", simplified]
-        path_seq_insert[of F x]
-  apply simp
-  apply auto
-  oops
-thm suminf_mono_reindex[unfolded strict_mono_on_def, simplified]
-
-lemma 
+lemma finite_suminf_is_sum:
   assumes "finite W"
-  assumes "W \<noteq> {}"
-  shows "SumInf W = \<Sum>W"
-  unfolding SumInf_def
-  apply (induct rule: finite_induct[OF assms(1)], simp)
-  apply simp
-  subgoal for x F
-    using path_seq_insert[of F x] path_seq_in_set[OF countable_finite, of "insert x F"]
-    apply simp
-    apply auto
-    using path_seq_in_set[OF countable_finite[OF assms(1)] assms(2)] assms(1)
-    apply -
-  oops
-
-lemma "finite W \<Longrightarrow> SumInf W = \<Sum>W"
-  apply (induct rule: finite_induct, simp)
-  apply simp
-  unfolding SumInf_def
-  using path_seq_in_set[OF countable_finite[of W]]
-  using path_seq_of_countable_set[OF countable_finite[of W]]
-  apply simp
-   using sums_If_finite_set
-   apply -
-   oops
+  shows "\<^bold>\<Sum> W = \<Sum> W"
+proof -
+  obtain W' where subset:"W' \<subseteq> W" and fin:"finite W'" and eq:"\<^bold>\<Sum> W = \<Sum> W'" 
+    by (fact suminf_obtains_finite_subset[OF countable_finite[OF assms(1)]])
+  have "\<And>w. w \<in> W \<Longrightarrow> \<Sum> W' \<le> w" 
+    using eq countable_suminf_elem[OF countable_finite[OF assms(1)]] by presburger
+  then have "\<Sum> W' \<le> \<Sum> W" using sum_greater_elem assms fin by blast
+  moreover have "\<Sum> W \<le> \<Sum> W'" by (fact sum_superset_less_eq[OF subset assms])
+  ultimately have "\<Sum> W' = \<Sum> W" by fastforce
+  then show ?thesis using eq by argo
+qed
 
 lemma singleton_sum[simp]: "\<^bold>\<Sum> {w} = w"
-proof -
-  obtain W where subset:"W \<subseteq> {w}" "finite W" and sum_eq:"\<^bold>\<Sum> {w} = \<Sum> W"
-    by (fact suminf_obtains_finite_subset[of "{w}", simplified])
-  then show ?thesis 
-  proof (cases "W = {w}")
-    case True
-    then show ?thesis using sum_eq by auto
-  next
-    case False
-    then have "W = {}" using subset by blast
-    then show ?thesis 
-      using sum_eq countable_suminf_elem[of "{w}" w] unfolding BoundedDioid.less_eq_def by auto
-  qed
-qed
+  using finite_suminf_is_sum by simp
+
 
 definition weight_pre_star :: "('state \<Rightarrow> 'label) \<Rightarrow> ('state \<Rightarrow> 'label)" where
   "weight_pre_star C c = \<^bold>\<Sum>{l*(C c') | l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
