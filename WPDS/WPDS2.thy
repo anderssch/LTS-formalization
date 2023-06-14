@@ -1192,11 +1192,12 @@ thm wts_to_monoidLTS_induct_reverse
 find_theorems "_ \<Midarrow>_\<Rightarrow>\<^sup>* _" name: induct
 
 
-lemma 
-  assumes "(p'',((lbl u1) @ w1,d'),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-      and "q \<in> finals"
-      and "(p', \<gamma>) \<midarrow>d\<hookrightarrow> (p'', u1)"
+lemma c'': (* Dette er Mortens tegning. *)
+  assumes "(p', \<gamma>) \<midarrow>d\<hookrightarrow> (p'', u1)"
       and "saturated pre_star_rule A"
+      and "(p'',((lbl u1) @ w1,d'),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+      and "q \<in> finals"  (*Er denne linje nødvendig? *)
+
     shows "(p',(\<gamma> # w1, d*d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
   sorry
 
@@ -1232,14 +1233,21 @@ next
     unfolding accepts_def apply simp
     sorry
 
-  show ?case
-    unfolding p'w_split 3(1)
-    unfolding accepts_def apply simp
+  have "\<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<le>
+         \<^bold>\<Sum> {d *d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d *d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+    try
     sorry
-  have "?case"
-    using monoid_star_into_rtrancl
+  also have "... \<le> \<^bold>\<Sum> {d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+    using c''[OF 3(3) assms(1), of w1 ] by (smt (verit) mem_Collect_eq sum_AAA sum_in)
+  also have "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+    by (simp add: sum_distr)
 
-  then show ?case sorry
+  also have "... \<le> d * d'"
+    using 2 unfolding p''u_split 3(2) accepts_def using BoundedDioid.mult_isol by auto
+
+  finally show ?case
+    unfolding p'w_split 3(1)
+    unfolding accepts_def by simp
 qed
 
 lemma c:
