@@ -1191,6 +1191,15 @@ thm monoid_star_relp_induct
 thm wts_to_monoidLTS_induct_reverse
 find_theorems "_ \<Midarrow>_\<Rightarrow>\<^sup>* _" name: induct
 
+
+lemma 
+  assumes "(p'',((lbl u1) @ w1,d'),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+      and "q \<in> finals"
+      and "(p', \<gamma>) \<midarrow>d\<hookrightarrow> (p'', u1)"
+      and "saturated pre_star_rule A"
+    shows "(p',(\<gamma> # w1, d*d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+  sorry
+
 lemma c':
   assumes "saturated pre_star_rule A"
   assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* c'" and "fst c' \<in> finals" and "snd c' = []"
