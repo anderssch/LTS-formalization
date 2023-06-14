@@ -1201,7 +1201,35 @@ proof (induction rule: monoid_star_relp_induct_rev)
   then show ?case
     by (metis dual_order.eq_iff final_empty_accept' prod.exhaust_sel)
 next
-  case (monoid_star_into_rtrancl a w b c w')
+  case (monoid_star_into_rtrancl p'w d p''u c d')
+  then have 2: "accepts A p''u \<le> d'" (* 2 *)
+    by auto
+  define p' where "p' = fst p'w"
+  define w where "w = snd p'w"
+  define p'' where "p'' = fst p''u"
+  define u where "u = snd p''u"
+  have p''u_split: "p''u = (p'',u)"
+    sorry
+  have p'w_split: "p'w = (p',w)"
+    sorry
+
+  from monoid_star_into_rtrancl(1) obtain \<gamma> u1 w1 where 3: (* 3 *)
+     "w = \<gamma>#w1"
+     "u = (lbl u1)@w1"
+     "(p',\<gamma>) \<midarrow>d\<hookrightarrow> (p'',u1)"
+    sorry
+  from 2 have "undefined"
+    unfolding p''u_split 3(2)
+    unfolding accepts_def apply simp
+    sorry
+
+  show ?case
+    unfolding p'w_split 3(1)
+    unfolding accepts_def apply simp
+    sorry
+  have "?case"
+    using monoid_star_into_rtrancl
+
   then show ?case sorry
 qed
 
