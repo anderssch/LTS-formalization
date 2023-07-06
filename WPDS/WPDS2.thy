@@ -99,17 +99,17 @@ definition accepts :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> (
 
 
 \<comment> \<open>Weighted pre-star rule updates the finfun of transition weights.\<close>
-inductive pre_star_rule :: "('ctr_loc, 'label, 'weight) w_transitions saturation_rule" where 
-  add_trans: "((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)) 
+inductive pre_star_rule :: "('ctr_loc, 'label, 'weight) w_transitions saturation_rule" where
+  add_trans: "((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))
       \<Longrightarrow> (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)
       \<Longrightarrow> (ts $ (p, \<gamma>, q)) = d''
-      \<Longrightarrow> (d'' + (d * d')) \<noteq> d'' 
+      \<Longrightarrow> (d'' + (d * d')) \<noteq> d''
       \<Longrightarrow> pre_star_rule ts ts((p, \<gamma>, q) $:= d'' + (d * d'))"
 
 definition pre_star1 :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> (('ctr_loc, 'label) transition \<times> 'weight) set" where
   "pre_star1 wts =
-    (\<Union>((p, \<gamma>), d, (p', w)) \<in> \<Delta>. 
-        \<Union>(q,d') \<in> monoidLTS_reach (wts_to_monoidLTS wts) (p') (lbl w). 
+    (\<Union>((p, \<gamma>), d, (p', w)) \<in> \<Delta>.
+        \<Union>(q,d') \<in> monoidLTS_reach (wts_to_monoidLTS wts) (p') (lbl w).
             {((p, \<gamma>, q), d * d')})"
 
 definition "pre_star_loop = while_option (\<lambda>s. update_wts s (pre_star1 s) \<noteq> s) (\<lambda>s. update_wts s (pre_star1 s))"
@@ -342,7 +342,8 @@ lemma monoid_star_nonempty:
                     (p, ([hd (fst w)], d1), pi) \<in> wts_to_monoidLTS ts"
   by (metis assms(1,2) list.collapse monoid_rtrancl_wts_to_monoidLTS_cases_rev surjective_pairing)
 
-lemma sum_distr: "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
+lemma sum_distr: 
+  "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
   sorry
 
 lemma sum_of_sums:
@@ -608,15 +609,14 @@ next
     using local.soundness by blast
 qed
 
-lemma monoid_rtrancl_split:
+lemma monoid_rtrancl_split: (* Probably not a very meaningful lemma... *)
   assumes "(p, (v, d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A')"
-  obtains u w p'' d''' d' where
-    "(p, (u, d'''), p'') \<in> monoid_rtrancl (wts_to_monoidLTS A')"
-    "(p'', (w, d'), p') \<in> monoid_rtrancl (wts_to_monoidLTS A')"
-    "v = u @ w \<and> \<gamma> \<notin> set w"
-    "d = d''' * d'"
-  by (metis append_is_Nil_conv assms in_set_conv_decomp_first monoid_rtrancl.simps 
-      mult.right_neutral one_prod_def times_list_def)
+  shows
+    "(p, (v, d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A')"
+    "(p', ([], 1), p') \<in> monoid_rtrancl (wts_to_monoidLTS A')"
+    "d = d * 1"
+  by (metis append_is_Nil_conv assms monoid_rtrancl.simps 
+      mult.right_neutral one_prod_def times_list_def)+
 
 lemma final_empty_accept':
   assumes "p \<in> finals"
@@ -937,13 +937,14 @@ proof -
     then show ?thesis
       using p by metis
   qed
-qed
+  oops
 
 lemma useful3_simpler:
   assumes "(p\<^sub>1,w\<^sub>1) \<Midarrow>d\<^sub>1\<^sub>3\<Rightarrow>\<^sup>* (p\<^sub>3, w\<^sub>3)"
   shows "(p\<^sub>1 = p\<^sub>3 \<and> d\<^sub>1\<^sub>3 = 1 \<and> w\<^sub>1 = w\<^sub>3) \<or>
             (\<exists>p\<^sub>2 w\<^sub>2 d\<^sub>1\<^sub>2 d\<^sub>2\<^sub>3 \<gamma> w' w. (p\<^sub>1, \<gamma>) \<midarrow> d\<^sub>1\<^sub>2 \<hookrightarrow> (p\<^sub>2, w))"
-  using useful3 assms by metis
+  oops
+  (* using useful3 assms by metis *)
 
 
 
@@ -971,6 +972,23 @@ lemma nicenicenice''':
   assumes "(A $ (p, \<gamma>, q)) = d''"
   shows "d * d' \<ge> d''"
   by (metis assms meet.inf.absorb_iff2 meet.inf_commute nicenicenice)
+
+lemma nicenicenice''''':
+  assumes "saturated pre_star_rule A"
+  assumes "((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
+  assumes "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+  shows "d * d' \<ge> (A $ (p, \<gamma>, q))"
+  by (metis assms meet.inf.absorb_iff2 meet.inf_commute nicenicenice)
+
+lemma nicenicenice0:
+  assumes "saturated pre_star_rule A"
+  assumes "((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
+  assumes "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+  assumes "(A $ (p, \<gamma>, q)) = 0"
+  shows "d * d' = 0"
+  using assms unfolding saturated_def using pre_star_rule.intros
+  using meet.inf_eq_top_iff by blast 
+
 
 lemma "(b :: 'weight) \<ge> a \<Longrightarrow> c \<ge> a \<Longrightarrow> d \<ge> a \<Longrightarrow> b + c + d \<ge> a"
   by simp
@@ -1070,8 +1088,7 @@ proof (rule complete_intro)
     unfolding saturated_def using pre_star_rule.intros by blast
 
   show "d \<le> \<^bold>\<Sigma>(p, [\<gamma>])\<Rightarrow>\<^sup>*p'"
-    sorry
-qed
+    oops
 
 lemma
   assumes "(a ::'weight) \<le> (b :: 'weight)"
@@ -1187,19 +1204,123 @@ proof -
 qed
 *)
 
-thm monoid_star_relp_induct
+thm monoid_rtrancl.induct
 thm wts_to_monoidLTS_induct_reverse
 find_theorems "_ \<Midarrow>_\<Rightarrow>\<^sup>* _" name: induct
 
+lemma 
+  assumes "(p\<^sub>1,(\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>3,d\<^sub>1\<^sub>3),p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+  shows "\<exists>p\<^sub>2 d\<^sub>1\<^sub>2 d\<^sub>2\<^sub>3. (p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2],d\<^sub>1\<^sub>2), p\<^sub>2) \<in> (wts_to_monoidLTS A) \<and>
+                    (p\<^sub>2,(w\<^sub>2\<^sub>3,d\<^sub>2\<^sub>3),p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2*d\<^sub>2\<^sub>3"
+  using assms monoid_rtrancl_wts_to_monoidLTS_cases_rev by fastforce
+
+
+find_theorems monoid_rtrancl name: induction
+
+thm wts_to_monoidLTS_induct_reverse
+
+find_theorems (100) monoid_rtrancl
+thm monoid_rtrancl_extend
+
+thm monoid_rtrancl_split
+
+thm monoid_rtrancl.induct
+
+find_theorems monoid_rtrancl "(#)"
+
+(* Proof adapted from monoid_rtrancl_list_embed_ts_append_split *)
+lemma monoid_rtrancl_wts_to_monoidLTS_append_split:
+  assumes "(p, (d'@l,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+  shows "\<exists>d'' s d'''.
+           (p, (d',d''), s) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and>
+           (s, (l,d'''), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and>
+           d = d'' * d'''"
+using assms proof(induction d' arbitrary: p d)
+  case Nil
+  then show ?case
+    by (metis eq_Nil_appendI monoid_rtrancl.monoid_rtrancl_refl mult_1 one_list_def one_prod_def) 
+next
+  case (Cons a u1)
+  then have "\<exists>du0 q du1. (p, ([a],du0), q) \<in> (wts_to_monoidLTS A) \<and> 
+                         (q, ( u1 @ l,du1), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> 
+                         d = du0 * du1"
+    using monoid_rtrancl_wts_to_monoidLTS_cases_rev by fastforce
+  then obtain q du0 du1 where e:
+    "(p, ([a],du0), q) \<in> (wts_to_monoidLTS A)" 
+    "(q, (u1 @ l,du1), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)" 
+    "d = du0 * du1"
+    by auto
+
+  have "\<exists>d'' s d'''. (q, (u1, d''), s) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> 
+                     (s, (l, d'''), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> 
+                     du1 = d'' * d'''"
+     using Cons.IH[OF e(2)] .
+  then obtain d'' s d''' where
+    "(q, (u1,d''), s) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+    "(s, (l,d'''), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)" 
+    "du1 = d'' * d'''"
+    by auto
+  then have "(p, (a # u1, du0 * d''), s) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+    by (smt (verit, del_insts) append_Cons 
+        append_Nil e(1) fst_conv monoid_rtrancl_into_rtrancl_rev mult_prod_def snd_conv 
+        times_list_def)
+  then show ?case
+    by (metis (no_types, lifting) \<open>(s, (l, d'''), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)\<close> 
+        \<open>du1 = d'' * d'''\<close> e(3)  mult.assoc)   
+qed
+
+lemma the_lemma_that:
+  assumes "A $ (p\<^sub>1, \<gamma>\<^sub>1\<^sub>2, p\<^sub>2) \<noteq> 0" (* this assumption is a bit annoying *)
+  assumes "A $ (p\<^sub>1, \<gamma>\<^sub>1\<^sub>2, p\<^sub>2) \<le> D\<^sub>1\<^sub>2"
+  assumes "(p\<^sub>2, (w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+  shows "\<exists>D\<^sub>1\<^sub>3. (p\<^sub>1, (\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>3, D\<^sub>1\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> D\<^sub>1\<^sub>3 \<le> D\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3"
+proof -
+  define d\<^sub>1\<^sub>2 where "d\<^sub>1\<^sub>2 = A $ (p\<^sub>1, \<gamma>\<^sub>1\<^sub>2, p\<^sub>2)"
+
+  have e: "(p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> (wts_to_monoidLTS A)"
+    using assms(1) d\<^sub>1\<^sub>2_def wts_to_monoidLTS_def by fastforce
+
+  have "(p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2) * (w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+    using monoid_rtrancl_into_rtrancl_rev[OF _ assms(3), of p\<^sub>1 "([\<gamma>\<^sub>1\<^sub>2],_)", OF e] .
+  then have "(p\<^sub>1, (\<gamma>\<^sub>1\<^sub>2#w\<^sub>2\<^sub>3, d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+    by (simp add: mult_prod_def times_list_def)
+  then show ?thesis
+    using assms(2) d\<^sub>1\<^sub>2_def idempotent_semiring_ord_class.mult_isol_var by blast
+qed
 
 lemma c'': (* Dette er Mortens tegning. *)
   assumes "(p', \<gamma>) \<midarrow>d\<hookrightarrow> (p'', u1)"
       and "saturated pre_star_rule A"
       and "(p'',((lbl u1) @ w1,d'),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-      and "q \<in> finals"  (*Er denne linje nødvendig? *)
+      and "q \<in> finals" (*Er denne linje nødvendig? *)
+    shows "\<exists>D. (p',(\<gamma> # w1, D), q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> D \<le> d*d'"
+proof -
+  obtain q1 d1 d2 where e:
+    "(p'', ((lbl u1),d1), q1) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+    "(q1,(w1,d2),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+    "d' = d1*d2"
+    using monoid_rtrancl_wts_to_monoidLTS_append_split[OF assms(3)] by auto
 
-    shows "(p',(\<gamma> # w1, d*d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-  sorry
+  show ?thesis
+  proof (cases "A $ (p', \<gamma>, q1) = 0")
+    case True
+    have "d * d1 = 0"
+      using nicenicenice0[OF assms(2) assms(1) e(1) True] by force
+    then show ?thesis
+      sorry
+  next
+    case False
+    have "A $ (p', \<gamma>, q1) \<le> d * d1"
+      using nicenicenice'''''[OF assms(2) assms(1) e(1)] by auto
+    then have "\<exists>D. (p', (\<gamma>#w1,D),q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> D \<le> d*d1*d2"
+      using the_lemma_that e(2) False by metis
+    then show ?thesis
+      by (simp add: e(3) mult.assoc)
+  qed
+qed
+
+
+  
 
 lemma c':
   assumes "saturated pre_star_rule A"
@@ -1235,10 +1356,9 @@ next
 
   have "\<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<le>
          \<^bold>\<Sum> {d *d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d *d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    try
     sorry
   also have "... \<le> \<^bold>\<Sum> {d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    using c''[OF 3(3) assms(1), of w1 ] by (smt (verit) mem_Collect_eq sum_AAA sum_in)
+    using c''[OF 3(3) assms(1), of w1 ] (* by (smt (verit) mem_Collect_eq sum_AAA sum_in) *) sorry
   also have "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
     by (simp add: sum_distr)
 

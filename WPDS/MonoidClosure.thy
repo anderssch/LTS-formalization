@@ -355,6 +355,8 @@ lemma monoid_rtrancl_list_embed_ts_cases_rev:
            d = d'' * d'''"
   using assms monoid_rtrancl_list_embed_ts_cases_rev' by fastforce 
 
+
+
 lemma monoid_rtrancl_list_embed_ts_induct_rev:
   assumes "(a, (d, l), b) \<in> monoid_rtrancl (list_embed_ts r)"
   assumes "(\<And>a. P a 1 a)"
@@ -394,7 +396,7 @@ lemma monoid_rtrancl_list_induct_rev [consumes 1, case_names monoid_rtrancl_refl
   by (smt (verit) assms list_embed_ts_project monoid_rtrancl_if_monoid_rtrancl_list_embed_ts''
       monoid_rtrancl_list_embed_ts_if_monoid_rtrancl monoid_rtrancl_list_embed_ts_induct_rev)
 
-lemma monoid_rtranclp_list_induct_rev [consumes 1, case_names monoid_rtranclp_refl monoid_rtranclp_into_rtrancl]: 
+lemma monoid_rtranclp_list_induct_rev [consumes 1, case_names monoid_rtranclp_refl monoid_rtranclp_into_rtrancl]: (*the name shouldn't say "list" *)
   assumes "monoid_rtranclp r a w b"
   assumes "(\<And>a. P a 1 a)"
   assumes "(\<And>a w b c w'. r a w b \<Longrightarrow> P b w' c \<Longrightarrow> monoid_rtranclp r b w' c \<Longrightarrow> 
@@ -416,6 +418,58 @@ proof -
 
   show "P a w b"
     using A B C using monoid_rtrancl_list_induct_rev[of a w b r'] by metis
+qed
+
+lemma monoid_rtrancl_into_rtrancl_rev:
+  assumes "(a, w, b) \<in> r"
+  assumes "(b, l, c) \<in> monoid_rtrancl r"
+  shows "(a, w*l, c) \<in> monoid_rtrancl r"
+  using assms(2) assms(1) 
+proof (induction rule: monoid_rtrancl.induct)
+  case (monoid_rtrancl_refl b)
+  then show ?case
+    using monoid_rtrancl.monoid_rtrancl_into_rtrancl by force
+next
+  case (monoid_rtrancl_into_rtrancl a' w' b l c)
+  then show ?case
+    by (metis (no_types, lifting) monoid_rtrancl.monoid_rtrancl_into_rtrancl mult.assoc)
+qed
+
+lemma monoid_rtrancl_list_embed_ts_append_split:
+  assumes "(p, (d,d'@l), p') \<in> monoid_rtrancl (list_embed_ts ts)"
+  shows "\<exists>d'' s d'''.
+           (p, (d'',d'), s) \<in> monoid_rtrancl (list_embed_ts ts) \<and>
+           (s, (d''',l), p') \<in> monoid_rtrancl (list_embed_ts ts) \<and>
+           d = d'' * d'''"
+using assms proof(induction d' arbitrary: p d)
+  case Nil
+  then show ?case
+    by (metis eq_Nil_appendI monoid_rtrancl.monoid_rtrancl_refl mult_1 one_list_def one_prod_def) 
+next
+  case (Cons a u1)
+  then have "\<exists>du0 q du1. (p, (du0, [a]), q) \<in> list_embed_ts ts \<and> 
+                         (q, (du1, u1 @ l), p') \<in> monoid_rtrancl (list_embed_ts ts) \<and> d = du0 * du1"
+    using Cons(2) monoid_rtrancl_list_embed_ts_cases_rev[of p d a "u1 @ l" p' ts] by auto
+  then obtain q du0 du1 where e:
+    "(p, (du0, [a]), q) \<in> list_embed_ts ts" 
+    "(q, (du1, u1 @ l), p') \<in> monoid_rtrancl (list_embed_ts ts)" 
+    "d = du0 * du1"
+    by auto
+
+  have "\<exists>d'' s d'''. (q, (d'', u1), s) \<in> monoid_rtrancl (list_embed_ts ts) \<and> 
+                     (s, (d''', l), p') \<in> monoid_rtrancl (list_embed_ts ts) \<and> du1 = d'' * d'''"
+    using Cons.IH[OF e(2)] .
+  then obtain d'' s d''' where
+    "(q, (d'', u1), s) \<in> monoid_rtrancl (list_embed_ts ts)"
+    "(s, (d''', l), p') \<in> monoid_rtrancl (list_embed_ts ts)" 
+    "du1 = d'' * d'''"
+    by auto
+  then have "(p, (du0 * d'', a # u1), s) \<in> monoid_rtrancl (list_embed_ts ts)"
+    by (smt (verit, del_insts) append_Cons append_Nil e(1) fst_conv monoid_rtrancl_into_rtrancl_rev 
+        mult_prod_def snd_conv times_list_def)
+  then show ?case
+    by (metis (mono_tags, lifting) \<open>(s, (d''', l), p') \<in> monoid_rtrancl (list_embed_ts ts)\<close> 
+        \<open>du1 = d'' * d'''\<close> e(3) mult.assoc)
 qed
 
 end
