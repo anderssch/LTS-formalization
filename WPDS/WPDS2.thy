@@ -1288,11 +1288,69 @@ proof -
     using assms(2) d\<^sub>1\<^sub>2_def idempotent_semiring_ord_class.mult_isol_var by blast
 qed
 
-lemma c'': (* Dette er Mortens tegning. *)
+lemma c''_weak: (* Dette er Mortens tegning. *)
   assumes "(p', \<gamma>) \<midarrow>d\<hookrightarrow> (p'', u1)"
       and "saturated pre_star_rule A"
       and "(p'',((lbl u1) @ w1,d'),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-      and "q \<in> finals" (*Er denne linje nødvendig? *)
+    shows "(\<exists>D. (p',(\<gamma> # w1, D), q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> D \<le> d*d') \<or> 
+             (\<nexists>D. (p',(\<gamma> # w1, D), q) \<in> monoid_rtrancl (wts_to_monoidLTS A))"
+proof -
+  obtain q1 d1 d2 where e:
+    "(p'', ((lbl u1),d1), q1) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+    "(q1,(w1,d2),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+    "d' = d1*d2"
+    using monoid_rtrancl_wts_to_monoidLTS_append_split[OF assms(3)] by auto
+
+  show ?thesis
+  proof (cases "\<nexists>D. (p',(\<gamma> # w1, D), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)")
+    case True
+    then show ?thesis
+      by auto
+  next
+    case False
+    have "A $ (p', \<gamma>, q1) \<le> d * d1"
+      using nicenicenice'''''[OF assms(2) assms(1) e(1)] by auto
+    then have "\<exists>D. (p', (\<gamma>#w1,D),q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> D \<le> d*d1*d2"
+      using the_lemma_that e(2) False by (metis dual_order.eq_iff less_eq_zero mult_not_zero)
+    then show ?thesis
+      by (simp add: e(3) mult.assoc)
+  qed
+qed
+
+lemma c''_SHORT: (* Dette er Mortens tegning. *)
+  assumes "(p', \<gamma>) \<midarrow>d\<hookrightarrow> (p'', u1)"
+      and "saturated pre_star_rule A"
+      and "(p'',((lbl u1),d'),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+(*      and "q \<in> finals" (*Er denne linje nødvendig? *) *)
+    shows "\<exists>D. (p',([\<gamma>], D), q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> D \<le> d*d'" (* A phrasing from the wts perspective would also be possible and maybe better? *)
+proof -
+  have e:
+    "(p'', ((lbl u1),d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+    using monoid_rtrancl_wts_to_monoidLTS_append_split using assms(3) by auto
+
+  show ?thesis
+  proof (cases "A $ (p', \<gamma>, q) = 0")
+    case True
+    have "d * d' = 0"
+      using nicenicenice0[OF assms(2) assms(1) e(1) True] by force
+    then show ?thesis
+      sorry
+  next
+    case False
+    have "A $ (p', \<gamma>, q) \<le> d * d'"
+      using nicenicenice'''''[OF assms(2) assms(1) e(1)] by auto
+    then have "\<exists>D. (p', ([\<gamma>],D),q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> D \<le> d*d'"
+      using the_lemma_that False using e monoid_rtrancl_split(2) by fastforce
+    then show ?thesis
+      by (simp add: mult.assoc)
+  qed
+qed
+
+lemma c'': (* Dette er Mortens tegning. *) (* Change this one to rely on c''_SHORT *)
+  assumes "(p', \<gamma>) \<midarrow>d\<hookrightarrow> (p'', u1)"
+      and "saturated pre_star_rule A"
+      and "(p'',((lbl u1) @ w1,d'),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+(*      and "q \<in> finals" (*Er denne linje nødvendig? *) *)
     shows "\<exists>D. (p',(\<gamma> # w1, D), q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> D \<le> d*d'"
 proof -
   obtain q1 d1 d2 where e:
@@ -1319,8 +1377,55 @@ proof -
   qed
 qed
 
+thm c''
+lemma c''bububub: (* lkjjlkjkl. *)
+  assumes "(p', \<gamma>) \<midarrow>d\<hookrightarrow> (p'', u1)"
+    and "saturated pre_star_rule A"
+  shows "accepts A (p',(\<gamma> # w1)) \<le> d * accepts A (p'', (lbl u1) @ w1)"
+proof -
+  have X: "\<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<le>
+         \<^bold>\<Sum> {d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+    using c''[OF assms(1) assms(2), of w1 ] using mem_Collect_eq order_trans_rules(23) sum_AAA sum_in
+    by (smt (verit, ccfv_threshold)) 
+  also have Y: "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+    by (simp add: sum_distr)
 
-  
+  show ?thesis
+    using Y accepts_def calculation by force
+qed
+
+lemma c''bubububjdfkjdkf: (* lkjjlkjkl. *)
+  assumes "(p', w) \<Midarrow>d\<Rightarrow> (p'', u)"
+      and "saturated pre_star_rule A"
+    shows "accepts A (p',w) \<le> d * accepts A (p'', u)"
+  using assms(1) assms(2) c''bububub step_relp_NISSE by blast
+
+lemma c'_attempt2:
+  assumes "saturated pre_star_rule A"
+  assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* c'" and "fst c' \<in> finals" and "snd c' = []"
+  shows "accepts A c \<le> l"
+  using assms(2,3,4)
+proof (induction rule: monoid_star_relp_induct_rev)
+  case (monoid_star_refl c)
+  then show ?case
+    by (metis dual_order.eq_iff final_empty_accept' prod.exhaust_sel)
+next
+  case (monoid_star_into_rtrancl p'w d p''u c d')
+  then have 2: "accepts A p''u \<le> d'" (* 2 *)
+    by auto
+  define p' where "p' = fst p'w"
+  define w where "w = snd p'w"
+  define p'' where "p'' = fst p''u"
+  define u where "u = snd p''u"
+  have p''u_split: "p''u = (p'',u)"
+    using p''_def u_def by auto
+  have p'w_split: "p'w = (p',w)"
+    using p'_def w_def by auto
+
+  show ?case
+    using "2" assms(1) c''bubububjdfkjdkf idempotent_semiring_ord_class.mult_isol 
+      monoid_star_into_rtrancl.hyps(1) order_trans p''u_split p'w_split by blast
+qed
 
 lemma c':
   assumes "saturated pre_star_rule A"
@@ -1340,25 +1445,20 @@ next
   define p'' where "p'' = fst p''u"
   define u where "u = snd p''u"
   have p''u_split: "p''u = (p'',u)"
-    sorry
+    using p''_def u_def by auto
   have p'w_split: "p'w = (p',w)"
-    sorry
+    using p'_def w_def by auto
 
   from monoid_star_into_rtrancl(1) obtain \<gamma> u1 w1 where 3: (* 3 *)
      "w = \<gamma>#w1"
      "u = (lbl u1)@w1"
      "(p',\<gamma>) \<midarrow>d\<hookrightarrow> (p'',u1)"
-    sorry
-  from 2 have "undefined"
-    unfolding p''u_split 3(2)
-    unfolding accepts_def apply simp
-    sorry
-
+    using p''u_split p'w_split step_relp_NISSE by blast
+ 
   have "\<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<le>
-         \<^bold>\<Sum> {d *d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d *d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    sorry
-  also have "... \<le> \<^bold>\<Sum> {d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    using c''[OF 3(3) assms(1), of w1 ] (* by (smt (verit) mem_Collect_eq sum_AAA sum_in) *) sorry
+         \<^bold>\<Sum> {d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+    using c''[OF 3(3) assms(1), of w1 ] using mem_Collect_eq order_trans_rules(23) sum_AAA sum_in
+    by (smt (verit, ccfv_threshold))
   also have "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
     by (simp add: sum_distr)
 
@@ -1372,17 +1472,9 @@ qed
 
 lemma c:
   assumes "saturated pre_star_rule A"
-  assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* (p,[])" and "p \<in> finals"
+  assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* c'" and "c' = (p,[])" and "p \<in> finals"
   shows "accepts A c \<le> l"
-  using assms(2,3)
-proof (induction rule: monoid_star_relp_induct_rev)
-  case (monoid_star_refl c)
-  then show ?case sorry
-next
-  case (monoid_star_into_rtrancl a w b c w')
-  then show ?case sorry
-qed
-
+  using c' assms by simp 
 
 lemma b:
   assumes "saturated pre_star_rule A"
