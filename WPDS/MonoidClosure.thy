@@ -387,7 +387,7 @@ next
     using Suc(5)[OF p(1) q p(2)] p by auto
 qed
 
-lemma monoid_rtrancl_list_induct_rev [consumes 1, case_names monoid_rtrancl_refl monoid_rtrancl_into_rtrancl]:
+lemma monoid_rtrancl_list_induct_rev [consumes 1, case_names monoid_rtrancl_refl monoid_rtrancl_into_rtrancl]: (*the name shouldn't say "list" *)
   assumes "(a, w, b) \<in> monoid_rtrancl r"
   assumes "(\<And>a. P a 1 a)"
   assumes "(\<And>a w b c w'. (a, w, b) \<in> r \<Longrightarrow> P b w' c \<Longrightarrow> (b, w', c) \<in> monoid_rtrancl r  \<Longrightarrow> 
