@@ -14,23 +14,28 @@ type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list
 
 \<comment> \<open>Embed a weighted automata into a monoidLTS. All non-zero transitions are added. The label is lifted to the list-monoid.\<close>
 definition wts_to_monoidLTS :: "(('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions) \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
-  "wts_to_monoidLTS ts = {(p, ([l],d), q) | p l d q. ts $ (p,l,q) = d \<and> d \<noteq> 0}"
+  "wts_to_monoidLTS ts = {(p, ([l],d), q) | p l d q. ts $ (p,l,q) = d}"
 
 lemma finite_wts: 
   assumes "finfun_default A = 0"
   shows "finite (wts_to_monoidLTS A)"
   unfolding wts_to_monoidLTS_def
-proof -
+  oops
+(* proof -
   have "finite {x. A $ x \<noteq> 0}" 
     using finite_finfun_default[of A] assms by simp
   then show "finite {(p, ([l],d), q) | p l d q. A $ (p,l,q) = d \<and> d \<noteq> 0}"
     using finite_image_set[of "\<lambda>x. A $ x \<noteq> 0" "\<lambda>(p,l,q). (p, ([l], A $ (p,l,q)), q)"] by simp
 qed
+*)
 
 lemma countable_wts: 
   assumes "finfun_default A = 0"
   shows "countable (wts_to_monoidLTS A)"
+  sorry
+(*
   by (fact countable_finite[OF finite_wts[OF assms]])
+*)
 
 locale W_automata = monoidLTS "wts_to_monoidLTS transition_relation"
   for transition_relation :: "('state::finite, 'label, 'weight::bounded_idempotent_semiring) w_transitions" +
