@@ -96,10 +96,7 @@ lemma monoidLTS_monoid_star_mono:
 locale dioidLTS = monoidLTS transition_relation
   for transition_relation :: "('state::countable, 'label::bounded_idempotent_semiring) transition set"
 begin
-(*
-definition path_seq :: "'state \<Rightarrow> 'state \<Rightarrow> nat \<Rightarrow> 'label" where
-  "path_seq c c' = (SOME f. \<forall>l. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<longleftrightarrow> (\<exists>i. f i = l))"
-*)
+
 definition path_seq :: "'label set \<Rightarrow> nat \<Rightarrow> 'label" where
   "path_seq W \<equiv> if W = {} then (\<lambda>_. 0) else SOME f. \<forall>l. l \<in> W \<longleftrightarrow> (\<exists>i. f i = l)"
 
@@ -173,7 +170,7 @@ next
     then obtain h where "\<And>i. (path_seq W) i = (f o h) i" by force
     then have path_seq_fh:"(path_seq W) = (f o h)" by fast
     obtain N where "\<forall>n\<ge>N. sum_seq (f o h) n = suminf (f o h)" by (fact sumseq_suminf_obtain_bound)
-    then have "\<forall>n\<ge>N. SumInf W = sum_seq (f o h) n"
+    then have "\<forall>n\<ge>N. \<^bold>\<Sum> W = sum_seq (f o h) n"
       unfolding SumInf_def using path_seq_fh by simp
     then show ?thesis 
       using path_seq_in_set[OF assms False] path_seq_fh by auto
@@ -222,6 +219,13 @@ proof -
     unfolding SumInf_def using suminf_elem[of "path_seq W" i] by blast
 qed
 
+lemma finite_sum_less_eq:
+  assumes "finite W" and "finite W'" and "\<^bold>\<Sum> W = \<Sum> W'"
+  shows "\<Sum> W' \<le> \<Sum> W"
+  using assms(3) countable_suminf_elem[OF countable_finite[OF assms(1)]]
+        sum_greater_elem[OF _ assms(1,2)]
+  by presburger
+
 lemma SumInf_empty[simp]: "\<^bold>\<Sum> {} = 0"
   unfolding SumInf_def using suminf_finite[of "{}", simplified] path_seq_empty by blast
 
@@ -241,6 +245,34 @@ qed
 
 lemma singleton_sum[simp]: "\<^bold>\<Sum> {w} = w"
   using finite_suminf_is_sum by simp
+
+lemma sum_mono: 
+  assumes "countable A" and "countable B"
+  assumes "A \<subseteq> B"
+  shows "\<^bold>\<Sum> A \<ge> \<^bold>\<Sum> B"
+proof -
+  obtain A' where subsetA:"A' \<subseteq> A" and finA:"finite A'" and eqA:"\<^bold>\<Sum> A = \<Sum> A'" 
+    by (fact suminf_obtains_finite_subset[OF assms(1)])
+  obtain B' where subsetB:"B' \<subseteq> B" and finB:"finite B'" and eqB:"\<^bold>\<Sum> B = \<Sum> B'" 
+    by (fact suminf_obtains_finite_subset[OF assms(2)])
+  have "A' \<subseteq> B" using subsetA assms(3) by fast
+  then have "\<And>a. a \<in> A' \<Longrightarrow> \<Sum> B' \<le> a" 
+    using countable_suminf_elem[OF assms(2)] eqB by auto
+  then have "\<Sum> B' \<le> \<Sum> A'" using sum_greater_elem[of A' B'] finA finB by fastforce
+  then show ?thesis using eqA eqB by argo
+qed
+
+lemma union_inter:
+  assumes "countable A" and "countable B"
+  shows "\<^bold>\<Sum> (A \<union> B) + \<^bold>\<Sum> (A \<inter> B) = \<^bold>\<Sum> A + \<^bold>\<Sum> B"
+  \<comment> \<open>The reversed orientation looks more natural, but LOOPS as a simprule!\<close>
+proof -
+  obtain A' where subsetA:"A' \<subseteq> A" and finA:"finite A'" and eqA:"\<^bold>\<Sum> A = \<Sum> A'" 
+    by (fact suminf_obtains_finite_subset[OF assms(1)])
+  obtain B' where subsetB:"B' \<subseteq> B" and finB:"finite B'" and eqB:"\<^bold>\<Sum> B = \<Sum> B'" 
+    by (fact suminf_obtains_finite_subset[OF assms(2)])
+  have "\<Sum> A' \<le> \<Sum> A" using finite_sum_less_eq[OF _ finA eqA] assms(1) 
+    oops
 
 
 definition weight_pre_star :: "('state \<Rightarrow> 'label) \<Rightarrow> ('state \<Rightarrow> 'label)" where
