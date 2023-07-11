@@ -95,6 +95,60 @@ lemma geq_Suminf_if_member:
   shows "d \<ge> \<^bold>\<Sum>W"
   sorry
 
+lemma Suminf_left_distr: 
+  "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
+  sorry
+
+lemma Suminf_right_distr: 
+  "(\<^bold>\<Sum> D) * d2 = \<^bold>\<Sum> {d1 * d2 | d1. d1 \<in> D}"
+  sorry
+
+lemma Suminf_of_Suminf:
+  "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
+  sorry
+
+lemma Suminf_of_Suminf_fst_arg: (* not used... *)
+  "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {d | d d'. P d d' \<and> Q d'}"
+  using Suminf_of_Suminf[of "\<lambda>x y. x"] by auto
+
+lemma Suminf_of_Suminf_distrr:
+  "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} * g d' |d'. Q d'} = \<^bold>\<Sum> {f d d' * g d' | d d'. P d d' \<and> Q d'}"
+proof -
+  have eql: "\<forall>d'. {f d d' * g d' |d. P d d'} = {d1 * g d' |d1. \<exists>d. d1 = f d d' \<and> P d d'}"
+    by auto
+
+  have "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} * g d' |d'. Q d'} = \<^bold>\<Sum> {\<^bold>\<Sum> {d1 * g d' |d1. d1 \<in> {f d d' |d. P d d'}} |d'. Q d'}"
+    unfolding Suminf_right_distr[of "{f d _ |d. P d _}" "g _"] by auto
+  also have "... =  \<^bold>\<Sum> {f d d' * g d' | d d'. P d d' \<and> Q d'}"
+    using eql Suminf_of_Suminf[of "\<lambda>d d'. f d d' * g d'" P Q] by auto
+  finally
+  show ?thesis 
+    .
+qed
+
+lemma Suminf_of_Suminf_distrr':
+  "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d} * d' |d'. Q d'} = \<^bold>\<Sum> {d * d' | d d'. P d \<and> Q d'}"
+  using Suminf_of_Suminf_distrr[of "\<lambda>x y. x" _ "\<lambda>x. x" ] by auto
+
+lemma Suminf_bounded_if_set_bounded:
+  assumes inf_d: "\<forall>x \<in> X. x \<ge> d"
+  shows "\<^bold>\<Sum> X \<ge> d"
+proof -
+  have countableX: "countable X" sorry 
+      \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
+
+  obtain W' where subset:"W' \<subseteq> X" and fin:"finite W'" and eq:"\<^bold>\<Sum> X = \<Sum> W'"
+    by (fact suminf_obtains_finite_subset[OF countableX])
+  have "\<forall>x \<in> W'. x \<ge> d" using subset inf_d by blast
+  then have "\<Sum> W' \<ge> d" using fin
+    unfolding BoundedDioid.less_eq_def
+    apply (induct rule: finite_induct[OF fin], simp_all)
+    subgoal for x F
+      using add.assoc[of d x "\<Sum> F"] by simp
+    done
+  then show ?thesis using eq by argo
+qed
+
 \<comment> \<open>Generalization of PDS_with_P_automata.accepts that computes the meet-over-all-paths in the W-automaton.\<close>
 definition accepts :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
   "accepts ts \<equiv> \<lambda>(p,w). (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)})"
@@ -338,44 +392,6 @@ lemma monoid_star_nonempty:
                     (p, ([hd (fst w)], d1), pi) \<in> wts_to_monoidLTS ts"
   by (metis assms list.collapse monoid_rtrancl_wts_to_monoidLTS_cases_rev surjective_pairing)
 
-lemma sum_distr: 
-  "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
-  sorry
-
-lemma sum_of_sums:
-  "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {d | d d'. P d d' \<and> Q d'}"
-  sorry
-
-lemma sum_of_sums2:
-  "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
-  sorry
-
-lemma sum_of_sums_mult:
-  "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d} * d' |d'. Q d'} = \<^bold>\<Sum> {d * d' | d d'. P d \<and> Q d'}"
-  sorry
-
-lemma sum_of_sums_mult2:
-  "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} * g d' |d'. Q d'} = \<^bold>\<Sum> {f d d' * g d' | d d'. P d d' \<and> Q d'}"
-  sorry
-
-lemma Suminf_bounded_if_set_bounded:
-  assumes inf_d: "\<forall>x \<in> X. x \<ge> d"
-  shows "\<^bold>\<Sum> X \<ge> d"
-proof -
-  have countableX: "countable X" sorry 
-      \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
-
-  obtain W' where subset:"W' \<subseteq> X" and fin:"finite W'" and eq:"\<^bold>\<Sum> X = \<Sum> W'"
-    by (fact suminf_obtains_finite_subset[OF countableX])
-  have "\<forall>x \<in> W'. x \<ge> d" using subset inf_d by blast
-  then have "\<Sum> W' \<ge> d" using fin
-    unfolding BoundedDioid.less_eq_def
-    apply (induct rule: finite_induct[OF fin], simp_all)
-    subgoal for x F
-      using add.assoc[of d x "\<Sum> F"] by simp
-    done
-  then show ?thesis using eq by argo
-qed
 
 lemmas monoid_star_relp_induct [consumes 1, case_names monoid_star_refl monoid_star_into_rtrancl] = 
   MonoidClosure.monoid_rtranclp.induct[of l_step_relp ] (* "(_,_)" _ "(_,_)" *)
@@ -437,7 +453,7 @@ proof -
   have "(\<^bold>\<Sigma>(p'',w'@w'') \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d1' * d2'| d1'  d2'. (p'',w') \<Midarrow>d1'\<Rightarrow>\<^sup>* (pi,[]) \<and> (pi,w'') \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
     by (smt (verit, ccfv_threshold) Collect_mono_iff Suminf_mono append_Cons append_self_conv2 step_relp_seq)
   also have "... \<le> (\<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* pi) * (\<^bold>\<Sigma>(pi,w'') \<Rightarrow>\<^sup>* p2)"
-    by (simp add: sum_distr sum_of_sums_mult)
+    by (simp add: Suminf_left_distr Suminf_of_Suminf_distrr')
   also have "... \<le> d1 * d2"
     using assms BoundedDioid.mult_isol_var by auto
   finally 
@@ -461,7 +477,7 @@ proof -
   also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
     using \<open>(p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w')\<close> by fastforce
   also have "... \<le> d * \<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* p2"
-    by (simp add: sum_distr)
+    by (simp add: Suminf_left_distr)
   also have "... \<le> d * d'"
     using assms by (simp add: assms BoundedDioid.mult_isol)
   finally 
@@ -714,7 +730,7 @@ proof -
   also have "... \<le> \<^bold>\<Sum>{d' |d' q. q \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}"
     by (smt (verit) Collect_mono_iff Suminf_mono mult.right_neutral)
   also have "... = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
-    using sum_of_sums_mult2[of "\<lambda>d q. d" "\<lambda>d q. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (q,[])" "\<lambda>q. 1" "\<lambda>q. q \<in> finals"]
+    using Suminf_of_Suminf_distrr[of "\<lambda>d q. d" "\<lambda>d q. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (q,[])" "\<lambda>q. 1" "\<lambda>q. q \<in> finals"]
     apply auto
     by (smt (verit) Collect_cong Orderings.order_eq_iff)
   also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sigma>(p,v) \<Rightarrow>\<^sup>* q |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
@@ -870,7 +886,7 @@ proof -
       fix l c'
       have "l * \<^bold>\<Sum> {l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} =
               \<^bold>\<Sum> {l * l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
-        using sum_distr[of l "{l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"]
+        using Suminf_left_distr[of l "{l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"]
          mult.assoc by (smt (verit) Collect_cong mem_Collect_eq)
     }
     then show ?thesis
@@ -878,7 +894,7 @@ proof -
   qed
   also
   have "... = \<^bold>\<Sum> {l * l' * C c'' |l' c'' l c'. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c'' \<and> c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-    using sum_of_sums2[of
+    using Suminf_of_Suminf[of
         "\<lambda>(l',c'') (l,c'). l * l' * C c''"
         "\<lambda>(l',c'') (l,c').  c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''"
         "\<lambda>(l,c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'"] by auto
@@ -962,7 +978,7 @@ proof -
   have "\<forall>dd\<in>{d'| d'. (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}. d * dd \<ge> d''"
     using assms(1) assms(2,3) nicenicenice2 by force 
   then show ?thesis
-    by (smt (verit, del_insts) mem_Collect_eq Suminf_bounded_if_set_bounded sum_distr)
+    by (smt (verit, del_insts) mem_Collect_eq Suminf_bounded_if_set_bounded Suminf_left_distr)
 qed
 
 lemma nicenicenice'''''':
@@ -1131,7 +1147,7 @@ proof -
     using c''[OF assms(1) assms(2), of w1 ] using mem_Collect_eq order_trans_rules(23) 
       Suminf_bounded_if_set_bounded geq_Suminf_if_member by (smt (verit, ccfv_threshold)) 
   also have Y: "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    by (simp add: sum_distr)
+    by (simp add: Suminf_left_distr)
 
   show ?thesis
     using Y accepts_def calculation by force
@@ -1203,7 +1219,7 @@ next
     using c''[OF 3(3) assms(1), of w1 ] using mem_Collect_eq order_trans_rules(23) 
       Suminf_bounded_if_set_bounded geq_Suminf_if_member by (smt (verit, ccfv_threshold))
   also have "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    by (simp add: sum_distr)
+    by (simp add: Suminf_left_distr)
 
   also have "... \<le> d * d'"
     using 2 unfolding p''u_split 3(2) accepts_def using BoundedDioid.mult_isol by auto
