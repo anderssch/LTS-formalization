@@ -392,7 +392,6 @@ lemma monoid_star_nonempty:
                     (p, ([hd (fst w)], d1), pi) \<in> wts_to_monoidLTS ts"
   by (metis assms list.collapse monoid_rtrancl_wts_to_monoidLTS_cases_rev surjective_pairing)
 
-
 lemmas monoid_star_relp_induct [consumes 1, case_names monoid_star_refl monoid_star_into_rtrancl] = 
   MonoidClosure.monoid_rtranclp.induct[of l_step_relp ] (* "(_,_)" _ "(_,_)" *)
 
@@ -748,6 +747,19 @@ proof -
     unfolding pv_split by auto
 qed
 
+lemma lemma_3_2_w_alternative': 
+  assumes "pre_star_rule (K$ 0) A"
+  shows "accepts A pv \<ge> weight_pre_star (accepts (K$ 0)) pv"
+  using lemma_3_2_w_alternative[OF pre_star_rule_sound[OF sound_empty assms]] by auto
+
+lemma lemma_3_2_w_alternative''':
+  assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
+  shows "accepts A' (p,v) \<ge> weight_pre_star (accepts (K$ 0)) (p,v)"
+  using pre_star_rule_rtranclp_sound assms lemma_3_2_w_alternative sound_empty by blast
+
+
+(* Begin superfluous lemmas *)
+
 lemma accepts_lte_accepts_K0':
   shows "accepts A' (p,v) \<le> accepts (K$ 0) (p,v)"
 proof (cases "p \<in> finals \<and> v = []")
@@ -813,8 +825,6 @@ lemma weight_pre_star_accepts_lt_weight_pre_star_accepts_K0:
   "weight_pre_star (accepts A') c \<le> weight_pre_star (accepts (K$ 0)) c"
   using weight_pre_star_mono[OF accepts_lte_accepts_K0] by auto
 
-(* Begin superfluous lemmas *)
-
 lemma lemma_3_2_w_alternative_BONUS:
   assumes soundA': "sound A'"
   shows "accepts A' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
@@ -826,15 +836,7 @@ proof -
   finally show ?thesis
     by auto
 qed
-lemma lemma_3_2_w_alternative': 
-  assumes "pre_star_rule (K$ 0) A"
-  shows "accepts A pv \<ge> weight_pre_star (accepts (K$ 0)) pv"
-  using lemma_3_2_w_alternative[OF pre_star_rule_sound[OF sound_empty assms]] by auto
 
-lemma lemma_3_2_w_alternative''':
-  assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
-  shows "accepts A' (p,v) \<ge> weight_pre_star (accepts (K$ 0)) (p,v)"
-  using pre_star_rule_rtranclp_sound assms lemma_3_2_w_alternative sound_empty by blast
 
 lemma lemma_3_2_w_alternative'_BONUS: 
   assumes soundA': "sound A'"
@@ -955,58 +957,6 @@ lemma nicenicenice3:
   assumes "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
   shows "d * d' \<ge> (A $ (p, \<gamma>, q))"
   by (metis assms meet.inf.absorb_iff2 meet.inf_commute nicenicenice1)
-
-lemma nicenicenice0:
-  assumes "saturated pre_star_rule A"
-  assumes "((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
-  assumes "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-  assumes "(A $ (p, \<gamma>, q)) = 0"
-  shows "d * d' = 0"
-  using assms unfolding saturated_def using pre_star_rule.intros
-  using meet.inf_eq_top_iff by blast 
-
-lemma "(b :: 'weight) \<ge> a \<Longrightarrow> c \<ge> a \<Longrightarrow> d \<ge> a \<Longrightarrow> b + c + d \<ge> a"
-  by simp
-
-
-lemma nicenicenice'''':
-  assumes "saturated pre_star_rule A"
-  assumes "((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
-  assumes "(A $ (p, \<gamma>, q)) = d''"
-  shows "d * \<^bold>\<Sum>{d'. (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<ge> d''"
-proof -
-  have "\<forall>dd\<in>{d'| d'. (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}. d * dd \<ge> d''"
-    using assms(1) assms(2,3) nicenicenice2 by force 
-  then show ?thesis
-    by (smt (verit, del_insts) mem_Collect_eq Suminf_bounded_if_set_bounded Suminf_left_distr)
-qed
-
-lemma nicenicenice'''''':
-  assumes "saturated pre_star_rule A"
-  assumes "(A $ (p, \<gamma>, q)) = d''"
-  shows "\<^bold>\<Sum>{d * d'| d d' p' w. ((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)) \<and> (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<ge> d''"
-proof -
-  have "\<forall>dd\<in>{d * d'| d d' p' w. ((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)) \<and> (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}. dd \<ge> d''"
-    using assms(1) assms(2) nicenicenice2 by force
-  then show ?thesis
-    by (smt (verit) dual_order.order_iff_strict empty_iff less_eq_zero less_le_not_le 
-        Suminf_bounded_if_set_bounded SumInf_empty)
-qed
-
-lemma
-  assumes "(a ::'weight) \<le> (b :: 'weight)"
-  assumes "\<not>(a\<ge>b)"
-  shows "a < b"
-  using assms(1) assms(2) less_le_not_le by blast
-
-lemma "(a :: 'weight) \<le> 0"
-  by simp
-
-lemma 
-  assumes "(p\<^sub>1,(\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>3,d\<^sub>1\<^sub>3),p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-  shows "\<exists>p\<^sub>2 d\<^sub>1\<^sub>2 d\<^sub>2\<^sub>3. (p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2],d\<^sub>1\<^sub>2), p\<^sub>2) \<in> (wts_to_monoidLTS A) \<and>
-                    (p\<^sub>2,(w\<^sub>2\<^sub>3,d\<^sub>2\<^sub>3),p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2*d\<^sub>2\<^sub>3"
-  using assms monoid_rtrancl_wts_to_monoidLTS_cases_rev by fastforce
 
 (* Proof adapted from monoid_rtrancl_list_embed_ts_append_split *)
 lemma monoid_rtrancl_wts_to_monoidLTS_append_split:
