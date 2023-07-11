@@ -773,7 +773,7 @@ lemma weight_pre_star_accepts_lt_weight_pre_star_accepts_K0:
   "weight_pre_star (accepts A') c \<le> weight_pre_star (accepts (K$ 0)) c"
   using weight_pre_star_mono[OF accepts_lte_accepts_K0] by auto
 
-(* Begin superfluos lemmas *)
+(* Begin superfluous lemmas *)
 
 lemma lemma_3_2_w_alternative_BONUS:
   assumes soundA': "sound A'"
@@ -891,7 +891,7 @@ proof -
     by auto
 qed
 
-(* End superfluos lemmas *)
+(* End superfluous lemmas *)
 
 lemma step_relp_NISSE:
   "(p, \<gamma>w') \<Midarrow>d\<Rightarrow> (p',ww') \<Longrightarrow> (\<exists>\<gamma> w' w. \<gamma>w' = \<gamma>#w' \<and> ww' = (lbl w)@w' \<and> (p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
