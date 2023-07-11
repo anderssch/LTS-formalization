@@ -222,6 +222,11 @@ abbreviation push_seq_weight :: "('ctr_loc * 'label list) \<Rightarrow> 'ctr_loc
 definition sound :: "(('ctr_loc, 'label, 'weight) w_transitions) \<Rightarrow> bool" where
   "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,[\<gamma>])\<Rightarrow>\<^sup>*p')"
 
+lemma sound_intro:
+  assumes "\<And>p p' \<gamma> d. (p, ([\<gamma>], d), p') \<in> wts_to_monoidLTS A \<Longrightarrow> (\<^bold>\<Sigma>(p, [\<gamma>])\<Rightarrow>\<^sup>*p') \<le> d"
+  shows "sound A"
+  unfolding sound_def using assms by auto
+
 lemma monoid_star_intros_step':
   assumes "(p,w,q) \<in> wts_to_monoidLTS A"
   shows "(p,w,q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
@@ -231,17 +236,6 @@ lemma monoid_star_intros_step:
   assumes "pwq \<in> wts_to_monoidLTS A"
   shows "pwq \<in> monoid_rtrancl (wts_to_monoidLTS A)"
   using assms monoid_star_intros_step' by (cases pwq) auto
-
-lemma sound_def2'':
-  assumes "\<forall>p p' w d. (p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,w) \<Rightarrow>\<^sup>* p'"
-  assumes "(p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A)"
-  shows "d \<ge> \<^bold>\<Sigma>(p,[\<gamma>])\<Rightarrow>\<^sup>* p'"
-proof -
-  have "(p, ([\<gamma>],d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-    using assms(2) monoid_star_intros_step by blast
-  then show "d \<ge> \<^bold>\<Sigma>(p,[\<gamma>])\<Rightarrow>\<^sup>*p'"
-    using assms(1) by auto
-qed
 
 lemma monoid_rtrancl_wts_to_monoidLTS_cases_rev':
   assumes "(p\<^sub>1, w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3, p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
@@ -395,12 +389,6 @@ proof -
     by (meson \<open>(p, a @ w) \<Midarrow> d1 \<Rightarrow>\<^sup>* (pi, w)\<close> assms(2) monoid_rtranclp_trans)
 qed
 
-
-lemma sound_intro:
-  assumes "\<And>p p' \<gamma> d. (p, ([\<gamma>], d), p') \<in> wts_to_monoidLTS A \<Longrightarrow> \<^bold>\<Sigma>(p, [\<gamma>])\<Rightarrow>\<^sup>*p' \<le> d"
-  shows "sound A"
-  unfolding sound_def using assms by auto
-
 lemma monoid_star_relp_if_l_step_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow> (p',[])"
   shows "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])"
@@ -463,7 +451,7 @@ lemma push_seq_weight_trans_Cons:
   shows "\<^bold>\<Sigma>(p, \<gamma> # w)\<Rightarrow>\<^sup>*p' \<le> d1 * d2"
   using assms push_seq_weight_trans[of p "[\<gamma>]" pi d1 w p' d2] by auto
 
-lemma sound_def2':
+lemma sound_elim2:
   assumes "sound A"
   assumes "(p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)"
   shows "d \<ge> \<^bold>\<Sigma>(p,w) \<Rightarrow>\<^sup>* p'"
@@ -504,9 +492,17 @@ qed
 
 lemma sound_def2:
   "sound A \<longleftrightarrow> (\<forall>p p' w d. (p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,w) \<Rightarrow>\<^sup>* p')"
-  using sound_def2'' sound_def2' unfolding sound_def by blast
+proof
+  assume "sound A"
+  then show "\<forall>p p' w d. (p, (w, d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<longrightarrow> (\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p') \<le> d"
+    using sound_elim2 by blast
+next
+  assume "\<forall>p p' w d. (p, (w, d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<longrightarrow> (\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p') \<le> d"
+  then show "sound A"
+    using monoid_star_intros_step unfolding sound_def by blast
+qed
 
-lemma soundness:
+lemma pre_star_rule_sound:
   assumes "sound A"
   assumes "pre_star_rule A A'"
   shows "sound A'"
@@ -551,7 +547,7 @@ proof -
         from ps(3) have "(p'', ([\<mu>'],d'), p2) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
           using True'(3) \<open>w' = swap \<mu>'\<close> by force
         then have p''_to_p2: "d' \<ge> \<^bold>\<Sigma> (p'',[\<mu>']) \<Rightarrow>\<^sup>* p2"
-          using assms(1) sound_def2' by force
+          using assms(1) sound_elim2 by force
         from p1_to_p''1 have "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>'])"
           unfolding True' w'_swap using monoid_rtranclp.monoid_rtrancl_into_rtrancl by fastforce
         then have "\<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2 \<le> d * d'"
@@ -591,7 +587,7 @@ proof -
   qed
 qed
 
-lemma soundness2:
+lemma pre_star_rule_rtrancl_sound:
   assumes "sound A"
   assumes "pre_star_rule\<^sup>*\<^sup>* A A'"
   shows "sound A'"
@@ -603,17 +599,8 @@ proof (induction)
 next
   case (step A' A'')
   then show ?case
-    using local.soundness by blast
+    using pre_star_rule_sound by blast
 qed
-
-lemma monoid_rtrancl_split: (* Probably not a very meaningful lemma... *)
-  assumes "(p, (v, d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A')"
-  shows
-    "(p, (v, d), p') \<in> monoid_rtrancl (wts_to_monoidLTS A')"
-    "(p', ([], 1), p') \<in> monoid_rtrancl (wts_to_monoidLTS A')"
-    "d = d * 1"
-  by (metis append_is_Nil_conv assms monoid_rtrancl.simps 
-      mult.right_neutral one_prod_def times_list_def)+
 
 lemma final_empty_accept':
   assumes "p \<in> finals"
@@ -810,7 +797,7 @@ qed
 lemma lemma_3_2_w_alternative': 
   assumes "pre_star_rule (K$ 0) A"
   shows "accepts A pv \<ge> weight_pre_star (accepts (K$ 0)) pv"
-  using lemma_3_2_w_alternative[OF soundness[OF sound_empty assms]] by auto
+  using lemma_3_2_w_alternative[OF pre_star_rule_sound[OF sound_empty assms]] by auto
 
 lemma lemma_3_2_w_alternative'_BONUS: 
   assumes soundA': "sound A'"
@@ -818,7 +805,7 @@ lemma lemma_3_2_w_alternative'_BONUS:
   shows "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
 proof -
   have sA'': "sound A''"
-    using soundness soundA' assms(2) by auto
+    using pre_star_rule_sound soundA' assms(2) by auto
   have "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
     using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
   also have "... \<le> accepts A'' (p,v)"
@@ -895,7 +882,7 @@ lemma weight_pre_star_dom_fixedpoint: (* Nice. But we don't use it. *)
 lemma lemma_3_2_w_alternative''':
   assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
   shows "accepts A' (p,v) \<ge> weight_pre_star (accepts (K$ 0)) (p,v)"
-  using soundness2 assms lemma_3_2_w_alternative sound_empty by blast
+  using pre_star_rule_rtrancl_sound assms lemma_3_2_w_alternative sound_empty by blast
 
 lemma lemma_3_2_w_alternative'''_BONUS:
   assumes soundA': "sound A'"
@@ -903,7 +890,7 @@ lemma lemma_3_2_w_alternative'''_BONUS:
   shows "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
 proof -
   have sA'': "sound A''"
-    using local.soundness2 soundA' assms(2) by auto
+    using pre_star_rule_rtrancl_sound soundA' assms(2) by auto
   have "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
     using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
   also have "... \<le> accepts A'' (p,v)"
@@ -1247,7 +1234,7 @@ thm wts_to_monoidLTS_induct_reverse
 find_theorems (100) monoid_rtrancl
 thm monoid_rtrancl_extend
 
-thm monoid_rtrancl_split
+thm monoid_rtrancl_wts_to_monoidLTS_refl
 
 thm monoid_rtrancl.induct
 
@@ -1355,7 +1342,7 @@ proof -
   have "A $ (p', \<gamma>, q) \<le> d * d'"
     using nicenicenice'''''[OF assms(2) assms(1) e(1)] by auto
   then have "\<exists>D. (p', ([\<gamma>],D),q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> D \<le> d*d'"
-    using the_lemma_that using e monoid_rtrancl_split(2) by fastforce
+    using the_lemma_that using e monoid_rtrancl_wts_to_monoidLTS_refl by fastforce
   then show ?thesis
     by (simp add: mult.assoc)
 qed

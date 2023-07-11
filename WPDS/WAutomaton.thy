@@ -37,6 +37,10 @@ lemma countable_wts:
   by (fact countable_finite[OF finite_wts[OF assms]])
 *)
 
+lemma monoid_rtrancl_wts_to_monoidLTS_refl:
+  "(p, ([], 1), p) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+  by (metis monoid_rtrancl_refl one_list_def one_prod_def)
+
 locale W_automata = monoidLTS "wts_to_monoidLTS transition_relation"
   for transition_relation :: "('state::finite, 'label, 'weight::bounded_idempotent_semiring) w_transitions" +
   fixes initials :: "'state set" and finals :: "'state set"
@@ -243,5 +247,7 @@ lemma empty_ts_to_wts[simp]: "ts_to_wts {} = (K$ 0)"
   unfolding ts_to_wts_def update_wts_def by simp
 lemma empty_wts_to_ts[simp]: "wts_to_ts (K$ 0) = {}"
   unfolding wts_to_ts_def by simp
+
+
 
 end
