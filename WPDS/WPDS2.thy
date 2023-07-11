@@ -323,7 +323,7 @@ lemma wts_to_monoidLTS_induct_reverse:
              (p', l, p'') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow>
              P p (wd * l) p'')"
   shows "P p wd p'"
-  using assms monoid_rtrancl_list_induct_rev[of p wd] by metis
+  using assms monoid_rtrancl_induct_rev[of p wd] by metis
 
 lemma monoid_star_nonempty:
   assumes "(p, w, p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
@@ -331,7 +331,7 @@ lemma monoid_star_nonempty:
   shows "\<exists>pi d1 d2. (snd w) = d1 * d2 \<and> 
                     (pi, (tl (fst w), d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
                     (p, ([hd (fst w)], d1), pi) \<in> wts_to_monoidLTS ts"
-  by (metis assms(1,2) list.collapse monoid_rtrancl_wts_to_monoidLTS_cases_rev surjective_pairing)
+  by (metis assms list.collapse monoid_rtrancl_wts_to_monoidLTS_cases_rev surjective_pairing)
 
 lemma sum_distr: 
   "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
@@ -357,7 +357,7 @@ lemmas monoid_star_relp_induct [consumes 1, case_names monoid_star_refl monoid_s
   MonoidClosure.monoid_rtranclp.induct[of l_step_relp ] (* "(_,_)" _ "(_,_)" *)
 
 lemmas monoid_star_relp_induct_rev [consumes 1, case_names monoid_star_refl monoid_star_into_rtrancl] = 
-  MonoidClosure.monoid_rtranclp_list_induct_rev[of l_step_relp ] (*"(_,_)" _ "(_,_)" *)
+  MonoidClosure.monoid_rtranclp_induct_rev[of l_step_relp ] (*"(_,_)" _ "(_,_)" *)
 
 lemma step_rule_aux:
   assumes "(p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)"
@@ -587,7 +587,7 @@ proof -
   qed
 qed
 
-lemma pre_star_rule_rtrancl_sound:
+lemma pre_star_rule_rtranclp_sound:
   assumes "sound A"
   assumes "pre_star_rule\<^sup>*\<^sup>* A A'"
   shows "sound A'"
@@ -602,7 +602,7 @@ next
     using pre_star_rule_sound by blast
 qed
 
-lemma final_empty_accept':
+lemma accept_is_one_if_final_empty:
   assumes "p \<in> finals"
   shows "accepts A (p,[]) = 1"
 proof -
@@ -613,12 +613,7 @@ proof -
     by (simp add: accepts_def)
 qed
 
-lemma final_empty_accept0':
-  assumes "p \<in> finals"
-  shows "accepts (K$ 0) (p,[]) = 1"
-  using final_empty_accept' assms by auto
-
-lemma nonfinal_empty_accept':
+lemma accept_is_zero_if_nonfinal_empty:
   assumes "p \<notin> finals"
   shows "accepts A (p,[]) = 0"
 proof -
@@ -628,13 +623,9 @@ proof -
     by (smt (verit, ccfv_threshold) Collect_cong accepts_def old.prod.case SumInf_empty)
 qed
 
-(* q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) *)
-
-find_theorems monoid_rtrancl name: rev name: induct
-
-lemma nonfinal_empty_accept0'finals':
+lemma zero_weight_if_nonrefl_path_in_K0:
   "(p,wd,q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0)) \<Longrightarrow> p \<noteq> q \<Longrightarrow> snd wd = 0"
-  apply (induct rule: monoid_rtrancl_list_induct_rev, simp)
+  apply (induct rule: monoid_rtrancl_induct_rev, simp)
   subgoal for a w b c w'
     apply (cases "b \<noteq> c")
      apply (simp add: mult_prod_def)
@@ -643,9 +634,9 @@ lemma nonfinal_empty_accept0'finals':
     by (metis mult_prod_def mult_zero_left snd_conv)
   done
 
-lemma nonfinal_empty_accept0'nonempty':
+lemma zero_weight_if_nonempty_word_in_K0:
   "(p,wd,q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0)) \<Longrightarrow> fst wd \<noteq> [] \<Longrightarrow> snd wd = 0"
-  apply (induct rule: monoid_rtrancl_list_induct_rev, simp add: one_list_def one_prod_def)
+  apply (induct rule: monoid_rtrancl_induct_rev, simp add: one_list_def one_prod_def)
   subgoal for a w b c w'
     apply (cases "fst w' \<noteq> []")
      apply (simp add: mult_prod_def)
@@ -654,34 +645,34 @@ lemma nonfinal_empty_accept0'nonempty':
     by (metis mult_prod_def mult_zero_left snd_conv)
   done
 
-lemma sum_subset_singleton_zero: "X \<subseteq> {0} \<Longrightarrow> \<^bold>\<Sum> X = 0"
+lemma Suminf_is_zero_if_subset_singleton_zero: "X \<subseteq> {0} \<Longrightarrow> \<^bold>\<Sum> X = 0"
   using subset_singletonD by fastforce
 
-lemma nonfinal_empty_accept0'finals:
+lemma accepts_K0_is_zero_if_nonfinal:
   assumes "p \<notin> finals"
   shows "accepts (K$ 0) (p,w) = 0"
 proof -
   have "{uuu :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, uuu), q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0))} \<subseteq> {0}"
-    using nonfinal_empty_accept0'finals'[of p "(w,_)" _] assms by auto
+    using zero_weight_if_nonrefl_path_in_K0[of p "(w,_)" _] assms by auto
   then show ?thesis
-    unfolding accepts_def using sum_subset_singleton_zero by auto
+    unfolding accepts_def using Suminf_is_zero_if_subset_singleton_zero by auto
 qed
 
-lemma nonfinal_empty_accept0'nonempty:
+lemma accepts_K0_is_zero_if_nonempty:
   assumes "w \<noteq> []"
   shows "accepts (K$ 0) (p,w) = 0"
 proof -
   have "{uuu :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, uuu), q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0))} \<subseteq> {0}"
-    using nonfinal_empty_accept0'nonempty'[of p "(w,_)" _] assms by auto
+    using zero_weight_if_nonempty_word_in_K0[of p "(w,_)" _] assms by auto
   then show ?thesis
-    unfolding accepts_def using sum_subset_singleton_zero by auto
+    unfolding accepts_def using Suminf_is_zero_if_subset_singleton_zero by auto
 qed
 
 lemma accepts_empty_iff: "accepts A (p,[]) = (if p\<in>finals then 1 else 0)"
-  by (simp add: final_empty_accept' nonfinal_empty_accept')
+  by (simp add: accept_is_one_if_final_empty accept_is_zero_if_nonfinal_empty)
 
-lemma accepts_empty_iff0: "accepts (K$ 0) (p,w) = (if p\<in>finals \<and> w = [] then 1 else 0)"
-  by (metis final_empty_accept0' nonfinal_empty_accept0'finals nonfinal_empty_accept0'nonempty)
+lemma accepts_K0_iff: "accepts (K$ 0) (p,w) = (if p\<in>finals \<and> w = [] then 1 else 0)"
+  by (metis accept_is_one_if_final_empty accepts_K0_is_zero_if_nonfinal accepts_K0_is_zero_if_nonempty)
 
 lemma sound_empty: "sound (K$ 0)"
   by (simp add: sound_def wts_to_monoidLTS_def)
@@ -695,7 +686,7 @@ proof -
   have "weight_pre_star (accepts (K$ 0)) (p,v) = \<^bold>\<Sum>{d' * accepts (K$ 0) (q,w)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"
     by (simp add: weight_pre_star_def)
   also have "... = \<^bold>\<Sum>{d' * (if q\<in>finals \<and> w=[] then 1 else 0)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"
-    using accepts_empty_iff0 by presburger
+    using accepts_K0_iff by presburger
   also have "... \<le> \<^bold>\<Sum>{d' |d' q. q \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}"
     by (smt (verit) Collect_mono_iff Suminf_mono mult.right_neutral)
   also have "... = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
@@ -722,10 +713,10 @@ lemma accepts_lte_accepts_K0':
 proof (cases "p \<in> finals \<and> v = []")
   case True
   then have "accepts (K$ 0) (p,v) = 1"
-    using accepts_empty_iff0 by auto
+    using accepts_K0_iff by auto
   also have "... \<ge> accepts A' (p,v)"
     unfolding accepts_def
-    using True accepts_def final_empty_accept' by force
+    using True accepts_def accept_is_one_if_final_empty by force
   finally show ?thesis 
     by auto
 next
@@ -736,7 +727,7 @@ next
   proof
     assume "p \<notin> finals"
     then have "accepts (K$ 0) (p,v) = 0"
-      using accepts_empty_iff0 by auto
+      using accepts_K0_iff by auto
     also have "... \<ge> accepts A' (p,v)"
       by simp
     finally show ?thesis 
@@ -744,7 +735,7 @@ next
   next
     assume "v \<noteq> []"
     then have "accepts (K$ 0) (p,v) = 0"
-      using accepts_empty_iff0 by auto
+      using accepts_K0_iff by auto
     also have "... \<ge> accepts A' (p,v)"
        by simp
     finally show ?thesis 
@@ -782,6 +773,8 @@ lemma weight_pre_star_accepts_lt_weight_pre_star_accepts_K0:
   "weight_pre_star (accepts A') c \<le> weight_pre_star (accepts (K$ 0)) c"
   using weight_pre_star_mono[OF accepts_lte_accepts_K0] by auto
 
+(* Begin superfluos lemmas *)
+
 lemma lemma_3_2_w_alternative_BONUS:
   assumes soundA': "sound A'"
   shows "accepts A' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
@@ -793,11 +786,15 @@ proof -
   finally show ?thesis
     by auto
 qed
-
 lemma lemma_3_2_w_alternative': 
   assumes "pre_star_rule (K$ 0) A"
   shows "accepts A pv \<ge> weight_pre_star (accepts (K$ 0)) pv"
   using lemma_3_2_w_alternative[OF pre_star_rule_sound[OF sound_empty assms]] by auto
+
+lemma lemma_3_2_w_alternative''':
+  assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
+  shows "accepts A' (p,v) \<ge> weight_pre_star (accepts (K$ 0)) (p,v)"
+  using pre_star_rule_rtranclp_sound assms lemma_3_2_w_alternative sound_empty by blast
 
 lemma lemma_3_2_w_alternative'_BONUS: 
   assumes soundA': "sound A'"
@@ -879,18 +876,13 @@ lemma weight_pre_star_dom_fixedpoint: (* Nice. But we don't use it. *)
   "weight_pre_star (weight_pre_star C) = (weight_pre_star C)"
   using weight_pre_star_dom_fixedpoint' by auto
 
-lemma lemma_3_2_w_alternative''':
-  assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
-  shows "accepts A' (p,v) \<ge> weight_pre_star (accepts (K$ 0)) (p,v)"
-  using pre_star_rule_rtrancl_sound assms lemma_3_2_w_alternative sound_empty by blast
-
 lemma lemma_3_2_w_alternative'''_BONUS:
   assumes soundA': "sound A'"
   assumes "pre_star_rule\<^sup>*\<^sup>* A' A''"
   shows "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
 proof -
   have sA'': "sound A''"
-    using pre_star_rule_rtrancl_sound soundA' assms(2) by auto
+    using pre_star_rule_rtranclp_sound soundA' assms(2) by auto
   have "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
     using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
   also have "... \<le> accepts A'' (p,v)"
@@ -899,24 +891,11 @@ proof -
     by auto
 qed
 
-find_theorems "c\<Midarrow>d\<Rightarrow>\<^sup>*c"
-find_theorems l_step_relp
-thm transition_relp.intros
-
-find_theorems transition_relp
-thm local.transition_relp.cases[of ]
-
-term l_step_relp
-term monoidLTS.monoid_star_relp
-term monoidLTS.monoid_star_relp
-term monoid_rtranclp
-
-thm step_relp_def2
+(* End superfluos lemmas *)
 
 lemma step_relp_NISSE:
   "(p, \<gamma>w') \<Midarrow>d\<Rightarrow> (p',ww') \<Longrightarrow> (\<exists>\<gamma> w' w. \<gamma>w' = \<gamma>#w' \<and> ww' = (lbl w)@w' \<and> (p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
   by (meson step_relp_def2)
-
 
 lemma useful3:
   assumes "(p\<^sub>1,w\<^sub>1) \<Midarrow>d\<^sub>1\<^sub>3\<Rightarrow>\<^sup>* (p\<^sub>3, w\<^sub>3)"
@@ -1399,7 +1378,7 @@ lemma c'_attempt2:
 proof (induction rule: monoid_star_relp_induct_rev)
   case (monoid_star_refl c)
   then show ?case
-    by (metis dual_order.eq_iff final_empty_accept' prod.exhaust_sel)
+    by (metis dual_order.eq_iff accept_is_one_if_final_empty prod.exhaust_sel)
 next
   case (monoid_star_into_rtrancl p'w d p''u c d')
   then have 2: "accepts A p''u \<le> d'" (* 2 *)
@@ -1426,7 +1405,7 @@ lemma c':
 proof (induction rule: monoid_star_relp_induct_rev)
   case (monoid_star_refl c)
   then show ?case
-    by (metis dual_order.eq_iff final_empty_accept' prod.exhaust_sel)
+    by (metis dual_order.eq_iff accept_is_one_if_final_empty prod.exhaust_sel)
 next
   case (monoid_star_into_rtrancl p'w d p''u c d')
   then have 2: "accepts A p''u \<le> d'" (* 2 *)
@@ -1471,7 +1450,7 @@ lemma b:
   assumes "saturated pre_star_rule A"
   assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* c'"
   shows "accepts A c \<le> l * accepts (K$ 0) c'"
-  using assms c[OF assms(1)] accepts_empty_iff0[of "fst c'" "snd c'"] 
+  using assms c[OF assms(1)] accepts_K0_iff[of "fst c'" "snd c'"] 
   by simp (metis prod.collapse)
 
 lemma
@@ -1480,6 +1459,8 @@ lemma
   unfolding weight_pre_star_def
   using sum_AAA[of "{l * accepts (K$ 0) c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" "accepts A c"] b[OF assms]
   by blast
+
+thm monoid_rtrancl_induct_rev
 
 end
 
