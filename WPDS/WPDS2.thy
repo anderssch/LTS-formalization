@@ -70,27 +70,24 @@ notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 notation l_step_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80)
 notation monoid_star_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [90,90,100] 100) 
 
-lemma sum_mono: 
+lemma Suminf_mono: 
   assumes "(X::'weight set) \<subseteq> Y"
   shows "\<^bold>\<Sum> X \<ge> \<^bold>\<Sum> Y"
   sorry
 
-lemma sum_bigger: 
+lemma Suminf_mult_isor: 
   assumes "d \<le> (d' :: 'weight)"
   shows "\<^bold>\<Sum> {d * d''| d''. X d''} \<le> \<^bold>\<Sum> {d' * d''| d''. X d''}"
   sorry
 
-lemma sum_bigger2: 
+lemma Suminf_bigger2: 
   assumes "\<forall>t. X t \<longrightarrow> f t \<le> g t"
   shows "\<^bold>\<Sum> {f t| t. X t} \<le> \<^bold>\<Sum> {g t| t. X t}"
   sorry
 
-lemma sum_in:
+lemma geq_Suminf_if_member:
   assumes "d \<in> W "
   shows "d \<ge> \<^bold>\<Sum>W"
-  sorry
-
-lemma sum_empty: "\<^bold>\<Sum>{}=0"
   sorry
 
 \<comment> \<open>Generalization of PDS_with_P_automata.accepts that computes the meet-over-all-paths in the W-automaton.\<close>
@@ -220,7 +217,7 @@ lemma pre_star_rule_update_spec:
   done
 
 abbreviation push_seq_weight :: "('ctr_loc * 'label list) \<Rightarrow> 'ctr_loc \<Rightarrow> 'weight" ("\<^bold>\<Sigma>_\<Rightarrow>\<^sup>*_") where
-  "push_seq_weight pw p' == \<^bold>\<Sum>{d'. pw \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
+  "(\<^bold>\<Sigma>pw\<Rightarrow>\<^sup>*p') \<equiv> \<^bold>\<Sum>{d'. pw \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
 
 definition sound :: "(('ctr_loc, 'label, 'weight) w_transitions) \<Rightarrow> bool" where
   "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,[\<gamma>])\<Rightarrow>\<^sup>*p')"
@@ -413,7 +410,7 @@ lemma monoid_star_relp_if_l_step_relp:
 lemma push_seq_weight_if_monoid_star_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])"
   shows "\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p' \<le> d"
-  by (simp add: assms sum_in)
+  by (simp add: assms geq_Suminf_if_member)
 
 lemma push_seq_weight_if_l_step_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow> (p',[])"
@@ -426,7 +423,7 @@ lemma push_seq_weight_trans:
   shows "\<^bold>\<Sigma>(p'', w'@w'')\<Rightarrow>\<^sup>*p2 \<le> d1 * d2"
 proof -
   have "(\<^bold>\<Sigma>(p'',w'@w'') \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d1' * d2'| d1'  d2'. (p'',w') \<Midarrow>d1'\<Rightarrow>\<^sup>* (pi,[]) \<and> (pi,w'') \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
-    by (smt (verit, ccfv_threshold) Collect_mono_iff sum_mono append_Cons append_self_conv2 step_relp_seq)
+    by (smt (verit, ccfv_threshold) Collect_mono_iff Suminf_mono append_Cons append_self_conv2 step_relp_seq)
   also have "... \<le> (\<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* pi) * (\<^bold>\<Sigma>(pi,w'') \<Rightarrow>\<^sup>* p2)"
     by (simp add: sum_distr sum_of_sums_mult)
   also have "... \<le> d1 * d2"
@@ -448,7 +445,7 @@ lemma monoid_star_relp_push_seq_weight_trans:
   shows "\<^bold>\<Sigma>(p1, w)\<Rightarrow>\<^sup>*p2 \<le> d * d'"
 proof -
   have "\<^bold>\<Sigma> (p1, w) \<Rightarrow>\<^sup>* p2 \<le> \<^bold>\<Sum>{d * d'| d'. (p1, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',w') \<and> (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-    using Collect_mono_iff sum_mono monoid_rtranclp_trans by smt
+    using Collect_mono_iff Suminf_mono monoid_rtranclp_trans by smt
   also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
     using \<open>(p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w')\<close> by fastforce
   also have "... \<le> d * \<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* p2"
@@ -478,7 +475,7 @@ proof (induction w arbitrary: d p)
   have "(p, []) \<Midarrow>1\<Rightarrow>\<^sup>* (p', [])"
     using Nil monoid_star_pop by fastforce
   have "d \<ge> \<^bold>\<Sigma>(p, []) \<Rightarrow>\<^sup>* p'" 
-    by (simp add: \<open>(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])\<close> \<open>d = 1\<close> sum_in)
+    by (simp add: \<open>(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])\<close> \<open>d = 1\<close> geq_Suminf_if_member)
   then show ?case .
 next
   case (Cons \<gamma> w)
@@ -641,7 +638,7 @@ proof -
   have "{d | d q. q \<in> finals \<and> (p,([],d),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} = {}"
     by (smt (verit, del_insts) Collect_empty_eq lbl.simps(1) monoid_star_pop assms)
   then show ?thesis
-    by (smt (verit, ccfv_threshold) Collect_cong accepts_def old.prod.case sum_empty)
+    by (smt (verit, ccfv_threshold) Collect_cong accepts_def old.prod.case SumInf_empty)
 qed
 
 (* q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) *)
@@ -713,15 +710,15 @@ proof -
   also have "... = \<^bold>\<Sum>{d' * (if q\<in>finals \<and> w=[] then 1 else 0)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"
     using accepts_empty_iff0 by presburger
   also have "... \<le> \<^bold>\<Sum>{d' |d' q. q \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}"
-    by (smt (verit) Collect_mono_iff sum_mono mult.right_neutral)
+    by (smt (verit) Collect_mono_iff Suminf_mono mult.right_neutral)
   also have "... = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
     using sum_of_sums_mult2[of "\<lambda>d q. d" "\<lambda>d q. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (q,[])" "\<lambda>q. 1" "\<lambda>q. q \<in> finals"]
     apply auto
     by (smt (verit) Collect_cong Orderings.order_eq_iff)
   also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sigma>(p,v) \<Rightarrow>\<^sup>* q |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
-    by (smt (verit) Collect_mono_iff sum_mono) 
+    by (smt (verit) Collect_mono_iff Suminf_mono) 
   also have "... \<le> \<^bold>\<Sum>{d |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
-    using sum_bigger2[of 
+    using Suminf_bigger2[of 
         "\<lambda>(d, q). q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')"
         "\<lambda>(d, q). \<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q"
         "\<lambda>(d, q). d"
@@ -785,7 +782,7 @@ proof -
     unfolding weight_pre_star_def by auto
   also
   have "... \<le> \<^bold>\<Sum> {l * Y c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-    using sum_bigger2[of "\<lambda>(l, c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>(l, c). l * X c" "\<lambda>(l, c). l * Y c"] XY by auto
+    using Suminf_bigger2[of "\<lambda>(l, c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>(l, c). l * X c" "\<lambda>(l, c). l * Y c"] XY by auto
   also 
   have "... \<le> weight_pre_star Y c"
     unfolding weight_pre_star_def by auto
@@ -836,9 +833,9 @@ proof -
   have "weight_pre_star X c = \<^bold>\<Sum> {l * X c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
     unfolding weight_pre_star_def by auto
   also have "... \<le> \<^bold>\<Sum> {l * X c |l. c \<Midarrow> l \<Rightarrow>\<^sup>* c}"
-    by (smt (verit) Collect_mono sum_mono)
+    by (smt (verit) Collect_mono Suminf_mono)
   also have "... \<le> \<^bold>\<Sum> {1 * X c}"
-    by (smt (verit, del_insts) bot.extremum insert_subsetI local.sum_mono mem_Collect_eq 
+    by (smt (verit, del_insts) bot.extremum insert_subsetI Suminf_mono mem_Collect_eq 
         monoid_rtranclp.monoid_rtrancl_refl)
   also have "... \<le> 1 * X c" 
     by simp
@@ -1060,7 +1057,7 @@ proof -
   have "\<forall>dd\<in>{d * d'| d d' p' w. ((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)) \<and> (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}. dd \<ge> d''"
     using assms(1) assms(2) nicenicenice''' by force
   then show ?thesis
-    by (smt (verit) dual_order.order_iff_strict empty_iff less_eq_zero less_le_not_le sum_AAA sum_empty)
+    by (smt (verit) dual_order.order_iff_strict empty_iff less_eq_zero less_le_not_le sum_AAA SumInf_empty)
 qed
 
 (*
@@ -1218,7 +1215,7 @@ proof -
     unfolding accepts_def by auto
   also 
   have "... \<le> \<^bold>\<Sum>{d' * d | d' p' w d q'. q' \<in> finals \<and> (p',(w,d),q') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',w)}"
-    using xx by (smt (verit) Collect_mono_iff local.sum_mono mult_1) 
+    using xx by (smt (verit) Collect_mono_iff Suminf_mono mult_1) 
   also 
   have "... \<le> \<^bold>\<Sum>{d' * (\<^bold>\<Sum>{d | d q'. q' \<in> finals \<and> (p',(w,d),q') \<in> monoid_rtrancl (wts_to_monoidLTS A)})| d' p' w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (p',w)}"
     sorry
@@ -1392,7 +1389,7 @@ lemma c''bububub: (* lkjjlkjkl. *)
 proof -
   have X: "\<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<le>
          \<^bold>\<Sum> {d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    using c''[OF assms(1) assms(2), of w1 ] using mem_Collect_eq order_trans_rules(23) sum_AAA sum_in
+    using c''[OF assms(1) assms(2), of w1 ] using mem_Collect_eq order_trans_rules(23) sum_AAA geq_Suminf_if_member
     by (smt (verit, ccfv_threshold)) 
   also have Y: "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
     by (simp add: sum_distr)
@@ -1464,7 +1461,7 @@ next
  
   have "\<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<le>
          \<^bold>\<Sum> {d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    using c''[OF 3(3) assms(1), of w1 ] using mem_Collect_eq order_trans_rules(23) sum_AAA sum_in
+    using c''[OF 3(3) assms(1), of w1 ] using mem_Collect_eq order_trans_rules(23) sum_AAA geq_Suminf_if_member
     by (smt (verit, ccfv_threshold))
   also have "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
     by (simp add: sum_distr)
