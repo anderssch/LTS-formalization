@@ -53,6 +53,11 @@ notation monoid_star_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [9
 lemma step_relp_def2:
   "(p, \<gamma>w') \<Midarrow>d\<Rightarrow> (p',ww') \<longleftrightarrow> (\<exists>\<gamma> w' w. \<gamma>w' = \<gamma>#w' \<and> ww' = (lbl w)@w' \<and> (p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
   by (meson l_step_relp_def transition_rel.simps)
+
+lemma step_relp_elim2:
+  "(p, \<gamma>w') \<Midarrow>d\<Rightarrow> (p',ww') \<Longrightarrow> (\<exists>\<gamma> w' w. \<gamma>w' = \<gamma>#w' \<and> ww' = (lbl w)@w' \<and> (p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
+  by (meson step_relp_def2)
+
 end
 
 
@@ -352,6 +357,25 @@ lemma sum_of_sums_mult:
 lemma sum_of_sums_mult2:
   "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} * g d' |d'. Q d'} = \<^bold>\<Sum> {f d d' * g d' | d d'. P d d' \<and> Q d'}"
   sorry
+
+lemma Suminf_bounded_if_set_bounded:
+  assumes inf_d: "\<forall>x \<in> X. x \<ge> d"
+  shows "\<^bold>\<Sum> X \<ge> d"
+proof -
+  have countableX: "countable X" sorry 
+      \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
+
+  obtain W' where subset:"W' \<subseteq> X" and fin:"finite W'" and eq:"\<^bold>\<Sum> X = \<Sum> W'"
+    by (fact suminf_obtains_finite_subset[OF countableX])
+  have "\<forall>x \<in> W'. x \<ge> d" using subset inf_d by blast
+  then have "\<Sum> W' \<ge> d" using fin
+    unfolding BoundedDioid.less_eq_def
+    apply (induct rule: finite_induct[OF fin], simp_all)
+    subgoal for x F
+      using add.assoc[of d x "\<Sum> F"] by simp
+    done
+  then show ?thesis using eq by argo
+qed
 
 lemmas monoid_star_relp_induct [consumes 1, case_names monoid_star_refl monoid_star_into_rtrancl] = 
   MonoidClosure.monoid_rtranclp.induct[of l_step_relp ] (* "(_,_)" _ "(_,_)" *)
@@ -893,12 +917,7 @@ qed
 
 (* End superfluous lemmas *)
 
-lemma step_relp_NISSE:
-  "(p, \<gamma>w') \<Midarrow>d\<Rightarrow> (p',ww') \<Longrightarrow> (\<exists>\<gamma> w' w. \<gamma>w' = \<gamma>#w' \<and> ww' = (lbl w)@w' \<and> (p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
-  by (meson step_relp_def2)
-
-
-lemma nicenicenice:
+lemma nicenicenice1:
   assumes "saturated pre_star_rule A"
   assumes "((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
   assumes "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
@@ -906,20 +925,20 @@ lemma nicenicenice:
   shows "(d'' + (d * d')) = d''"
   using assms unfolding saturated_def using pre_star_rule.intros by blast
 
-lemma nicenicenice''':
+lemma nicenicenice2:
   assumes "saturated pre_star_rule A"
   assumes "((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
   assumes "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
   assumes "(A $ (p, \<gamma>, q)) = d''"
   shows "d * d' \<ge> d''"
-  by (metis assms meet.inf.absorb_iff2 meet.inf_commute nicenicenice)
+  by (metis assms meet.inf.absorb_iff2 meet.inf_commute nicenicenice1)
 
-lemma nicenicenice''''':
+lemma nicenicenice3:
   assumes "saturated pre_star_rule A"
   assumes "((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
   assumes "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
   shows "d * d' \<ge> (A $ (p, \<gamma>, q))"
-  by (metis assms meet.inf.absorb_iff2 meet.inf_commute nicenicenice)
+  by (metis assms meet.inf.absorb_iff2 meet.inf_commute nicenicenice1)
 
 lemma nicenicenice0:
   assumes "saturated pre_star_rule A"
@@ -930,28 +949,9 @@ lemma nicenicenice0:
   using assms unfolding saturated_def using pre_star_rule.intros
   using meet.inf_eq_top_iff by blast 
 
-
 lemma "(b :: 'weight) \<ge> a \<Longrightarrow> c \<ge> a \<Longrightarrow> d \<ge> a \<Longrightarrow> b + c + d \<ge> a"
   by simp
 
-lemma sum_AAA:
-  assumes inf_d: "\<forall>x \<in> X. x \<ge> d"
-  shows "\<^bold>\<Sum> X \<ge> d"
-proof -
-  have countableX:"countable X" sorry 
-      \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
-
-  obtain W' where subset:"W' \<subseteq> X" and fin:"finite W'" and eq:"\<^bold>\<Sum> X = \<Sum> W'"
-    by (fact suminf_obtains_finite_subset[OF countableX])
-  have "\<forall>x \<in> W'. x \<ge> d" using subset inf_d by blast
-  then have "\<Sum> W' \<ge> d" using fin
-    unfolding BoundedDioid.less_eq_def
-    apply (induct rule: finite_induct[OF fin], simp_all)
-    subgoal for x F
-      using add.assoc[of d x "\<Sum> F"] by simp
-    done
-  then show ?thesis using eq by argo
-qed
 
 lemma nicenicenice'''':
   assumes "saturated pre_star_rule A"
@@ -960,9 +960,9 @@ lemma nicenicenice'''':
   shows "d * \<^bold>\<Sum>{d'. (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<ge> d''"
 proof -
   have "\<forall>dd\<in>{d'| d'. (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}. d * dd \<ge> d''"
-    using assms(1) assms(2,3) nicenicenice''' by force 
+    using assms(1) assms(2,3) nicenicenice2 by force 
   then show ?thesis
-    by (smt (verit, del_insts) mem_Collect_eq sum_AAA sum_distr)
+    by (smt (verit, del_insts) mem_Collect_eq Suminf_bounded_if_set_bounded sum_distr)
 qed
 
 lemma nicenicenice'''''':
@@ -971,9 +971,10 @@ lemma nicenicenice'''''':
   shows "\<^bold>\<Sum>{d * d'| d d' p' w. ((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)) \<and> (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<ge> d''"
 proof -
   have "\<forall>dd\<in>{d * d'| d d' p' w. ((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)) \<and> (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}. dd \<ge> d''"
-    using assms(1) assms(2) nicenicenice''' by force
+    using assms(1) assms(2) nicenicenice2 by force
   then show ?thesis
-    by (smt (verit) dual_order.order_iff_strict empty_iff less_eq_zero less_le_not_le sum_AAA SumInf_empty)
+    by (smt (verit) dual_order.order_iff_strict empty_iff less_eq_zero less_le_not_le 
+        Suminf_bounded_if_set_bounded SumInf_empty)
 qed
 
 lemma
@@ -1071,7 +1072,7 @@ proof -
   next
     case False
     have "A $ (p', \<gamma>, q1) \<le> d * d1"
-      using nicenicenice'''''[OF assms(2) assms(1) e(1)] by auto
+      using nicenicenice3[OF assms(2) assms(1) e(1)] by auto
     then have "\<exists>D. (p', (\<gamma>#w1,D),q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> D \<le> d*d1*d2"
       using the_lemma_that e(2) False by (metis dual_order.eq_iff less_eq_zero mult_not_zero)
     then show ?thesis
@@ -1091,7 +1092,7 @@ proof -
     using monoid_rtrancl_wts_to_monoidLTS_append_split using assms(3) by auto
 
   have "A $ (p', \<gamma>, q) \<le> d * d'"
-    using nicenicenice'''''[OF assms(2) assms(1) e(1)] by auto
+    using nicenicenice3[OF assms(2) assms(1) e(1)] by auto
   then have "\<exists>D. (p', ([\<gamma>],D),q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> D \<le> d*d'"
     using the_lemma_that using e monoid_rtrancl_wts_to_monoidLTS_refl by fastforce
   then show ?thesis
@@ -1113,7 +1114,7 @@ proof -
 
 
   have "A $ (p', \<gamma>, q1) \<le> d * d1"
-    using nicenicenice'''''[OF assms(2) assms(1) e(1)] by auto
+    using nicenicenice3[OF assms(2) assms(1) e(1)] by auto
   then have "\<exists>D. (p', (\<gamma>#w1,D),q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> D \<le> d*d1*d2"
     using the_lemma_that e(2) by metis
   then show ?thesis
@@ -1127,8 +1128,8 @@ lemma c''bububub: (* lkjjlkjkl. *)
 proof -
   have X: "\<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<le>
          \<^bold>\<Sum> {d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    using c''[OF assms(1) assms(2), of w1 ] using mem_Collect_eq order_trans_rules(23) sum_AAA geq_Suminf_if_member
-    by (smt (verit, ccfv_threshold)) 
+    using c''[OF assms(1) assms(2), of w1 ] using mem_Collect_eq order_trans_rules(23) 
+      Suminf_bounded_if_set_bounded geq_Suminf_if_member by (smt (verit, ccfv_threshold)) 
   also have Y: "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
     by (simp add: sum_distr)
 
@@ -1140,7 +1141,7 @@ lemma c''bubububjdfkjdkf: (* lkjjlkjkl. *)
   assumes "(p', w) \<Midarrow>d\<Rightarrow> (p'', u)"
       and "saturated pre_star_rule A"
     shows "accepts A (p',w) \<le> d * accepts A (p'', u)"
-  using assms(1) assms(2) c''bububub step_relp_NISSE by blast
+  using assms(1) assms(2) c''bububub step_relp_elim2 by blast
 
 lemma c'_attempt2:
   assumes "saturated pre_star_rule A"
@@ -1195,12 +1196,12 @@ next
      "w = \<gamma>#w1"
      "u = (lbl u1)@w1"
      "(p',\<gamma>) \<midarrow>d\<hookrightarrow> (p'',u1)"
-    using p''u_split p'w_split step_relp_NISSE by blast
+    using p''u_split p'w_split step_relp_elim2 by blast
  
   have "\<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<le>
          \<^bold>\<Sum> {d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    using c''[OF 3(3) assms(1), of w1 ] using mem_Collect_eq order_trans_rules(23) sum_AAA geq_Suminf_if_member
-    by (smt (verit, ccfv_threshold))
+    using c''[OF 3(3) assms(1), of w1 ] using mem_Collect_eq order_trans_rules(23) 
+      Suminf_bounded_if_set_bounded geq_Suminf_if_member by (smt (verit, ccfv_threshold))
   also have "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
     by (simp add: sum_distr)
 
@@ -1229,8 +1230,8 @@ lemma
   assumes "saturated pre_star_rule A"
   shows "accepts A c \<le> weight_pre_star (accepts (K$ 0)) c"
   unfolding weight_pre_star_def
-  using sum_AAA[of "{l * accepts (K$ 0) c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" "accepts A c"] b[OF assms]
-  by blast
+  using Suminf_bounded_if_set_bounded[of "{l * accepts (K$ 0) c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" "accepts A c"]
+    b[OF assms] by blast
 
 end
 
