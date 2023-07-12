@@ -500,7 +500,6 @@ lemma Suminf_of_Suminf: (* Are the assumptions reasonable? *)
   assumes "\<And>d. Q d \<Longrightarrow> countable {(d, d')| d d'. P d d'} "
   shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
   using Suminf_of_Suminf1[of Q P f] Suminf_of_Suminf2[of Q P f] assms(1,2) by auto
-  
 
 lemma union_inter:
   assumes "countable A" and "countable B"
