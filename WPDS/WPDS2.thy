@@ -436,18 +436,18 @@ lemma monoid_star_relp_if_l_step_relp:
 
 lemma push_seq_weight_if_monoid_star_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])"
-  shows "\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p' \<le> d"
+  shows "(\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p') \<le> d"
   by (simp add: assms geq_Suminf_if_member)
 
 lemma push_seq_weight_if_l_step_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow> (p',[])"
-  shows "\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p' \<le> d"
+  shows "(\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p') \<le> d"
   by (simp add: assms monoid_star_relp_if_l_step_relp push_seq_weight_if_monoid_star_relp)
 
 lemma push_seq_weight_trans:
-  assumes "\<^bold>\<Sigma>(p'', w')\<Rightarrow>\<^sup>*pi \<le> d1"
-  assumes "\<^bold>\<Sigma>(pi, w'')\<Rightarrow>\<^sup>*p2 \<le> d2"
-  shows "\<^bold>\<Sigma>(p'', w'@w'')\<Rightarrow>\<^sup>*p2 \<le> d1 * d2"
+  assumes "(\<^bold>\<Sigma>(p'', w')\<Rightarrow>\<^sup>*pi) \<le> d1"
+  assumes "(\<^bold>\<Sigma>(pi, w'')\<Rightarrow>\<^sup>*p2) \<le> d2"
+  shows "(\<^bold>\<Sigma>(p'', w'@w'')\<Rightarrow>\<^sup>*p2) \<le> d1 * d2"
 proof -
   have "(\<^bold>\<Sigma>(p'',w'@w'') \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d1' * d2'| d1'  d2'. (p'',w') \<Midarrow>d1'\<Rightarrow>\<^sup>* (pi,[]) \<and> (pi,w'') \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
     by (smt (verit, ccfv_threshold) Collect_mono_iff Suminf_mono append_Cons append_self_conv2 step_relp_seq)
@@ -461,17 +461,17 @@ proof -
 qed
 
 lemma push_seq_weight_trans_push:
-  assumes "\<^bold>\<Sigma>(p'', [\<mu>'])\<Rightarrow>\<^sup>*pi \<le> d1"
-  assumes "\<^bold>\<Sigma>(pi, [\<mu>''])\<Rightarrow>\<^sup>*p2 \<le> d2"
-  shows "\<^bold>\<Sigma>(p'', [\<mu>', \<mu>''])\<Rightarrow>\<^sup>*p2 \<le> d1 * d2"
+  assumes "(\<^bold>\<Sigma>(p'', [\<mu>'])\<Rightarrow>\<^sup>*pi) \<le> d1"
+  assumes "(\<^bold>\<Sigma>(pi, [\<mu>''])\<Rightarrow>\<^sup>*p2) \<le> d2"
+  shows "(\<^bold>\<Sigma>(p'', [\<mu>', \<mu>''])\<Rightarrow>\<^sup>*p2) \<le> d1 * d2"
   using assms push_seq_weight_trans[of p'' "[\<mu>']" pi d1 "[\<mu>'']" p2 d2] by auto
 
 lemma monoid_star_relp_push_seq_weight_trans:
   assumes "(p1, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p'', w')"
-  assumes "\<^bold>\<Sigma>(p'', w')\<Rightarrow>\<^sup>*p2 \<le> d'"
-  shows "\<^bold>\<Sigma>(p1, w)\<Rightarrow>\<^sup>*p2 \<le> d * d'"
+  assumes "(\<^bold>\<Sigma>(p'', w')\<Rightarrow>\<^sup>*p2) \<le> d'"
+  shows "(\<^bold>\<Sigma>(p1, w)\<Rightarrow>\<^sup>*p2) \<le> d * d'"
 proof -
-  have "\<^bold>\<Sigma> (p1, w) \<Rightarrow>\<^sup>* p2 \<le> \<^bold>\<Sum>{d * d'| d'. (p1, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',w') \<and> (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
+  have "(\<^bold>\<Sigma> (p1, w) \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d * d'| d'. (p1, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',w') \<and> (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
     using Collect_mono_iff Suminf_mono monoid_rtranclp_trans by smt
   also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
     using \<open>(p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w')\<close> by fastforce
@@ -485,9 +485,9 @@ proof -
 qed
 
 lemma push_seq_weight_trans_Cons:
-  assumes "\<^bold>\<Sigma>(p, [\<gamma>])\<Rightarrow>\<^sup>*pi \<le> d1"
-  assumes "\<^bold>\<Sigma>(pi, w)\<Rightarrow>\<^sup>*p' \<le> d2"
-  shows "\<^bold>\<Sigma>(p, \<gamma> # w)\<Rightarrow>\<^sup>*p' \<le> d1 * d2"
+  assumes "(\<^bold>\<Sigma>(p, [\<gamma>])\<Rightarrow>\<^sup>*pi) \<le> d1"
+  assumes "(\<^bold>\<Sigma>(pi, w)\<Rightarrow>\<^sup>*p') \<le> d2"
+  shows "(\<^bold>\<Sigma>(p, \<gamma> # w)\<Rightarrow>\<^sup>*p') \<le> d1 * d2"
   using assms push_seq_weight_trans[of p "[\<gamma>]" pi d1 w p' d2] by auto
 
 lemma sound_elim2:
@@ -522,7 +522,7 @@ next
 
   have "d1 \<ge> (\<^bold>\<Sigma> (p, [\<gamma>]) \<Rightarrow>\<^sup>* pi)"
     using assms(1) obt(3) sound_def by blast
-  then have "\<^bold>\<Sigma> (p, \<gamma> # w) \<Rightarrow>\<^sup>* p' \<le>  d1 * d2"
+  then have "(\<^bold>\<Sigma> (p, \<gamma> # w) \<Rightarrow>\<^sup>* p') \<le>  d1 * d2"
     using d2l push_seq_weight_trans_Cons by auto
   also have "... = d" 
     using \<open>d = d1 * d2\<close> by fast 
@@ -589,7 +589,7 @@ proof -
           using assms(1) sound_elim2 by force
         from p1_to_p''1 have "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>'])"
           unfolding True' w'_swap using monoid_rtranclp.monoid_rtrancl_into_rtrancl by fastforce
-        then have "\<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2 \<le> d * d'"
+        then have "(\<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2) \<le> d * d'"
           using p''_to_p2 monoid_star_relp_push_seq_weight_trans by auto
         then show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
           using d''_geq ldd' by auto
