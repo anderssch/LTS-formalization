@@ -226,10 +226,17 @@ proof (induct rule: monoid_rtrancl.induct)
 next
   case (monoid_rtrancl_into_rtrancl a dl b d'l' c)
   from \<open>(b, d'l', c) \<in> list_embed_ts ts\<close> have "snd d'l' \<noteq> []"
-    by (smt (verit, ccfv_SIG) fst_conv list.simps(3) list_embed_monoid_def list_embed_ts_def mem_Collect_eq snd_conv)
-  then have \<open>snd (dl * d'l') \<noteq> []\<close> by (simp add: mult_prod_def times_list_def)
-  then show ?case by (simp add: monoid_rtrancl_into_rtrancl.prems)
+    unfolding list_embed_monoid_def list_embed_ts_def[of ts] by auto
+  then have \<open>snd (dl * d'l') \<noteq> []\<close> 
+    by (simp add: mult_prod_def times_list_def)
+  then show ?case 
+    by (simp add: monoid_rtrancl_into_rtrancl.prems)
 qed
+
+lemma length_list_embed:
+  assumes "(p, (d,l), p') \<in> list_embed_ts ts"
+  shows "length l = 1"
+  using assms unfolding list_embed_ts_def unfolding list_embed_monoid_def by auto
 
 \<comment> \<open>NOTE: (adapted from monoid_rtrancl_wts_to_monoidLTS_cases_rev')\<close>
 lemma monoid_rtrancl_list_embed_ts_cases_rev':
@@ -251,9 +258,11 @@ next
   proof (cases "(snd d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3)")
     case (Cons d\<^sub>1\<^sub>2 l\<^sub>2\<^sub>3)
     define d\<^sub>1\<^sub>3 where "d\<^sub>1\<^sub>3 = fst d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3"
-    define l\<^sub>3\<^sub>4 where "l\<^sub>3\<^sub>4 = snd d\<^sub>3\<^sub>4l\<^sub>3\<^sub>4"
     define d\<^sub>3\<^sub>4 where "d\<^sub>3\<^sub>4 = fst d\<^sub>3\<^sub>4l\<^sub>3\<^sub>4"
+    define l\<^sub>3\<^sub>4 where "l\<^sub>3\<^sub>4 = snd d\<^sub>3\<^sub>4l\<^sub>3\<^sub>4"
     define l\<^sub>2\<^sub>4 where "l\<^sub>2\<^sub>4 = l\<^sub>2\<^sub>3 @ l\<^sub>3\<^sub>4"
+    have d\<^sub>3\<^sub>4l\<^sub>3\<^sub>4_split: "d\<^sub>3\<^sub>4l\<^sub>3\<^sub>4 = (d\<^sub>3\<^sub>4,l\<^sub>3\<^sub>4)"
+      by (simp add: d\<^sub>3\<^sub>4_def l\<^sub>3\<^sub>4_def)
 
     have l24_tl: "l\<^sub>2\<^sub>4 = tl (snd (d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3 * d\<^sub>3\<^sub>4l\<^sub>3\<^sub>4))"
       by (simp add: local.Cons mult_prod_def times_list_def l\<^sub>2\<^sub>4_def l\<^sub>3\<^sub>4_def)
@@ -261,26 +270,25 @@ next
     have "d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3 = (d\<^sub>1\<^sub>3,d\<^sub>1\<^sub>2 # l\<^sub>2\<^sub>3)"
       using Cons by (metis d\<^sub>1\<^sub>3_def surjective_pairing) 
 
-    then have "d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3 = (1,[]) \<or> (\<exists>d\<^sub>1\<^sub>3.
-                (\<exists>p\<^sub>2 d\<^sub>2\<^sub>3  l\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2.
+    then have "\<exists>p\<^sub>2 d\<^sub>2\<^sub>3.
                    d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3 = (d\<^sub>1\<^sub>3, d\<^sub>1\<^sub>2 # l\<^sub>2\<^sub>3) \<and>
                    (p\<^sub>1, (d\<^sub>1\<^sub>2,[d\<^sub>1\<^sub>2]), p\<^sub>2) \<in> list_embed_ts ts \<and> 
                    (p\<^sub>2, (d\<^sub>2\<^sub>3, l\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (list_embed_ts ts) \<and> 
-                   d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3))"
+                   d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3"
       using monoid_rtrancl_into_rtrancl.IH by auto
-    then obtain p\<^sub>2 d\<^sub>2\<^sub>3 l\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2 where props:
-      "((d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3 = (d\<^sub>1\<^sub>3,d\<^sub>1\<^sub>2 # l\<^sub>2\<^sub>3) \<and>
-       (p\<^sub>1, (d\<^sub>1\<^sub>2,[d\<^sub>1\<^sub>2]), p\<^sub>2) \<in> list_embed_ts ts \<and> 
-       (p\<^sub>2, (d\<^sub>2\<^sub>3,l\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (list_embed_ts ts) \<and> 
-       d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3))"
+    then obtain p\<^sub>2 d\<^sub>2\<^sub>3 where props:
+      "d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3 = (d\<^sub>1\<^sub>3,d\<^sub>1\<^sub>2 # l\<^sub>2\<^sub>3)"
+      "(p\<^sub>1, (d\<^sub>1\<^sub>2,[d\<^sub>1\<^sub>2]), p\<^sub>2) \<in> list_embed_ts ts"
+      "(p\<^sub>2, (d\<^sub>2\<^sub>3,l\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (list_embed_ts ts)"
+      "d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3"
       using d\<^sub>1\<^sub>3_def Cons by auto
 
     define d\<^sub>2\<^sub>4 where "d\<^sub>2\<^sub>4 = d\<^sub>2\<^sub>3 * d\<^sub>3\<^sub>4"
 
     have "(p\<^sub>2, (d\<^sub>2\<^sub>4,l\<^sub>2\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (list_embed_ts ts)"
-      by (smt (verit) d\<^sub>2\<^sub>4_def d\<^sub>3\<^sub>4_def fst_conv list.sel(3) local.Cons monoid_rtrancl.simps 
-          monoid_rtrancl_into_rtrancl.hyps(2) mult_prod_def props snd_conv times_list_def l\<^sub>2\<^sub>4_def 
-          l\<^sub>3\<^sub>4_def)
+      using local.Cons monoid_rtrancl_into_rtrancl.hyps(2) d\<^sub>3\<^sub>4l\<^sub>3\<^sub>4_split d\<^sub>2\<^sub>4_def props(3)
+        monoid_rtrancl.monoid_rtrancl_into_rtrancl[of p\<^sub>2 "(d\<^sub>2\<^sub>3, l\<^sub>2\<^sub>3)" p\<^sub>3 "list_embed_ts ts" "(d\<^sub>3\<^sub>4, l\<^sub>3\<^sub>4)" p\<^sub>4]
+      unfolding d\<^sub>1\<^sub>3_def[symmetric] d\<^sub>2\<^sub>4_def l\<^sub>2\<^sub>4_def by (simp add: mult_prod_def times_list_def)
     moreover
     define d\<^sub>1\<^sub>4 where "d\<^sub>1\<^sub>4 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>4"
     moreover
@@ -288,8 +296,8 @@ next
       using props by fastforce
     moreover
     have "d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3 * d\<^sub>3\<^sub>4l\<^sub>3\<^sub>4 = (d\<^sub>1\<^sub>4, d\<^sub>1\<^sub>2 # l\<^sub>2\<^sub>4)"
-      by (metis append_Cons d\<^sub>1\<^sub>3_def d\<^sub>1\<^sub>4_def d\<^sub>2\<^sub>4_def d\<^sub>3\<^sub>4_def list.inject local.Cons mult.assoc 
-          mult_prod_def props snd_conv times_list_def l\<^sub>2\<^sub>4_def l\<^sub>3\<^sub>4_def)
+      by (metis append_Cons d\<^sub>1\<^sub>3_def d\<^sub>1\<^sub>4_def d\<^sub>2\<^sub>4_def d\<^sub>3\<^sub>4_def local.Cons mult.assoc 
+          mult_prod_def props(4) times_list_def l\<^sub>2\<^sub>4_def l\<^sub>3\<^sub>4_def)
     ultimately
     show ?thesis
       by auto
@@ -313,9 +321,7 @@ next
     have "p\<^sub>1 = p\<^sub>3"
       using Nil monoid_rtrancl_into_rtrancl(1) d\<^sub>1\<^sub>3_def by (meson monoid_rtrancl_list_embed_w0)
     have "length l\<^sub>3\<^sub>4 = 1"
-      using monoid_rtrancl_into_rtrancl(2) l\<^sub>3\<^sub>4_def
-      by (smt (verit, best) One_nat_def Pair_inject length_0_conv length_Suc_conv 
-          list_embed_monoid_def list_embed_ts_def mem_Collect_eq sndI)
+      using monoid_rtrancl_into_rtrancl(2) l\<^sub>3\<^sub>4_def length_list_embed by (cases d\<^sub>3\<^sub>4l\<^sub>3\<^sub>4) auto
     have "d\<^sub>1\<^sub>4 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>4"
       using d\<^sub>1\<^sub>4_def by auto
     have "l\<^sub>3\<^sub>4 = [d\<^sub>3\<^sub>4]"
@@ -377,9 +383,8 @@ next
     "n = length l''" 
     "l = l' @ l''" 
     "d = d' * d''"
-    using Suc(2) Suc(3)
-    by (smt (verit, ccfv_threshold) append_Cons length_Suc_conv monoid_rtrancl_list_embed_ts_cases_rev self_append_conv2)
-
+    using Suc(2,3) monoid_rtrancl_list_embed_ts_cases_rev[of a d "hd l" "tl l" b r] by (cases l) auto
+    
   have q: "P a' d'' b"
     using Suc(1)[OF p(3) p(2)] Suc(4,5) by auto
 
@@ -393,8 +398,30 @@ lemma monoid_rtrancl_induct_rev [consumes 1, case_names monoid_rtrancl_refl mono
   assumes "(\<And>a w b c w'. (a, w, b) \<in> r \<Longrightarrow> P b w' c \<Longrightarrow> (b, w', c) \<in> monoid_rtrancl r  \<Longrightarrow> 
               P a (w * w') c)"
   shows "P a w b"
-  by (smt (verit) assms list_embed_ts_project monoid_rtrancl_if_monoid_rtrancl_list_embed_ts''
-      monoid_rtrancl_list_embed_ts_if_monoid_rtrancl monoid_rtrancl_list_embed_ts_induct_rev)
+proof -
+  obtain l where l_p: "(a, (w, l), b) \<in> monoid_rtrancl (list_embed_ts r)"
+    using assms(1) monoid_rtrancl_list_embed_ts_if_monoid_rtrancl by metis
+
+  show ?thesis
+  proof (rule monoid_rtrancl_list_embed_ts_induct_rev[of _ _ l _r])
+    show "(a, (w, l), b) \<in> monoid_rtrancl (list_embed_ts r)"
+      using l_p by auto
+  next
+    fix a
+    show "P a 1 a"
+      using assms(2) by auto
+  next
+    fix a d b l c d' l'
+    assume "(a, (d, l), b) \<in> list_embed_ts r"
+    moreover
+    assume "P b d' c"
+    moreover
+    assume "(b, (d', l'), c) \<in> monoid_rtrancl (list_embed_ts r)"
+    ultimately
+    show "P a (d * d') c"
+      using assms(3) by (meson list_embed_ts_project monoid_rtrancl_if_monoid_rtrancl_list_embed_ts'')
+  qed
+qed
 
 lemma monoid_rtranclp_induct_rev [consumes 1, case_names monoid_rtranclp_refl monoid_rtranclp_into_rtrancl]: (*the name shouldn't say "list" *)
   assumes "monoid_rtranclp r a w b"
@@ -420,8 +447,8 @@ proof -
     using A B C using monoid_rtrancl_induct_rev[of a w b r'] by metis
 qed
 
-lemma monoid_rtrancl_into_rtrancl_rev:
-  assumes "(a, w, b) \<in> r"
+lemma monoid_rtrancl_rtrancl_into_rtrancl:
+  assumes "(a, w, b) \<in> monoid_rtrancl r"
   assumes "(b, l, c) \<in> monoid_rtrancl r"
   shows "(a, w*l, c) \<in> monoid_rtrancl r"
   using assms(2) assms(1) 
@@ -434,6 +461,14 @@ next
   then show ?case
     by (metis (no_types, lifting) monoid_rtrancl.monoid_rtrancl_into_rtrancl mult.assoc)
 qed
+
+lemma monoid_rtrancl_into_rtrancl_rev:
+  assumes "(a, w, b) \<in> r"
+  assumes "(b, l, c) \<in> monoid_rtrancl r"
+  shows "(a, w*l, c) \<in> monoid_rtrancl r"
+  using monoid_rtrancl_rtrancl_into_rtrancl
+  using assms(2) assms(1)
+  by (metis lambda_one monoid_rtrancl.monoid_rtrancl_into_rtrancl monoid_rtrancl.monoid_rtrancl_refl)
 
 lemma monoid_rtrancl_list_embed_ts_append_split:
   assumes "(p, (d,d'@l), p') \<in> monoid_rtrancl (list_embed_ts ts)"
@@ -464,9 +499,9 @@ next
     "(s, (d''', l), p') \<in> monoid_rtrancl (list_embed_ts ts)" 
     "du1 = d'' * d'''"
     by auto
-  then have "(p, (du0 * d'', a # u1), s) \<in> monoid_rtrancl (list_embed_ts ts)"
-    by (smt (verit, del_insts) append_Cons append_Nil e(1) fst_conv monoid_rtrancl_into_rtrancl_rev 
-        mult_prod_def snd_conv times_list_def)
+  from this(1) have "(p, (du0 * d'', a # u1), s) \<in> monoid_rtrancl (list_embed_ts ts)"
+    using monoid_rtrancl_into_rtrancl_rev[of p "(du0, [a])" q "list_embed_ts ts" "(d'', u1)" s] e(1)
+    by (simp add: mult_prod_def times_list_def)
   then show ?case
     by (metis (mono_tags, lifting) \<open>(s, (d''', l), p') \<in> monoid_rtrancl (list_embed_ts ts)\<close> 
         \<open>du1 = d'' * d'''\<close> e(3) mult.assoc)
