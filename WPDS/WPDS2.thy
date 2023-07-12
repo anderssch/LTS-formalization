@@ -100,6 +100,7 @@ lemma Suminf_left_distr:
   "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
 proof -
   have "countable D"
+    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
     sorry
  
   then show ?thesis
@@ -110,6 +111,7 @@ lemma Suminf_right_distr:
   "(\<^bold>\<Sum> D) * d2 = \<^bold>\<Sum> {d1 * d2 | d1. d1 \<in> D}"
 proof -
   have "countable D"
+    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
     sorry
  
   then show ?thesis

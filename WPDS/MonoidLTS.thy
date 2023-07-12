@@ -395,6 +395,106 @@ proof -
     using \<open>\<^bold>\<Sum> {d2 * d1 |d2. d2 \<in> D} \<le> \<^bold>\<Sum> D * d1\<close> \<open>\<^bold>\<Sum> D * d1 \<le> \<^bold>\<Sum> {d2 * d1 |d2. d2 \<in> D}\<close> by auto
 qed
 
+lemma Suminf_of_Suminf1:
+  assumes "countable {d. Q d}"
+  assumes "\<And>d. Q d \<Longrightarrow> countable {(d, d')| d d'. P d d'}"
+  shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} \<ge> \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
+  apply (rule Suminf_bounded_if_set_bounded)
+  subgoal
+    apply (subgoal_tac "countable {(d, d') |d d'. P d d' \<and> Q d'}")
+    subgoal
+      using countable_image[of "{(d, d') |d d'. P d d' \<and> Q d'}" "\<lambda>(d, d'). f d d'"]
+      apply (simp add: assms(1) setcompr_eq_image)
+      done
+    subgoal
+      using Collect_mono_iff assms(2) countable_subset apply fastforce
+      done
+    done
+  subgoal
+    apply auto
+    subgoal for d'
+      apply (subgoal_tac "countable {f d d' |d d'. P d d' \<and> Q d'} \<and> countable {f d d' |d. P d d'}")
+      subgoal 
+        apply auto
+        apply (smt (verit, del_insts) Collect_mono_iff local.sum_mono)
+        done
+      subgoal
+        apply rule
+        subgoal
+          apply (subgoal_tac "countable {(d, d') |d d'. P d d' \<and> Q d'}")
+          subgoal
+            using countable_image[of "{(d, d') |d d'. P d d' \<and> Q d'}" "\<lambda>(d, d'). f d d'"]
+            unfolding image_def
+            apply auto
+            apply (smt (verit, best) Collect_cong)
+            done
+          subgoal
+            using Collect_mono_iff assms(2) countable_subset apply fastforce
+            done
+          done
+        subgoal
+          using assms(2)[of d'] 
+          apply -
+          apply (rule countable_subset[of _ "{f d d' |d d'. P d d'}"])
+          subgoal
+            apply auto
+            done
+          subgoal
+            using countable_image[of "{(d, d') |d d'. P d d'}" "\<lambda>(d, d'). f d d'"]
+            unfolding image_def
+            apply auto
+            apply (smt (verit, best) Collect_cong)
+            done
+          done
+        done
+      done
+    done
+  done
+
+lemma Suminf_of_Suminf2: (* Are the assumptions reasonable? *)
+  assumes "countable {d. Q d}"
+  assumes "\<And>d. Q d \<Longrightarrow> countable {(d, d')| d d'. P d d'} "
+  shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} \<le> \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
+  apply (rule Suminf_bounded_if_set_bounded)
+  subgoal
+    apply (subgoal_tac "countable {(d, d') |d d'. P d d' \<and> Q d'}")
+    subgoal
+      using countable_image[of "{(d, d') |d d'. P d d' \<and> Q d'}" "\<lambda>(d, d'). f d d'"]
+      apply (smt (verit) Collect_mono countable_subset mem_Collect_eq pair_imageI setcompr_eq_image)
+      done
+    subgoal
+      using Collect_mono_iff assms(2) countable_subset apply fastforce
+      done
+    done
+  subgoal
+    apply auto
+    subgoal for d d'
+      apply (subgoal_tac "\<^bold>\<Sum> {f d d' |d. P d d'} \<le> f d d'")
+      subgoal
+        apply (subgoal_tac "countable {f d d' |d. P d d'} \<and> countable {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'}")
+        subgoal
+          apply auto
+          using countable_suminf_elem dual_order.trans apply blast
+          done
+        subgoal
+          apply auto
+          subgoal
+            using Collect_mono_iff assms countable_subset
+            apply (smt (verit, best) \<open>countable {f d d' |d d'. P d d' \<and> Q d'}\<close>) 
+            done
+          subgoal
+            using assms countable_image[of "{d. Q d}"]
+            apply (simp add: setcompr_eq_image)
+            done
+          done
+        done
+      subgoal
+        apply (smt (verit, del_insts) Collect_mono \<open>countable {f d d' |d d'. P d d' \<and> Q d'}\<close> countable_subset countable_suminf_elem mem_Collect_eq)
+        done
+      done
+    done
+  done
+
 lemma union_inter:
   assumes "countable A" and "countable B"
   shows "\<^bold>\<Sum> (A \<union> B) + \<^bold>\<Sum> (A \<inter> B) = \<^bold>\<Sum> A + \<^bold>\<Sum> B"
