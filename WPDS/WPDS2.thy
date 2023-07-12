@@ -75,33 +75,46 @@ notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 notation l_step_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80)
 notation monoid_star_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [90,90,100] 100) 
 
-lemma Suminf_mono: 
-  assumes "(X::'weight set) \<subseteq> Y"
-  shows "\<^bold>\<Sum> X \<ge> \<^bold>\<Sum> Y"
-  sorry
-
-lemma Suminf_mult_isor: 
-  assumes "d \<le> (d' :: 'weight)"
-  shows "\<^bold>\<Sum> {d * d''| d''. X d''} \<le> \<^bold>\<Sum> {d' * d''| d''. X d''}"
-  sorry
-
-lemma Suminf_bigger2: 
-  assumes "\<forall>t. X t \<longrightarrow> f t \<le> g t"
-  shows "\<^bold>\<Sum> {f t| t. X t} \<le> \<^bold>\<Sum> {g t| t. X t}"
-  sorry
+lemma Suminf_bounded_if_set_bounded:
+  assumes inf_d: "\<forall>x \<in> X. x \<ge> d"
+  shows "\<^bold>\<Sum> X \<ge> d"
+proof -
+  have countableX: "countable X" sorry 
+      \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
+  then show ?thesis 
+    using Suminf_bounded_if_set_bounded inf_d by auto
+qed
 
 lemma geq_Suminf_if_member:
-  assumes "d \<in> W "
+  assumes "d \<in> W"
   shows "d \<ge> \<^bold>\<Sum>W"
-  sorry
+proof -
+  have "countable W"
+    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
+    sorry
+  then show ?thesis
+    using assms countable_suminf_elem by blast
+qed
 
 lemma Suminf_left_distr: 
   "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
-  sorry
+proof -
+  have "countable D"
+    sorry
+ 
+  then show ?thesis
+    using Suminf_left_distr by auto
+qed
 
 lemma Suminf_right_distr: 
   "(\<^bold>\<Sum> D) * d2 = \<^bold>\<Sum> {d1 * d2 | d1. d1 \<in> D}"
-  sorry
+proof -
+  have "countable D"
+    sorry
+ 
+  then show ?thesis
+    using Suminf_right_distr by auto
+qed
 
 lemma Suminf_of_Suminf:
   "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
@@ -130,24 +143,26 @@ lemma Suminf_of_Suminf_distrr':
   "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d} * d' |d'. Q d'} = \<^bold>\<Sum> {d * d' | d d'. P d \<and> Q d'}"
   using Suminf_of_Suminf_distrr[of "\<lambda>x y. x" _ "\<lambda>x. x" ] by auto
 
-lemma Suminf_bounded_if_set_bounded:
-  assumes inf_d: "\<forall>x \<in> X. x \<ge> d"
-  shows "\<^bold>\<Sum> X \<ge> d"
-proof -
-  have countableX: "countable X" sorry 
-      \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
 
-  obtain W' where subset:"W' \<subseteq> X" and fin:"finite W'" and eq:"\<^bold>\<Sum> X = \<Sum> W'"
-    by (fact suminf_obtains_finite_subset[OF countableX])
-  have "\<forall>x \<in> W'. x \<ge> d" using subset inf_d by blast
-  then have "\<Sum> W' \<ge> d" using fin
-    unfolding BoundedDioid.less_eq_def
-    apply (induct rule: finite_induct[OF fin], simp_all)
-    subgoal for x F
-      using add.assoc[of d x "\<Sum> F"] by simp
-    done
-  then show ?thesis using eq by argo
-qed
+lemma Suminf_bounded_by_Suminf_if_members_bounded:
+  assumes "\<forall>y \<in> Y. \<exists>x \<in> X. x \<le> y"
+  shows "\<^bold>\<Sum> X \<le> \<^bold>\<Sum> Y"
+  by (meson Suminf_bounded_if_set_bounded assms dual_order.trans geq_Suminf_if_member)
+
+lemma Suminf_mono: 
+  assumes "(X::'weight set) \<subseteq> Y"
+  shows "\<^bold>\<Sum> X \<ge> \<^bold>\<Sum> Y"
+  by (rule Suminf_bounded_by_Suminf_if_members_bounded) (use assms in auto)
+
+lemma Suminf_mult_isor: 
+  assumes "d \<le> (d' :: 'weight)"
+  shows "\<^bold>\<Sum> {d * d''| d''. X d''} \<le> \<^bold>\<Sum> {d' * d''| d''. X d''}"
+  by (rule Suminf_bounded_by_Suminf_if_members_bounded) (use assms idempotent_semiring_ord_class.mult_isor in auto)
+
+lemma Suminf_bigger2: 
+  assumes "\<forall>t. X t \<longrightarrow> f t \<le> g t"
+  shows "\<^bold>\<Sum> {f t| t. X t} \<le> \<^bold>\<Sum> {g t| t. X t}"
+  by (rule Suminf_bounded_by_Suminf_if_members_bounded) (use assms in auto)
 
 \<comment> \<open>Generalization of PDS_with_P_automata.accepts that computes the meet-over-all-paths in the W-automaton.\<close>
 definition accepts :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
@@ -1084,12 +1099,6 @@ proof -
     by (simp add: e(3) mult.assoc)
 qed
 
-
-lemma sum_NEWNEWNEWN:
-  assumes "\<forall>y \<in> Y. \<exists>x \<in> X. x \<le> y"
-  shows "\<^bold>\<Sum> X \<le> \<^bold>\<Sum> Y"
-  by (meson Suminf_bounded_if_set_bounded assms dual_order.trans geq_Suminf_if_member)
-
 lemma accepts_if_is_rule:
   assumes "(p', \<gamma>) \<midarrow>d\<hookrightarrow> (p'', u1)"
     and "saturated pre_star_rule A"
@@ -1098,7 +1107,7 @@ proof -
   have X: "\<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<le>
          \<^bold>\<Sum> {d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
     using monoid_rtrancl_wts_to_monoidLTS_if_saturated_is_rule[OF assms(1) assms(2), of w1 ]
-      sum_NEWNEWNEWN[of "{d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+      Suminf_bounded_by_Suminf_if_members_bounded[of "{d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
         "{d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"]
     by force
     

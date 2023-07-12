@@ -262,6 +262,139 @@ proof -
   then show ?thesis using eqA eqB by argo
 qed
 
+lemma Suminf_bounded_if_set_bounded:
+  assumes countableX: "countable X"
+  assumes inf_d: "\<forall>x \<in> X. x \<ge> d"
+  shows "\<^bold>\<Sum> X \<ge> d"
+proof -
+  obtain W' where subset:"W' \<subseteq> X" and fin:"finite W'" and eq:"\<^bold>\<Sum> X = \<Sum> W'"
+    by (fact suminf_obtains_finite_subset[OF countableX])
+  have "\<forall>x \<in> W'. x \<ge> d" using subset inf_d by blast
+  then have "\<Sum> W' \<ge> d" using fin
+    unfolding BoundedDioid.less_eq_def
+    apply (induct rule: finite_induct[OF fin], simp_all)
+    subgoal for x F
+      using add.assoc[of d x "\<Sum> F"] by simp
+    done
+  then show ?thesis using eq by argo
+qed
+
+lemma sum_insert[simp]:
+  assumes "finite (D' ::'label set)"
+  shows "\<Sum> (insert d D') = d + \<Sum> D'"
+  using assms
+proof (induction)
+  case empty
+  then show ?case 
+    by auto
+next
+  case (insert d' D')
+  then show ?case
+    apply auto
+    by (metis (no_types, lifting) comm_monoid_add_class.sum.insert_if comm_monoid_add_class.sum.insert_remove finite.insertI meet.inf.absorb2 meet.inf_le1)
+qed
+
+lemma Suminf_left_distr: 
+  assumes "countable D"
+  shows "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
+proof -
+  have "d1 * \<^bold>\<Sum> D \<le> \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
+    apply (rule Suminf_bounded_if_set_bounded)
+    apply auto
+    using assms countable_f_on_set apply blast
+    by (simp add: assms countable_suminf_elem idempotent_semiring_ord_class.mult_isol)
+  have "countable {d1 * d2 | d2. d2 \<in> D}"
+    using assms countable_f_on_set by blast
+  obtain D' where subset:"D' \<subseteq> D" and fin:"finite D'" and eq:"\<^bold>\<Sum> D = \<Sum> D'"
+    by (fact suminf_obtains_finite_subset[OF assms(1)])
+
+  have "finite {d1 * d2 | d2. d2 \<in> D'}"
+    by (simp add: fin)
+
+  from fin have "d1 * \<Sum> D' \<ge> \<Sum> {d1 * d2 | d2. d2 \<in> D'}" (* extract lemma? *)
+  proof (induction)
+    case empty
+    then show ?case
+      by force
+  next
+    case (insert d D')
+    
+    have fff2: "\<Sum> (insert d D') = d + \<Sum>D'"
+      using insert.hyps(1) by simp
+
+    have h1: "finite {d1 * d2 |d2. d2 \<in> D'}"
+      by (simp add: insert.hyps(1))
+    
+    have fff: "\<Sum> {d1 * d2 |d2. d2 \<in> insert d D'} = d1 * d + \<Sum>{d1 * d2 |d2. d2 \<in> D'}"
+      by (metis Setcompr_eq_image finite_imageI image_insert insert.hyps(1) sum_insert)
+  
+    show ?case
+      unfolding fff fff2
+      
+      using insert
+      by (simp add: meet.le_infI2 semiring_class.distrib_left)
+  qed
+
+  have "\<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D} \<le> \<Sum> {d1 * d2 | d2. d2 \<in> D'}"
+    by (smt (verit, best) Collect_mono \<open>countable {d1 * d2 |d2. d2 \<in> D}\<close> \<open>finite {d1 * d2 |d2. d2 \<in> D'}\<close> basic_trans_rules(31) countable_subset finite_suminf_is_sum local.sum_mono subset)
+
+  then have "d1 * \<^bold>\<Sum> D \<ge> \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
+    using \<open>\<Sum> {d1 * d2 |d2. d2 \<in> D'} \<le> d1 * \<Sum> D'\<close> eq by auto 
+  show ?thesis
+    using \<open>\<^bold>\<Sum> {d1 * d2 |d2. d2 \<in> D} \<le> d1 * \<^bold>\<Sum> D\<close> \<open>d1 * \<^bold>\<Sum> D \<le> \<^bold>\<Sum> {d1 * d2 |d2. d2 \<in> D}\<close> by auto
+qed
+
+lemma Suminf_right_distr: 
+  assumes "countable D"
+  shows "\<^bold>\<Sum> D * d1 = \<^bold>\<Sum> {d2 * d1 | d2. d2 \<in> D}"
+proof -
+  have "\<^bold>\<Sum> D * d1 \<le> \<^bold>\<Sum> {d2 * d1 | d2. d2 \<in> D}"
+    apply (rule Suminf_bounded_if_set_bounded)
+    apply auto
+    using assms countable_f_on_set
+    apply fastforce
+    by (simp add: assms countable_suminf_elem idempotent_semiring_ord_class.mult_isor)
+
+  have "countable {d2 * d1 | d2. d2 \<in> D}"
+    using assms countable_f_on_set by fastforce 
+  obtain D' where subset:"D' \<subseteq> D" and fin:"finite D'" and eq:"\<^bold>\<Sum> D = \<Sum> D'"
+    by (fact suminf_obtains_finite_subset[OF assms(1)])
+
+  have "finite {d2 * d1 | d2. d2 \<in> D'}"
+    by (simp add: fin)
+
+  from fin have "\<Sum> D' * d1 \<ge> \<Sum> {d2 * d1 | d2. d2 \<in> D'}" (* extract lemma? *)
+  proof (induction)
+    case empty
+    then show ?case
+      by force
+  next
+    case (insert d D')
+    
+    have fff2: "\<Sum> (insert d D') = d + \<Sum>D'"
+      using insert.hyps(1) by simp
+
+    have h1: "finite {d2 * d1 |d2. d2 \<in> D'}"
+      by (simp add: insert.hyps(1))
+    
+    have fff: "\<Sum> {d2 * d1 |d2. d2 \<in> insert d D'} = d * d1 + \<Sum>{d2 * d1 |d2. d2 \<in> D'}"
+      by (metis Setcompr_eq_image finite_imageI image_insert insert.hyps(1) sum_insert)
+    
+    show ?case
+      unfolding fff fff2
+      using insert
+      by (simp add: meet.le_infI2 semiring_class.distrib_right)
+  qed
+
+  have "\<^bold>\<Sum> {d2 * d1 | d2. d2 \<in> D} \<le> \<Sum> {d2 * d1 | d2. d2 \<in> D'}"
+    by (smt (verit, best) Collect_mono \<open>countable {d2 * d1 |d2. d2 \<in> D}\<close> \<open>finite {d2 * d1 |d2. d2 \<in> D'}\<close> basic_trans_rules(31) countable_subset finite_suminf_is_sum local.sum_mono subset)
+
+  then have "\<^bold>\<Sum> D * d1 \<ge> \<^bold>\<Sum> {d2 * d1 | d2. d2 \<in> D}"
+    using \<open>\<Sum> {d2 * d1 |d2. d2 \<in> D'} \<le>  \<Sum> D' * d1\<close> eq by auto 
+  show ?thesis
+    using \<open>\<^bold>\<Sum> {d2 * d1 |d2. d2 \<in> D} \<le> \<^bold>\<Sum> D * d1\<close> \<open>\<^bold>\<Sum> D * d1 \<le> \<^bold>\<Sum> {d2 * d1 |d2. d2 \<in> D}\<close> by auto
+qed
+
 lemma union_inter:
   assumes "countable A" and "countable B"
   shows "\<^bold>\<Sum> (A \<union> B) + \<^bold>\<Sum> (A \<inter> B) = \<^bold>\<Sum> A + \<^bold>\<Sum> B"

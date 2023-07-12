@@ -491,7 +491,7 @@ next
     "d = du0 * du1"
     by auto
 
-  have "\<exists>d'' s d'''. (q, (d'', u1), s) \<in> monoid_rtrancl (list_embed_ts ts) \<and> 
+  have "\<exists>d'' s d'''. (q, (d'', u1), s) \<in> monoid_rtrancl (list_embed_ts ts) \<and>
                      (s, (d''', l), p') \<in> monoid_rtrancl (list_embed_ts ts) \<and> du1 = d'' * d'''"
     using Cons.IH[OF e(2)] .
   then obtain d'' s d''' where
