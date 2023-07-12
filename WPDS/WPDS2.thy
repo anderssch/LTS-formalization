@@ -80,7 +80,7 @@ lemma Suminf_bounded_if_set_bounded:
   shows "\<^bold>\<Sum> X \<ge> d"
 proof -
   have countableX: "countable X" sorry 
-      \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
+      \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable?\<close>
   then show ?thesis 
     using Suminf_bounded_if_set_bounded inf_d by auto
 qed
@@ -90,7 +90,7 @@ lemma geq_Suminf_if_member:
   shows "d \<ge> \<^bold>\<Sum>W"
 proof -
   have "countable W"
-    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
+    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable?\<close>
     sorry
   then show ?thesis
     using assms countable_suminf_elem by blast
@@ -100,7 +100,7 @@ lemma Suminf_left_distr:
   "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
 proof -
   have "countable D"
-    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
+    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable?\<close>
     sorry
  
   then show ?thesis
@@ -111,16 +111,26 @@ lemma Suminf_right_distr:
   "(\<^bold>\<Sum> D) * d2 = \<^bold>\<Sum> {d1 * d2 | d1. d1 \<in> D}"
 proof -
   have "countable D"
-    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
+    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable?\<close>
     sorry
- 
   then show ?thesis
     using Suminf_right_distr by auto
 qed
 
 lemma Suminf_of_Suminf:
   "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
-  sorry
+proof -
+  have "countable {d. Q d}"
+    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
+    sorry
+  moreover
+  have "(\<And>d. Q d \<Longrightarrow> countable {(d, d') |d d'. P d d'})"
+    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
+    sorry
+  ultimately
+  show ?thesis
+    using Suminf_of_Suminf[of Q P f] by auto
+qed
 
 lemma Suminf_of_Suminf_fst_arg: (* not used... *)
   "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {d | d d'. P d d' \<and> Q d'}"
@@ -144,7 +154,6 @@ qed
 lemma Suminf_of_Suminf_distrr':
   "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d} * d' |d'. Q d'} = \<^bold>\<Sum> {d * d' | d d'. P d \<and> Q d'}"
   using Suminf_of_Suminf_distrr[of "\<lambda>x y. x" _ "\<lambda>x. x" ] by auto
-
 
 lemma Suminf_bounded_by_Suminf_if_members_bounded:
   assumes "\<forall>y \<in> Y. \<exists>x \<in> X. x \<le> y"
