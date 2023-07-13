@@ -395,131 +395,89 @@ proof -
     using \<open>\<^bold>\<Sum> {d2 * d1 |d2. d2 \<in> D} \<le> \<^bold>\<Sum> D * d1\<close> \<open>\<^bold>\<Sum> D * d1 \<le> \<^bold>\<Sum> {d2 * d1 |d2. d2 \<in> D}\<close> by auto
 qed
 
-lemma Suminf_of_Suminf1:
+lemma Suminf_of_Suminf_countable1:
+  assumes "countable {d'. Q d'}"
+  assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'}"
+  shows "countable {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'}"
+  using countable_image[of "{d'. Q d'}" "\<lambda>d'. \<^bold>\<Sum> {f d d' |d. P d d'}", OF assms(1)]
+  by (simp add: image_Collect)
+
+lemma Suminf_of_Suminf_countable2:
+  assumes "countable {d'. Q d'}"
+  assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'}"
+  shows "countable {f d d' |d d'. P d d' \<and> Q d'}"
+proof -
+  have "countable (\<Union>((\<lambda>d'. {(d,d')|d. P d d'}) ` {d'. Q d'}))"
+    using assms(1) assms(2) by blast
+  moreover
+  have "(\<Union>d'\<in>{d'. Q d'}. {(d, d') |d. P d d'}) = {(d, d') |d d'. P d d' \<and> Q d'}"
+    by auto
+  ultimately
+  have "countable {(d, d') |d d'. P d d' \<and> Q d'}"
+    by auto
+  then show "countable {f d d' |d d'. P d d' \<and> Q d'}"
+    using countable_image[of "{(d, d') |d d'. P d d' \<and> Q d'}" "\<lambda>(d, d'). f d d'"]
+      Collect_cong[of "\<lambda>fdd'. \<exists>d d'. P d d' \<and> Q d' \<and> fdd' = f d d'" "\<lambda>fdd'. \<exists>d d'. fdd' = f d d' \<and> P d d' \<and> Q d' "]
+    unfolding image_def by fastforce
+qed
+
+lemma countable_image_prod:
+  assumes "countable {(d, d')| d. P d d'}"
+  shows "countable {f d d' |d. P d d'}"
+  using assms countable_image[of "{(d, d') |d . P d d'}" "\<lambda>(d, d'). f d d'"]
+    Collect_cong[of "\<lambda>fdd'. \<exists>d. P d d' \<and> fdd' = f d d'" "\<lambda>fdd'. \<exists>d. fdd' = f d d' \<and> P d d'"]
+  unfolding image_def by fastforce
+
+lemma Suminf_of_Suminf1: (* Are the assumptions reasonable? *)
   assumes "countable {d'. Q d'}"
   assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'}"
   shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} \<ge> \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
-  apply (rule Suminf_bounded_if_set_bounded)
-  subgoal
-    using countable_image[of "{d'. Q d'}" "\<lambda>d'. \<^bold>\<Sum> {f d d' |d. P d d'}", OF assms(1)]
-    apply (simp add: image_Collect)
-    done
-  subgoal
-    apply auto
-    subgoal for d'
-      apply (subgoal_tac "countable {f d d' |d d'. P d d' \<and> Q d'} \<and> countable {f d d' |d. P d d'}")
-      subgoal 
-        apply auto
-        apply (smt (verit, del_insts) Collect_mono_iff local.sum_mono)
-        done
-      subgoal
-        apply rule
-        subgoal
-          apply (subgoal_tac "countable {(d, d') |d d'. P d d' \<and> Q d'}")
-          subgoal
-            using countable_image[of "{(d, d') |d d'. P d d' \<and> Q d'}" "\<lambda>(d, d'). f d d'"]
-            unfolding image_def
-            apply auto
-            apply (smt (verit, best) Collect_cong)
-            done
-          subgoal
-            apply (subgoal_tac "countable (\<Union>((\<lambda>d'. {(d,d')|d. P d d'}) ` {d'. Q d'}))") (* (\<lambda>d'. {(d,d')|d. P d d'}) *)
-            subgoal
-              apply (subgoal_tac "(\<Union>d'\<in>{d'. Q d'}. {(d, d') |d. P d d'}) = {(d, d') |d d'. P d d' \<and> Q d'}")
-              subgoal
-                apply auto
-                done
-              subgoal
-                apply rule
-                subgoal
-                  apply auto
-                  done
-                subgoal
-                  apply auto
-                  done
-                done
-              done
-            subgoal
-              using assms(1) assms(2) apply blast
-              done
-            done
-          done
-        subgoal
-          using assms(2)[of d'] 
-          using countable_image[of "{(d, d') |d . P d d'}" "\<lambda>(d, d'). f d d'"]
-          unfolding image_def
-          apply auto
-          using Collect_cong[of "\<lambda>fdd'. \<exists>d. P d d' \<and> fdd' = f d d'" "\<lambda>fdd'. \<exists>d. fdd' = f d d' \<and> P d d' "]
-          apply fastforce
-          done
-        done
-      done
-    done
-  done
+proof (rule Suminf_bounded_if_set_bounded)
+  show "countable {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'}"
+    using Suminf_of_Suminf_countable1 assms by blast
+  have count: "countable {f d d' |d d'. P d d' \<and> Q d'}"
+    using  Suminf_of_Suminf_countable2 assms by auto
+
+  have "\<And>d'. Q d' \<Longrightarrow> \<^bold>\<Sum> {f d d' |d d'. P d d' \<and> Q d'} \<le> \<^bold>\<Sum> {f d d' |d. P d d'}"
+  proof -
+    fix d'
+    assume Qd': "Q d'"
+    have "countable {f d d' |d. P d d'}"
+      using Qd' assms(2)[of d'] countable_image_prod by fastforce
+    then show "\<^bold>\<Sum> {f d d' |d d'. P d d' \<and> Q d'} \<le> \<^bold>\<Sum> {f d d' |d. P d d'}"
+      using count Collect_mono_iff[of "\<lambda>fdd'. \<exists>d. fdd' = f d d' \<and> P d d'" "\<lambda>fdd'. \<exists>d d'. fdd' = f d d' \<and> P d d' \<and> Q d'"]
+        local.sum_mono Qd' by auto
+  qed
+  then show "\<forall>fdd'\<in>{\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'}. \<^bold>\<Sum> {f d d' |d d'. P d d' \<and> Q d'} \<le> fdd'"
+    by auto
+qed
 
 lemma Suminf_of_Suminf2: (* Are the assumptions reasonable? *)
   assumes "countable {d'. Q d'}"
   assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'} "
   shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} \<le> \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
-  apply (rule Suminf_bounded_if_set_bounded)
-  subgoal
-    apply (subgoal_tac "countable {(d, d') |d d'. P d d' \<and> Q d'}")
-    subgoal
-      using countable_image[of "{(d, d') |d d'. P d d' \<and> Q d'}" "\<lambda>(d, d'). f d d'"]
-      apply (smt (verit) Collect_mono countable_subset mem_Collect_eq pair_imageI setcompr_eq_image)
-      done
-    subgoal
-      subgoal
-        apply (subgoal_tac "countable (\<Union>((\<lambda>d'. {(d,d')|d. P d d'}) ` {d'. Q d'}))") (* (\<lambda>d'. {(d,d')|d. P d d'}) *)
-        subgoal
-          apply (subgoal_tac "(\<Union>d'\<in>{d'. Q d'}. {(d, d') |d. P d d'}) = {(d, d') |d d'. P d d' \<and> Q d'}")
-          subgoal
-            apply auto
-            done
-          subgoal
-            apply rule
-            subgoal
-              apply auto
-              done
-            subgoal
-              apply auto
-              done
-            done
-          done
-        subgoal
-          using assms(1) assms(2) apply blast
-          done
-        done
-      done
-    done
-  subgoal
-    apply auto
-    subgoal for d d'
-      apply (subgoal_tac "\<^bold>\<Sum> {f d d' |d. P d d'} \<le> f d d'")
-      subgoal
-        apply (subgoal_tac "countable {f d d' |d. P d d'} \<and> countable {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'}")
-        subgoal
-          apply auto
-          using countable_suminf_elem dual_order.trans apply blast
-          done
-        subgoal
-          apply auto
-          subgoal
-            using Collect_mono_iff assms countable_subset
-            apply (smt (verit, best) \<open>countable {f d d' |d d'. P d d' \<and> Q d'}\<close>) 
-            done
-          subgoal
-            using assms countable_image[of "{d. Q d}"]
-            apply (simp add: setcompr_eq_image)
-            done
-          done
-        done
-      subgoal
-        apply (smt (verit, del_insts) Collect_mono \<open>countable {f d d' |d d'. P d d' \<and> Q d'}\<close> countable_subset countable_suminf_elem mem_Collect_eq)
-        done
-      done
-    done
-  done
+proof (rule Suminf_bounded_if_set_bounded)
+  show count: "countable {f d d' |d d'. P d d' \<and> Q d'}"
+    using Suminf_of_Suminf_countable2 assms by blast
+
+  have count2: "countable {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'}"
+    using Suminf_of_Suminf_countable1 assms by blast
+
+  have "\<And>d d'. P d d' \<Longrightarrow> Q d' \<Longrightarrow> \<^bold>\<Sum> {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'} \<le> f d d'"
+  proof -
+    fix d d' 
+    assume Pdd': "P d d'"
+    assume Qd': "Q d'"
+    have "countable {f d d' |d. P d d'}"
+      using Qd' assms(2)[of d'] countable_image_prod by fastforce
+    then have "\<^bold>\<Sum> {f d d' |d. P d d'} \<le> f d d'"
+      using Pdd' countable_suminf_elem by auto
+    then show "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'} \<le> f d d'"
+      using countable_suminf_elem dual_order.trans Qd' count2 by blast
+  qed
+  then show "\<forall>fdd'\<in>{f d d' |d d'. P d d' \<and> Q d'}. \<^bold>\<Sum> {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'} \<le> fdd'"
+    by auto
+qed
 
 lemma Suminf_of_Suminf: (* Are the assumptions reasonable? *)
   assumes "countable {d'. Q d'}"
