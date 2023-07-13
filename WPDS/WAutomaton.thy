@@ -42,9 +42,6 @@ proof -
   then show ?thesis
     unfolding wts_to_monoidLTS_def by auto
 qed
-(*
-  by (fact countable_finite[OF finite_wts[OF assms]])
-*)
 
 lemma monoid_rtrancl_wts_to_monoidLTS_refl:
   "(p, ([], 1), p) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
