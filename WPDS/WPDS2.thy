@@ -124,7 +124,7 @@ proof -
     \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
     sorry
   moreover
-  have "(\<And>d. Q d \<Longrightarrow> countable {(d, d') |d d'. P d d'})"
+  have "(\<And>d'. Q d' \<Longrightarrow> countable {(d, d') |d. P d d'})"
     \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
     sorry
   ultimately
