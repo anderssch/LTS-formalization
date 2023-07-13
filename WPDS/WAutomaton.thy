@@ -30,9 +30,18 @@ qed
 *)
 
 lemma countable_wts: 
-  assumes "finfun_default A = 0"
+  fixes A :: "(('state::countable, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions)"
   shows "countable (wts_to_monoidLTS A)"
-  sorry
+proof -
+  have count1: "countable (UNIV :: ('state \<times> 'label \<times> 'state) set)"
+    by blast
+  have "{(p, ([l], d), q)| p l d q. A $ (p, l, q) = d} = (\<lambda>(p, l, q). (p, ([l], A $ (p, l, q)), q)) ` UNIV"
+    unfolding image_def by auto
+  then have "countable {(p, ([l], d), q)| p l d q. A $ (p, l, q) = d}"
+    using count1 by auto
+  then show ?thesis
+    unfolding wts_to_monoidLTS_def by auto
+qed
 (*
   by (fact countable_finite[OF finite_wts[OF assms]])
 *)
