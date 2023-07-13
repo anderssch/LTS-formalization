@@ -683,7 +683,7 @@ lemma accept_is_one_if_final_empty:
   shows "accepts A (p,[]) = 1"
 proof -
   have "{d | d q. q \<in> finals \<and> (p,([],d),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} = {1}"
-    using Collect_cong[of "\<lambda>uu. \<exists>d q. uu = d \<and> q \<in> finals \<and> (p, ([], d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)" "\<lambda>x. x = 1"]
+    using Collect_cong[of "\<lambda>d. \<exists>q. q \<in> finals \<and> (p, ([], d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)" "\<lambda>d. d = 1"]
     using assms monoid_rtrancl_wts_to_monoidLTS_refl mstar_wts_empty_one by force
   then show ?thesis
     by (simp add: accepts_def)
@@ -697,8 +697,8 @@ proof -
     using assms monoid_star_pop by fastforce
   then show ?thesis
     unfolding accepts_def2 using SumInf_empty 
-      Collect_cong[of "\<lambda>uu. \<exists>d q. uu = d \<and> q \<in> finals \<and> (p, ([], d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-        "\<lambda>uu. \<exists>q. q \<in> finals \<and> (p, ([], uu), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"] by metis
+      Collect_cong[of "\<lambda>d. \<exists>q. q \<in> finals \<and> (p, ([], d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+        "\<lambda>d. \<exists>q. q \<in> finals \<and> (p, ([], d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"] by metis
 qed
 
 lemma zero_weight_if_nonrefl_path_in_K0:
@@ -791,11 +791,11 @@ proof -
   also have "... = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
     using Suminf_of_Suminf_distrr[of "\<lambda>d q. d" "\<lambda>d q. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (q,[])" "\<lambda>q. 1" "\<lambda>q. q \<in> finals",symmetric]
     unfolding push_seq_weight_def2[symmetric] mult.right_neutral 
-    using Collect_cong[of "\<lambda>uu. \<exists>d d'. uu = d \<and> (p, v) \<Midarrow> d \<Rightarrow>\<^sup>* (d', []) \<and> d' \<in> finals"
-        "\<lambda>uu. \<exists>d' q. uu = d' \<and> q \<in> finals \<and> (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])"]
+    using Collect_cong[of "\<lambda>d. \<exists>d'. (p, v) \<Midarrow> d \<Rightarrow>\<^sup>* (d', []) \<and> d' \<in> finals"
+        "\<lambda>d'. \<exists>q. q \<in> finals \<and> (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])"]
     by fastforce
   also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sigma>(p,v) \<Rightarrow>\<^sup>* q |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
-    using Suminf_mono[of "{uu. \<exists>d q. uu = \<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q \<and> q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
+    using Suminf_mono[of "{pvq. \<exists>d q. pvq = (\<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q) \<and> q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
         "{\<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q |q. q \<in> finals}"] by blast
   also have "... \<le> \<^bold>\<Sum>{d |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
     using Suminf_bigger2[of 
