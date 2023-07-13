@@ -396,19 +396,13 @@ proof -
 qed
 
 lemma Suminf_of_Suminf1:
-  assumes "countable {d. Q d}"
-  assumes "\<And>d. Q d \<Longrightarrow> countable {(d, d')| d d'. P d d'}"
+  assumes "countable {d'. Q d'}"
+  assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'}"
   shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} \<ge> \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
   apply (rule Suminf_bounded_if_set_bounded)
   subgoal
-    apply (subgoal_tac "countable {(d, d') |d d'. P d d' \<and> Q d'}")
-    subgoal
-      using countable_image[of "{(d, d') |d d'. P d d' \<and> Q d'}" "\<lambda>(d, d'). f d d'"]
-      apply (simp add: assms(1) setcompr_eq_image)
-      done
-    subgoal
-      using Collect_mono_iff assms(2) countable_subset apply fastforce
-      done
+    using countable_image[of "{d'. Q d'}" "\<lambda>d'. \<^bold>\<Sum> {f d d' |d. P d d'}", OF assms(1)]
+    apply (simp add: image_Collect)
     done
   subgoal
     apply auto
@@ -429,22 +423,34 @@ lemma Suminf_of_Suminf1:
             apply (smt (verit, best) Collect_cong)
             done
           subgoal
-            using Collect_mono_iff assms(2) countable_subset apply fastforce
+            apply (subgoal_tac "countable (\<Union>((\<lambda>d'. {(d,d')|d. P d d'}) ` {d'. Q d'}))") (* (\<lambda>d'. {(d,d')|d. P d d'}) *)
+            subgoal
+              apply (subgoal_tac "(\<Union>d'\<in>{d'. Q d'}. {(d, d') |d. P d d'}) = {(d, d') |d d'. P d d' \<and> Q d'}")
+              subgoal
+                apply auto
+                done
+              subgoal
+                apply rule
+                subgoal
+                  apply auto
+                  done
+                subgoal
+                  apply auto
+                  done
+                done
+              done
+            subgoal
+              using assms(1) assms(2) apply blast
+              done
             done
           done
         subgoal
           using assms(2)[of d'] 
-          apply -
-          apply (rule countable_subset[of _ "{f d d' |d d'. P d d'}"])
-          subgoal
-            apply auto
-            done
-          subgoal
-            using countable_image[of "{(d, d') |d d'. P d d'}" "\<lambda>(d, d'). f d d'"]
-            unfolding image_def
-            apply auto
-            apply (smt (verit, best) Collect_cong)
-            done
+          using countable_image[of "{(d, d') |d . P d d'}" "\<lambda>(d, d'). f d d'"]
+          unfolding image_def
+          apply auto
+          using Collect_cong[of "\<lambda>fdd'. \<exists>d. P d d' \<and> fdd' = f d d'" "\<lambda>fdd'. \<exists>d. fdd' = f d d' \<and> P d d' "]
+          apply fastforce
           done
         done
       done
@@ -452,8 +458,8 @@ lemma Suminf_of_Suminf1:
   done
 
 lemma Suminf_of_Suminf2: (* Are the assumptions reasonable? *)
-  assumes "countable {d. Q d}"
-  assumes "\<And>d. Q d \<Longrightarrow> countable {(d, d')| d d'. P d d'} "
+  assumes "countable {d'. Q d'}"
+  assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'} "
   shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} \<le> \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
   apply (rule Suminf_bounded_if_set_bounded)
   subgoal
@@ -463,7 +469,27 @@ lemma Suminf_of_Suminf2: (* Are the assumptions reasonable? *)
       apply (smt (verit) Collect_mono countable_subset mem_Collect_eq pair_imageI setcompr_eq_image)
       done
     subgoal
-      using Collect_mono_iff assms(2) countable_subset apply fastforce
+      subgoal
+        apply (subgoal_tac "countable (\<Union>((\<lambda>d'. {(d,d')|d. P d d'}) ` {d'. Q d'}))") (* (\<lambda>d'. {(d,d')|d. P d d'}) *)
+        subgoal
+          apply (subgoal_tac "(\<Union>d'\<in>{d'. Q d'}. {(d, d') |d. P d d'}) = {(d, d') |d d'. P d d' \<and> Q d'}")
+          subgoal
+            apply auto
+            done
+          subgoal
+            apply rule
+            subgoal
+              apply auto
+              done
+            subgoal
+              apply auto
+              done
+            done
+          done
+        subgoal
+          using assms(1) assms(2) apply blast
+          done
+        done
       done
     done
   subgoal
@@ -496,8 +522,8 @@ lemma Suminf_of_Suminf2: (* Are the assumptions reasonable? *)
   done
 
 lemma Suminf_of_Suminf: (* Are the assumptions reasonable? *)
-  assumes "countable {d. Q d}"
-  assumes "\<And>d. Q d \<Longrightarrow> countable {(d, d')| d d'. P d d'} "
+  assumes "countable {d'. Q d'}"
+  assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'} "
   shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
   using Suminf_of_Suminf1[of Q P f] Suminf_of_Suminf2[of Q P f] assms(1,2) by auto
 
