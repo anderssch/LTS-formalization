@@ -377,14 +377,14 @@ proof -
     using sumInf_right_distr1 by auto
 qed
 
-lemma Suminf_of_Suminf_countable1:
+lemma SumInf_of_SumInf_countable1:
   assumes "countable {d'. Q d'}"
   assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'}"
   shows "countable {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'}"
   using countable_image[of "{d'. Q d'}" "\<lambda>d'. \<^bold>\<Sum> {f d d' |d. P d d'}", OF assms(1)]
   by (simp add: image_Collect)
 
-lemma Suminf_of_Suminf_countable2:
+lemma SumInf_of_SumInf_countable2:
   assumes "countable {d'. Q d'}"
   assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'}"
   shows "countable {f d d' |d d'. P d d' \<and> Q d'}"
@@ -410,15 +410,15 @@ lemma countable_image_prod:
     Collect_cong[of "\<lambda>fdd'. \<exists>d. P d d' \<and> fdd' = f d d'" "\<lambda>fdd'. \<exists>d. fdd' = f d d' \<and> P d d'"]
   unfolding image_def by fastforce
 
-lemma Suminf_of_Suminf1: (* Are the assumptions reasonable? *)
+lemma SumInf_of_SumInf_geq: (* Are the assumptions reasonable? *)
   assumes "countable {d'. Q d'}"
   assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'}"
   shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} \<ge> \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
 proof (rule SumInf_bounded_if_set_bounded)
   show "countable {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'}"
-    using Suminf_of_Suminf_countable1 assms by blast
+    using SumInf_of_SumInf_countable1 assms by blast
   have count: "countable {f d d' |d d'. P d d' \<and> Q d'}"
-    using  Suminf_of_Suminf_countable2 assms by auto
+    using  SumInf_of_SumInf_countable2 assms by auto
 
   have "\<And>d'. Q d' \<Longrightarrow> \<^bold>\<Sum> {f d d' |d d'. P d d' \<and> Q d'} \<le> \<^bold>\<Sum> {f d d' |d. P d d'}"
   proof -
@@ -434,16 +434,16 @@ proof (rule SumInf_bounded_if_set_bounded)
     by auto
 qed
 
-lemma Suminf_of_Suminf2: (* Are the assumptions reasonable? *)
+lemma SumInf_of_SumInf_leq: (* Are the assumptions reasonable? *)
   assumes "countable {d'. Q d'}"
   assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'} "
   shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} \<le> \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
 proof (rule SumInf_bounded_if_set_bounded)
   show count: "countable {f d d' |d d'. P d d' \<and> Q d'}"
-    using Suminf_of_Suminf_countable2 assms by blast
+    using SumInf_of_SumInf_countable2 assms by blast
 
   have count2: "countable {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'}"
-    using Suminf_of_Suminf_countable1 assms by blast
+    using SumInf_of_SumInf_countable1 assms by blast
 
   have "\<And>d d'. P d d' \<Longrightarrow> Q d' \<Longrightarrow> \<^bold>\<Sum> {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'} \<le> f d d'"
   proof -
@@ -461,11 +461,11 @@ proof (rule SumInf_bounded_if_set_bounded)
     by auto
 qed
 
-lemma Suminf_of_Suminf: (* Are the assumptions reasonable? *)
+lemma SumInf_of_SumInf: (* Are the assumptions reasonable? *)
   assumes "countable {d'. Q d'}"
   assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'} "
   shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
-  using Suminf_of_Suminf1[of Q P f] Suminf_of_Suminf2[of Q P f] assms(1,2) by auto
+  using SumInf_of_SumInf_geq[of Q P f] SumInf_of_SumInf_leq[of Q P f] assms(1,2) by auto
 
 lemma union_inter:
   assumes "countable A" and "countable B"

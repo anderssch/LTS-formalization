@@ -67,8 +67,6 @@ locale WPDS_with_W_automata = WPDS \<Delta>
   fixes finals :: "('ctr_loc::enum) set"
 begin
 
-find_theorems name: Suminf_bounded_if_set_bounded
-
 interpretation dioidLTS transition_rel proof
   show "countable transition_rel" by (fact countable_transition_rel)
 qed 
@@ -77,7 +75,7 @@ notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 notation l_step_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80)
 notation monoid_star_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [90,90,100] 100) 
 
-lemma Suminf_bounded_if_set_bounded:
+lemma SumInf_bounded_if_set_bounded:
   assumes inf_d: "\<forall>x \<in> X. x \<ge> d"
   shows "\<^bold>\<Sum> X \<ge> d"
 proof -
@@ -98,7 +96,7 @@ proof -
     using assms countable_SumInf_elem by blast
 qed
 
-lemma Suminf_left_distr: 
+lemma SumInf_left_distr: 
   "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
 proof -
   have "countable D"
@@ -109,7 +107,7 @@ proof -
     using SumInf_left_distr by auto
 qed
 
-lemma Suminf_right_distr: 
+lemma SumInf_right_distr: 
   "(\<^bold>\<Sum> D) * d2 = \<^bold>\<Sum> {d1 * d2 | d1. d1 \<in> D}"
 proof -
   have "countable D"
@@ -119,7 +117,7 @@ proof -
     using SumInf_right_distr by auto
 qed
 
-lemma Suminf_of_Suminf:
+lemma SumInf_of_SumInf:
   "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
 proof -
   have "countable {d. Q d}"
@@ -131,51 +129,51 @@ proof -
     sorry
   ultimately
   show ?thesis
-    using Suminf_of_Suminf[of Q P f] by auto
+    using SumInf_of_SumInf[of Q P f] by auto
 qed
 
-lemma Suminf_of_Suminf_fst_arg: (* not used... *)
+lemma SumInf_of_SumInf_fst_arg: (* not used... *)
   "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {d | d d'. P d d' \<and> Q d'}"
-  using Suminf_of_Suminf[of "\<lambda>x y. x"] by auto
+  using SumInf_of_SumInf[of "\<lambda>x y. x"] by auto
 
-lemma Suminf_of_Suminf_distrr:
+lemma SumInf_of_SumInf_right_distr:
   "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} * g d' |d'. Q d'} = \<^bold>\<Sum> {f d d' * g d' | d d'. P d d' \<and> Q d'}"
 proof -
   have eql: "\<forall>d'. {f d d' * g d' |d. P d d'} = {d1 * g d' |d1. \<exists>d. d1 = f d d' \<and> P d d'}"
     by auto
 
   have "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} * g d' |d'. Q d'} = \<^bold>\<Sum> {\<^bold>\<Sum> {d1 * g d' |d1. d1 \<in> {f d d' |d. P d d'}} |d'. Q d'}"
-    unfolding Suminf_right_distr[of "{f d _ |d. P d _}" "g _"] by auto
+    unfolding SumInf_right_distr[of "{f d _ |d. P d _}" "g _"] by auto
   also have "... =  \<^bold>\<Sum> {f d d' * g d' | d d'. P d d' \<and> Q d'}"
-    using eql Suminf_of_Suminf[of "\<lambda>d d'. f d d' * g d'" P Q] by auto
+    using eql SumInf_of_SumInf[of "\<lambda>d d'. f d d' * g d'" P Q] by auto
   finally
   show ?thesis 
     .
 qed
 
-lemma Suminf_of_Suminf_distrr':
+lemma SumInf_of_SumInf_right_distr_simple:
   "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d} * d' |d'. Q d'} = \<^bold>\<Sum> {d * d' | d d'. P d \<and> Q d'}"
-  using Suminf_of_Suminf_distrr[of "\<lambda>x y. x" _ "\<lambda>x. x" ] by auto
+  using SumInf_of_SumInf_right_distr[of "\<lambda>x y. x" _ "\<lambda>x. x" ] by auto
 
-lemma Suminf_bounded_by_Suminf_if_members_bounded:
+lemma SumInf_bounded_by_SumInf_if_members_bounded:
   assumes "\<forall>y \<in> Y. \<exists>x \<in> X. x \<le> y"
   shows "\<^bold>\<Sum> X \<le> \<^bold>\<Sum> Y"
-  by (meson Suminf_bounded_if_set_bounded assms dual_order.trans countable_SumInf_elem)
+  by (meson SumInf_bounded_if_set_bounded assms dual_order.trans countable_SumInf_elem)
 
-lemma Suminf_mono: 
+lemma SumInf_mono: 
   assumes "(X::'weight set) \<subseteq> Y"
   shows "\<^bold>\<Sum> X \<ge> \<^bold>\<Sum> Y"
-  by (rule Suminf_bounded_by_Suminf_if_members_bounded) (use assms in auto)
+  by (rule SumInf_bounded_by_SumInf_if_members_bounded) (use assms in auto)
 
-lemma Suminf_mult_isor: 
+lemma SumInf_mult_isor: 
   assumes "d \<le> (d' :: 'weight)"
   shows "\<^bold>\<Sum> {d * d''| d''. X d''} \<le> \<^bold>\<Sum> {d' * d''| d''. X d''}"
-  by (rule Suminf_bounded_by_Suminf_if_members_bounded) (use assms idempotent_semiring_ord_class.mult_isor in auto)
+  by (rule SumInf_bounded_by_SumInf_if_members_bounded) (use assms idempotent_semiring_ord_class.mult_isor in auto)
 
-lemma Suminf_bigger2: 
+lemma SumInf_mono_wrt_img_of_set: 
   assumes "\<forall>t. X t \<longrightarrow> f t \<le> g t"
   shows "\<^bold>\<Sum> {f t| t. X t} \<le> \<^bold>\<Sum> {g t| t. X t}"
-  by (rule Suminf_bounded_by_Suminf_if_members_bounded) (use assms in auto)
+  by (rule SumInf_bounded_by_SumInf_if_members_bounded) (use assms in auto)
 
 \<comment> \<open>Generalization of PDS_with_P_automata.accepts that computes the meet-over-all-paths in the W-automaton.\<close>
 definition accepts :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
@@ -486,12 +484,12 @@ lemma push_seq_weight_trans:
   shows "(\<^bold>\<Sigma>(p'', w'@w'')\<Rightarrow>\<^sup>*p2) \<le> d1 * d2"
 proof -
   have "(\<^bold>\<Sigma>(p'',w'@w'') \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d1' * d2'| d1'  d2'. (p'',w') \<Midarrow>d1'\<Rightarrow>\<^sup>* (pi,[]) \<and> (pi,w'') \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
-    using Suminf_mono[of "{d1' * d2' |d1' d2'. (p'', w') \<Midarrow> d1' \<Rightarrow>\<^sup>* (pi, []) \<and> (pi, w'') \<Midarrow> d2' \<Rightarrow>\<^sup>* (p2, [])}" 
+    using SumInf_mono[of "{d1' * d2' |d1' d2'. (p'', w') \<Midarrow> d1' \<Rightarrow>\<^sup>* (pi, []) \<and> (pi, w'') \<Midarrow> d2' \<Rightarrow>\<^sup>* (p2, [])}" 
         "{d'. (p'', w' @ w'') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}"]
       step_relp_seq by force
 
   also have "... \<le> (\<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* pi) * (\<^bold>\<Sigma>(pi,w'') \<Rightarrow>\<^sup>* p2)"
-    by (simp add: Suminf_left_distr Suminf_of_Suminf_distrr')
+    by (simp add: SumInf_left_distr SumInf_of_SumInf_right_distr_simple)
   also have "... \<le> d1 * d2"
     using assms BoundedDioid.mult_isol_var by auto
   finally 
@@ -511,13 +509,13 @@ lemma monoid_star_relp_push_seq_weight_trans:
   shows "(\<^bold>\<Sigma>(p1, w)\<Rightarrow>\<^sup>*p2) \<le> d * d'"
 proof -
   have "(\<^bold>\<Sigma> (p1, w) \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d * d'| d'. (p1, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',w') \<and> (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-    using Suminf_mono[of "{d * d' |d'. (p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w') \<and> (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}" 
+    using SumInf_mono[of "{d * d' |d'. (p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w') \<and> (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}" 
         "{d'. (p1, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}"]
     monoid_rtranclp_trans by force
   also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
     using \<open>(p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w')\<close> by fastforce
   also have "... \<le> d * \<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* p2"
-    by (simp add: Suminf_left_distr)
+    by (simp add: SumInf_left_distr)
   also have "... \<le> d * d'"
     using assms by (simp add: assms BoundedDioid.mult_isol)
   finally 
@@ -746,7 +744,7 @@ next
   qed
 qed
 
-lemma Suminf_is_zero_if_subset_singleton_zero: "X \<subseteq> {0} \<Longrightarrow> \<^bold>\<Sum> X = 0"
+lemma SumInf_is_zero_if_subset_singleton_zero: "X \<subseteq> {0} \<Longrightarrow> \<^bold>\<Sum> X = 0"
   using subset_singletonD by fastforce
 
 lemma accepts_K0_is_zero_if_nonfinal:
@@ -756,7 +754,7 @@ proof -
   have "{d :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0))} \<subseteq> {0}"
     using zero_weight_if_nonrefl_path_in_K0[of p "(w,_)" _] assms by auto
   then show ?thesis
-    unfolding accepts_def using Suminf_is_zero_if_subset_singleton_zero by auto
+    unfolding accepts_def using SumInf_is_zero_if_subset_singleton_zero by auto
 qed
 
 lemma accepts_K0_is_zero_if_nonempty:
@@ -766,7 +764,7 @@ proof -
   have "{d :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0))} \<subseteq> {0}"
     using zero_weight_if_nonempty_word_in_K0[of p "(w,_)" _] assms by auto
   then show ?thesis
-    unfolding accepts_def using Suminf_is_zero_if_subset_singleton_zero by auto
+    unfolding accepts_def using SumInf_is_zero_if_subset_singleton_zero by auto
 qed
 
 lemma accepts_empty_iff: "accepts A (p,[]) = (if p\<in>finals then 1 else 0)"
@@ -789,20 +787,20 @@ proof -
   also have "... = \<^bold>\<Sum>{d' * (if q\<in>finals \<and> w=[] then 1 else 0)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"
     using accepts_K0_iff by presburger
   also have "... \<le> \<^bold>\<Sum>{d' |d' q. q \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}"
-    using Suminf_mono[of "{d' |d' q. q \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}" 
+    using SumInf_mono[of "{d' |d' q. q \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}" 
         "{d' * (if q\<in>finals \<and> w=[] then 1 else 0)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"]
     by fastforce
   also have "... = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
-    using Suminf_of_Suminf_distrr[of "\<lambda>d q. d" "\<lambda>d q. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (q,[])" "\<lambda>q. 1" "\<lambda>q. q \<in> finals",symmetric]
+    using SumInf_of_SumInf_right_distr[of "\<lambda>d q. d" "\<lambda>d q. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (q,[])" "\<lambda>q. 1" "\<lambda>q. q \<in> finals",symmetric]
     unfolding push_seq_weight_def2[symmetric] mult.right_neutral 
     using Collect_cong[of "\<lambda>d. \<exists>d'. (p, v) \<Midarrow> d \<Rightarrow>\<^sup>* (d', []) \<and> d' \<in> finals"
         "\<lambda>d'. \<exists>q. q \<in> finals \<and> (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])"]
     by fastforce
   also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sigma>(p,v) \<Rightarrow>\<^sup>* q |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
-    using Suminf_mono[of "{pvq. \<exists>d q. pvq = (\<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q) \<and> q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
+    using SumInf_mono[of "{pvq. \<exists>d q. pvq = (\<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q) \<and> q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
         "{\<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q |q. q \<in> finals}"] by blast
   also have "... \<le> \<^bold>\<Sum>{d |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
-    using Suminf_bigger2[of 
+    using SumInf_mono_wrt_img_of_set[of 
         "\<lambda>(d, q). q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')"
         "\<lambda>(d, q). \<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q"
         "\<lambda>(d, q). d"
@@ -879,7 +877,7 @@ proof -
     unfolding weight_pre_star_def by auto
   also
   have "... \<le> \<^bold>\<Sum> {l * Y c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-    using Suminf_bigger2[of "\<lambda>(l, c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>(l, c). l * X c" "\<lambda>(l, c). l * Y c"] XY by auto
+    using SumInf_mono_wrt_img_of_set[of "\<lambda>(l, c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>(l, c). l * X c" "\<lambda>(l, c). l * Y c"] XY by auto
   also 
   have "... \<le> weight_pre_star Y c"
     unfolding weight_pre_star_def by auto
@@ -925,9 +923,9 @@ proof -
   have "weight_pre_star X c = \<^bold>\<Sum> {l * X c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
     unfolding weight_pre_star_def by auto
   also have "... \<le> \<^bold>\<Sum> {l * X c |l. c \<Midarrow> l \<Rightarrow>\<^sup>* c}"
-    using Suminf_mono[of "{l * X c |l. c \<Midarrow> l \<Rightarrow>\<^sup>* c}" "{l * X c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" ] by fastforce
+    using SumInf_mono[of "{l * X c |l. c \<Midarrow> l \<Rightarrow>\<^sup>* c}" "{l * X c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" ] by fastforce
   also have "... \<le> \<^bold>\<Sum> {1 * X c}"
-    using Suminf_mono[of "{1 * X c}" "{l * X c |l. c \<Midarrow> l \<Rightarrow>\<^sup>* c}"] by blast
+    using SumInf_mono[of "{1 * X c}" "{l * X c |l. c \<Midarrow> l \<Rightarrow>\<^sup>* c}"] by blast
   also have "... \<le> 1 * X c" 
     by simp
   also have "... \<le> X c" 
@@ -953,7 +951,7 @@ proof -
       fix l c'
       have "l * \<^bold>\<Sum> {l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} =
               \<^bold>\<Sum> {l * l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
-        unfolding Suminf_left_distr[of l "{l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"] mult.assoc
+        unfolding SumInf_left_distr[of l "{l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"] mult.assoc
         using mem_Collect_eq[of _ "\<lambda>x. \<exists>l' c''. x = l' * C c'' \<and> c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''"]
         by (metis (no_types, lifting))
     }
@@ -962,7 +960,7 @@ proof -
   qed
   also
   have "... = \<^bold>\<Sum> {l * l' * C c'' |l' c'' l c'. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c'' \<and> c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-    using Suminf_of_Suminf[of
+    using SumInf_of_SumInf[of
         "\<lambda>(l',c'') (l,c'). l * l' * C c''"
         "\<lambda>(l',c'') (l,c').  c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''"
         "\<lambda>(l,c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'"] by auto
@@ -1121,11 +1119,11 @@ proof -
   have "\<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<le>
          \<^bold>\<Sum> {d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
     using monoid_rtrancl_wts_to_monoidLTS_if_saturated_is_rule[OF assms(1) assms(2), of w1 ]
-      Suminf_bounded_by_Suminf_if_members_bounded[of "{d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+      SumInf_bounded_by_SumInf_if_members_bounded[of "{d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
         "{d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"]
     by force
   also have "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    by (simp add: Suminf_left_distr)
+    by (simp add: SumInf_left_distr)
   finally show ?thesis
     using accepts_def by force
 qed
@@ -1180,7 +1178,7 @@ lemma lemma_3_1_w:
   assumes "saturated pre_star_rule A"
   shows "accepts A c \<le> weight_pre_star (accepts (K$ 0)) c"
   unfolding weight_pre_star_def
-  using Suminf_bounded_if_set_bounded[of "{l * accepts (K$ 0) c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" "accepts A c"]
+  using SumInf_bounded_if_set_bounded[of "{l * accepts (K$ 0) c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" "accepts A c"]
     lemma_3_1_w'[OF assms] by blast
 
 theorem correctness:
