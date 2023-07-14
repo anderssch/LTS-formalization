@@ -85,7 +85,7 @@ proof (induct rule: monoid_rtrancl.induct)
 next
   case (monoid_rtrancl_into_rtrancl a w b l c)
   from \<open>(b, l, c) \<in> wts_to_monoidLTS ts\<close> have "fst l \<noteq> []" using wts_label_not_empty by fast
-  then have \<open>fst (w * l) \<noteq> []\<close> by (simp add: mult_prod_def times_list_def)
+  then have "fst (w * l) \<noteq> []" by (simp add: mult_prod_def times_list_def)
   then show ?case by (simp add: monoid_rtrancl_into_rtrancl.prems one_list_def)
 qed
 lemma mstar_wts_empty_one: "(p, ([],d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> d = 1"
@@ -103,7 +103,7 @@ proof (induct rule: monoid_rtrancl.induct)
 next
   case (monoid_rtrancl_into_rtrancl a w b l c)
   from \<open>(b, l, c) \<in> wts_to_monoidLTS ts\<close> have "fst l \<noteq> []" using wts_label_not_empty by fast
-  then have \<open>fst (w * l) \<noteq> []\<close> by (simp add: mult_prod_def times_list_def)
+  then have "fst (w * l) \<noteq> []" by (simp add: mult_prod_def times_list_def)
   then show ?case by (simp add: monoid_rtrancl_into_rtrancl.prems)
 qed
 

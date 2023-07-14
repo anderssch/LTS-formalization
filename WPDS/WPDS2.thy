@@ -366,7 +366,7 @@ next
                    (p\<^sub>2, (w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
                    d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3)"
       using monoid_rtrancl_into_rtrancl.IH by auto
-    then obtain p\<^sub>2 d\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2 where props:
+    then obtain p\<^sub>2 d\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2 where p\<^sub>2_d\<^sub>2\<^sub>3_d\<^sub>1\<^sub>2_p:
       "w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = (\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>3, d\<^sub>1\<^sub>3)"
       "(p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> wts_to_monoidLTS ts"
       "(p\<^sub>2, (w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
@@ -376,18 +376,18 @@ next
     define d\<^sub>2\<^sub>4 where "d\<^sub>2\<^sub>4 = d\<^sub>2\<^sub>3 * d\<^sub>3\<^sub>4"
 
     have "(p\<^sub>2, (w\<^sub>2\<^sub>4, d\<^sub>2\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-      using local.Cons monoid_rtrancl_into_rtrancl.hyps(2)  w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4_split d\<^sub>2\<^sub>4_def props(3)
+      using local.Cons monoid_rtrancl_into_rtrancl.hyps(2)  w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4_split d\<^sub>2\<^sub>4_def p\<^sub>2_d\<^sub>2\<^sub>3_d\<^sub>1\<^sub>2_p(3)
         monoid_rtrancl.monoid_rtrancl_into_rtrancl[of p\<^sub>2 "(w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3)" p\<^sub>3 "wts_to_monoidLTS ts" "(w\<^sub>3\<^sub>4, d\<^sub>3\<^sub>4)" p\<^sub>4]
       unfolding w\<^sub>1\<^sub>3_def[symmetric] w\<^sub>2\<^sub>4_def by (simp add: mult_prod_def times_list_def)
     moreover
     define d\<^sub>1\<^sub>4 where "d\<^sub>1\<^sub>4 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>4"
     moreover
     have "(p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> wts_to_monoidLTS ts"
-      using props by fastforce
+      using p\<^sub>2_d\<^sub>2\<^sub>3_d\<^sub>1\<^sub>2_p by fastforce
     moreover
     have "w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 * w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4 = (\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>4, d\<^sub>1\<^sub>4)"
       by (metis append_Cons d\<^sub>1\<^sub>3_def d\<^sub>1\<^sub>4_def d\<^sub>2\<^sub>4_def d\<^sub>3\<^sub>4_def local.Cons mult.assoc mult_prod_def 
-          props(4) times_list_def w\<^sub>2\<^sub>4_def w\<^sub>3\<^sub>4_def)
+          p\<^sub>2_d\<^sub>2\<^sub>3_d\<^sub>1\<^sub>2_p(4) times_list_def w\<^sub>2\<^sub>4_def w\<^sub>3\<^sub>4_def)
     ultimately show ?thesis
       by metis
   next
@@ -486,7 +486,8 @@ lemma push_seq_weight_trans:
   shows "(\<^bold>\<Sigma>(p'', w'@w'')\<Rightarrow>\<^sup>*p2) \<le> d1 * d2"
 proof -
   have "(\<^bold>\<Sigma>(p'',w'@w'') \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d1' * d2'| d1'  d2'. (p'',w') \<Midarrow>d1'\<Rightarrow>\<^sup>* (pi,[]) \<and> (pi,w'') \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
-    using Suminf_mono[of "{d1' * d2' |d1' d2'. (p'', w') \<Midarrow> d1' \<Rightarrow>\<^sup>* (pi, []) \<and> (pi, w'') \<Midarrow> d2' \<Rightarrow>\<^sup>* (p2, [])}" "{d'. (p'', w' @ w'') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}"]
+    using Suminf_mono[of "{d1' * d2' |d1' d2'. (p'', w') \<Midarrow> d1' \<Rightarrow>\<^sup>* (pi, []) \<and> (pi, w'') \<Midarrow> d2' \<Rightarrow>\<^sup>* (p2, [])}" 
+        "{d'. (p'', w' @ w'') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}"]
       step_relp_seq by force
 
   also have "... \<le> (\<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* pi) * (\<^bold>\<Sigma>(pi,w'') \<Rightarrow>\<^sup>* p2)"
@@ -510,7 +511,8 @@ lemma monoid_star_relp_push_seq_weight_trans:
   shows "(\<^bold>\<Sigma>(p1, w)\<Rightarrow>\<^sup>*p2) \<le> d * d'"
 proof -
   have "(\<^bold>\<Sigma> (p1, w) \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d * d'| d'. (p1, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',w') \<and> (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-    using Suminf_mono[of "{d * d' |d'. (p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w') \<and> (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}" "{d'. (p1, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}"]
+    using Suminf_mono[of "{d * d' |d'. (p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w') \<and> (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}" 
+        "{d'. (p1, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}"]
     monoid_rtranclp_trans by force
   also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
     using \<open>(p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w')\<close> by fastforce
@@ -551,7 +553,7 @@ next
                 \<and> (p, ([\<gamma>], d1), pi) \<in> (wts_to_monoidLTS A)"
     unfolding monoid_star_is_monoid_rtrancl
     using monoid_star_nonempty by fastforce
-  then obtain pi d1 d2 where obt:
+  then obtain pi d1 d2 where pi_d1_d2_p:
     "d = d1 * d2"
     "(pi, (w, d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)"
     "(p, ([\<gamma>], d1), pi) \<in> wts_to_monoidLTS A"
@@ -560,7 +562,7 @@ next
     using Cons(1)[of pi d2] by auto
 
   have "d1 \<ge> (\<^bold>\<Sigma> (p, [\<gamma>]) \<Rightarrow>\<^sup>* pi)"
-    using assms(1) obt(3) sound_def by blast
+    using assms(1) pi_d1_d2_p(3) sound_def by blast
   then have "(\<^bold>\<Sigma> (p, \<gamma> # w) \<Rightarrow>\<^sup>* p') \<le>  d1 * d2"
     using d2l push_seq_weight_trans_Cons by auto
   also have "... = d" 
@@ -595,29 +597,29 @@ proof -
   show "sound A'"
   proof (rule sound_intro)
     fix p1 p2 \<mu> l
-    assume a: "(p1, ([\<mu>], l), p2) \<in> wts_to_monoidLTS A'"      
+    assume p1_\<mu>_l_p2: "(p1, ([\<mu>], l), p2) \<in> wts_to_monoidLTS A'"
     show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
     proof (cases "p1 = p' \<and> \<mu> = \<gamma>' \<and> p2 = q")
       case True
       then have True': "p1 = p'" "\<mu> = \<gamma>'" "p2 = q"
         by auto
-      have ldd': "l = d'' + d * d'"
-        using a unfolding ps(4) True' unfolding wts_to_monoidLTS_def by auto
+      have l_eql: "l = d'' + d * d'"
+        using p1_\<mu>_l_p2 unfolding ps(4) True' unfolding wts_to_monoidLTS_def by auto
       have d''_geq: "d'' \<ge> \<^bold>\<Sigma> (p1,[\<mu>]) \<Rightarrow>\<^sup>* p2"
         using ps(5) assms(1) True unfolding sound_def wts_to_monoidLTS_def by force
-      have p1_to_p''1: "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow> (p'', lbl w')"
+      have p1_to_p'': "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow> (p'', lbl w')"
         using ps(1) True step_relp_def2 by auto
       show ?thesis
       proof (rule pre_star_rule_exhaust[OF ps(3)[unfolded True'[symmetric]]])
         assume "p2 = p''"
         assume "d' = 1"
         assume "w' = pop"
-        from p1_to_p''1 have "(p1, [\<mu>]) \<Midarrow>d * d'\<Rightarrow> (p2,[])"
+        from p1_to_p'' have "(p1, [\<mu>]) \<Midarrow>d * d'\<Rightarrow> (p2,[])"
           using \<open>d' = 1\<close> \<open>w' = pop\<close> \<open>p2 = p''\<close> by auto
         then have "d * d' \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
           using push_seq_weight_if_l_step_relp[of p1 "[\<mu>]" "d * d'" p2] by auto
         then show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
-          using d''_geq ldd' by auto
+          using d''_geq l_eql by auto
       next
         fix \<mu>'
         assume "A $ (p'', \<mu>', p2) = d'"
@@ -626,12 +628,12 @@ proof -
           using True'(3) \<open>w' = swap \<mu>'\<close> by force
         then have p''_to_p2: "d' \<ge> \<^bold>\<Sigma> (p'',[\<mu>']) \<Rightarrow>\<^sup>* p2"
           using assms(1) sound_elim2 by force
-        from p1_to_p''1 have "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>'])"
+        from p1_to_p'' have "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>'])"
           unfolding True' w'_swap using monoid_rtranclp.monoid_rtrancl_into_rtrancl by fastforce
         then have "(\<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2) \<le> d * d'"
           using p''_to_p2 monoid_star_relp_push_seq_weight_trans by auto
         then show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
-          using d''_geq ldd' by auto
+          using d''_geq l_eql by auto
       next
         fix \<mu>' \<mu>'' pi
         assume edge_weights: "A $ (p'', \<mu>', pi) * A $ (pi, \<mu>'', p2) = d'"
@@ -641,7 +643,7 @@ proof -
         have "d' = d1 * d2"
           using d1_def d2_def edge_weights by auto
 
-        from p1_to_p''1 have "(p1,[\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>',\<mu>''])"
+        from p1_to_p'' have "(p1,[\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>',\<mu>''])"
           using \<open>w' = push \<mu>' \<mu>''\<close> monoid_rtranclp.monoid_rtrancl_into_rtrancl by fastforce
         moreover
         have "d1 \<ge> \<^bold>\<Sigma>(p'',[\<mu>']) \<Rightarrow>\<^sup>* pi"
@@ -653,12 +655,12 @@ proof -
         have "d * d1 * d2 \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
           by (simp add: mult.assoc push_seq_weight_trans_push monoid_star_relp_push_seq_weight_trans)
         then show "l \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
-          using d''_geq ldd' by (simp add: \<open>d' = d1 * d2\<close> mult.assoc) 
+          using d''_geq l_eql by (simp add: \<open>d' = d1 * d2\<close> mult.assoc) 
       qed
     next
       case False
       then have "(p1, ([\<mu>], l), p2) \<in> wts_to_monoidLTS A"
-        using ps(4) a unfolding wts_to_monoidLTS_def by auto
+        using ps(4) p1_\<mu>_l_p2 unfolding wts_to_monoidLTS_def by auto
       then show ?thesis
         using assms unfolding sound_def by auto
     qed
@@ -686,7 +688,7 @@ lemma accept_is_one_if_final_empty:
 proof -
   have "{d | d q. q \<in> finals \<and> (p,([],d),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} = {1}"
     using Collect_cong[of "\<lambda>d. \<exists>q. q \<in> finals \<and> (p, ([], d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)" "\<lambda>d. d = 1"]
-    using assms monoid_rtrancl_wts_to_monoidLTS_refl mstar_wts_empty_one by force
+      assms monoid_rtrancl_wts_to_monoidLTS_refl mstar_wts_empty_one by force
   then show ?thesis
     by (simp add: accepts_def)
 qed
@@ -902,18 +904,17 @@ proof -
     by auto
 qed
 
-
 lemma lemma_3_2_w_alternative'_BONUS: 
   assumes soundA': "sound A'"
   assumes "pre_star_rule A' A''"
   shows "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
 proof -
-  have sA'': "sound A''"
+  have soundA'': "sound A''"
     using pre_star_rule_sound soundA' assms(2) by auto
   have "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
     using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
   also have "... \<le> accepts A'' (p,v)"
-    using lemma_3_2_w_alternative sA'' by auto
+    using lemma_3_2_w_alternative soundA'' by auto
   finally show "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
     by auto
 qed
@@ -972,8 +973,8 @@ proof -
   have "... = \<^bold>\<Sum> {l'' * C c'' |l'' c''. c \<Midarrow> l'' \<Rightarrow>\<^sup>* c''}"
     using Collect_cong[of "\<lambda>x. \<exists>l' c'' l c'. x= l * l' * C c'' \<and> c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<and> c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''"
         "\<lambda>x. \<exists>l'' c''. x= l'' * C c'' \<and> c \<Midarrow> l'' \<Rightarrow>\<^sup>* c''"]
-    using monoid_rtranclp.monoid_rtrancl_refl[of l_step_relp] monoid_rtranclp_trans[of l_step_relp] mult_1
-    by (metis (no_types, lifting))
+    using monoid_rtranclp.monoid_rtrancl_refl[of l_step_relp] monoid_rtranclp_trans[of l_step_relp] 
+      mult_1 by (metis (no_types, lifting))
   also
   have "... = (weight_pre_star C) c"
     by (simp add: weight_pre_star_def)
@@ -991,19 +992,19 @@ lemma lemma_3_2_w_alternative'''_BONUS:
   assumes "pre_star_rule\<^sup>*\<^sup>* A' A''"
   shows "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
 proof -
-  have sA'': "sound A''"
+  have sound_A'': "sound A''"
     using pre_star_rule_rtranclp_sound soundA' assms(2) by auto
   have "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
     using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
   also have "... \<le> accepts A'' (p,v)"
-    using lemma_3_2_w_alternative sA'' by auto
+    using lemma_3_2_w_alternative sound_A'' by auto
   finally show "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
     by auto
 qed
 
 (* End superfluous lemmas *)
 
-lemma nicenicenice1:
+lemma saturated_pre_star_rule_transition:
   assumes "saturated pre_star_rule A"
   assumes "((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
   assumes "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
@@ -1011,12 +1012,12 @@ lemma nicenicenice1:
   shows "(d'' + (d * d')) = d''"
   using assms unfolding saturated_def using pre_star_rule.intros by blast
 
-lemma nicenicenice3:
+lemma saturated_pre_star_rule_transition_leq:
   assumes "saturated pre_star_rule A"
   assumes "((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
   assumes "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
   shows "d * d' \<ge> (A $ (p, \<gamma>, q))"
-  by (metis assms meet.inf.absorb_iff2 meet.inf_commute nicenicenice1)
+  by (metis assms meet.inf.absorb_iff2 meet.inf_commute saturated_pre_star_rule_transition)
 
 (* Proof adapted from monoid_rtrancl_list_embed_ts_append_split *)
 lemma monoid_rtrancl_wts_to_monoidLTS_append_split:
@@ -1035,7 +1036,7 @@ next
                          (q, ( u1 @ l,du1), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> 
                          d = du0 * du1"
     using monoid_rtrancl_wts_to_monoidLTS_cases_rev by fastforce
-  then obtain q du0 du1 where e:
+  then obtain q du0 du1 where q_du0_du1_p:
     "(p, ([a],du0), q) \<in> (wts_to_monoidLTS A)" 
     "(q, (u1 @ l,du1), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)" 
     "d = du0 * du1"
@@ -1044,18 +1045,18 @@ next
   have "\<exists>d'' s d'''. (q, (u1, d''), s) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> 
                      (s, (l, d'''), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> 
                      du1 = d'' * d'''"
-     using Cons.IH[OF e(2)] .
+     using Cons.IH[OF q_du0_du1_p(2)] .
   then obtain d'' s d''' where
     "(q, (u1,d''), s) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
     "(s, (l,d'''), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)" 
     "du1 = d'' * d'''"
     by auto
   from this(1) have "(p, (a # u1, du0 * d''), s) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-    using e(1) monoid_rtrancl_into_rtrancl_rev[of p "([a], du0)" q "wts_to_monoidLTS A" "(u1, d'')" s]
+    using q_du0_du1_p(1) monoid_rtrancl_into_rtrancl_rev[of p "([a], du0)" q "wts_to_monoidLTS A" "(u1, d'')" s]
     by (simp add: mult_prod_def times_list_def)
   then show ?case
     by (metis (no_types, lifting) \<open>(s, (l, d'''), p') \<in> monoid_rtrancl (wts_to_monoidLTS A)\<close> 
-        \<open>du1 = d'' * d'''\<close> e(3)  mult.assoc)   
+        \<open>du1 = d'' * d'''\<close> q_du0_du1_p(3)  mult.assoc)   
 qed
 
 lemma merge_edge_and_monoid_rtrancl_wts_to_monoidLTS:
@@ -1065,11 +1066,11 @@ lemma merge_edge_and_monoid_rtrancl_wts_to_monoidLTS:
 proof -
   define d\<^sub>1\<^sub>2 where "d\<^sub>1\<^sub>2 = A $ (p\<^sub>1, \<gamma>\<^sub>1\<^sub>2, p\<^sub>2)"
 
-  have e: "(p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> (wts_to_monoidLTS A)"
+  have p\<^sub>1_to_p\<^sub>2: "(p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> (wts_to_monoidLTS A)"
     using assms(1) d\<^sub>1\<^sub>2_def wts_to_monoidLTS_def by fastforce
 
   have "(p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2) * (w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-    using monoid_rtrancl_into_rtrancl_rev[OF _ assms(2), of p\<^sub>1 "([\<gamma>\<^sub>1\<^sub>2],_)", OF e] .
+    using monoid_rtrancl_into_rtrancl_rev[OF _ assms(2), of p\<^sub>1 "([\<gamma>\<^sub>1\<^sub>2],_)", OF p\<^sub>1_to_p\<^sub>2] .
   then have "(p\<^sub>1, (\<gamma>\<^sub>1\<^sub>2#w\<^sub>2\<^sub>3, d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
     by (simp add: mult_prod_def times_list_def)
   then show ?thesis
@@ -1083,7 +1084,7 @@ lemma monoid_rtrancl_wts_to_monoidLTS_if_saturated_is_rule': (* Dette er Mortens
   shows "\<exists>D. (p',([\<gamma>], D), q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> D \<le> d*d'"
 proof -
   have "A $ (p', \<gamma>, q) \<le> d * d'"
-    using nicenicenice3[OF assms(2) assms(1) e(1)] by auto
+    using saturated_pre_star_rule_transition_leq[OF assms(2) assms(1) e(1)] by auto
   then have "\<exists>D. (p', ([\<gamma>],D),q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> D \<le> d*d'"
     using merge_edge_and_monoid_rtrancl_wts_to_monoidLTS e monoid_rtrancl_wts_to_monoidLTS_refl 
     by fastforce
@@ -1117,13 +1118,12 @@ lemma accepts_if_is_rule:
     and "saturated pre_star_rule A"
   shows "accepts A (p',(\<gamma> # w1)) \<le> d * accepts A (p'', (lbl u1) @ w1)"
 proof -
-  have X: "\<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<le>
+  have "\<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<le>
          \<^bold>\<Sum> {d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
     using monoid_rtrancl_wts_to_monoidLTS_if_saturated_is_rule[OF assms(1) assms(2), of w1 ]
       Suminf_bounded_by_Suminf_if_members_bounded[of "{d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
         "{d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"]
     by force
-    
   also have "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
     by (simp add: Suminf_left_distr)
   finally show ?thesis
@@ -1147,7 +1147,7 @@ proof (induction rule: monoid_star_relp_induct_rev)
     by (metis dual_order.eq_iff accept_is_one_if_final_empty prod.exhaust_sel)
 next
   case (monoid_star_into_rtrancl p'w d p''u c d')
-  then have 2: "accepts A p''u \<le> d'"
+  then have accpt: "accepts A p''u \<le> d'"
     by auto
   define p' where "p' = fst p'w"
   define w where "w = snd p'w"
@@ -1159,7 +1159,7 @@ next
     using p'_def w_def by auto
 
   show ?case
-    using "2" assms(1) accepts_if_saturated_monoid_star_relp idempotent_semiring_ord_class.mult_isol 
+    using accpt assms(1) accepts_if_saturated_monoid_star_relp idempotent_semiring_ord_class.mult_isol 
       monoid_star_into_rtrancl.hyps(1) order_trans p''u_split p'w_split by blast
 qed
 
