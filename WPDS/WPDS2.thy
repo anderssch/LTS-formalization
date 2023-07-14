@@ -67,6 +67,8 @@ locale WPDS_with_W_automata = WPDS \<Delta>
   fixes finals :: "('ctr_loc::enum) set"
 begin
 
+find_theorems name: Suminf_bounded_if_set_bounded
+
 interpretation dioidLTS transition_rel proof
   show "countable transition_rel" by (fact countable_transition_rel)
 qed 
@@ -82,10 +84,10 @@ proof -
   have countableX: "countable X" sorry 
       \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable?\<close>
   then show ?thesis 
-    using Suminf_bounded_if_set_bounded inf_d by auto
+    using SumInf_bounded_if_set_bounded inf_d by auto
 qed
 
-lemma geq_Suminf_if_member:
+lemma countable_SumInf_elem:
   assumes "d \<in> W"
   shows "d \<ge> \<^bold>\<Sum>W"
 proof -
@@ -93,7 +95,7 @@ proof -
     \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable?\<close>
     sorry
   then show ?thesis
-    using assms countable_suminf_elem by blast
+    using assms countable_SumInf_elem by blast
 qed
 
 lemma Suminf_left_distr: 
@@ -104,7 +106,7 @@ proof -
     sorry
  
   then show ?thesis
-    using Suminf_left_distr by auto
+    using SumInf_left_distr by auto
 qed
 
 lemma Suminf_right_distr: 
@@ -114,7 +116,7 @@ proof -
     \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable?\<close>
     sorry
   then show ?thesis
-    using Suminf_right_distr by auto
+    using SumInf_right_distr by auto
 qed
 
 lemma Suminf_of_Suminf:
@@ -158,7 +160,7 @@ lemma Suminf_of_Suminf_distrr':
 lemma Suminf_bounded_by_Suminf_if_members_bounded:
   assumes "\<forall>y \<in> Y. \<exists>x \<in> X. x \<le> y"
   shows "\<^bold>\<Sum> X \<le> \<^bold>\<Sum> Y"
-  by (meson Suminf_bounded_if_set_bounded assms dual_order.trans geq_Suminf_if_member)
+  by (meson Suminf_bounded_if_set_bounded assms dual_order.trans countable_SumInf_elem)
 
 lemma Suminf_mono: 
   assumes "(X::'weight set) \<subseteq> Y"
@@ -471,7 +473,7 @@ lemma monoid_star_relp_if_l_step_relp:
 lemma push_seq_weight_if_monoid_star_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])"
   shows "(\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p') \<le> d"
-  by (simp add: assms geq_Suminf_if_member)
+  by (simp add: assms countable_SumInf_elem)
 
 lemma push_seq_weight_if_l_step_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow> (p',[])"
@@ -539,7 +541,7 @@ proof (induction w arbitrary: d p)
   have "(p, []) \<Midarrow>1\<Rightarrow>\<^sup>* (p', [])"
     using Nil monoid_star_pop by fastforce
   have "d \<ge> \<^bold>\<Sigma>(p, []) \<Rightarrow>\<^sup>* p'" 
-    by (simp add: \<open>(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])\<close> \<open>d = 1\<close> geq_Suminf_if_member)
+    by (simp add: \<open>(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])\<close> \<open>d = 1\<close> countable_SumInf_elem)
   then show ?case .
 next
   case (Cons \<gamma> w)
