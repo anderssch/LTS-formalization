@@ -96,7 +96,7 @@ proof -
     using assms countable_SumInf_elem by blast
 qed
 
-lemma SumInf_left_distr': 
+lemma SumInf_left_distr: 
   "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
 proof -
   have "countable D"
@@ -494,7 +494,6 @@ proof -
       step_relp_seq by force
 
   also have "... \<le> (\<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* pi) * (\<^bold>\<Sigma>(pi,w'') \<Rightarrow>\<^sup>* p2)"
-    using countable_push_seq_weight
     by (simp add: SumInf_left_distr SumInf_of_SumInf_right_distr_simple)
   also have "... \<le> d1 * d2"
     using assms BoundedDioid.mult_isol_var by auto
@@ -521,7 +520,6 @@ proof -
   also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
     using \<open>(p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w')\<close> by fastforce
   also have "... \<le> d * \<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* p2"
-    using countable_push_seq_weight
     by (simp add: SumInf_left_distr)
   also have "... \<le> d * d'"
     using assms by (simp add: assms BoundedDioid.mult_isol)
@@ -959,11 +957,9 @@ proof -
       fix l c'
       have "l * \<^bold>\<Sum> {l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} =
               \<^bold>\<Sum> {l * l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
-        using countable_star_f_p2[of "\<lambda>(_,l',c''). l' * C c''" c' "\<lambda>l' c''. True"]
-        using SumInf_left_distr[of "{l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}" l] unfolding mult.assoc
+        unfolding SumInf_left_distr[of l "{l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"] mult.assoc
         using mem_Collect_eq[of _ "\<lambda>x. \<exists>l' c''. x = l' * C c'' \<and> c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''"]
-        by (smt (verit, best) Collect_cong SumInf_left_distr')
-        
+        by (metis (no_types, lifting))
     }
     then show ?thesis
       by auto
@@ -1133,7 +1129,7 @@ proof -
         "{d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"]
     by force
   also have "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-     by (simp add: SumInf_left_distr)
+    by (simp add: SumInf_left_distr)
   finally show ?thesis
     using accepts_def by force
 qed
