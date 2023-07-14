@@ -75,17 +75,17 @@ notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 notation l_step_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80)
 notation monoid_star_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [90,90,100] 100) 
 
-lemma SumInf_bounded_if_set_bounded:
+lemma SumInf_bounded_if_set_bounded':
   assumes inf_d: "\<forall>x \<in> X. x \<ge> d"
   shows "\<^bold>\<Sum> X \<ge> d"
 proof -
-  have countableX: "countable X" sorry 
+  have countableX: "countable X" sorry
       \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable?\<close>
   then show ?thesis 
     using SumInf_bounded_if_set_bounded inf_d by auto
 qed
 
-lemma countable_SumInf_elem:
+lemma countable_SumInf_elem':
   assumes "d \<in> W"
   shows "d \<ge> \<^bold>\<Sum>W"
 proof -
@@ -96,7 +96,7 @@ proof -
     using assms countable_SumInf_elem by blast
 qed
 
-lemma SumInf_left_distr: 
+lemma SumInf_left_distr': 
   "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
 proof -
   have "countable D"
@@ -158,7 +158,7 @@ lemma SumInf_of_SumInf_right_distr_simple:
 lemma SumInf_bounded_by_SumInf_if_members_bounded:
   assumes "\<forall>y \<in> Y. \<exists>x \<in> X. x \<le> y"
   shows "\<^bold>\<Sum> X \<le> \<^bold>\<Sum> Y"
-  by (meson SumInf_bounded_if_set_bounded assms dual_order.trans countable_SumInf_elem)
+  by (meson SumInf_bounded_if_set_bounded' assms dual_order.trans countable_SumInf_elem')
 
 lemma SumInf_mono: 
   assumes "(X::'weight set) \<subseteq> Y"
@@ -307,6 +307,10 @@ abbreviation (input) push_seq_weight :: "('ctr_loc * 'label list) \<Rightarrow> 
 lemma push_seq_weight_def2:
   "(\<^bold>\<Sigma>pw\<Rightarrow>\<^sup>*p') = \<^bold>\<Sum> {d |d. pw \<Midarrow> d \<Rightarrow>\<^sup>* (p', [])}"
   by auto
+
+lemma countable_push_seq_weight:
+  "countable {d |d. pw \<Midarrow> d \<Rightarrow>\<^sup>* (p', [])}"
+  using countable_star_f_p3[of "\<lambda>(c,d,c'). d" _ _ "\<lambda>c c. True"] by auto
 
 definition sound :: "(('ctr_loc, 'label, 'weight) w_transitions) \<Rightarrow> bool" where
   "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,[\<gamma>])\<Rightarrow>\<^sup>*p')"
@@ -471,7 +475,8 @@ lemma monoid_star_relp_if_l_step_relp:
 lemma push_seq_weight_if_monoid_star_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])"
   shows "(\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p') \<le> d"
-  by (simp add: assms countable_SumInf_elem)
+  using countable_SumInf_elem[of "{d'. (p, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}" d]
+    countable_push_seq_weight assms by auto
 
 lemma push_seq_weight_if_l_step_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow> (p',[])"
@@ -489,6 +494,7 @@ proof -
       step_relp_seq by force
 
   also have "... \<le> (\<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* pi) * (\<^bold>\<Sigma>(pi,w'') \<Rightarrow>\<^sup>* p2)"
+    using countable_push_seq_weight
     by (simp add: SumInf_left_distr SumInf_of_SumInf_right_distr_simple)
   also have "... \<le> d1 * d2"
     using assms BoundedDioid.mult_isol_var by auto
@@ -515,6 +521,7 @@ proof -
   also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
     using \<open>(p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w')\<close> by fastforce
   also have "... \<le> d * \<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* p2"
+    using countable_push_seq_weight
     by (simp add: SumInf_left_distr)
   also have "... \<le> d * d'"
     using assms by (simp add: assms BoundedDioid.mult_isol)
@@ -541,7 +548,8 @@ proof (induction w arbitrary: d p)
   have "(p, []) \<Midarrow>1\<Rightarrow>\<^sup>* (p', [])"
     using Nil monoid_star_pop by fastforce
   have "d \<ge> \<^bold>\<Sigma>(p, []) \<Rightarrow>\<^sup>* p'" 
-    by (simp add: \<open>(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])\<close> \<open>d = 1\<close> countable_SumInf_elem)
+    using countable_SumInf_elem countable_push_seq_weight
+    by (simp add: \<open>(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])\<close> \<open>d = 1\<close> )
   then show ?case .
 next
   case (Cons \<gamma> w)
@@ -951,9 +959,11 @@ proof -
       fix l c'
       have "l * \<^bold>\<Sum> {l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} =
               \<^bold>\<Sum> {l * l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
-        unfolding SumInf_left_distr[of l "{l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"] mult.assoc
+        using countable_star_f_p2[of "\<lambda>(_,l',c''). l' * C c''" c' "\<lambda>l' c''. True"]
+        using SumInf_left_distr[of "{l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}" l] unfolding mult.assoc
         using mem_Collect_eq[of _ "\<lambda>x. \<exists>l' c''. x = l' * C c'' \<and> c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''"]
-        by (metis (no_types, lifting))
+        by (smt (verit, best) Collect_cong SumInf_left_distr')
+        
     }
     then show ?thesis
       by auto
@@ -1123,7 +1133,7 @@ proof -
         "{d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"]
     by force
   also have "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    by (simp add: SumInf_left_distr)
+     by (simp add: SumInf_left_distr)
   finally show ?thesis
     using accepts_def by force
 qed
@@ -1179,7 +1189,8 @@ lemma lemma_3_1_w:
   shows "accepts A c \<le> weight_pre_star (accepts (K$ 0)) c"
   unfolding weight_pre_star_def
   using SumInf_bounded_if_set_bounded[of "{l * accepts (K$ 0) c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" "accepts A c"]
-    lemma_3_1_w'[OF assms] by blast
+    lemma_3_1_w'[OF assms] countable_star_f_p2[of "\<lambda>(c,l,c'). l * accepts (K$ 0) c'" c "\<lambda>c c'. True"]
+  by fastforce
 
 theorem correctness:
   assumes "saturation pre_star_rule (K$ 0) A"

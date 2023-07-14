@@ -78,6 +78,15 @@ proof -
   then show ?thesis using countable_f_on_set by fastforce
 qed
 
+lemma countable_star_f_p2: "countable {f (c,l,c') | l c'. P c c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+  using countable_subset[OF _ countable_star_f_p[of f P], of "{f (c,l,c') | l c'. P c c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"] 
+  by force
+
+lemma countable_star_f_p3: "countable {f (c,l,c') | l . P c c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+  using countable_subset[OF _ countable_star_f_p[of f P], of "{f (c,l,c') | l . P c c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"] 
+  by force
+
+
 lemma monoid_star_is_monoid_rtrancl[simp]: "monoid_star = monoid_rtrancl transition_relation"
   unfolding monoid_star_def l_step_relp_def monoid_rtrancl_def by simp
 end
