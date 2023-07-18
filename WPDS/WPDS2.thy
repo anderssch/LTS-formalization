@@ -96,7 +96,7 @@ proof -
     using assms countable_SumInf_elem by blast
 qed
 
-lemma SumInf_left_distr: 
+lemma SumInf_left_distr': 
   "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
 proof -
   have "countable D"
@@ -105,7 +105,7 @@ proof -
  
   then show ?thesis
     using SumInf_left_distr by auto
-qed
+  oops
 
 lemma SumInf_right_distr: 
   "(\<^bold>\<Sum> D) * d2 = \<^bold>\<Sum> {d1 * d2 | d1. d1 \<in> D}"
@@ -494,7 +494,8 @@ proof -
       step_relp_seq by force
 
   also have "... \<le> (\<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* pi) * (\<^bold>\<Sigma>(pi,w'') \<Rightarrow>\<^sup>* p2)"
-    by (simp add: SumInf_left_distr SumInf_of_SumInf_right_distr_simple)
+    using SumInf_left_distr[of "{d'. (pi, w'') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}" "\<^bold>\<Sum> {d'. (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (pi, [])}"] 
+      SumInf_of_SumInf_right_distr_simple countable_push_seq_weight by auto
   also have "... \<le> d1 * d2"
     using assms BoundedDioid.mult_isol_var by auto
   finally 
@@ -520,7 +521,7 @@ proof -
   also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
     using \<open>(p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w')\<close> by fastforce
   also have "... \<le> d * \<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* p2"
-    by (simp add: SumInf_left_distr)
+    using countable_push_seq_weight by (simp add: SumInf_left_distr)
   also have "... \<le> d * d'"
     using assms by (simp add: assms BoundedDioid.mult_isol)
   finally 
@@ -955,10 +956,15 @@ proof -
   proof -
     {
       fix l c'
-      have "l * \<^bold>\<Sum> {l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} =
+      have count: "countable {l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
+        using countable_star_f_p2[of "\<lambda>(c, l', c''). l' * C c''" c' "\<lambda>_ _. True"]
+        by auto
+      then have "l * \<^bold>\<Sum> {l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} =
               \<^bold>\<Sum> {l * l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
-        unfolding SumInf_left_distr[of l "{l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"] mult.assoc
-        using mem_Collect_eq[of _ "\<lambda>x. \<exists>l' c''. x = l' * C c'' \<and> c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''"]
+        unfolding SumInf_left_distr[of "{l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}" l, OF count]
+        using mult.assoc 
+          
+          mem_Collect_eq[of _ "\<lambda>x. \<exists>l' c''. x = l' * C c'' \<and> c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''"]
         by (metis (no_types, lifting))
     }
     then show ?thesis
@@ -1117,6 +1123,11 @@ proof -
     by (simp add: e(3) mult.assoc)
 qed
 
+lemma countable_monoid_rtrancl_wts_to_monoidLTS: 
+  "countable {f d q |d q. P d q \<and> (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+  sorry
+
+
 lemma accepts_if_is_rule:
   assumes "(p', \<gamma>) \<midarrow>d\<hookrightarrow> (p'', u1)"
     and "saturated pre_star_rule A"
@@ -1129,7 +1140,9 @@ proof -
         "{d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"]
     by force
   also have "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    by (simp add: SumInf_left_distr)
+    using SumInf_left_distr[of "{is_d'. \<exists>d' q. is_d' = d' \<and> q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}" d] 
+      countable_monoid_rtrancl_wts_to_monoidLTS[of "\<lambda>d q. d" "\<lambda>d q. q \<in> finals" p'' "lbl u1 @ w1" A]
+    by auto
   finally show ?thesis
     using accepts_def by force
 qed
