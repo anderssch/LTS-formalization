@@ -310,7 +310,7 @@ lemma push_seq_weight_def2:
 
 lemma countable_push_seq_weight:
   "countable {d |d. pw \<Midarrow> d \<Rightarrow>\<^sup>* (p', [])}"
-  using countable_star_f_p3[of "\<lambda>d. d" "True"] by auto
+  using countable_star_f_p5 by auto
 
 definition sound :: "(('ctr_loc, 'label, 'weight) w_transitions) \<Rightarrow> bool" where
   "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,[\<gamma>])\<Rightarrow>\<^sup>*p')"
@@ -957,8 +957,7 @@ proof -
     {
       fix l c'
       have count: "countable {l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
-        using countable_star_f_p2[of "\<lambda>(l', c''). l' * C c''" "\<lambda>_. True" c']
-        by auto
+        using countable_star_f_p3 by fastforce
       then have "l * \<^bold>\<Sum> {l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} =
               \<^bold>\<Sum> {l * l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
         unfolding SumInf_left_distr[of "{l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}" l, OF count]
@@ -1141,13 +1140,10 @@ proof -
     by force
   also have "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
     using SumInf_left_distr[of "{is_d'. \<exists>d' q. is_d' = d' \<and> q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}" d] 
-      countable_monoid_rtrancl_wts_to_monoidLTS[of "\<lambda>d q. d" "\<lambda>d q. q \<in> finals" p'' "lbl u1 @ w1" A]
-    by auto
+      countable_monoid_rtrancl_wts_to_monoidLTS by fastforce
   finally show ?thesis
     using accepts_def by force
 qed
-
-find_theorems name: countable_star_f_p2
 
 lemma accepts_if_saturated_monoid_star_relp:
   assumes "(p', w) \<Midarrow>d\<Rightarrow> (p'', u)"
@@ -1200,8 +1196,7 @@ lemma lemma_3_1_w:
   shows "accepts A c \<le> weight_pre_star (accepts (K$ 0)) c"
   unfolding weight_pre_star_def
   using SumInf_bounded_if_set_bounded[of "{l * accepts (K$ 0) c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" "accepts A c"]
-    lemma_3_1_w'[OF assms] countable_star_f_p2[of "\<lambda>(l,c'). l * accepts (K$ 0) c'" "\<lambda>c'. True" c]
-  by fastforce
+    lemma_3_1_w'[OF assms] countable_star_f_p3 by fastforce
 
 theorem correctness:
   assumes "saturation pre_star_rule (K$ 0) A"

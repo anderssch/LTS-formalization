@@ -70,22 +70,31 @@ qed
 lemma countable_f_on_set:"countable X \<Longrightarrow> countable {f x | x. x \<in> X}"
   by (simp add: setcompr_eq_image)
 
-lemma countable_star_f_p: "countable {f (c,l,c') | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<and> P c c'}"
+lemma countable_star_f_p: "countable {f c l c' | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<and> P c c'}"
 proof -
   have subset:"{(c,l,c') | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<and> P c c'} \<subseteq> monoid_star" unfolding monoid_star_def  by blast
   have "countable {(c,l,c') | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<and> P c c'}" 
     using countable_subset[OF subset countable_monoid_star] by blast
-  then show ?thesis using countable_f_on_set by fastforce
+  then show ?thesis using countable_f_on_set[of _ "\<lambda>(c, l, c'). f c l c' "] by fastforce
 qed
 
-lemma countable_star_f_p2: "countable {f (l,c') | l c'. P c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-  using countable_subset[OF _ countable_star_f_p[of "\<lambda>(_,l,c'). f (l,c')" "\<lambda>_ c'. P c'"], of "{f (l,c') | l c'. P c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"] 
+lemma countable_star_f_p2: "countable {f l c' | l c'. P c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+  using countable_subset[OF _ countable_star_f_p[of "\<lambda>_ l c'. f l c'" "\<lambda>_ c'. P c'"], of "{f l c' | l c'. P c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"] 
   by force
 
-lemma countable_star_f_p3: "countable {f l | l . P \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-  using countable_subset[OF _ countable_star_f_p[of "\<lambda>(_,l,_). f l" "\<lambda>_ _. P"], of "{f l | l . P \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"] 
+lemma countable_star_f_p3: "countable {f l c' | l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+  using countable_star_f_p2[of f "\<lambda>_. True" c] by metis
+
+lemma countable_star_f_p4: "countable {f l | l . P \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+  using countable_subset[OF _ countable_star_f_p[of "\<lambda>_ l _. f l" "\<lambda>_ _. P"], of "{f l | l . P \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"] 
   by force
 
+lemma countable_star_f_p5:
+  "countable {d. pw \<Midarrow> d \<Rightarrow>\<^sup>* c}"
+  using countable_star_f_p4[of "\<lambda>d. d" "True"] by auto
+
+lemmas countable_star_f_all = 
+  countable_star_f_p countable_star_f_p2 countable_star_f_p3 countable_star_f_p4 countable_star_f_p5
 
 lemma monoid_star_is_monoid_rtrancl[simp]: "monoid_star = monoid_rtrancl transition_relation"
   unfolding monoid_star_def l_step_relp_def monoid_rtrancl_def by simp
