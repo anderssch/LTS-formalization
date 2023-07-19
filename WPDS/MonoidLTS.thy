@@ -93,8 +93,41 @@ lemma countable_star_f_p5:
   "countable {d. pw \<Midarrow> d \<Rightarrow>\<^sup>* c}"
   using countable_star_f_p4[of "\<lambda>d. d" "True"] by auto
 
+lemma countable_star_f_p6:
+  "countable {f c1 d1' c2 c3 d2' c4 |c1 d1' c2 c3 d2' c4. c1 \<Midarrow> d1' \<Rightarrow>\<^sup>* c2 \<and> c3 \<Midarrow> d2' \<Rightarrow>\<^sup>* c4}"
+proof -
+  have subset: "{((c1, d1', c2),(c3, d2', c4)) |c1 d1' c2 c3 d2' c4. c1 \<Midarrow> d1' \<Rightarrow>\<^sup>* c2 \<and> c3 \<Midarrow> d2' \<Rightarrow>\<^sup>* c4} \<subseteq> monoid_star \<times> monoid_star"
+    unfolding monoid_star_def by blast
+  then have "countable {((c1, d1', c2),(c3, d2', c4)) |c1 d1' c2 c3 d2' c4. c1 \<Midarrow> d1' \<Rightarrow>\<^sup>* c2 \<and> c3 \<Midarrow> d2' \<Rightarrow>\<^sup>* c4}"
+    using countable_SIGMA countable_monoid_star  countable_subset by fastforce
+  then have "countable ((\<lambda>((c1, d1', c2),(c3, d2', c4)). f c1 d1' c2 c3 d2' c4) ` {((c1, d1', c2),(c3, d2', c4)) |c1 d1' c2 c3 d2' c4. c1 \<Midarrow> d1' \<Rightarrow>\<^sup>* c2 \<and> c3 \<Midarrow> d2' \<Rightarrow>\<^sup>* c4})"
+    using countable_image by force
+  then show ?thesis
+    using Collect_cong[of "\<lambda>y. \<exists>c1 d1' c2. (c1 \<Midarrow> d1' \<Rightarrow>\<^sup>* c2) \<and> (\<exists>c3 d2' c4. ( c3  \<Midarrow> d2' \<Rightarrow>\<^sup>* c4) \<and> y = f c1 d1' c2 c3 d2' c4)"
+        "\<lambda>fd1'd2'. \<exists>c1 d1' c2 c3 d2' c4. fd1'd2' = f c1 d1' c2 c3 d2' c4 \<and> c1 \<Midarrow> d1' \<Rightarrow>\<^sup>* c2 \<and> (c3 \<Midarrow> d2' \<Rightarrow>\<^sup>* c4)"]
+    unfolding image_def by fastforce
+qed
+
+lemma countable_star_f_p7:
+  "countable {f d1' d2' |c1 d1' c2 c3 d2' c4. c1 \<Midarrow> d1' \<Rightarrow>\<^sup>* c2 \<and> c3 \<Midarrow> d2' \<Rightarrow>\<^sup>* c4}"
+  using countable_star_f_p6 .
+
+lemma countable_star_f_p8:
+  "countable {f d1' d2' |d1' d2'. c1 \<Midarrow> d1' \<Rightarrow>\<^sup>* c2 \<and> c3 \<Midarrow> d2' \<Rightarrow>\<^sup>* c4}"
+  by (rule countable_subset[OF _ countable_star_f_p7[of f]]) fastforce
+
+lemma countable_star_f_p9: "countable {f l | l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+  by (metis countable_image countable_star_f_p5 image_Collect)
+
+lemma countable_star_f_p10: "countable {f l | l. c \<Midarrow>l\<Rightarrow>\<^sup>* c}"
+  by (metis countable_image countable_star_f_p5 image_Collect)
+  
+
+
+
 lemmas countable_star_f_all = 
   countable_star_f_p countable_star_f_p2 countable_star_f_p3 countable_star_f_p4 countable_star_f_p5
+  countable_star_f_p6 countable_star_f_p7 countable_star_f_p8 countable_star_f_p9 countable_star_f_p10
 
 lemma monoid_star_is_monoid_rtrancl[simp]: "monoid_star = monoid_rtrancl transition_relation"
   unfolding monoid_star_def l_step_relp_def monoid_rtrancl_def by simp
