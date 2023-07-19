@@ -78,12 +78,12 @@ proof -
   then show ?thesis using countable_f_on_set by fastforce
 qed
 
-lemma countable_star_f_p2: "countable {f (c,l,c') | l c'. P c c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-  using countable_subset[OF _ countable_star_f_p[of f P], of "{f (c,l,c') | l c'. P c c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"] 
+lemma countable_star_f_p2: "countable {f (l,c') | l c'. P c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+  using countable_subset[OF _ countable_star_f_p[of "\<lambda>(_,l,c'). f (l,c')" "\<lambda>_ c'. P c'"], of "{f (l,c') | l c'. P c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"] 
   by force
 
-lemma countable_star_f_p3: "countable {f (c,l,c') | l . P c c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-  using countable_subset[OF _ countable_star_f_p[of f P], of "{f (c,l,c') | l . P c c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"] 
+lemma countable_star_f_p3: "countable {f l | l . P \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+  using countable_subset[OF _ countable_star_f_p[of "\<lambda>(_,l,_). f l" "\<lambda>_ _. P"], of "{f l | l . P \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"] 
   by force
 
 

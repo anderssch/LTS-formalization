@@ -310,7 +310,7 @@ lemma push_seq_weight_def2:
 
 lemma countable_push_seq_weight:
   "countable {d |d. pw \<Midarrow> d \<Rightarrow>\<^sup>* (p', [])}"
-  using countable_star_f_p3[of "\<lambda>(c,d,c'). d" _ _ "\<lambda>c c. True"] by auto
+  using countable_star_f_p3[of "\<lambda>d. d" "True"] by auto
 
 definition sound :: "(('ctr_loc, 'label, 'weight) w_transitions) \<Rightarrow> bool" where
   "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,[\<gamma>])\<Rightarrow>\<^sup>*p')"
@@ -957,7 +957,7 @@ proof -
     {
       fix l c'
       have count: "countable {l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
-        using countable_star_f_p2[of "\<lambda>(c, l', c''). l' * C c''" c' "\<lambda>_ _. True"]
+        using countable_star_f_p2[of "\<lambda>(l', c''). l' * C c''" "\<lambda>_. True" c']
         by auto
       then have "l * \<^bold>\<Sum> {l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} =
               \<^bold>\<Sum> {l * l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
@@ -1147,6 +1147,8 @@ proof -
     using accepts_def by force
 qed
 
+find_theorems name: countable_star_f_p2
+
 lemma accepts_if_saturated_monoid_star_relp:
   assumes "(p', w) \<Midarrow>d\<Rightarrow> (p'', u)"
       and "saturated pre_star_rule A"
@@ -1198,7 +1200,7 @@ lemma lemma_3_1_w:
   shows "accepts A c \<le> weight_pre_star (accepts (K$ 0)) c"
   unfolding weight_pre_star_def
   using SumInf_bounded_if_set_bounded[of "{l * accepts (K$ 0) c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" "accepts A c"]
-    lemma_3_1_w'[OF assms] countable_star_f_p2[of "\<lambda>(c,l,c'). l * accepts (K$ 0) c'" c "\<lambda>c c'. True"]
+    lemma_3_1_w'[OF assms] countable_star_f_p2[of "\<lambda>(l,c'). l * accepts (K$ 0) c'" "\<lambda>c'. True" c]
   by fastforce
 
 theorem correctness:
