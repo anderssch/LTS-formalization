@@ -1,4 +1,4 @@
-theory Sets_More imports "HOL-Library.Countable_Set" begin
+theory Set_More imports "HOL-Library.Countable_Set" begin
 
 lemma Collect_conj_eq2: "{(x,y). P x y \<and> Q x y} = {(x,y). P x y} \<inter> {(x,y). Q x y}"
   using Collect_conj_eq[of "\<lambda>xy. P (fst xy) (snd xy)" "\<lambda>xy. Q (fst xy) (snd xy)"] by auto
