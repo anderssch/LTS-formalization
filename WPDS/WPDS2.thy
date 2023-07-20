@@ -792,13 +792,19 @@ lemma countable_monoid_rtrancl_wts_to_monoidLTS_pair:
   fixes A :: "(('ctr_loc, 'label, 'weight::bounded_idempotent_semiring) w_transitions)"
   shows "countable {(d, q). (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
 proof -
-  have "countable {(p, (w, d), q)| d q. (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    by (smt (verit, ccfv_threshold) countable_monoid_rtrancl_wts_to_monoidLTS countable_subset mem_Collect_eq subset_eq)
-  then show ?thesis 
-    using countable_image[of "{(p, (w, d), q)| d q. (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}" "\<lambda>(p, (w, d), q). (d, q)"]
-    apply (simp add: image_def split: prod.split)
-    unfolding image_def setcompr_eq_image2 
-    by (smt (verit) Collect_cong Pair_inject case_prodE case_prodI2)
+  have "(monoid_rtrancl (wts_to_monoidLTS A) \<inter> {(p', (w', d), q) |p' w' d q. p' = p \<and> w' = w})
+           = {(p, (w, d), q) |d q. (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+    by auto
+  then have A: "countable {(p, (w, d), q)| d q. (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+    using countable_Int1[OF countable_monoid_rtrancl_wts_to_monoidLTS[of A], of "{(p', (w', d), q) | p' w' d q. p' = p \<and> w' = w}"]
+    by auto
+  have "((\<lambda>(p, (w, d), q). (d, q)) ` {(p, (w, d), q) |d q. (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)})
+           = {(d, q). (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+    unfolding image_def by auto
+  then show ?thesis
+    using countable_image[of "{(p, (w, d), q) |d q. (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+      "\<lambda>(p, (w, d), q). (d, q)", OF A]
+    by auto
 qed
 
 lemmas countable_monoid_rtrancl_wts_to_monoidLTS_all =

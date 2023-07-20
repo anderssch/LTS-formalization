@@ -26,13 +26,12 @@ lemma countable_f_on_set: "countable X \<Longrightarrow> countable {f x | x. x \
   by (simp add: dissect_set)
 
 lemma countable_f_on_P_Q_set: "countable {x. Q x} \<Longrightarrow> countable {f x | x. P x \<and> Q x}"
-  by (smt (verit, del_insts) Collect_mono countable_setcompr countable_subset)
+  by (simp add: dissect_set)
 
 lemma countable_f_on_P_Q_set2: "countable {(x, y). Q x y} \<Longrightarrow> countable {f x y | x y. P x y \<and> Q x y}"
   by (simp add: dissect_set)
 
 lemma countable_f_on_P_Q_set3: "countable {(x, y, z). Q x y z} \<Longrightarrow> countable {f x y z | x y z. P x y z \<and> Q x y z}"
   by (simp add: dissect_set)
-
 
 end
