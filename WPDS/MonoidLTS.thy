@@ -165,9 +165,11 @@ lemma countable_star_f_p11: "countable {f c l c' | c l c'. P c l c' \<and> c \<M
   unfolding setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3 Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3 
   using countable_monoid_star monoid_star_def u1 u v by force
 
+(*
 lemma countable_star_f_p12: "countable {f l c' | l c'. P l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
   unfolding setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3 Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3 
   using countable_monoid_star monoid_star_def u1 u v by force
+*)
 
 lemmas countable_star_f_all = 
   countable_star_f_p countable_star_f_p2 countable_star_f_p3 countable_star_f_p4 countable_star_f_p5

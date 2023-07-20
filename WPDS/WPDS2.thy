@@ -286,14 +286,19 @@ lemma countable_push_seq_weight:
   "countable {d |d. pw \<Midarrow> d \<Rightarrow>\<^sup>* (p', [])}"
   using countable_star_f_p5 by auto
 
+lemma nnn: "countable {(d', q). (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])}"
+  sorry
+
+lemma nnn2: "countable {(d', q, w). (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, w)}"
+  sorry
+
 lemma countable_push_seq_weight2: (* maybe not a good name *)
   "countable {d'| d' q. P q d' \<and> (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])}"
-  using countable_star_f_p12[of "\<lambda>d' q. d'" "\<lambda>l c'. P (fst c') l \<and> snd c' = []" "(p,v)"] by auto
+  unfolding setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3 Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3 using nnn by auto
 
 lemma countable_push_seq_weight3: (* maybe not a good name *)
   "countable {f d' q w| d' q w. (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, w)}"
-  using countable_star_f_p12[of "\<lambda>l c'. f l (fst c') (snd c')" "\<lambda>l c'. True" "(p,v)"]
-  by auto
+  unfolding setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3 Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3 using nnn2 by auto
 
 definition sound :: "(('ctr_loc, 'label, 'weight) w_transitions) \<Rightarrow> bool" where
   "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,[\<gamma>])\<Rightarrow>\<^sup>*p')"
