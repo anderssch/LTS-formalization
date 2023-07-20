@@ -89,13 +89,13 @@ lemma countable_f_on_set: "countable X \<Longrightarrow> countable {f x | x. x \
   by (simp add: setcompr_eq_image)
 
 lemma countable_f_on_P_setXXX: "countable {x. Q x} \<Longrightarrow> countable {f x | x. P x \<and> Q x}"
-  sorry
+  by (smt (verit, del_insts) Collect_mono countable_setcompr countable_subset)
 
 lemma countable_f_on_P_setXXX2: "countable {(x, y). Q x y} \<Longrightarrow> countable {f x y | x y. P x y \<and> Q x y}"
-  sorry
+  by (simp add: Collect_conj_eq2 setcompr_eq_image2)
 
 lemma countable_f_on_P_setXXX3: "countable {(x, y, z). Q x y z} \<Longrightarrow> countable {f x y z | x y z. P x y z \<and> Q x y z}"
-  sorry
+  by (simp add: Collect_conj_eq3 setcompr_eq_image3)
 
 lemma u: "countable {(l, c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
   unfolding setcompr_eq_image using countable_f_on_P_setXXX3[of "\<lambda>c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>c l c'. (l, c')" "\<lambda>x y z. x = c"]
