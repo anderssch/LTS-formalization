@@ -121,7 +121,29 @@ lemma countable_star_f_p9: "countable {f l | l. c \<Midarrow>l\<Rightarrow>\<^su
 
 lemma countable_star_f_p10: "countable {f l | l. c \<Midarrow>l\<Rightarrow>\<^sup>* c}"
   by (metis countable_image countable_star_f_p5 image_Collect)
-  
+
+lemma countable_star_f_p11: "countable {f c l c' | c l c'. P c l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+proof -
+  have subset:"{(c,l,c') | c l c'. P c l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'} \<subseteq> monoid_star" unfolding monoid_star_def  by blast
+  have "countable {(c,l,c') | c l c'. P c l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}" 
+    using countable_subset[OF subset countable_monoid_star] by blast
+  then show ?thesis using countable_f_on_set[of _ "\<lambda>(c, l, c'). f c l c' "] by fastforce
+qed
+
+lemma setcompr_eq_image2: "{f a b |a b. P a b } = (\<lambda>(a,b). f a b) ` {(a,b). P a b}" (* Maybe unfolding this is good for simp? *)
+  by auto
+
+lemma countable_star_f_p12: "countable {f l c' | l c'. P l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+proof -
+  have subset:"{(c,l,c') | l c'. P l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'} \<subseteq> monoid_star" 
+    unfolding monoid_star_def by blast
+  then have "countable {(c,l,c') | l c'. P l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+    by (simp add: countable_monoid_star countable_subset)
+  then have "countable ((\<lambda>(c,l,c'). f l c') ` {(c,l,c') | l c'. P l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'})"
+    by auto
+  then show ?thesis 
+    unfolding image_def setcompr_eq_image2 by simp
+qed
 
 
 

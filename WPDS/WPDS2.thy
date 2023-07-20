@@ -74,30 +74,7 @@ notation step_relp (infix "\<Rightarrow>" 80)
 notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 notation l_step_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80)
 notation monoid_star_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [90,90,100] 100) 
-
-
-lemma countable_SumInf_elem':
-  assumes "d \<in> W"
-  shows "d \<ge> \<^bold>\<Sum>W"
-proof -
-  have "countable W"
-    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable?\<close>
-    sorry
-  then show ?thesis
-    using assms countable_SumInf_elem by blast
-qed
-
-lemma SumInf_left_distr': 
-  "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
-proof -
-  have "countable D"
-    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable?\<close>
-    sorry
- 
-  then show ?thesis
-    using SumInf_left_distr by auto
-  oops
-
+thm SumInf_right_distr
 lemma SumInf_right_distr: 
   "(\<^bold>\<Sum> D) * d2 = \<^bold>\<Sum> {d1 * d2 | d1. d1 \<in> D}"
 proof -
@@ -158,8 +135,8 @@ lemma count112y4634678163782719833874t37846172332:
   shows "countable {f x | x. X x}"
   by (simp add: assms setcompr_eq_image)
 
-lemma SumInf_mult_isor: (* not used... and assms could be "countable {x . X x}" *)
-  assumes "countable {x . X x}"
+lemma SumInf_mult_isor:
+  assumes "countable {d . X d}"
   assumes "d \<le> (d' :: 'weight)"
   shows "\<^bold>\<Sum> {d * d''| d''. X d''} \<le> \<^bold>\<Sum> {d' * d''| d''. X d''}"
   apply (rule SumInf_bounded_by_SumInf_if_members_bounded)
@@ -312,13 +289,14 @@ lemma countable_push_seq_weight:
   "countable {d |d. pw \<Midarrow> d \<Rightarrow>\<^sup>* (p', [])}"
   using countable_star_f_p5 by auto
 
-lemma countable_push_seq_weight2:
+lemma countable_push_seq_weight2: (* maybe not a good name *)
   "countable {d'| d' q. P q d' \<and> (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])}"
-  sorry
+  using countable_star_f_p12[of "\<lambda>d' q. d'" "\<lambda>l c'. P (fst c') l \<and> snd c' = []" "(p,v)"] by auto
 
-lemma countable_push_seq_weight3: (* not a good name *)
+lemma countable_push_seq_weight3: (* maybe not a good name *)
   "countable {f d' q w| d' q w. (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, w)}"
-  sorry
+  using countable_star_f_p12[of "\<lambda>l c'. f l (fst c') (snd c')" "\<lambda>l c'. True" "(p,v)"]
+  by auto
 
 definition sound :: "(('ctr_loc, 'label, 'weight) w_transitions) \<Rightarrow> bool" where
   "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,[\<gamma>])\<Rightarrow>\<^sup>*p')"
@@ -791,13 +769,41 @@ lemma accepts_K0_iff: "accepts (K$ 0) (p,w) = (if p\<in>finals \<and> w = [] the
 lemma sound_empty: "sound (K$ 0)"
   by (simp add: sound_def wts_to_monoidLTS_def)
 
+lemma countable_monoid_rtrancl_wts_to_monoidLTS:
+ fixes A::"(('ctr_loc, 'label, 'weight::bounded_idempotent_semiring) w_transitions)"
+ shows "countable (monoid_rtrancl (wts_to_monoidLTS A))"
+  by (metis countable_wts monoidLTS.countable_monoid_star monoidLTS.intro monoidLTS.monoid_star_is_monoid_rtrancl)
 
-lemma countable_monoid_rtrancl_wts_to_monoidLTS: 
-  "countable {f d q |d q. P d q \<and> (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-  sorry
+
+
+find_theorems countable image
+lemma xxxxxxx:
+  fixes A :: "(('ctr_loc, 'label, 'weight::bounded_idempotent_semiring) w_transitions)"
+  shows "countable {(d, q). (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+
+proof -
+  have "countable {(p, (w, d), q)| d q. (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+    by (smt (verit, ccfv_threshold) countable_monoid_rtrancl_wts_to_monoidLTS countable_subset mem_Collect_eq subset_eq)
+  then show ?thesis 
+    using countable_image[of "{(p, (w, d), q)| d q. (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}" "\<lambda>(p, (w, d), q). (d, q)"]
+    unfolding image_def setcompr_eq_image2 
+    apply -
+    apply (simp split: prod.split)
+    by (smt (verit) Collect_cong Pair_inject case_prodE case_prodI2)
+qed
+
+
+lemma Collect_conj_eq2: "{(x,y). P x y \<and> Q x y} = {(x,y). P x y} \<inter> {(x,y). Q x y}"
+  using Collect_conj_eq[of "\<lambda>xy. P (fst xy) (snd xy)" "\<lambda>xy. Q (fst xy) (snd xy)"] by auto
+
+lemma countable_monoid_rtrancl_wts_to_monoidLTS_P: 
+  fixes A::"(('ctr_loc, 'label, 'weight::bounded_idempotent_semiring) w_transitions)"
+  shows "countable {f d q |d q. P d q \<and> (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
+  unfolding setcompr_eq_image2 Collect_conj_eq2
+  using countable_Int2 countable_image xxxxxxx by metis
 
 lemma countable_f_finals: "countable {f q| q. q \<in>finals}"
-  sorry
+  by (simp add: countable_f_on_set)
 
 lemma lemma_3_2_w_alternative:
   assumes soundA': "sound A'"
@@ -807,7 +813,7 @@ proof -
     by (cases pv) 
 
   have A: "countable {(d, q)| d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}"
-    using countable_monoid_rtrancl_wts_to_monoidLTS .
+    using countable_monoid_rtrancl_wts_to_monoidLTS_P .
                               
   have "weight_pre_star (accepts (K$ 0)) (p,v) = \<^bold>\<Sum>{d' * accepts (K$ 0) (q,w)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"
     by (simp add: weight_pre_star_def)
@@ -825,7 +831,7 @@ proof -
     by fastforce
   also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sigma>(p,v) \<Rightarrow>\<^sup>* q |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
     using SumInf_mono[of "{pvq. \<exists>d q. pvq = (\<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q) \<and> q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
-        "{\<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q |q. q \<in> finals}"] countable_monoid_rtrancl_wts_to_monoidLTS countable_f_finals by force
+        "{\<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q |q. q \<in> finals}"] countable_monoid_rtrancl_wts_to_monoidLTS_P countable_f_finals by force
   also have "... \<le> \<^bold>\<Sum>{d |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
     using SumInf_mono_wrt_img_of_set[of 
         "\<lambda>(d, q). q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')"
@@ -1156,22 +1162,16 @@ lemma accepts_if_is_rule:
     and "saturated pre_star_rule A"
   shows "accepts A (p',(\<gamma> # w1)) \<le> d * accepts A (p'', (lbl u1) @ w1)"
 proof -
-  have A: "countable {uu. \<exists>d' q. uu = d * d' \<and> q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    sorry 
-  
-  have B: "countable {uu. \<exists>d' q. uu = d' \<and> q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-    sorry
-  
   have "\<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<le>
          \<^bold>\<Sum> {d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
     using monoid_rtrancl_wts_to_monoidLTS_if_saturated_is_rule[OF assms(1) assms(2), of w1 ]
       SumInf_bounded_by_SumInf_if_members_bounded[of
         "{d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
         "{d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"]
-    using countable_monoid_rtrancl_wts_to_monoidLTS by fastforce
+    using countable_monoid_rtrancl_wts_to_monoidLTS_P by fastforce
   also have "... \<le> d * \<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
     using SumInf_left_distr[of "{is_d'. \<exists>d' q. is_d' = d' \<and> q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}" d] 
-      countable_monoid_rtrancl_wts_to_monoidLTS by fastforce
+      countable_monoid_rtrancl_wts_to_monoidLTS_P by fastforce
   finally show ?thesis
     using accepts_def by force
 qed
@@ -1235,7 +1235,5 @@ theorem correctness:
   using assms lemma_3_2_w_alternative''' lemma_3_1_w  saturation_def dual_order.eq_iff by metis
 
 end
-
-  find_theorems countable monoid_rtrancl
 
 end
