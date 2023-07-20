@@ -67,31 +67,68 @@ proof -
   then show ?thesis using monoid_star_witness_bij_betw countableI_bij2 by fast
 qed
 
-lemma countable_f_on_set:"countable X \<Longrightarrow> countable {f x | x. x \<in> X}"
+lemma Collect_conj_eq2: "{(x,y). P x y \<and> Q x y} = {(x,y). P x y} \<inter> {(x,y). Q x y}"
+  using Collect_conj_eq[of "\<lambda>xy. P (fst xy) (snd xy)" "\<lambda>xy. Q (fst xy) (snd xy)"] by auto
+
+lemma Collect_conj_eq3: "{(x,y,z). P x y z \<and> Q x y z} = {(x,y,z). P x y z} \<inter> {(x,y,z). Q x y z}"
+  using Collect_conj_eq[of "\<lambda>xyz. P (fst xyz) (fst (snd xyz)) (snd (snd xyz))"
+      "\<lambda>xyz. Q (fst xyz) (fst (snd xyz)) (snd (snd xyz))"] by auto
+
+lemma setcompr_eq_image2: "{f a b |a b. P a b} = (\<lambda>(a,b). f a b) ` {(a,b). P a b}" (* Maybe unfolding this is good for simp? *)
+  by auto
+
+lemma setcompr_eq_image3: "{f a b c |a b c. P a b c } = (\<lambda>(a,b,c). f a b c) ` {(a,b,c ). P a b c}" (* Maybe unfolding this is good for simp? *)
+  by (auto split: prod.split simp add: image_def)
+
+lemma countable_setcompr:
+  assumes "countable {x . X x}"
+  shows "countable {f x | x. X x}"
+  by (simp add: assms setcompr_eq_image)
+
+lemma countable_f_on_set: "countable X \<Longrightarrow> countable {f x | x. x \<in> X}"
   by (simp add: setcompr_eq_image)
 
+lemma countable_f_on_P_setXXX: "countable {x. Q x} \<Longrightarrow> countable {f x | x. P x \<and> Q x}"
+  sorry
+
+lemma countable_f_on_P_setXXX2: "countable {(x, y). Q x y} \<Longrightarrow> countable {f x y | x y. P x y \<and> Q x y}"
+  sorry
+
+lemma countable_f_on_P_setXXX3: "countable {(x, y, z). Q x y z} \<Longrightarrow> countable {f x y z | x y z. P x y z \<and> Q x y z}"
+  sorry
+
+lemma u: "countable {(l, c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+  unfolding setcompr_eq_image using countable_f_on_P_setXXX3[of "\<lambda>c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>c l c'. (l, c')" "\<lambda>x y z. x = c"]
+  using countable_monoid_star monoid_star_def by auto
+
+lemma v: "countable {(c, l). c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+  unfolding setcompr_eq_image using countable_f_on_P_setXXX3[of "\<lambda>c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>c l c'. (c, l)" "\<lambda>x y z. z = c'"]
+  using countable_monoid_star monoid_star_def by auto
+
+lemma u1: "countable {l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+  unfolding setcompr_eq_image using countable_f_on_P_setXXX3[of "\<lambda>c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>c l c'. l" "\<lambda>x y z. x = c \<and> z = c'"]
+  using countable_monoid_star monoid_star_def by auto
+
 lemma countable_star_f_p: "countable {f c l c' | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<and> P c c'}"
-proof -
-  have subset:"{(c,l,c') | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<and> P c c'} \<subseteq> monoid_star" unfolding monoid_star_def  by blast
-  have "countable {(c,l,c') | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<and> P c c'}" 
-    using countable_subset[OF subset countable_monoid_star] by blast
-  then show ?thesis using countable_f_on_set[of _ "\<lambda>(c, l, c'). f c l c' "] by fastforce
-qed
+  unfolding setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3 Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3 
+  using countable_monoid_star monoid_star_def u1 u v by force
 
 lemma countable_star_f_p2: "countable {f l c' | l c'. P c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-  using countable_subset[OF _ countable_star_f_p[of "\<lambda>_ l c'. f l c'" "\<lambda>_ c'. P c'"], of "{f l c' | l c'. P c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"] 
-  by force
+  unfolding setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3 Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3 
+  using countable_monoid_star monoid_star_def u1 u v by force
 
 lemma countable_star_f_p3: "countable {f l c' | l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-  using countable_star_f_p2[of f "\<lambda>_. True" c] by metis
+  unfolding setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3 Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3 
+  using countable_monoid_star monoid_star_def u1 u v by force
 
 lemma countable_star_f_p4: "countable {f l | l . P \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-  using countable_subset[OF _ countable_star_f_p[of "\<lambda>_ l _. f l" "\<lambda>_ _. P"], of "{f l | l . P \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"] 
-  by force
+  unfolding setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3 Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3 
+  using countable_monoid_star monoid_star_def u1 u v by force
 
 lemma countable_star_f_p5:
   "countable {d. pw \<Midarrow> d \<Rightarrow>\<^sup>* c}"
-  using countable_star_f_p4[of "\<lambda>d. d" "True"] by auto
+  unfolding setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3 Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3 
+  using countable_monoid_star monoid_star_def u1 u v by force
 
 lemma countable_star_f_p6:
   "countable {f c1 d1' c2 c3 d2' c4 |c1 d1' c2 c3 d2' c4. c1 \<Midarrow> d1' \<Rightarrow>\<^sup>* c2 \<and> c3 \<Midarrow> d2' \<Rightarrow>\<^sup>* c4}"
@@ -117,35 +154,20 @@ lemma countable_star_f_p8:
   by (rule countable_subset[OF _ countable_star_f_p7[of f]]) fastforce
 
 lemma countable_star_f_p9: "countable {f l | l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-  by (metis countable_image countable_star_f_p5 image_Collect)
+  unfolding setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3 Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3 
+  using countable_monoid_star monoid_star_def u1 u v by force
 
 lemma countable_star_f_p10: "countable {f l | l. c \<Midarrow>l\<Rightarrow>\<^sup>* c}"
-  by (metis countable_image countable_star_f_p5 image_Collect)
+  unfolding setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3 Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3 
+  using countable_monoid_star monoid_star_def u1 u v by force
 
 lemma countable_star_f_p11: "countable {f c l c' | c l c'. P c l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-proof -
-  have subset:"{(c,l,c') | c l c'. P c l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'} \<subseteq> monoid_star" unfolding monoid_star_def  by blast
-  have "countable {(c,l,c') | c l c'. P c l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}" 
-    using countable_subset[OF subset countable_monoid_star] by blast
-  then show ?thesis using countable_f_on_set[of _ "\<lambda>(c, l, c'). f c l c' "] by fastforce
-qed
-
-lemma setcompr_eq_image2: "{f a b |a b. P a b } = (\<lambda>(a,b). f a b) ` {(a,b). P a b}" (* Maybe unfolding this is good for simp? *)
-  by auto
+  unfolding setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3 Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3 
+  using countable_monoid_star monoid_star_def u1 u v by force
 
 lemma countable_star_f_p12: "countable {f l c' | l c'. P l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-proof -
-  have subset:"{(c,l,c') | l c'. P l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'} \<subseteq> monoid_star" 
-    unfolding monoid_star_def by blast
-  then have "countable {(c,l,c') | l c'. P l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-    by (simp add: countable_monoid_star countable_subset)
-  then have "countable ((\<lambda>(c,l,c'). f l c') ` {(c,l,c') | l c'. P l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'})"
-    by auto
-  then show ?thesis 
-    unfolding image_def setcompr_eq_image2 by simp
-qed
-
-
+  unfolding setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3 Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3 
+  using countable_monoid_star monoid_star_def u1 u v by force
 
 lemmas countable_star_f_all = 
   countable_star_f_p countable_star_f_p2 countable_star_f_p3 countable_star_f_p4 countable_star_f_p5

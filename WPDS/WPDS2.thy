@@ -130,10 +130,7 @@ lemma SumInf_bounded_by_SumInf_if_members_bounded:
   shows "\<^bold>\<Sum> X \<le> \<^bold>\<Sum> Y"
   by (meson assms SumInf_bounded_if_set_bounded assms dual_order.trans countable_SumInf_elem)
 
-lemma count112y4634678163782719833874t37846172332:
-  assumes "countable {x . X x}"
-  shows "countable {f x | x. X x}"
-  by (simp add: assms setcompr_eq_image)
+
 
 lemma SumInf_mult_isor:
   assumes "countable {d . X d}"
@@ -142,7 +139,7 @@ lemma SumInf_mult_isor:
   apply (rule SumInf_bounded_by_SumInf_if_members_bounded)
     apply
     (use assms idempotent_semiring_ord_class.mult_isor in auto)
-  using count112y4634678163782719833874t37846172332[of X] by auto
+  using countable_setcompr[of X] by auto
 
 lemma SumInf_mono_wrt_img_of_set: 
   assumes "countable {x. X x}"
@@ -150,7 +147,7 @@ lemma SumInf_mono_wrt_img_of_set:
   shows "\<^bold>\<Sum> {f t| t. X t} \<le> \<^bold>\<Sum> {g t| t. X t}"
   apply (rule SumInf_bounded_by_SumInf_if_members_bounded)
     apply (use assms in auto)
-  using count112y4634678163782719833874t37846172332[of X] by auto
+  using countable_setcompr[of X] by auto
 
 \<comment> \<open>Generalization of PDS_with_P_automata.accepts that computes the meet-over-all-paths in the W-automaton.\<close>
 definition accepts :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
@@ -461,8 +458,8 @@ lemma monoid_star_relp_if_l_step_relp:
 lemma push_seq_weight_if_monoid_star_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])"
   shows "(\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p') \<le> d"
-  using countable_SumInf_elem[of "{d'. (p, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}" d]
-    countable_push_seq_weight assms by auto
+  using countable_SumInf_elem[of "{d'. (p, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}" d] countable_push_seq_weight
+    assms by auto
 
 lemma push_seq_weight_if_l_step_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow> (p',[])"
@@ -774,13 +771,9 @@ lemma countable_monoid_rtrancl_wts_to_monoidLTS:
  shows "countable (monoid_rtrancl (wts_to_monoidLTS A))"
   by (metis countable_wts monoidLTS.countable_monoid_star monoidLTS.intro monoidLTS.monoid_star_is_monoid_rtrancl)
 
-
-
-find_theorems countable image
 lemma xxxxxxx:
   fixes A :: "(('ctr_loc, 'label, 'weight::bounded_idempotent_semiring) w_transitions)"
   shows "countable {(d, q). (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-
 proof -
   have "countable {(p, (w, d), q)| d q. (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
     by (smt (verit, ccfv_threshold) countable_monoid_rtrancl_wts_to_monoidLTS countable_subset mem_Collect_eq subset_eq)
@@ -791,10 +784,6 @@ proof -
     apply (simp split: prod.split)
     by (smt (verit) Collect_cong Pair_inject case_prodE case_prodI2)
 qed
-
-
-lemma Collect_conj_eq2: "{(x,y). P x y \<and> Q x y} = {(x,y). P x y} \<inter> {(x,y). Q x y}"
-  using Collect_conj_eq[of "\<lambda>xy. P (fst xy) (snd xy)" "\<lambda>xy. Q (fst xy) (snd xy)"] by auto
 
 lemma countable_monoid_rtrancl_wts_to_monoidLTS_P: 
   fixes A::"(('ctr_loc, 'label, 'weight::bounded_idempotent_semiring) w_transitions)"
