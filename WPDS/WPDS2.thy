@@ -788,7 +788,7 @@ lemma countable_monoid_rtrancl_wts_to_monoidLTS:
  shows "countable (monoid_rtrancl (wts_to_monoidLTS A))"
   by (metis countable_wts monoidLTS.countable_monoid_star monoidLTS.intro monoidLTS.monoid_star_is_monoid_rtrancl)
 
-lemma xxxxxxx:
+lemma countable_monoid_rtrancl_wts_to_monoidLTS_pair:
   fixes A :: "(('ctr_loc, 'label, 'weight::bounded_idempotent_semiring) w_transitions)"
   shows "countable {(d, q). (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
 proof -
@@ -801,12 +801,16 @@ proof -
     by (smt (verit) Collect_cong Pair_inject case_prodE case_prodI2)
 qed
 
+lemmas countable_monoid_rtrancl_wts_to_monoidLTS_all =
+  countable_monoid_rtrancl_wts_to_monoidLTS
+  countable_monoid_rtrancl_wts_to_monoidLTS_pair
+
 lemma countable_monoid_rtrancl_wts_to_monoidLTS_P: 
   fixes A::"(('ctr_loc, 'label, 'weight::bounded_idempotent_semiring) w_transitions)"
   shows "countable {f d q |d q. P d q \<and> (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-  using xxxxxxx by (simp add: dissect_set)
+  using countable_monoid_rtrancl_wts_to_monoidLTS_all by (simp add: dissect_set)
 
-lemma countable_f_finals: "countable {f q| q. q \<in>finals}"
+lemma countable_f_finals: "countable {f q| q. q \<in> finals}"
   by (simp add: dissect_set)
 
 lemma lemma_3_2_w_alternative:
@@ -832,14 +836,14 @@ proof -
     by fastforce
   also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sigma>(p,v) \<Rightarrow>\<^sup>* q |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
     using SumInf_mono[of "{pvq. \<exists>d q. pvq = (\<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q) \<and> q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
-        "{\<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q |q. q \<in> finals}"] countable_monoid_rtrancl_wts_to_monoidLTS_P countable_f_finals by force
+        "{\<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q |q. q \<in> finals}"] countable_f_finals by (force simp add: countable_monoid_rtrancl_wts_to_monoidLTS_all dissect_set)
   also have "... \<le> \<^bold>\<Sum>{d |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
     using SumInf_mono_wrt_img_of_set[of 
         "\<lambda>(d, q). q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')"
         "\<lambda>(d, q). \<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q"
         "\<lambda>(d, q). d"
         ]
-    using soundA' sound_def2 countable_monoid_rtrancl_wts_to_monoidLTS xxxxxxx by (simp add: dissect_set)
+    using soundA' sound_def2 countable_monoid_rtrancl_wts_to_monoidLTS by (force simp add: countable_monoid_rtrancl_wts_to_monoidLTS_all dissect_set)
   also have "... = accepts A' (p,v)"
     unfolding accepts_def by (simp split: prod.split)
   finally show ?thesis
