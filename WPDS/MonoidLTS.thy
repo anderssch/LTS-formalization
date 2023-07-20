@@ -68,16 +68,16 @@ proof -
 qed
 
 lemma countable_monoid_star_variant1: "countable {(l, c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-  using countable_f_on_P_setXXX3[of "\<lambda>c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>c l c'. (l, c')" "\<lambda>x y z. x = c"]
+  using countable_f_on_P_Q_set3[of "\<lambda>c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>c l c'. (l, c')" "\<lambda>x y z. x = c"]
     countable_monoid_star monoid_star_def by auto
 
 lemma countable_monoid_star_variant2: "countable {(c, l). c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-  using countable_f_on_P_setXXX3[of "\<lambda>c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>c l c'. (c, l)" "\<lambda>x y z. z = c'"]
+  using countable_f_on_P_Q_set3[of "\<lambda>c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>c l c'. (c, l)" "\<lambda>x y z. z = c'"]
     countable_monoid_star monoid_star_def by auto
 
 lemma countable_monoid_star_variant3: "countable {l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-  using countable_f_on_P_setXXX3[of "\<lambda>c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>c l c'. l" "\<lambda>x y z. x = c \<and> z = c'"]
-  using countable_monoid_star monoid_star_def by auto
+  using countable_f_on_P_Q_set3[of "\<lambda>c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>c l c'. l" "\<lambda>x y z. x = c \<and> z = c'"]
+    countable_monoid_star monoid_star_def by auto
 
 lemmas countable_monoid_star_all =
   countable_monoid_star
@@ -87,20 +87,10 @@ lemmas countable_monoid_star_all =
   countable_monoid_star_variant3
 
 lemma countable_star_f_p: "countable {f c l c' | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<and> P c c'}"
-  by (auto simp add: disect_set countable_monoid_star_all)
-
-lemma countable_star_f_p2: "countable {f l c' | l c'. P c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-  by (auto simp add: disect_set countable_monoid_star_all)
+  by (auto simp add: dissect_set countable_monoid_star_all)
 
 lemma countable_star_f_p3: "countable {f l c' | l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-   by (auto simp add: disect_set countable_monoid_star_all)
-
-lemma countable_star_f_p4: "countable {f l | l . P \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-   by (auto simp add: disect_set countable_monoid_star_all)
-
-lemma countable_star_f_p5:
-  "countable {d. pw \<Midarrow> d \<Rightarrow>\<^sup>* c}"
-  using countable_monoid_star_variant3 .
+   by (auto simp add: dissect_set countable_monoid_star_all)
 
 lemma countable_star_f_p6:
   "countable {f c1 d1' c2 c3 d2' c4 |c1 d1' c2 c3 d2' c4. c1 \<Midarrow> d1' \<Rightarrow>\<^sup>* c2 \<and> c3 \<Midarrow> d2' \<Rightarrow>\<^sup>* c4}"
@@ -117,30 +107,12 @@ proof -
     unfolding image_def by fastforce
 qed
 
-lemma countable_star_f_p7:
-  "countable {f d1' d2' |c1 d1' c2 c3 d2' c4. c1 \<Midarrow> d1' \<Rightarrow>\<^sup>* c2 \<and> c3 \<Midarrow> d2' \<Rightarrow>\<^sup>* c4}"
-  using countable_star_f_p6 .
-
-lemma countable_star_f_p8:
-  "countable {f d1' d2' |d1' d2'. c1 \<Midarrow> d1' \<Rightarrow>\<^sup>* c2 \<and> c3 \<Midarrow> d2' \<Rightarrow>\<^sup>* c4}"
-  by (rule countable_subset[OF _ countable_star_f_p7[of f]]) fastforce
-
 lemma countable_star_f_p9: "countable {f l | l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-   by (auto simp add: disect_set countable_monoid_star_all)
-
-lemma countable_star_f_p10: "countable {f l | l. c \<Midarrow>l\<Rightarrow>\<^sup>* c}"
-  using countable_star_f_p9.
-
-lemma countable_star_f_p11: "countable {f c l c' | c l c'. P c l c' \<and> c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-  using countable_monoid_star monoid_star_def by (auto simp add: disect_set)
-
-lemmas countable_star_f_all = 
-  countable_star_f_p countable_star_f_p2 countable_star_f_p3 countable_star_f_p4 countable_star_f_p5
-  countable_star_f_p6 countable_star_f_p7 countable_star_f_p8 countable_star_f_p9 countable_star_f_p10
-  countable_star_f_p11
-
+   by (auto simp add: dissect_set countable_monoid_star_all)
+  
 lemma monoid_star_is_monoid_rtrancl[simp]: "monoid_star = monoid_rtrancl transition_relation"
   unfolding monoid_star_def l_step_relp_def monoid_rtrancl_def by simp
+
 end
 
 (*

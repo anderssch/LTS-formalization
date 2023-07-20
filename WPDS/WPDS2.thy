@@ -282,17 +282,27 @@ lemma push_seq_weight_def2:
   "(\<^bold>\<Sigma>pw\<Rightarrow>\<^sup>*p') = \<^bold>\<Sum> {d |d. pw \<Midarrow> d \<Rightarrow>\<^sup>* (p', [])}"
   by auto
 
+lemma countable_monoid_star_all_triple: "countable {(d', q, w). (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, w)}"
+  by (auto simp: disect_set countable_monoid_star_variant1)
+
 lemma countable_push_seq_weight:
   "countable {d |d. pw \<Midarrow> d \<Rightarrow>\<^sup>* (p', [])}"
   using countable_star_f_p9 .
 
-lemma nnn: "countable {(d', q). (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])}"
-  sorry
+lemma countable_push_seq_weight_variant1: "countable {(d', q). (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])}"
+proof -
+  have "countable {(l, c'). (p, v) \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    using countable_monoid_star_all(3)[of "(p,v)"]
+    by auto
+  then have "countable ((\<lambda>(l, c'). (l, fst c')) ` ({(l, c'). snd c' = []} \<inter> {(l, c'). (p, v) \<Midarrow> l \<Rightarrow>\<^sup>* c'}))"
+    by auto
+  then show ?thesis
+    unfolding image_def Int_def using Collect_mono_iff countable_subset by fastforce
+qed
 
-lemma nnn2: "countable {(d', q, w). (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, w)}"
-  sorry
-
-lemmas countable_monoid_star_all = countable_monoid_star_all countable_push_seq_weight nnn nnn2
+lemmas countable_monoid_star_all = 
+  countable_monoid_star_all countable_push_seq_weight countable_monoid_star_all_triple 
+  countable_push_seq_weight_variant1
 
 lemma countable_push_seq_weight2: (* maybe not a good name *)
   "countable {d'| d' q. P q d' \<and> (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])}"
@@ -1215,7 +1225,7 @@ lemma lemma_3_1_w:
   shows "accepts A c \<le> weight_pre_star (accepts (K$ 0)) c"
   unfolding weight_pre_star_def
   using SumInf_bounded_if_set_bounded[of "{l * accepts (K$ 0) c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" "accepts A c"]
-    lemma_3_1_w'[OF assms] countable_star_f_p3 by fastforce
+    lemma_3_1_w'[OF assms] by (fastforce simp add: disect_set countable_monoid_star_all)
 
 theorem correctness:
   assumes "saturation pre_star_rule (K$ 0) A"
