@@ -284,7 +284,7 @@ lemma push_seq_weight_def2:
 
 lemma countable_push_seq_weight:
   "countable {d |d. pw \<Midarrow> d \<Rightarrow>\<^sup>* (p', [])}"
-  using countable_star_f_p5 by auto
+  using countable_star_f_p9 .
 
 lemma nnn: "countable {(d', q). (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])}"
   sorry
@@ -292,13 +292,15 @@ lemma nnn: "countable {(d', q). (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, 
 lemma nnn2: "countable {(d', q, w). (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, w)}"
   sorry
 
+lemmas countable_monoid_star_all = countable_monoid_star_all countable_push_seq_weight nnn nnn2
+
 lemma countable_push_seq_weight2: (* maybe not a good name *)
   "countable {d'| d' q. P q d' \<and> (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])}"
-  unfolding setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3 Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3 using nnn by auto
+  unfolding setcompr_eq_image2 by (auto simp add: disect_set countable_monoid_star_all)
 
 lemma countable_push_seq_weight3: (* maybe not a good name *)
   "countable {f d' q w| d' q w. (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, w)}"
-  unfolding setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3 Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3 using nnn2 by auto
+  by (auto simp add: disect_set countable_monoid_star_all)
 
 definition sound :: "(('ctr_loc, 'label, 'weight) w_transitions) \<Rightarrow> bool" where
   "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> (wts_to_monoidLTS A) \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,[\<gamma>])\<Rightarrow>\<^sup>*p')"
@@ -463,8 +465,8 @@ lemma monoid_star_relp_if_l_step_relp:
 lemma push_seq_weight_if_monoid_star_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])"
   shows "(\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p') \<le> d"
-  using countable_SumInf_elem[of "{d'. (p, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}" d] countable_push_seq_weight
-    assms by auto
+  using countable_SumInf_elem[of "{d'. (p, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}" d] 
+    assms by (auto simp add: countable_monoid_star_all)
 
 lemma push_seq_weight_if_l_step_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow> (p',[])"
@@ -479,11 +481,11 @@ proof -
   have "(\<^bold>\<Sigma>(p'',w'@w'') \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d1' * d2'| d1'  d2'. (p'',w') \<Midarrow>d1'\<Rightarrow>\<^sup>* (pi,[]) \<and> (pi,w'') \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
     using SumInf_mono[of "{d1' * d2' |d1' d2'. (p'', w') \<Midarrow> d1' \<Rightarrow>\<^sup>* (pi, []) \<and> (pi, w'') \<Midarrow> d2' \<Rightarrow>\<^sup>* (p2, [])}" 
         "{d'. (p'', w' @ w'') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}"]
-      countable_push_seq_weight countable_star_f_p8 step_relp_seq by force
+      step_relp_seq by (force simp add: countable_monoid_star_all disect_set)
 
   also have "... \<le> (\<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* pi) * (\<^bold>\<Sigma>(pi,w'') \<Rightarrow>\<^sup>* p2)"
     using SumInf_left_distr[of "{d'. (pi, w'') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}" "\<^bold>\<Sum> {d'. (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (pi, [])}"] 
-      SumInf_of_SumInf_right_distr_simple countable_push_seq_weight by auto
+      SumInf_of_SumInf_right_distr_simple by (force simp add: countable_monoid_star_all disect_set)
   also have "... \<le> d1 * d2"
     using assms BoundedDioid.mult_isol_var by auto
   finally 
@@ -505,11 +507,11 @@ proof -
   have "(\<^bold>\<Sigma> (p1, w) \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d * d'| d'. (p1, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',w') \<and> (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
     using SumInf_mono[of "{d * d' |d'. (p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w') \<and> (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}" 
         "{d'. (p1, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}"]
-    monoid_rtranclp_trans countable_star_f_p4 countable_push_seq_weight by fastforce
+    monoid_rtranclp_trans by (force simp add: countable_monoid_star_all disect_set)
   also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
     using \<open>(p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w')\<close> by fastforce
   also have "... \<le> d * \<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* p2"
-    using countable_push_seq_weight by (simp add: SumInf_left_distr)
+    by (simp add: SumInf_left_distr countable_monoid_star_all disect_set)
   also have "... \<le> d * d'"
     using assms by (simp add: assms BoundedDioid.mult_isol)
   finally 
@@ -535,8 +537,8 @@ proof (induction w arbitrary: d p)
   have "(p, []) \<Midarrow>1\<Rightarrow>\<^sup>* (p', [])"
     using Nil monoid_star_pop by fastforce
   have "d \<ge> \<^bold>\<Sigma>(p, []) \<Rightarrow>\<^sup>* p'" 
-    using countable_SumInf_elem countable_push_seq_weight
-    by (simp add: \<open>(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])\<close> \<open>d = 1\<close> )
+    using countable_SumInf_elem  \<open>(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])\<close> \<open>d = 1\<close> 
+    by (simp add: countable_monoid_star_all disect_set)
   then show ?case .
 next
   case (Cons \<gamma> w)
@@ -784,20 +786,18 @@ proof -
     by (smt (verit, ccfv_threshold) countable_monoid_rtrancl_wts_to_monoidLTS countable_subset mem_Collect_eq subset_eq)
   then show ?thesis 
     using countable_image[of "{(p, (w, d), q)| d q. (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}" "\<lambda>(p, (w, d), q). (d, q)"]
+    apply (simp add: image_def split: prod.split)
     unfolding image_def setcompr_eq_image2 
-    apply -
-    apply (simp split: prod.split)
     by (smt (verit) Collect_cong Pair_inject case_prodE case_prodI2)
 qed
 
 lemma countable_monoid_rtrancl_wts_to_monoidLTS_P: 
   fixes A::"(('ctr_loc, 'label, 'weight::bounded_idempotent_semiring) w_transitions)"
   shows "countable {f d q |d q. P d q \<and> (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
-  unfolding setcompr_eq_image2 Collect_conj_eq2
-  using countable_Int2 countable_image xxxxxxx by metis
+  using xxxxxxx by (simp add: disect_set)
 
 lemma countable_f_finals: "countable {f q| q. q \<in>finals}"
-  by (simp add: countable_f_on_set)
+  by (simp add: disect_set)
 
 lemma lemma_3_2_w_alternative:
   assumes soundA': "sound A'"
@@ -805,9 +805,6 @@ lemma lemma_3_2_w_alternative:
 proof -
   obtain p v where pv_split: "pv = (p, v)"
     by (cases pv) 
-
-  have A: "countable {(d, q)| d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}"
-    using countable_monoid_rtrancl_wts_to_monoidLTS_P .
                               
   have "weight_pre_star (accepts (K$ 0)) (p,v) = \<^bold>\<Sum>{d' * accepts (K$ 0) (q,w)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"
     by (simp add: weight_pre_star_def)
@@ -816,7 +813,7 @@ proof -
   also have "... \<le> \<^bold>\<Sum>{d' |d' q. q \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}"
     using SumInf_mono[of "{d' |d' q. q \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}" 
         "{d' * (if q\<in>finals \<and> w=[] then 1 else 0)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"]
-      countable_push_seq_weight2 countable_push_seq_weight3 by fastforce
+      countable_push_seq_weight2 by (fastforce simp add: countable_monoid_star_all disect_set)
   also have "... = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
     using SumInf_of_SumInf_right_distr[of "\<lambda>d q. d" "\<lambda>d q. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (q,[])" "\<lambda>q. 1" "\<lambda>q. q \<in> finals",symmetric]
     unfolding push_seq_weight_def2[symmetric] mult.right_neutral 
@@ -832,7 +829,7 @@ proof -
         "\<lambda>(d, q). \<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q"
         "\<lambda>(d, q). d"
         ]
-    using A soundA' sound_def2 countable_monoid_rtrancl_wts_to_monoidLTS by force
+    using soundA' sound_def2 countable_monoid_rtrancl_wts_to_monoidLTS xxxxxxx by (simp add: disect_set)
   also have "... = accepts A' (p,v)"
     unfolding accepts_def by (simp split: prod.split)
   finally show ?thesis
@@ -895,8 +892,7 @@ lemma weight_pre_star_mono:
   assumes "X \<le> Y"
   shows "weight_pre_star X c \<le> weight_pre_star Y c"
 proof -
-  have A: "countable {(l, c')| l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-    using countable_star_f_all(3) .
+  
 
   have "\<forall>c. X c \<le> Y c"
     using assms by (simp add: le_funD)
@@ -908,7 +904,7 @@ proof -
   also
   have "... \<le> \<^bold>\<Sum> {l * Y c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
     using SumInf_mono_wrt_img_of_set[of "\<lambda>(l, c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>(l, c). l * X c" "\<lambda>(l, c). l * Y c"] 
-      XY A Collect_mono_iff countable_subset by fastforce
+      XY  Collect_mono_iff countable_subset by (simp add: countable_monoid_star_all disect_set)
   also 
   have "... \<le> weight_pre_star Y c"
     unfolding weight_pre_star_def by auto
@@ -951,16 +947,15 @@ qed
 lemma weight_pre_star_leq':
    "X c \<ge> weight_pre_star X c"
 proof -
-  have count: "countable {l * X c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-    using countable_star_f_all(3) .
+  
 
   have "weight_pre_star X c = \<^bold>\<Sum> {l * X c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
     unfolding weight_pre_star_def by auto
   also have "... \<le> \<^bold>\<Sum> {l * X c |l. c \<Midarrow> l \<Rightarrow>\<^sup>* c}"
     using SumInf_mono[of  "{l * X c |l. c \<Midarrow> l \<Rightarrow>\<^sup>* c}" "{l * X c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" ] 
-      countable_star_f_p10 count by fastforce
+    by (fastforce simp add: countable_monoid_star_all disect_set)
   also have "... \<le> \<^bold>\<Sum> {1 * X c}"
-    using SumInf_mono[of "{1 * X c}" "{l * X c |l. c \<Midarrow> l \<Rightarrow>\<^sup>* c}"] countable_star_f_p10 count by fastforce
+    using SumInf_mono[of "{1 * X c}" "{l * X c |l. c \<Midarrow> l \<Rightarrow>\<^sup>* c}"] by (fastforce simp add: countable_monoid_star_all disect_set)
   also have "... \<le> 1 * X c" 
     by simp
   also have "... \<le> X c" 
@@ -985,12 +980,11 @@ proof -
     {
       fix l c'
       have count: "countable {l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
-        using countable_star_f_p3 by fastforce
+        by (simp add: countable_monoid_star_all disect_set)
       then have "l * \<^bold>\<Sum> {l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''} =
               \<^bold>\<Sum> {l * l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
         unfolding SumInf_left_distr[of "{l' * C c'' |l' c''. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}" l, OF count]
         using mult.assoc 
-          
           mem_Collect_eq[of _ "\<lambda>x. \<exists>l' c''. x = l' * C c'' \<and> c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''"]
         by (metis (no_types, lifting))
     }
