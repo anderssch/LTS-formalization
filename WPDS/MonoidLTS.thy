@@ -1,5 +1,5 @@
 theory MonoidLTS
-  imports "LTS" "MonoidClosure" "BoundedDioid" "Sets_More"
+  imports "LTS" "MonoidClosure" "BoundedDioid" "Set_More"
 begin
 
 \<comment> \<open>If the @{typ 'label} of a LTS is a monoid, we can express the monoid product of labels over a path.\<close>
