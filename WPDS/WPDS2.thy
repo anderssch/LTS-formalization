@@ -973,17 +973,6 @@ lemma weight_pre_star_leq: (* Nice. But we don't use it. *)
   "X \<ge> weight_pre_star X"
   by (simp add: le_fun_def weight_pre_star_leq')
 
-lemma "\<And>d'. (case d' of (l, c') \<Rightarrow> (c \<Midarrow>l\<Rightarrow>\<^sup>* c')) \<Longrightarrow> 
-       countable {((a, aa, b), d') |a aa b. case d' of (l, c') \<Rightarrow> (c' \<Midarrow>a\<Rightarrow>\<^sup>* (aa, b))}"
-  apply safe
-  oops
-
-lemma "(\<And>a aa b.
-         c \<Midarrow> a \<Rightarrow>\<^sup>* (aa, b) \<Longrightarrow>
-         countable {((ab, ac, ba), a, aa, b) |ab ac ba. (aa, b) \<Midarrow> ab \<Rightarrow>\<^sup>* (ac, ba)})"
-using countable_push_seq_weight3 try0
-  by fast
-
 lemma weight_pre_star_dom_fixedpoint':
   "weight_pre_star (weight_pre_star C) c = (weight_pre_star C) c"
 proof -
