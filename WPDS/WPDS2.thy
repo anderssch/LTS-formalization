@@ -74,54 +74,39 @@ notation step_relp (infix "\<Rightarrow>" 80)
 notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 notation l_step_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80)
 notation monoid_star_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [90,90,100] 100) 
-thm SumInf_right_distr
-lemma SumInf_right_distr: 
-  "(\<^bold>\<Sum> D) * d2 = \<^bold>\<Sum> {d1 * d2 | d1. d1 \<in> D}"
-proof -
-  have "countable D"
-    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable?\<close>
-    sorry
-  then show ?thesis
-    using SumInf_right_distr by auto
-qed
 
-lemma SumInf_of_SumInf:
-  "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
-proof -
-  have "countable {d. Q d}"
-    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
-    sorry
-  moreover
-  have "(\<And>d'. Q d' \<Longrightarrow> countable {(d, d') |d. P d d'})"
-    \<comment> \<open>TODO: This should be in assumption. How do we easily show that all the sets we deal with are countable? \<close>
-    sorry
-  ultimately
-  show ?thesis
-    using SumInf_of_SumInf[of Q P f] by auto
-qed
 
-lemma SumInf_of_SumInf_fst_arg: (* not used... *)
+lemma SumInf_of_SumInf_fst_arg: (* not used... and needs assumptions *)
   "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {d | d d'. P d d' \<and> Q d'}"
-  using SumInf_of_SumInf[of "\<lambda>x y. x"] by auto
+  using SumInf_of_SumInf[of _ _ "\<lambda>x y. x"] oops (* by auto *)
 
 lemma SumInf_of_SumInf_right_distr:
-  "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} * g d' |d'. Q d'} = \<^bold>\<Sum> {f d d' * g d' | d d'. P d d' \<and> Q d'}"
+  assumes "countable {d'. Q d'}"
+      and "\<And>d'. Q d' \<Longrightarrow> countable {(d, d') |d. P d d'}"
+    shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} * g d' |d'. Q d'} = \<^bold>\<Sum> {f d d' * g d' | d d'. P d d' \<and> Q d'}"
 proof -
   have eql: "\<forall>d'. {f d d' * g d' |d. P d d'} = {d1 * g d' |d1. \<exists>d. d1 = f d d' \<and> P d d'}"
     by auto
-
-  have "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} * g d' |d'. Q d'} = \<^bold>\<Sum> {\<^bold>\<Sum> {d1 * g d' |d1. d1 \<in> {f d d' |d. P d d'}} |d'. Q d'}"
-    unfolding SumInf_right_distr[of "{f d _ |d. P d _}" "g _"] by auto
+  have "\<And>d'. Q d' \<Longrightarrow> countable {f d d' |d. P d d'}"
+    using assms(2) countable_f_on_P_Q_set2[of P f "\<lambda>x y. True", simplified] countable_image_prod setcompr_eq_image by fast
+  then have "\<And>d'. Q d' \<Longrightarrow> \<^bold>\<Sum> {f d d' |d. P d d'} * g d' = \<^bold>\<Sum> {d2 * g d' |d2. d2 \<in> {f d d' |d. P d d'}}"
+    using SumInf_right_distr[of "{f d _ |d. P d _}" "g _"] by simp
+  then have "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} * g d' |d'. Q d'} = \<^bold>\<Sum> {\<^bold>\<Sum> {d1 * g d' |d1. d1 \<in> {f d d' |d. P d d'}} |d'. Q d'}"
+    by (simp add: setcompr_eq_image)
   also have "... =  \<^bold>\<Sum> {f d d' * g d' | d d'. P d d' \<and> Q d'}"
-    using eql SumInf_of_SumInf[of "\<lambda>d d'. f d d' * g d'" P Q] by auto
+    using eql SumInf_of_SumInf[of Q P "\<lambda>d d'. f d d' * g d'"] assms by auto
   finally
   show ?thesis 
     .
 qed
 
 lemma SumInf_of_SumInf_right_distr_simple:
-  "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d} * d' |d'. Q d'} = \<^bold>\<Sum> {d * d' | d d'. P d \<and> Q d'}"
-  using SumInf_of_SumInf_right_distr[of "\<lambda>x y. x" _ "\<lambda>x. x" ] by auto
+ assumes "countable {d. P d}"
+     and "countable {d. Q d}"
+   shows "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d} * d' |d'. Q d'} = \<^bold>\<Sum> {d * d' | d d'. P d \<and> Q d'}"
+  using SumInf_of_SumInf_right_distr[of Q "\<lambda>x y. P x" "\<lambda>x y. x" "\<lambda>x. x", OF assms(2)] 
+        countable_setcompr[OF assms(1)]
+  by fastforce
 
 lemma SumInf_bounded_by_SumInf_if_members_bounded:
   assumes "countable X"
@@ -825,7 +810,6 @@ lemma lemma_3_2_w_alternative:
 proof -
   obtain p v where pv_split: "pv = (p, v)"
     by (cases pv) 
-                              
   have "weight_pre_star (accepts (K$ 0)) (p,v) = \<^bold>\<Sum>{d' * accepts (K$ 0) (q,w)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"
     by (simp add: weight_pre_star_def)
   also have "... = \<^bold>\<Sum>{d' * (if q\<in>finals \<and> w=[] then 1 else 0)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"
@@ -835,7 +819,8 @@ proof -
         "{d' * (if q\<in>finals \<and> w=[] then 1 else 0)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"]
       countable_push_seq_weight2 by (fastforce simp add: countable_monoid_star_all dissect_set)
   also have "... = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
-    using SumInf_of_SumInf_right_distr[of "\<lambda>d q. d" "\<lambda>d q. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (q,[])" "\<lambda>q. 1" "\<lambda>q. q \<in> finals",symmetric]
+    using SumInf_of_SumInf_right_distr[of "\<lambda>q. q \<in> finals" "\<lambda>d q. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (q,[])" "\<lambda>d q. d" "\<lambda>q. 1", 
+                                       OF _ countable_star_f_p9, symmetric]
     unfolding push_seq_weight_def2[symmetric] mult.right_neutral 
     using Collect_cong[of "\<lambda>d. \<exists>d'. (p, v) \<Midarrow> d \<Rightarrow>\<^sup>* (d', []) \<and> d' \<in> finals"
         "\<lambda>d'. \<exists>q. q \<in> finals \<and> (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])"]
@@ -988,6 +973,17 @@ lemma weight_pre_star_leq: (* Nice. But we don't use it. *)
   "X \<ge> weight_pre_star X"
   by (simp add: le_fun_def weight_pre_star_leq')
 
+lemma "\<And>d'. (case d' of (l, c') \<Rightarrow> (c \<Midarrow>l\<Rightarrow>\<^sup>* c')) \<Longrightarrow> 
+       countable {((a, aa, b), d') |a aa b. case d' of (l, c') \<Rightarrow> (c' \<Midarrow>a\<Rightarrow>\<^sup>* (aa, b))}"
+  apply safe
+  oops
+
+lemma "(\<And>a aa b.
+         c \<Midarrow> a \<Rightarrow>\<^sup>* (aa, b) \<Longrightarrow>
+         countable {((ab, ac, ba), a, aa, b) |ab ac ba. (aa, b) \<Midarrow> ab \<Rightarrow>\<^sup>* (ac, ba)})"
+using countable_push_seq_weight3 try0
+  by fast
+
 lemma weight_pre_star_dom_fixedpoint':
   "weight_pre_star (weight_pre_star C) c = (weight_pre_star C) c"
 proof -
@@ -1014,9 +1010,12 @@ proof -
   also
   have "... = \<^bold>\<Sum> {l * l' * C c'' |l' c'' l c'. c' \<Midarrow> l' \<Rightarrow>\<^sup>* c'' \<and> c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
     using SumInf_of_SumInf[of
-        "\<lambda>(l',c'') (l,c'). l * l' * C c''"
-        "\<lambda>(l',c'') (l,c').  c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''"
-        "\<lambda>(l,c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'"] by auto
+        "\<lambda>(l,c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'"        
+        "\<lambda>(l',c'') (l,c').  c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''"        
+        "\<lambda>(l',c'') (l,c'). l * l' * C c''", 
+        OF countable_monoid_star_variant1] 
+          countable_push_seq_weight3
+    by force
   also
   have "... = \<^bold>\<Sum> {l * l' * C c'' |l' c'' l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<and> c' \<Midarrow> l' \<Rightarrow>\<^sup>* c''}"
     by meson
