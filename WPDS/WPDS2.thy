@@ -1252,16 +1252,10 @@ instantiation state :: (enum, enum) enum begin
   definition "enum_class.enum = map Init enum_class.enum @ map Noninit enum_class.enum"
   definition "enum_class.enum_all P \<longleftrightarrow> enum_class.enum_all (\<lambda>x. P (Init x)) \<and> enum_class.enum_all (\<lambda>x. P (Noninit x))"
   definition "enum_class.enum_ex P \<longleftrightarrow> enum_class.enum_ex (\<lambda>x. P (Init x)) \<or> enum_class.enum_ex (\<lambda>x. P (Noninit x))"
-
-instance proof 
-qed (simp_all only: enum_state_def enum_all_state_def enum_ex_state_def UNIV_state,
-     auto simp add: enum_UNIV distinct_map enum_distinct inj_def) 
+  instance proof 
+  qed (simp_all only: enum_state_def enum_all_state_def enum_ex_state_def UNIV_state,
+       auto simp add: enum_UNIV distinct_map enum_distinct inj_def) 
 end
-
-
-lemma countable_monoid_rtrancl: "countable X \<Longrightarrow> countable (monoid_rtrancl X)"
-  thm monoid_rtrancl.induct
-  sorry
 
 locale WPDS_with_W_automata = WPDS \<Delta>
   for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"

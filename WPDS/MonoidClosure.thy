@@ -1,5 +1,5 @@
 theory MonoidClosure
-  imports "ProdDioid" Kleene_Algebra.Dioid_Models
+  imports "ProdDioid" Kleene_Algebra.Dioid_Models "Set_More"
 begin
 
 \<comment> \<open>Preliminary definition of reflexive and transitive closure over a relation labelled with a monoid, 
@@ -506,5 +506,63 @@ next
     by (metis (mono_tags, lifting) \<open>(s, (d''', l), p') \<in> monoid_rtrancl (list_embed_ts ts)\<close> 
         \<open>du1 = d'' * d'''\<close> e(3) mult.assoc)
 qed
+
+
+context 
+  fixes ts :: "('a::countable \<times> 'b::monoid_mult \<times> 'a) set"
+  assumes ts_countable: "countable ts"
+begin
+
+definition monoid_rtrancl_witness :: "'a \<Rightarrow> 'b \<Rightarrow> 'a \<Rightarrow> ('a \<times> ('a \<times> 'b \<times> 'a) list)" where
+  "monoid_rtrancl_witness c l c' = (SOME trace. fst trace = c \<and> is_trace c (snd trace) c' \<and> trace_weight (snd trace) = l \<and> (snd trace) \<in> lists ts)"
+abbreviation monoid_rtrancl_witness_tuple :: "'a \<times> 'b \<times> 'a \<Rightarrow> ('a \<times> ('a \<times> 'b \<times> 'a) list)" where
+  "monoid_rtrancl_witness_tuple \<equiv> (\<lambda>(c,l,c'). monoid_rtrancl_witness c l c')"
+lemma monoid_star_witness_unfold:                   
+  assumes "(c, l, c') \<in> monoid_rtrancl ts"
+  assumes "trace = monoid_rtrancl_witness c l c'"
+  shows "fst trace = c \<and> is_trace c (snd trace) c' \<and> trace_weight (snd trace) = l \<and> (snd trace) \<in> lists ts"
+  using monoid_rtrancl_exists_trace[OF assms(1)] assms(2)
+  unfolding monoid_rtrancl_witness_def
+  by simp (rule someI_ex, simp)
+
+lemma countable_monoid_rtrancl_witness: "countable {monoid_rtrancl_witness c l c' | c l c'. (c, l, c') \<in> monoid_rtrancl ts}"
+proof -
+  have subset: "{monoid_rtrancl_witness c l c' | c l c'. (c, l, c') \<in> monoid_rtrancl ts} \<subseteq> (UNIV::'a set) \<times> (lists ts)"
+  proof
+    fix x
+    assume assms: "x \<in> {monoid_rtrancl_witness c l c' | c l c'. (c, l, c') \<in> monoid_rtrancl ts}"
+    have "fst x \<in> (UNIV::'a set)" by fast
+    moreover have "snd x \<in> lists ts" using assms monoid_star_witness_unfold by blast
+    ultimately show "x \<in> UNIV \<times> lists ts" by (simp add: mem_Times_iff)
+  qed
+  have "countable ((UNIV::'a set) \<times> (lists ts))"
+    using ts_countable by blast
+  then show ?thesis using countable_subset[OF subset] by blast
+qed
+
+lemma monoid_rtrancl_witness_inj_aux:
+  assumes "(c, l, c') \<in> monoid_rtrancl ts"
+    and "(c1, l1, c1') \<in> monoid_rtrancl ts"
+    and "monoid_rtrancl_witness c l c' = monoid_rtrancl_witness c1 l1 c1'"
+  shows "c = c1 \<and> l = l1 \<and> c' = c1'"
+  using monoid_star_witness_unfold[OF assms(1)] monoid_star_witness_unfold[OF assms(2)] 
+        assms(3) is_trace_inj 
+  by (cases "snd (monoid_rtrancl_witness c l c') \<noteq> []", fastforce) auto
+lemma monoid_rtrancl_witness_inj: "inj_on monoid_rtrancl_witness_tuple (monoid_rtrancl ts)"
+  unfolding inj_on_def using monoid_rtrancl_witness_inj_aux by force
+lemma monoid_rtrancl_witness_bij_betw: 
+  "bij_betw monoid_rtrancl_witness_tuple (monoid_rtrancl ts) (monoid_rtrancl_witness_tuple` (monoid_rtrancl ts))"
+  unfolding bij_betw_def using monoid_rtrancl_witness_inj by blast
+
+lemma countable_monoid_rtrancl: "countable (monoid_rtrancl ts)"
+proof -
+  have subset:"(monoid_rtrancl_witness_tuple` (monoid_rtrancl ts)) \<subseteq> {monoid_rtrancl_witness c l c' | c l c'. (c, l, c') \<in> monoid_rtrancl ts}"
+    by fast
+  then have "countable (monoid_rtrancl_witness_tuple` (monoid_rtrancl ts))"
+    using countable_subset[OF subset countable_monoid_rtrancl_witness] by blast
+  then show ?thesis using monoid_rtrancl_witness_bij_betw countableI_bij2 by fast
+qed
+end
+
 
 end

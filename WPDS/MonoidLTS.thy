@@ -1,5 +1,5 @@
 theory MonoidLTS
-  imports "LTS" "MonoidClosure" "BoundedDioid" "Set_More"
+  imports "LTS" "MonoidClosure" "BoundedDioid"
 begin
 
 \<comment> \<open>If the @{typ 'label} of a LTS is a monoid, we can express the monoid product of labels over a path.\<close>
@@ -14,58 +14,14 @@ abbreviation monoid_star_relp :: "'state \<Rightarrow> 'label \<Rightarrow> 'sta
 definition monoid_star :: "('state \<times> 'label \<times> 'state) set" where
   "monoid_star = {(c,l,c'). c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
 
+lemma monoid_star_is_monoid_rtrancl[simp]: "monoid_star = monoid_rtrancl transition_relation"
+  unfolding monoid_star_def l_step_relp_def monoid_rtrancl_def by simp
+
 lemma star_to_closure: "c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<Longrightarrow> (c, l, c') \<in> monoid_rtrancl transition_relation"
   unfolding l_step_relp_def monoid_rtrancl_def by simp
 
-definition monoid_star_witness :: "'state \<Rightarrow> 'label \<Rightarrow> 'state \<Rightarrow> ('state \<times> ('state \<times> 'label \<times> 'state) list)" where
-  "monoid_star_witness c l c' = (SOME trace. fst trace = c \<and> is_trace c (snd trace) c' \<and> trace_weight (snd trace) = l \<and> (snd trace) \<in> lists transition_relation)"
-abbreviation monoid_star_witness_tuple :: "'state \<times> 'label \<times> 'state \<Rightarrow> ('state \<times> ('state \<times> 'label \<times> 'state) list)" where
-  "monoid_star_witness_tuple \<equiv> (\<lambda>(c,l,c'). monoid_star_witness c l c')"
-lemma monoid_star_witness_unfold:
-  assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* c'"
-  assumes "trace = monoid_star_witness c l c'"
-  shows "fst trace = c \<and> is_trace c (snd trace) c' \<and> trace_weight (snd trace) = l \<and> (snd trace) \<in> lists transition_relation"
-  using monoid_rtrancl_exists_trace[OF star_to_closure[OF assms(1)]] assms(2)
-  unfolding monoid_star_witness_def
-  by simp (rule someI_ex, simp)
-
-lemma countable_monoid_star_witness: "countable {monoid_star_witness c l c' | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-proof -
-  have subset: "{monoid_star_witness c l c' | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'} \<subseteq> (UNIV::'state set) \<times> (lists transition_relation)"
-  proof
-    fix x
-    assume assms: "x \<in> {monoid_star_witness c l c' |c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-    have "fst x \<in> (UNIV::'state set)" by fast
-    moreover have "snd x \<in> lists transition_relation" using assms monoid_star_witness_unfold by blast
-    ultimately show "x \<in> UNIV \<times> lists transition_relation" by (simp add: mem_Times_iff)
-  qed
-  have "countable ((UNIV::'state set) \<times> (lists transition_relation))"
-    using ts_countable by blast
-  then show ?thesis using countable_subset[OF subset] by blast
-qed
-
-lemma monoid_star_witness_inj_aux:
-  assumes "c \<Midarrow> l \<Rightarrow>\<^sup>* c'"
-    and "c1 \<Midarrow> l1 \<Rightarrow>\<^sup>* c1'"
-    and "monoid_star_witness c l c' = monoid_star_witness c1 l1 c1'"
-  shows "c = c1 \<and> l = l1 \<and> c' = c1'"
-  using monoid_star_witness_unfold[OF assms(1)] monoid_star_witness_unfold[OF assms(2)] 
-        assms(3) is_trace_inj 
-  by (cases "snd (monoid_star_witness c l c') \<noteq> []", fastforce) auto
-lemma monoid_star_witness_inj: "inj_on monoid_star_witness_tuple monoid_star"
-  unfolding monoid_star_def inj_on_def using monoid_star_witness_inj_aux by simp
-lemma monoid_star_witness_bij_betw: 
-  "bij_betw monoid_star_witness_tuple monoid_star (monoid_star_witness_tuple` monoid_star)"
-  unfolding bij_betw_def using monoid_star_witness_inj by blast
-
 lemma countable_monoid_star: "countable monoid_star"
-proof -
-  have subset:"(monoid_star_witness_tuple` monoid_star) \<subseteq> {monoid_star_witness c l c' | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-    unfolding monoid_star_def by fast
-  then have "countable (monoid_star_witness_tuple` monoid_star)"
-    using countable_subset[OF subset countable_monoid_star_witness] by blast
-  then show ?thesis using monoid_star_witness_bij_betw countableI_bij2 by fast
-qed
+  using countable_monoid_rtrancl[OF ts_countable] by simp
 
 lemma countable_monoid_star_variant1: "countable {(l, c'). c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
   using countable_f_on_P_Q_set3[of "\<lambda>c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>c l c'. (l, c')" "\<lambda>x y z. x = c"]
@@ -109,9 +65,6 @@ qed
 
 lemma countable_star_f_p9: "countable {f l | l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
    by (auto simp add: dissect_set countable_monoid_star_all)
-  
-lemma monoid_star_is_monoid_rtrancl[simp]: "monoid_star = monoid_rtrancl transition_relation"
-  unfolding monoid_star_def l_step_relp_def monoid_rtrancl_def by simp
 
 end
 
