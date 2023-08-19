@@ -13,6 +13,12 @@ lemma setcompr_eq_image2: "{f a b |a b. P a b} = (\<lambda>(a,b). f a b) ` {(a,b
 lemma setcompr_eq_image3: "{f a b c |a b c. P a b c } = (\<lambda>(a,b,c). f a b c) ` {(a,b,c ). P a b c}"
   by (auto split: prod.split simp add: image_def)
 
+lemma setcompr_eq_image4: "{f a b c d |a b c d. P a b c d } = (\<lambda>(a,b,c,d). f a b c d) ` {(a,b,c,d). P a b c d}"
+  by (auto split: prod.split simp add: image_def)
+
+lemma setcompr_eq_image5: "{f a b c d e |a b c d e. P a b c d e } = (\<lambda>(a,b,c,d,e). f a b c d e) ` {(a,b,c,d,e). P a b c d e}"
+  by (auto split: prod.split simp add: image_def) blast+
+  
 lemmas dissect_set = 
   Collect_conj_eq Collect_conj_eq2 Collect_conj_eq3
   setcompr_eq_image setcompr_eq_image2 setcompr_eq_image3
@@ -32,6 +38,10 @@ lemma countable_f_on_P_Q_set2: "countable {(x, y). Q x y} \<Longrightarrow> coun
   by (simp add: dissect_set)
 
 lemma countable_f_on_P_Q_set3: "countable {(x, y, z). Q x y z} \<Longrightarrow> countable {f x y z | x y z. P x y z \<and> Q x y z}"
+  by (simp add: dissect_set)
+
+
+lemma finite_f_on_set: "finite X \<Longrightarrow> finite {f x | x. x \<in> X}"
   by (simp add: dissect_set)
 
 end

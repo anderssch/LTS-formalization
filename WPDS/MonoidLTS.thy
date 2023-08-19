@@ -523,6 +523,24 @@ proof -
   finally show ?thesis .
 qed
 
+lemma SumInf_of_SumInf_left_distr:
+  assumes "countable {d'. Q d'}"
+      and "\<And>d'. Q d' \<Longrightarrow> countable {(d, d') |d. P d d'}"
+    shows "\<^bold>\<Sum> {g d' * \<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {g d' * f d d' | d d'. P d d' \<and> Q d'}"
+proof -
+  have eql: "\<forall>d'. {g d' * f d d' |d. P d d'} = {g d' * d1 |d1. \<exists>d. d1 = f d d' \<and> P d d'}"
+    by auto
+  have "\<And>d'. Q d' \<Longrightarrow> countable {f d d' |d. P d d'}"
+    using assms(2) countable_f_on_P_Q_set2[of P f "\<lambda>x y. True", simplified] countable_image_prod setcompr_eq_image by fast
+  then have "\<And>d'. Q d' \<Longrightarrow> g d' * \<^bold>\<Sum> {f d d' |d. P d d'} = \<^bold>\<Sum> {g d' * d2 |d2. d2 \<in> {f d d' |d. P d d'}}"
+    using SumInf_left_distr[of "{f d _ |d. P d _}" "g _"] by simp
+  then have "\<^bold>\<Sum> {g d' * \<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {\<^bold>\<Sum> {g d' * d1 |d1. d1 \<in> {f d d' |d. P d d'}} |d'. Q d'}"
+    by (simp add: setcompr_eq_image)
+  also have "... =  \<^bold>\<Sum> {g d' * f d d' | d d'. P d d' \<and> Q d'}"
+    using eql SumInf_of_SumInf[of Q P "\<lambda>d d'. g d' * f d d'"] assms by auto
+  finally show ?thesis .
+qed
+
 lemma SumInf_of_SumInf_right_distr_simple:
  assumes "countable {d. P d}"
      and "countable {d. Q d}"
@@ -550,6 +568,43 @@ lemma SumInf_mono_wrt_img_of_set:
   shows "\<^bold>\<Sum> {f t| t. X t} \<le> \<^bold>\<Sum> {g t| t. X t}"
   by (rule SumInf_bounded_by_SumInf_if_members_bounded)
      (use assms countable_setcompr[of X] in auto)
+
+lemma SumInf_insert_0:
+  assumes "countable X"
+  shows "\<^bold>\<Sum> X = \<^bold>\<Sum> (insert 0 X)"
+proof (cases "X = {}")
+  case True
+  then show ?thesis by simp
+next
+  case False
+  have "countable (insert 0 X)" using assms by blast
+  then have "\<^bold>\<Sum> X \<le> \<^bold>\<Sum> (insert 0 X)"
+    using SumInf_bounded_by_SumInf_if_members_bounded[OF assms] False by fastforce
+  moreover have "\<^bold>\<Sum> X \<ge> \<^bold>\<Sum> (insert 0 X)"
+    using SumInf_mono[of X "insert 0 X"] assms by auto
+  ultimately show ?thesis by simp
+qed
+
+lemma SumInf_equal_with_0:
+  assumes "countable X"
+  assumes "X \<union> {0} = Y \<union> {0}"
+  shows "\<^bold>\<Sum> X = \<^bold>\<Sum> Y"
+proof -
+  have "countable Y" using assms
+    by (metis countable_Un_iff countable_empty countable_insert)
+  then show ?thesis using assms SumInf_insert_0[of X] SumInf_insert_0[of Y] by simp
+qed
+
+lemma SumInf_split_Qor0:
+  assumes "countable {d. P d}"
+  assumes "(\<And>t. \<not> Q t \<Longrightarrow> f t = 0)"
+  assumes "(\<And>t. Q t \<Longrightarrow> f t = g t)"
+  shows "\<^bold>\<Sum> {f t| t. P t} = \<^bold>\<Sum> {g t| t. P t \<and> Q t}"
+proof -
+  have "{f t| t. P t} \<union> {0} = {g t| t. P t \<and> Q t} \<union> {0}" using assms by force
+  then show ?thesis 
+    using SumInf_equal_with_0[OF countable_setcompr[OF assms(1), of f]] by simp
+qed
 
 
 definition weight_pre_star :: "('state \<Rightarrow> 'label) \<Rightarrow> ('state \<Rightarrow> 'label)" where
