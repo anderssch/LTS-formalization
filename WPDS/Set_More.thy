@@ -44,4 +44,53 @@ lemma countable_f_on_P_Q_set3: "countable {(x, y, z). Q x y z} \<Longrightarrow>
 lemma finite_f_on_set: "finite X \<Longrightarrow> finite {f x | x. x \<in> X}"
   by (simp add: dissect_set)
 
+lemma countable_prod: "countable {x. P x} \<Longrightarrow> countable {y. Q y} \<Longrightarrow> countable {(x,y). P x \<and> Q y}"
+  by force
+
+lemma countable_prod2: 
+  assumes "countable {(x,z). P x z}"
+  assumes "countable {(y,z). Q y z}"
+  shows "countable {(x,y)| x y z. P x z \<and> Q y z}"
+proof -
+  obtain f::"'a \<times> 'b \<Rightarrow> nat" where f_inj:"inj_on f {(x, z). P x z}" using countableE[OF assms(1)] by blast
+  obtain g::"'c \<times> 'b \<Rightarrow> nat" where g_inj:"inj_on g {(y, z). Q y z}" using countableE[OF assms(2)] by blast
+  from f_inj have f_inj':"\<And>a b a' b'. P a b \<Longrightarrow> P a' b' \<Longrightarrow> f (a, b) = f (a', b') \<Longrightarrow> a = a' \<and> b = b'" unfolding inj_on_def by blast
+  from g_inj have g_inj':"\<And>a b a' b'. Q a b \<Longrightarrow> Q a' b' \<Longrightarrow> g (a, b) = g (a', b') \<Longrightarrow> a = a' \<and> b = b'" unfolding inj_on_def by blast
+  show ?thesis 
+    apply (rule countableI'[of "\<lambda>(x,y). (f (x, (SOME z. P x z \<and> Q y z)), g (y, (SOME z. P x z \<and> Q y z)))"])
+    unfolding inj_on_def
+    apply simp
+    apply safe
+    subgoal for a b z a' b' z'
+      using someI_ex[of "\<lambda>z. P a z \<and> Q b z", OF exI[of "\<lambda>z. P a z \<and> Q b z" z]]
+            someI_ex[of "\<lambda>z. P a' z \<and> Q b' z", OF exI[of "\<lambda>z. P a' z \<and> Q b' z" z']]
+      using f_inj'[of a "SOME z. P a z \<and> Q b z" a' "SOME z. P a' z \<and> Q b' z"]
+      by simp
+    subgoal for a b z a' b' z'
+      using someI_ex[of "\<lambda>z. P a z \<and> Q b z", OF exI[of "\<lambda>z. P a z \<and> Q b z" z]]
+            someI_ex[of "\<lambda>z. P a' z \<and> Q b' z", OF exI[of "\<lambda>z. P a' z \<and> Q b' z" z']]
+      using g_inj'[of b "SOME z. P a z \<and> Q b z" b' "SOME z. P a' z \<and> Q b' z"]
+      by simp
+    done
+qed
+
+lemma countable_prod3: 
+  assumes "countable {(x,z,u). P x z u}"
+  assumes "countable {(y,z,u). Q y z u}"
+  shows "countable {(x,y)| x y z u. P x z u \<and> Q y z u}"
+  using countable_prod2 assms by fastforce
+
+lemma countable_3_to_2:
+  assumes "countable {(a, b, c). X a b c}"
+  shows "countable {(b, c). X a b c}"
+  using countable_subset[OF _ countable_setcompr[OF assms, of "\<lambda>(a,b,c). (b,c)", simplified], of "{(b, c). X a b c}"]
+  by blast
+
+lemma countable_3_to_3_permutation:
+  assumes "countable {(a, b, c). X a b c}"
+  shows "countable {(c, a, b). X a b c}"  
+  using countable_subset[OF _ countable_setcompr[OF assms, of "\<lambda>(a,b,c). (c,a,b)", simplified], of "{(c, a, b). X a b c}"]
+  by blast
+
+
 end
