@@ -1461,13 +1461,17 @@ lemma wpds_lts_aug_induct_rev [consumes 1, case_names wpds_lts_base wpds_lts_ste
 lemma init_rule_is_Init:
   assumes "((p, w), d, p', w') \<in> WPDS.transition_rel init_rules"
   shows "is_Init p" and "is_Init p'"
-  using assms unfolding init_rules_def
-  sorry
+  using assms unfolding init_rules_def l_step_relp_def
+  by (auto simp add: WPDS.is_rule_def[unfolded WPDS_def, OF finite_init_rules, unfolded init_rules_def] 
+                     WPDS.transition_rel.simps[unfolded WPDS_def, OF finite_init_rules, unfolded init_rules_def])
+
 lemma init_rule_closure_is_Init:
   assumes "((p, w), d, p', w') \<in> monoid_rtrancl (WPDS.transition_rel init_rules)"
-  shows "is_Init p" and "is_Init p'"
-  using assms unfolding init_rules_def
-  sorry
+      and "is_Init p" 
+  shows "is_Init p'"
+  using assms
+  by (cases "(p,w) = (p',w')", simp)
+     (induct "(p,w)" d "(p',w')" rule: monoid_rtrancl.induct, auto simp add: init_rule_is_Init(2))
 
 lemma wpds_lts_init_induct_rev [consumes 1, case_names wpds_lts_base wpds_lts_step]:
   assumes "((Init p, w), d, Init p', w') \<in> monoid_rtrancl (WPDS.transition_rel init_rules)"
@@ -1484,10 +1488,11 @@ proof -
     assume a:"((p, w), d, p', w') \<in> WPDS.transition_rel init_rules"
        and b:"P (the_Ctr_Loc p') w' d' (the_Ctr_Loc p'') w''"
        and c:"((p', w'), d', p'', w'') \<in> monoid_rtrancl (WPDS.transition_rel init_rules)"
-    then have  "P (the_Ctr_Loc p) w (d * d') (the_Ctr_Loc p'') w''"
-      using state.collapse(1)[OF init_rule_is_Init(2)[OF a]] state.collapse(1)[OF init_rule_is_Init(1)[OF a]]
-            state.collapse(1)[OF init_rule_closure_is_Init(2)[OF c]] state.collapse(1)[OF init_rule_closure_is_Init(1)[OF c]]
-            assms(3) b 
+    then have ip':"is_Init p'" using init_rule_is_Init(2)[OF a] by blast
+    then have ip'':"is_Init p''" using init_rule_closure_is_Init[OF c] by simp
+    have  "P (the_Ctr_Loc p) w (d * d') (the_Ctr_Loc p'') w''"
+      using state.collapse(1)[OF init_rule_is_Init(1)[OF a]] state.collapse(1)[OF ip'] state.collapse(1)[OF ip''] 
+            assms(3) a b c
       by metis
   }
   then show ?thesis
