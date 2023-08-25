@@ -1316,10 +1316,6 @@ lemma monoidLTS_instance[simp]: "monoidLTS (WPDS.transition_rel augmented_WPDS_r
 lemma dioidLTS_instance[simp]: "dioidLTS (WPDS.transition_rel augmented_WPDS_rules)"
   by (simp add: dioidLTS_def)
 
-
-definition is_pre_star_saturation where
- "is_pre_star_saturation A = saturation (WPDS_with_empty_W_automata.pre_star_rule augmented_WPDS_rules) (K$ 0) A"
-
 definition augmented_rules_reach_empty where
   "augmented_rules_reach_empty p w d = (\<exists>p' \<in> finals. ((Init p, w), d, (p',[])) \<in> monoidLTS.monoid_star (WPDS.transition_rel augmented_WPDS_rules))"
 
@@ -1870,12 +1866,11 @@ lemma augmented_rules_correct:
   using unfold_pre_star_accepts_empty_automaton augmented_rules_match_W_automaton[of p w]
   unfolding weight_pre_star_def reach_conf_in_W_automaton_def by simp meson
 
-
-lemma "is_pre_star_saturation A \<Longrightarrow> 
-      (WPDS_with_empty_W_automata.accepts finals) A (Init p, w) = weight_pre_star accepts (p,w)"
-  unfolding is_pre_star_saturation_def
-  using WPDS_with_empty_W_automata.correctness[of augmented_WPDS_rules, of A finals "Init p" w]
-        augmented_rules_correct
+lemma pre_star_correctness: 
+  assumes "saturation (WPDS_with_empty_W_automata.pre_star_rule augmented_WPDS_rules) (K$ 0) A"
+  shows "(WPDS_with_empty_W_automata.accepts finals) A (Init p, w) = weight_pre_star accepts (p,w)"
+  using assms augmented_rules_correct
+        WPDS_with_empty_W_automata.correctness[of augmented_WPDS_rules, of A finals "Init p" w]
   by simp
 
 end
