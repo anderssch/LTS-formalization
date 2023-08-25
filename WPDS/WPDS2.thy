@@ -1262,6 +1262,7 @@ locale WPDS_with_W_automata = WPDS \<Delta>
   and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions"
   +
   fixes finals :: "('ctr_loc, 'noninit) state set"
+  assumes no_transition_to_init: "is_Init q \<Longrightarrow> ts $ (p, \<gamma>, q) = 0"
 begin
 
 definition init_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weight::bounded_idempotent_semiring) rule set" where 
@@ -1445,6 +1446,19 @@ lemma augmented_rules_1:
   by (induct rule: wpds_lts_induct_rev)
      (simp_all add: augmented_rules_1_base augmented_rules_1_step)
 
+lemma wpds_lts_aug_induct [consumes 1, case_names wpds_lts_base wpds_lts_step]:
+  assumes "((p, w), d, p', w') \<in> monoid_rtrancl (WPDS.transition_rel rules)"
+  assumes "(\<And>p w. P p w 1 p w)"
+  assumes "\<And>p w d p' w' d' p'' w''. 
+              ((p, w), d, (p', w')) \<in> monoid_rtrancl (WPDS.transition_rel rules) \<Longrightarrow> 
+              P p w d p' w' \<Longrightarrow> 
+              ((p', w'), d', (p'', w'')) \<in> WPDS.transition_rel rules \<Longrightarrow> 
+              P p w (d * d') p'' w''"
+  shows "P p w d p' w'"
+  using monoid_rtrancl.induct[of "(p, w)" d "(p', w')" "WPDS.transition_rel rules"
+                                 "\<lambda>pw d pw'. P (fst pw) (snd pw) d (fst pw') (snd pw')"]
+  using assms by force
+
 lemma wpds_lts_aug_induct_rev [consumes 1, case_names wpds_lts_base wpds_lts_step]:
   assumes "((p, w), d, p', w') \<in> monoid_rtrancl (WPDS.transition_rel rules)"
   assumes "(\<And>p w. P p w 1 p w)"
@@ -1473,6 +1487,24 @@ lemma init_rule_closure_is_Init:
   by (cases "(p,w) = (p',w')", simp)
      (induct "(p,w)" d "(p',w')" rule: monoid_rtrancl.induct, auto simp add: init_rule_is_Init(2))
 
+lemma aug_rules_to_init_from_init:
+  assumes "((p, w), d, p', w') \<in> WPDS.transition_rel augmented_WPDS_rules"
+      and "is_Init p'" and "d \<noteq> 0"
+    shows "is_Init p"
+  using assms(1) 
+  unfolding WPDS.transition_rel.simps[unfolded WPDS_def, OF finite_augmented_WPDS_rules]
+            WPDS.is_rule_def[unfolded WPDS_def, OF finite_augmented_WPDS_rules]
+  unfolding augmented_WPDS_rules_def init_rules_def l_step_relp_def pop_ts_rules_def
+  using no_transition_to_init[OF assms(2)] assms(3)
+  by fastforce
+
+lemma aug_rules_closure_to_init_from_init:
+  assumes "((p, w), d, p', w') \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)"
+      and "is_Init p'" and "d \<noteq> 0"
+    shows "is_Init p"
+  using assms aug_rules_to_init_from_init
+  by (induct rule: wpds_lts_aug_induct_rev, simp) fastforce
+
 lemma wpds_lts_init_induct_rev [consumes 1, case_names wpds_lts_base wpds_lts_step]:
   assumes "((Init p, w), d, Init p', w') \<in> monoid_rtrancl (WPDS.transition_rel init_rules)"
   assumes "(\<And>p w. P p w 1 p w)"
@@ -1496,11 +1528,36 @@ proof -
       by metis
   }
   then show ?thesis
-    using wpds_lts_aug_induct_rev[of "Init p" w d "Init p'" w' init_rules "\<lambda>p w d p' w'. P (the_Ctr_Loc p) w d (the_Ctr_Loc p') w'", OF assms(1)]
-    by (simp add: assms(2))
+    using monoid_rtrancl_induct_rev[of "(Init p, w)" d "(Init p', w')" "WPDS.transition_rel init_rules"
+                                       "\<lambda>pw d pw'. P (the_Ctr_Loc (fst pw)) (snd pw) d (the_Ctr_Loc (fst pw')) (snd pw')", OF assms(1)]
+    by (auto simp add: assms(2))
 qed
 
-lemma augmented_rules_2_a:
+lemma aug_to_init_rule:
+  assumes "((Init p, w), d, Init p', w') \<in> WPDS.transition_rel augmented_WPDS_rules" and "d \<noteq> 0"
+  shows "((Init p, w), d, Init p', w') \<in> WPDS.transition_rel init_rules"
+  using assms 
+  unfolding WPDS.transition_rel.simps[unfolded WPDS_def, OF finite_augmented_WPDS_rules]
+            WPDS.is_rule_def[unfolded WPDS_def, OF finite_augmented_WPDS_rules]
+            WPDS.transition_rel.simps[unfolded WPDS_def, OF finite_init_rules]
+            WPDS.is_rule_def[unfolded WPDS_def, OF finite_init_rules]
+  unfolding augmented_WPDS_rules_def pop_ts_rules_def
+  using no_transition_to_init by simp
+
+lemma aug_to_init_rule_closure:
+  assumes "((p, w), d, p', w') \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)" 
+      and "d \<noteq> 0" and "is_Init p" and "is_Init p'"
+  shows "((p, w), d, p', w') \<in> monoid_rtrancl (WPDS.transition_rel init_rules)"
+  using assms
+  apply (induct rule: wpds_lts_aug_induct_rev, simp)
+  subgoal for p w d p' w' d' p'' w''
+    using aug_to_init_rule[of "the_Ctr_Loc p" w d "the_Ctr_Loc p'" w']
+          aug_rules_closure_to_init_from_init[of p' w' d' p'' w'']
+    using monoid_rtrancl_into_rtrancl_rev[of "(p,w)" d "(p',w')" "WPDS.transition_rel init_rules" d' "(p'',w'')"]
+    by force
+  done
+
+lemma augmented_rules_2_a':
   assumes "((Init p, w), d, Init p', w') \<in> monoid_rtrancl (WPDS.transition_rel init_rules)"
   shows "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',w')"
   using assms
@@ -1511,37 +1568,227 @@ lemma augmented_rules_2_a:
     unfolding l_step_relp_def monoid_rtrancl_def
     by fast
   done
-\<comment> \<open>TODO: assume sources of ts only Init\<close>
-lemma augmented_rules_2:
-  assumes "((Init p, w), d, q, []) \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)"
-  assumes "q \<in> finals"
-  shows "\<exists>d\<^sub>2 d\<^sub>1 p' w' q. d = d\<^sub>1 * d\<^sub>2 \<and> q \<in> finals \<and> (Init p', (w', d\<^sub>2), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> (p, w) \<Midarrow>d\<^sub>1\<Rightarrow>\<^sup>* (p', w')"
-  using assms
-  apply (cases "is_Init q")
-  using augmented_rules_2_a[of p w d "the_Ctr_Loc q" "[]"]
-   apply simp
-   apply (rule exI[of _ 1])
-   apply (rule exI[of _ d])
-   apply simp
-    apply (rule exI[of _ "the_Ctr_Loc q"])
-    apply (rule exI[of _ "[]"])
-    apply (rule exI[of _ "q"])
-   apply simp
-   apply auto[1]
-  using monoid_rtrancl_wts_to_monoidLTS_refl 
-    apply fast
-  sorry
 
-(*
+lemma augmented_rules_2_a:
+  assumes "((Init p, w), d, Init p', w') \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)"
+  assumes "d \<noteq> 0"
+  shows "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',w')"
+  using assms aug_to_init_rule_closure augmented_rules_2_a' by force
+
+lemma pop_to_ts:
+  assumes "((p, a#w), d, p', w') \<in> WPDS.transition_rel pop_ts_rules"
+  shows "(p, ([a], d), p') \<in> wts_to_monoidLTS ts" and "w = w'"
+  using assms
+  using WPDS.transition_rel.simps[unfolded WPDS_def, OF finite_pop_ts]
+        WPDS.is_rule_def[unfolded WPDS_def, OF finite_pop_ts]
+  unfolding pop_ts_rules_def wts_to_monoidLTS_def by auto
+
+lemma pop_to_ts_closure:
+  assumes "((p, w), d, q, []) \<in> monoid_rtrancl (WPDS.transition_rel pop_ts_rules)"
+  shows "(p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  using assms
+proof (induct w arbitrary: p d)
+  case Nil
+  have "d = 1 \<and> p = q"
+    by (cases rule: monoid_rtrancl_cases_rev[OF Nil])
+       (auto simp add: WPDS.transition_rel.simps[unfolded WPDS_def, OF finite_pop_ts]
+                       WPDS.is_rule_def[unfolded WPDS_def, OF finite_pop_ts])
+  then show ?case using monoid_rtrancl_refl[of q "wts_to_monoidLTS ts", unfolded one_prod_def one_list_def] by blast
+next
+  case (Cons a w)
+  then show ?case
+    apply (cases rule: monoid_rtrancl_cases_rev[of "(p,a#w)" d "(q,[])" "WPDS.transition_rel pop_ts_rules"], simp_all) 
+    using pop_to_ts[of p a w] monoid_rtrancl_into_rtrancl_rev[of p "([a],_)" _ "wts_to_monoidLTS ts" "(w,_)" q, unfolded mult_prod_def times_list_def]
+    by fastforce
+qed
+
+lemma aug_to_pop_rule:
+  assumes "((p, w), d, p', w') \<in> WPDS.transition_rel augmented_WPDS_rules" 
+      and "d \<noteq> 0" and "is_Noninit p"
+  shows "((p, w), d, p', w') \<in> WPDS.transition_rel pop_ts_rules" and "is_Noninit p'"
+  using assms aug_rules_to_init_from_init[of p w d p' w']
+  unfolding WPDS.transition_rel.simps[unfolded WPDS_def, OF finite_augmented_WPDS_rules]
+            WPDS.is_rule_def[unfolded WPDS_def, OF finite_augmented_WPDS_rules]
+            WPDS.transition_rel.simps[unfolded WPDS_def, OF finite_pop_ts]
+            WPDS.is_rule_def[unfolded WPDS_def, OF finite_pop_ts]
+  unfolding augmented_WPDS_rules_def init_rules_def 
+  using state.exhaust_disc by auto
+
+lemma aug_to_pop_rule':
+  assumes "((p, w), d, p', w') \<in> WPDS.transition_rel augmented_WPDS_rules" 
+      and "d \<noteq> 0" and "is_Noninit p'"
+  shows "((p, w), d, p', w') \<in> WPDS.transition_rel pop_ts_rules"
+  using assms aug_rules_to_init_from_init[of p w d p' w']
+  unfolding WPDS.transition_rel.simps[unfolded WPDS_def, OF finite_augmented_WPDS_rules]
+            WPDS.is_rule_def[unfolded WPDS_def, OF finite_augmented_WPDS_rules]
+            WPDS.transition_rel.simps[unfolded WPDS_def, OF finite_pop_ts]
+            WPDS.is_rule_def[unfolded WPDS_def, OF finite_pop_ts]
+  unfolding augmented_WPDS_rules_def init_rules_def 
+  using state.exhaust_disc by auto
+
+lemma aug_to_pop_rule_closure:
+  assumes "((p, w), d, p', w') \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)"
+      and "d \<noteq> 0" and "is_Noninit p"
+  shows "((p, w), d, p', w') \<in> monoid_rtrancl (WPDS.transition_rel pop_ts_rules)"
+  using assms
+  apply (induct rule: wpds_lts_aug_induct_rev, simp)
+  subgoal for p w d p' w' d' p'' w''
+    using aug_to_pop_rule[of p w d p' w']
+          monoid_rtrancl_into_rtrancl_rev[of "(p,w)" d "(p',w')" "WPDS.transition_rel pop_ts_rules" d' "(p'',w'')"]
+    by fastforce
+  done
+
+lemma augmented_rules_2_b:
+  assumes "((p, w), d, p', w') \<in> WPDS.transition_rel augmented_WPDS_rules"
+  assumes "((p', w'), d', q, []) \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)"
+  assumes "d \<noteq> 0" and "d' \<noteq> 0" and "is_Noninit p'"
+    shows "(p, (w, d*d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+proof -
+  obtain a where a_def:"a#w' = w" using aug_to_pop_rule'[OF assms(1,3,5)]
+    unfolding WPDS.transition_rel.simps[unfolded WPDS_def, OF finite_pop_ts]
+              WPDS.is_rule_def[unfolded WPDS_def, OF finite_pop_ts]
+    unfolding pop_ts_rules_def by force
+  then have A:"((p, a#w'), d, p', w') \<in> WPDS.transition_rel pop_ts_rules" 
+    using aug_to_pop_rule'[OF assms(1,3,5)] by fastforce
+  then have "(p, ([a], d), p') \<in> wts_to_monoidLTS ts" using pop_to_ts(1) by fast
+  then have "(p, ([a], d) * (w', d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+    using monoid_rtrancl_into_rtrancl_rev[OF _ pop_to_ts_closure[OF aug_to_pop_rule_closure[OF assms(2,4,5)]]]
+    by simp
+  then show ?thesis by (simp add: mult_prod_def times_list_def a_def)
+qed
+
+lemma d_mult_not_zero: assumes "(d::'weight) * d' \<noteq> 0" shows "d \<noteq> 0" and "d' \<noteq> 0"
+  using assms by auto
+
+lemma augmented_rules_2_split:
+  assumes "((Init p, w), d, Init p', w') \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)"
+  assumes "((Init p', w'), d', Noninit p'', w'') \<in> WPDS.transition_rel augmented_WPDS_rules"
+  assumes "((Noninit p'', w''), d'', q, []) \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)"
+  assumes "d \<noteq> 0" and "d' \<noteq> 0" and "d'' \<noteq> 0" and "q \<in> finals"
+  shows "\<exists>d\<^sub>2 d\<^sub>1 p' w' q. d * d' * d'' = d\<^sub>1 * d\<^sub>2 \<and> q \<in> finals \<and> (Init p', (w', d\<^sub>2), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> (p, w) \<Midarrow>d\<^sub>1\<Rightarrow>\<^sup>* (p', w')"
+  using augmented_rules_2_a[OF assms(1,4)] augmented_rules_2_b[OF assms(2,3,5,6)]
+  apply simp
+  apply (rule exI[of _ "d' * d''"])
+  apply (rule exI[of _ d])
+  apply (simp add: ac_simps(4))
+  apply (rule exI[of _ p'])
+  apply (rule exI[of _ w'])
+  apply (rule exI[of _ q])
+  by (simp add: assms(7))
+
+lemma augmented_rules_2_init_noninit_split:
+  assumes "((p\<^sub>1, w\<^sub>1), d\<^sub>1, p\<^sub>2, w\<^sub>2) \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)"
+      and "is_Init p\<^sub>1" and "is_Noninit p\<^sub>2"
+  shows "\<exists>d p' w' d' p'' w'' d''. d\<^sub>1 = d * d' * d'' \<and>
+          ((p\<^sub>1, w\<^sub>1), d, Init p', w') \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules) \<and>
+          ((Init p', w'), d', Noninit p'', w'') \<in> WPDS.transition_rel augmented_WPDS_rules \<and>
+          ((Noninit p'', w''), d'', p\<^sub>2, w\<^sub>2) \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)"
+  using assms
+  apply (induct rule: wpds_lts_aug_induct_rev)
+    using state.exhaust_disc
+     apply fast
+    subgoal for p w d p' w' d' p'' w''
+      apply (cases "is_Init p'")
+       apply simp
+       apply safe
+      subgoal for da p'a w'a d'a p''a w''a d''
+        apply (rule exI[of _ "d * da"])
+        apply (rule exI[of _ p'a])
+        apply (rule exI[of _ w'a])
+        apply (rule exI[of _ d'a])
+        apply (rule exI[of _ p''a])
+        apply (rule exI[of _ w''a])
+        apply (rule exI[of _ d''])
+        by (simp add: ac_simps(4) monoid_rtrancl_into_rtrancl_rev)
+      using state.exhaust_disc[of p' "is_Noninit p'"]
+      apply simp
+      apply (rule exI[of _ 1])
+      apply (rule exI[of _ "the_Ctr_Loc p"])
+      apply (rule exI[of _ w])
+      apply (rule exI[of _ d])
+      apply (rule exI[of _ "the_St p'"])
+      apply (rule exI[of _ w'])
+      apply (rule exI[of _ d'])
+      by auto
+    done
+
 lemma augmented_rules_2:
   assumes "((Init p, w), d, q, []) \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)"
+  assumes "d \<noteq> 0"
   assumes "q \<in> finals"
   shows "\<exists>d\<^sub>2 d\<^sub>1 p' w' q. d = d\<^sub>1 * d\<^sub>2 \<and> q \<in> finals \<and> (Init p', (w', d\<^sub>2), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> (p, w) \<Midarrow>d\<^sub>1\<Rightarrow>\<^sup>* (p', w')"
+proof (cases "is_Init q")
+  case True
+  then show ?thesis
+  using assms augmented_rules_2_a[of p w d "the_Ctr_Loc q" "[]"] monoid_rtrancl_refl[of q "wts_to_monoidLTS ts"]
+  apply (simp add: one_prod_def one_list_def)
+  apply (rule exI[of _ 1])
+  apply (rule exI[of _ d], simp)
+  apply (rule exI[of _ "the_Ctr_Loc q"])
+  apply (rule exI[of _ "[]"])
+  apply (rule exI[of _ "q"])
+  by simp
+next
+  case False
+  then have q_noninit:"is_Noninit q" using state.exhaust_disc by fast
+  obtain d1 p' w' d' p'' w'' d'' where 
+      "d = d1 * d' * d'' \<and>
+       ((Init p, w), d1, Init p', w') \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules) \<and>
+       ((Init p', w'), d', Noninit p'', w'') \<in> WPDS.transition_rel augmented_WPDS_rules \<and>
+       ((Noninit p'', w''), d'', q, []) \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)"
+    using augmented_rules_2_init_noninit_split[OF assms(1) _ q_noninit, simplified] by fast
+  then show ?thesis 
+    using augmented_rules_2_split[of p w d1 p' w' d' p'' w'' d'' q] assms(2,3) by fastforce
+qed
+
+lemma exists_d_monoid_wts:
+  assumes "w = [] \<longrightarrow> p = q"
+  shows "\<exists>d. (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+proof (cases "w = []")
+  case True
+  then show ?thesis using assms True
+    using monoid_rtrancl_refl[of q "(wts_to_monoidLTS ts)", unfolded one_prod_def one_list_def]
+    by blast
+next
+  case False
+  then show ?thesis
+  proof (induct w)
+    case Nil
+    then show ?case by simp
+  next
+    case (Cons a w')
+    then show ?case
+    proof (cases "w' = []")
+      case True
+      then show ?thesis
+        using monoid_rtrancl_refl[of q "(wts_to_monoidLTS ts)", unfolded one_prod_def one_list_def]
+              monoid_rtrancl_into_rtrancl_rev[of p "([a], ts $ (p, a, q))" q "wts_to_monoidLTS ts" "([],1)" q]
+        unfolding mult_prod_def times_list_def wts_to_monoidLTS_def
+        using exI[of _ "ts $ (p, a, q)"]
+        by simp
+    next
+      case False
+      then show ?thesis using Cons(1)[OF False]
+        using monoid_rtrancl_into_rtrancl_rev[of p "([a], ts $ (p, a, p))" p "wts_to_monoidLTS ts" "(w',_)" q]
+        unfolding mult_prod_def times_list_def wts_to_monoidLTS_def
+        by auto
+    qed
+  qed
+qed
+
+lemma wpds_on_empty_stack:
+  assumes "((p, []), 0, q, []) \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)"
+  shows "p = q"
   using assms
-  apply (induct arbitrary: p rule: wpds_lts_aug_induct_rev)
-   apply simp
-  sorry
-*)
+  by (cases rule: monoid_rtrancl_cases_rev[OF assms])
+     (auto simp add: WPDS.transition_rel.simps[unfolded WPDS_def, OF finite_augmented_WPDS_rules])
+
+lemma augmented_rules_2_d0:
+  assumes "((Init p, w), 0, q, []) \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)"
+  assumes "q \<in> finals"
+  shows "\<exists>d\<^sub>2 d\<^sub>1 p' w' q. q \<in> finals \<and> (Init p', (w', d\<^sub>2), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> (p, w) \<Midarrow>d\<^sub>1\<Rightarrow>\<^sup>* (p', w')"
+  using exists_d_monoid_wts[of w "Init p" q] assms wpds_on_empty_stack 
+  by (cases "w = [] \<longrightarrow> Init p = q") blast+
 
 lemma augmented_rules_equal:
   "\<^bold>\<Sum> {d | d p'. p' \<in> finals \<and> ((Init p, w), d, p', []) \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)} =
@@ -1580,7 +1827,7 @@ proof -
     using augmented_rules_1 by fast
   have imp2:"\<And>y. \<exists>q. q \<in> finals \<and> ((Init p, w), y, q, []) \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules) \<Longrightarrow>
           \<exists>x. (\<exists>d\<^sub>2 d\<^sub>1. x = d\<^sub>1 * d\<^sub>2 \<and> (\<exists>p' w' q. q \<in> finals \<and> (Init p', (w', d\<^sub>2), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> (p, w) \<Midarrow> d\<^sub>1 \<Rightarrow>\<^sup>* (p', w'))) \<and> x \<le> y"
-    using augmented_rules_2 by fast
+    using augmented_rules_2 augmented_rules_2_d0 by fastforce
   then show ?thesis
     using SumInf_bounded_by_SumInf_if_members_bounded[OF cX cY] imp1
           SumInf_bounded_by_SumInf_if_members_bounded[OF cY cX] imp2

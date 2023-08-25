@@ -507,6 +507,12 @@ next
         \<open>du1 = d'' * d'''\<close> e(3) mult.assoc)
 qed
 
+lemma monoid_rtrancl_cases_rev:
+  assumes "(p, d, p') \<in> monoid_rtrancl r"
+  assumes "\<And>a. p = a \<Longrightarrow> d = 1 \<Longrightarrow> p' = a \<Longrightarrow> P"
+  assumes "\<And>a l b w c. p = a \<Longrightarrow> d = l * w \<Longrightarrow> p' = c \<Longrightarrow> (a, l, b) \<in> r \<Longrightarrow> (b, w, c) \<in> monoid_rtrancl r \<Longrightarrow> P"
+  shows "P"
+  using assms by (induct rule: monoid_rtrancl_induct_rev, simp_all)
 
 context 
   fixes ts :: "('a::countable \<times> 'b::monoid_mult \<times> 'a) set"
