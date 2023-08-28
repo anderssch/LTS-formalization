@@ -13,7 +13,7 @@ type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list
 
 
 \<comment> \<open>Embed a weighted automata into a monoidLTS. All non-zero transitions are added. The label is lifted to the list-monoid.\<close>
-definition wts_to_monoidLTS :: "(('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions) \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
+definition wts_to_monoidLTS :: "('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
   "wts_to_monoidLTS ts = {(p, ([l],d), q) | p l d q. ts $ (p,l,q) = d}"
 
 lemma finite_wts: 
@@ -64,6 +64,25 @@ fun monoidLTS_reach where
 | "monoidLTS_reach p (\<gamma>#w) = (\<Union>(q',d) \<in> (\<Union>(p',(\<gamma>',d),q') \<in> ts. if p' = p \<and> \<gamma>' = [\<gamma>] then {(q',d)} else {}).
       {(q,d*d') | q d'. (q,d') \<in> monoidLTS_reach q' w})"
 end
+
+lemma monoid_star_imp_exec: "(p,w,q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> (q, snd w) \<in> monoidLTS_reach (wts_to_monoidLTS ts) p (fst w)"
+  apply (induct rule: monoid_rtrancl_induct_rev)
+  apply (force simp add: one_prod_def one_list_def)
+  by (fastforce simp add: mult_prod_def times_list_def wts_to_monoidLTS_def)
+
+lemma monoidLTS_reach_imp: "(q, d) \<in> monoidLTS_reach (wts_to_monoidLTS ts) p w \<Longrightarrow> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  apply (induct p w arbitrary: d rule: monoidLTS_reach.induct[of _ "wts_to_monoidLTS ts"])
+   apply (simp add: monoid_rtrancl_refl[of q "wts_to_monoidLTS ts", unfolded one_prod_def one_list_def])
+  subgoal for p \<gamma> w'
+    apply auto[1]
+    subgoal for _ _ _ _ q' d d'
+      using monoid_rtrancl_into_rtrancl_rev[of p "([\<gamma>],d)" q' "wts_to_monoidLTS ts" "(w',d')" q]
+      apply (auto simp add: mult_prod_def times_list_def wts_to_monoidLTS_def)
+      by (metis empty_iff singleton_iff fst_eqD snd_eqD)
+    done
+  done
+lemma monoid_star_code[code_unfold]: "(p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<longleftrightarrow> (q,d) \<in> monoidLTS_reach (wts_to_monoidLTS ts) p w"
+  using monoidLTS_reach_imp monoid_star_imp_exec by fastforce
 
 \<comment> \<open>Auxiliary lemmas for WAutomata and monoidLTS\<close>
 lemma wts_label_exist: "(p, w, q) \<in> wts_to_monoidLTS ts \<Longrightarrow> \<exists>l. fst w = [l]"
