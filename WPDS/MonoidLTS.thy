@@ -77,19 +77,19 @@ lemma monoidLTS_monoid_star_mono:
 
 
 
-\<comment> \<open>If the @{typ 'label} of a LTS is a dioid with additive and multiplicative identities, 
+\<comment> \<open>If the @{typ 'weight} of a LTS is a dioid with additive and multiplicative identities, 
     we can express the meet-over-all-paths value as a generalization of pre-star and post-star.\<close>
 locale dioidLTS = monoidLTS transition_relation
-  for transition_relation :: "('state::countable, 'label::bounded_idempotent_semiring) transition set"
+  for transition_relation :: "('state::countable, 'weight::bounded_idempotent_semiring) transition set"
 begin
 
-definition path_seq :: "'label set \<Rightarrow> nat \<Rightarrow> 'label" where
+definition path_seq :: "'weight set \<Rightarrow> nat \<Rightarrow> 'weight" where
   "path_seq W \<equiv> if W = {} then (\<lambda>_. 0) else SOME f. \<forall>l. l \<in> W \<longleftrightarrow> (\<exists>i. f i = l)"
 
 lemma path_seq_empty[simp]: "path_seq {} i = 0"
   unfolding path_seq_def by simp
 
-lemma countable_set_exists_seq: "countable W \<Longrightarrow> W \<noteq> {} \<Longrightarrow> \<exists>f::(nat\<Rightarrow>'label). \<forall>l. l \<in> W \<longleftrightarrow> (\<exists>i. f i = l)"
+lemma countable_set_exists_seq: "countable W \<Longrightarrow> W \<noteq> {} \<Longrightarrow> \<exists>f::(nat\<Rightarrow>'weight). \<forall>l. l \<in> W \<longleftrightarrow> (\<exists>i. f i = l)"
   by (rule exI[of _ "from_nat_into W"])
      (meson from_nat_into from_nat_into_to_nat_on)
 
@@ -124,7 +124,7 @@ lemma path_seq_notin_set_zero:
   by simp
 
 
-definition SumInf :: "'label set \<Rightarrow> 'label" ("\<^bold>\<Sum>") where
+definition SumInf :: "'weight set \<Rightarrow> 'weight" ("\<^bold>\<Sum>") where
   "\<^bold>\<Sum> W = suminf (path_seq W)"
 
 lemma countable_obtain_seq:
@@ -144,7 +144,7 @@ next
   case False
   then show ?thesis
   proof -
-    obtain f :: "nat \<Rightarrow> 'label" and C :: "nat set" where f_bij:"bij_betw f C W" 
+    obtain f :: "nat \<Rightarrow> 'weight" and C :: "nat set" where f_bij:"bij_betw f C W" 
       using countableE_bij[OF assms(1)] by blast
     then have f_inj:"\<forall>x\<in>C. \<forall>y\<in>C. f x = f y \<longrightarrow> x = y" and f_img:"f ` C = W" 
       unfolding bij_betw_def inj_on_def by blast+
@@ -174,7 +174,7 @@ lemma countable_suminf_obtains_sumseq:
   using countable_SumInf_exists_sumseq_bound[OF assms] by fast
 
 lemma SumInf_exists_finite_subset:
-  fixes W :: "'label set"
+  fixes W :: "'weight set"
   assumes "countable W"
   shows "\<exists>W'. W' \<subseteq> W \<and> finite W' \<and> \<^bold>\<Sum> W = \<Sum> W'"
 proof -
@@ -188,13 +188,13 @@ proof -
 qed
 
 lemma SumInf_obtains_finite_subset:
-  fixes W :: "'label set"
+  fixes W :: "'weight set"
   assumes "countable W"
   obtains W' where "W' \<subseteq> W" and "finite W'" and "\<^bold>\<Sum> W = \<Sum> W'"
   using SumInf_exists_finite_subset[OF assms] by blast
 
 lemma countable_SumInf_elem:
-  fixes W :: "'label set"
+  fixes W :: "'weight set"
   assumes "countable W"
   assumes "w \<in> W"
   shows "\<^bold>\<Sum> W \<le> w"
@@ -266,7 +266,7 @@ proof -
 qed
 
 lemma sum_insert[simp]:
-  assumes "finite (D' ::'label set)"
+  assumes "finite (D' ::'weight set)"
   shows "\<Sum> (insert d D') = d + \<Sum> D'"
   using assms
 proof (induction)
@@ -510,7 +510,7 @@ lemma SumInf_bounded_by_SumInf_if_members_bounded:
 
 lemma SumInf_mult_isor:
   assumes "countable {d . X d}"
-  assumes "d \<le> (d' :: 'label)"
+  assumes "d \<le> (d' :: 'weight)"
   shows "\<^bold>\<Sum> {d * d''| d''. X d''} \<le> \<^bold>\<Sum> {d' * d''| d''. X d''}"
   by (rule SumInf_bounded_by_SumInf_if_members_bounded)
      (use assms idempotent_semiring_ord_class.mult_isor countable_setcompr[of X] in auto)
@@ -560,9 +560,9 @@ proof -
 qed
 
 
-definition weight_pre_star :: "('state \<Rightarrow> 'label) \<Rightarrow> ('state \<Rightarrow> 'label)" where
+definition weight_pre_star :: "('state \<Rightarrow> 'weight) \<Rightarrow> ('state \<Rightarrow> 'weight)" where
   "weight_pre_star C c = \<^bold>\<Sum>{l*(C c') | l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-definition weight_post_star :: "('state \<Rightarrow> 'label) \<Rightarrow> ('state \<Rightarrow> 'label)" where
+definition weight_post_star :: "('state \<Rightarrow> 'weight) \<Rightarrow> ('state \<Rightarrow> 'weight)" where
   "weight_post_star C c = \<^bold>\<Sum>{(C c')*l | c' l. c' \<Midarrow>l\<Rightarrow>\<^sup>* c}"
 end
 

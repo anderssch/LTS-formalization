@@ -22,7 +22,7 @@ definition is_rule :: "'ctr_loc \<times> 'label \<Rightarrow> 'weight \<Rightarr
 
 inductive_set transition_rel :: "(('ctr_loc, 'label) conf \<times> 'weight \<times> ('ctr_loc, 'label) conf) set" where
   "(p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w) \<Longrightarrow> ((p, \<gamma>#w'), d, (p', (lbl w)@w')) \<in> transition_rel"
-print_theorems
+
 lemma countable_transition_rel: "countable transition_rel"
 proof -
   have transition_rel_subset: "transition_rel \<subseteq> (UNIV \<times> {d | c d c'. (c,d,c') \<in> transition_rel} \<times> UNIV)" 
@@ -88,10 +88,13 @@ lemma WPDS_LTS_mono:
     by fast
   done
 
+
+\<comment> \<open>Generalization of PDS_with_P_automata.accepts that computes the meet-over-all-paths in the W-automaton.\<close>
+definition (in dioidLTS) accepts :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> 'ctr_loc set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
+  "accepts ts finals \<equiv> \<lambda>(p,w). (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)})"
+
 locale WPDS_with_empty_W_automata = WPDS \<Delta>
   for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
-    +
-  fixes finals :: "('ctr_loc::enum) set"
 begin
 
 interpretation dioidLTS transition_rel proof
@@ -102,14 +105,14 @@ notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 notation l_step_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80)
 notation monoid_star_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [90,90,100] 100) 
 
-
+(*
 \<comment> \<open>Generalization of PDS_with_P_automata.accepts that computes the meet-over-all-paths in the W-automaton.\<close>
 definition accepts :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
   "accepts ts \<equiv> \<lambda>(p,w). (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)})"
-
+*)
 lemma accepts_def2:
-  "accepts ts (p,w) = (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)})"
-  using accepts_def by auto
+  "accepts ts finals (p,w) = (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)})"
+  using accepts_def[of ts finals] by auto
 
 \<comment> \<open>Weighted pre-star rule updates the finfun of transition weights.\<close>
 inductive pre_star_rule :: "('ctr_loc, 'label, 'weight) w_transitions saturation_rule" where
@@ -133,7 +136,7 @@ definition "accept_pre_star_exec_check A c = (if A={} then Some (accepts (pre_st
 
 theorem pre_star_rule_correct:
   assumes "saturation pre_star_rule (ts_to_wts {}) A"
-  shows "accepts A = weight_pre_star (accepts (ts_to_wts {}))"
+  shows "accepts A finals = weight_pre_star (accepts (ts_to_wts {}) finals)"
   using assms
   apply simp
     \<comment> \<open>TODO\<close>
@@ -642,7 +645,7 @@ qed
 
 lemma accept_is_one_if_final_empty:
   assumes "p \<in> finals"
-  shows "accepts A (p,[]) = 1"
+  shows "accepts A finals (p,[]) = 1"
 proof -
   have "{d | d q. q \<in> finals \<and> (p,([],d),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} = {1}"
     using Collect_cong[of "\<lambda>d. \<exists>q. q \<in> finals \<and> (p, ([], d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)" "\<lambda>d. d = 1"]
@@ -652,11 +655,12 @@ proof -
 qed
 
 lemma accept_is_zero_if_nonfinal_empty:
+  fixes A::"('ctr_loc \<times> 'label \<times> 'ctr_loc) \<Rightarrow>f 'weight"
   assumes "p \<notin> finals"
-  shows "accepts A (p,[]) = 0"
+  shows "accepts A finals (p,[]) = 0"
 proof -
   have "{d | d q. q \<in> finals \<and> (p,([],d),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} = {}"
-    using assms monoid_star_pop by fastforce
+    using assms monoid_star_pop[of p pop _ _ A] by fastforce
   then show ?thesis
     unfolding accepts_def2 using SumInf_empty 
       Collect_cong[of "\<lambda>d. \<exists>q. q \<in> finals \<and> (p, ([], d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
@@ -709,7 +713,7 @@ lemma SumInf_is_zero_if_subset_singleton_zero[simp]: "X \<subseteq> {0} \<Longri
 
 lemma accepts_K0_is_zero_if_nonfinal:
   assumes "p \<notin> finals"
-  shows "accepts (K$ 0) (p,w) = 0"
+  shows "accepts (K$ 0) finals (p,w) = 0"
 proof -
   have "{d :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0))} \<subseteq> {0}"
     using zero_weight_if_nonrefl_path_in_K0[of p "(w,_)" _] assms by auto
@@ -719,7 +723,7 @@ qed
 
 lemma accepts_K0_is_zero_if_nonempty:
   assumes "w \<noteq> []"
-  shows "accepts (K$ 0) (p,w) = 0"
+  shows "accepts (K$ 0) finals (p,w) = 0"
 proof -
   have "{d :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0))} \<subseteq> {0}"
     using zero_weight_if_nonempty_word_in_K0[of p "(w,_)" _] assms by auto
@@ -727,10 +731,12 @@ proof -
     unfolding accepts_def by auto
 qed
 
-lemma accepts_empty_iff: "accepts A (p,[]) = (if p\<in>finals then 1 else 0)"
+lemma accepts_empty_iff: 
+  fixes A::"('ctr_loc \<times> 'label \<times> 'ctr_loc) \<Rightarrow>f 'weight"
+  shows "accepts A finals (p,[]) = (if p\<in>finals then 1 else 0)"
   by (simp add: accept_is_one_if_final_empty accept_is_zero_if_nonfinal_empty)
 
-lemma accepts_K0_iff[simp]: "accepts (K$ 0) (p,w) = (if p\<in>finals \<and> w = [] then 1 else 0)"
+lemma accepts_K0_iff[simp]: "accepts (K$ 0) finals (p,w) = (if p\<in>finals \<and> w = [] then 1 else 0)"
   by (metis accept_is_one_if_final_empty accepts_K0_is_zero_if_nonfinal accepts_K0_is_zero_if_nonempty)
 
 lemma sound_empty: "sound (K$ 0)"
@@ -769,16 +775,16 @@ lemma countable_monoid_rtrancl_wts_to_monoidLTS_P:
   shows "countable {f d q |d q. P d q \<and> (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
   using countable_monoid_rtrancl_wts_to_monoidLTS_all by (simp add: dissect_set)
 
-lemma countable_f_finals: "countable {f q| q. q \<in> finals}"
-  by (simp add: dissect_set)
+(*lemma countable_f_finals: "countable {f q| q. q \<in> finals}"
+  by (simp add: dissect_set)*)
 
 lemma lemma_3_2_w_alternative:
   assumes soundA': "sound A'"
-  shows "accepts A' pv \<ge> weight_pre_star (accepts (K$ 0)) pv"
+  shows "accepts A' finals pv \<ge> weight_pre_star (accepts (K$ 0) finals) pv"
 proof -
   obtain p v where pv_split: "pv = (p, v)"
     by (cases pv) 
-  have "weight_pre_star (accepts (K$ 0)) (p,v) = \<^bold>\<Sum>{d' * accepts (K$ 0) (q,w)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"
+  have "weight_pre_star (accepts (K$ 0) finals) (p,v) = \<^bold>\<Sum>{d' * accepts (K$ 0) finals (q,w)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"
     by (simp add: weight_pre_star_def)
   also have "... = \<^bold>\<Sum>{d' * (if q\<in>finals \<and> w=[] then 1 else 0)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"
     by simp
@@ -803,7 +809,7 @@ proof -
         "\<lambda>(d, q). d"
         ]
     using soundA' sound_def2 countable_monoid_rtrancl_wts_to_monoidLTS by (force simp add: countable_monoid_rtrancl_wts_to_monoidLTS_all dissect_set)
-  also have "... = accepts A' (p,v)"
+  also have "... = accepts A' finals (p,v)"
     unfolding accepts_def by (simp split: prod.split)
   finally show ?thesis
     unfolding pv_split by auto
@@ -811,26 +817,26 @@ qed
 
 lemma lemma_3_2_w_alternative': 
   assumes "pre_star_rule (K$ 0) A"
-  shows "accepts A pv \<ge> weight_pre_star (accepts (K$ 0)) pv"
+  shows "accepts A finals pv \<ge> weight_pre_star (accepts (K$ 0) finals) pv"
   using lemma_3_2_w_alternative[OF pre_star_rule_sound[OF sound_empty assms]] by auto
 
 lemma lemma_3_2_w_alternative''':
   assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
-  shows "accepts A' (p,v) \<ge> weight_pre_star (accepts (K$ 0)) (p,v)"
+  shows "accepts A' finals (p,v) \<ge> weight_pre_star (accepts (K$ 0) finals) (p,v)"
   using pre_star_rule_rtranclp_sound assms lemma_3_2_w_alternative sound_empty by blast
 
 
 (* Begin superfluous lemmas *)
 
 lemma accepts_lte_accepts_K0':
-  shows "accepts A' (p,v) \<le> accepts (K$ 0) (p,v)"
+  shows "accepts A' finals (p,v) \<le> accepts (K$ 0) finals (p,v)"
 proof (cases "p \<in> finals \<and> v = []")
   case True
-  then have "accepts (K$ 0) (p,v) = 1"
+  then have "accepts (K$ 0) finals (p,v) = 1"
     by auto
-  also have "... \<ge> accepts A' (p,v)"
+  also have "... \<ge> accepts A' finals (p,v)"
     unfolding accepts_def
-    using True accepts_def accept_is_one_if_final_empty by force
+    using True accepts_def[of A' finals] accept_is_one_if_final_empty[of p finals A'] by force
   finally show ?thesis 
     by auto
 next
@@ -840,17 +846,17 @@ next
   then show ?thesis
   proof
     assume "p \<notin> finals"
-    then have "accepts (K$ 0) (p,v) = 0"
+    then have "accepts (K$ 0) finals (p,v) = 0"
       by auto
-    also have "... \<ge> accepts A' (p,v)"
+    also have "... \<ge> accepts A' finals (p,v)"
       by simp
     finally show ?thesis 
       by auto
   next
     assume "v \<noteq> []"
-    then have "accepts (K$ 0) (p,v) = 0"
+    then have "accepts (K$ 0) finals (p,v) = 0"
       by auto
-    also have "... \<ge> accepts A' (p,v)"
+    also have "... \<ge> accepts A' finals (p,v)"
        by simp
     finally show ?thesis 
       by auto
@@ -858,8 +864,8 @@ next
 qed
 
 lemma accepts_lte_accepts_K0:
-  shows "accepts A' \<le> accepts (K$ 0)"
-  using accepts_lte_accepts_K0' by (simp add: le_fun_def)
+  shows "accepts A' finals \<le> accepts (K$ 0) finals"
+  unfolding le_fun_def using accepts_lte_accepts_K0' by fast
 
 lemma weight_pre_star_mono:
   assumes "X \<le> Y"
@@ -887,16 +893,16 @@ proof -
 qed
 
 lemma weight_pre_star_accepts_lt_weight_pre_star_accepts_K0:
-  "weight_pre_star (accepts A') c \<le> weight_pre_star (accepts (K$ 0)) c"
+  "weight_pre_star (accepts A' finals) c \<le> weight_pre_star (accepts (K$ 0) finals) c"
   using weight_pre_star_mono[OF accepts_lte_accepts_K0] by auto
 
 lemma lemma_3_2_w_alternative_BONUS:
   assumes soundA': "sound A'"
-  shows "accepts A' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
+  shows "accepts A' finals (p,v) \<ge> weight_pre_star (accepts A finals) (p,v)"
 proof -
-  have "weight_pre_star (accepts A) (p,v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
+  have "weight_pre_star (accepts A finals) (p,v) \<le> weight_pre_star (accepts (K$ 0) finals) (p, v)"
     using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
-  also have "... \<le> accepts A' (p, v)"
+  also have "... \<le> accepts A' finals (p, v)"
     using lemma_3_2_w_alternative soundA' by auto
   finally show ?thesis
     by auto
@@ -905,15 +911,15 @@ qed
 lemma lemma_3_2_w_alternative'_BONUS: 
   assumes soundA': "sound A'"
   assumes "pre_star_rule A' A''"
-  shows "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
+  shows "accepts A'' finals (p,v) \<ge> weight_pre_star (accepts A finals) (p,v)"
 proof -
   have soundA'': "sound A''"
     using pre_star_rule_sound soundA' assms(2) by auto
-  have "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
+  have "weight_pre_star (accepts A finals) (p, v) \<le> weight_pre_star (accepts (K$ 0) finals) (p, v)"
     using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
-  also have "... \<le> accepts A'' (p,v)"
+  also have "... \<le> accepts A'' finals (p,v)"
     using lemma_3_2_w_alternative soundA'' by auto
-  finally show "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
+  finally show "accepts A'' finals (p,v) \<ge> weight_pre_star (accepts A finals) (p,v)"
     by auto
 qed
 
@@ -995,15 +1001,15 @@ lemma weight_pre_star_dom_fixedpoint: (* Nice. But we don't use it. *)
 lemma lemma_3_2_w_alternative'''_BONUS:
   assumes soundA': "sound A'"
   assumes "pre_star_rule\<^sup>*\<^sup>* A' A''"
-  shows "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
+  shows "accepts A'' finals (p,v) \<ge> weight_pre_star (accepts A finals) (p,v)"
 proof -
   have sound_A'': "sound A''"
     using pre_star_rule_rtranclp_sound soundA' assms(2) by auto
-  have "weight_pre_star (accepts A) (p, v) \<le> weight_pre_star (accepts (K$ 0)) (p, v)"
+  have "weight_pre_star (accepts A finals) (p, v) \<le> weight_pre_star (accepts (K$ 0) finals) (p, v)"
     using weight_pre_star_accepts_lt_weight_pre_star_accepts_K0 by auto
-  also have "... \<le> accepts A'' (p,v)"
+  also have "... \<le> accepts A'' finals (p,v)"
     using lemma_3_2_w_alternative sound_A'' by auto
-  finally show "accepts A'' (p,v) \<ge> weight_pre_star (accepts A) (p,v)"
+  finally show "accepts A'' finals (p,v) \<ge> weight_pre_star (accepts A finals) (p,v)"
     by auto
 qed
 
@@ -1082,7 +1088,7 @@ proof -
     using assms(1) d\<^sub>1\<^sub>2_def idempotent_semiring_ord_class.mult_isol_var by blast
 qed
 
-lemma monoid_rtrancl_wts_to_monoidLTS_if_saturated_is_rule': (* Dette er Mortens tegning. *)
+lemma monoid_rtrancl_wts_to_monoidLTS_if_saturated_is_rule':
   assumes "(p', \<gamma>) \<midarrow>d\<hookrightarrow> (p'', u1)"
     and "saturated pre_star_rule A"
     and e: "(p'',((lbl u1),d'),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
@@ -1097,7 +1103,7 @@ proof -
     by (simp add: mult.assoc)
 qed
 
-lemma monoid_rtrancl_wts_to_monoidLTS_if_saturated_is_rule: (* Dette er Mortens tegning. *)
+lemma monoid_rtrancl_wts_to_monoidLTS_if_saturated_is_rule:
   assumes "(p', \<gamma>) \<midarrow>d\<hookrightarrow> (p'', u1)"
     and "saturated pre_star_rule A"
     and "(p'',((lbl u1) @ w1,d'),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
@@ -1122,7 +1128,7 @@ qed
 lemma accepts_if_is_rule:
   assumes "(p', \<gamma>) \<midarrow>d\<hookrightarrow> (p'', u1)"
     and "saturated pre_star_rule A"
-  shows "accepts A (p',(\<gamma> # w1)) \<le> d * accepts A (p'', (lbl u1) @ w1)"
+  shows "accepts A finals (p',(\<gamma> # w1)) \<le> d * accepts A finals (p'', (lbl u1) @ w1)"
 proof -
   have "\<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p', (\<gamma> # w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} \<le>
          \<^bold>\<Sum> {d * d'| d' q. q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
@@ -1135,19 +1141,19 @@ proof -
     using SumInf_left_distr[of "{is_d'. \<exists>d' q. is_d' = d' \<and> q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}" d] 
       countable_monoid_rtrancl_wts_to_monoidLTS_P by fastforce
   finally show ?thesis
-    using accepts_def by force
+    using accepts_def[of A finals] by force
 qed
 
 lemma accepts_if_saturated_monoid_star_relp:
   assumes "(p', w) \<Midarrow>d\<Rightarrow> (p'', u)"
       and "saturated pre_star_rule A"
-    shows "accepts A (p',w) \<le> d * accepts A (p'', u)"
-  using assms(1) assms(2) accepts_if_is_rule step_relp_elim2 by blast
+    shows "accepts A finals (p',w) \<le> d * accepts A finals (p'', u)"
+  using assms(1) assms(2) accepts_if_is_rule[of _ _ _ _ _ A finals] step_relp_elim2 by blast
 
 lemma accepts_if_saturated_monoid_star_relp_final':
   assumes "saturated pre_star_rule A"
   assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* c'" and "fst c' \<in> finals" and "snd c' = []"
-  shows "accepts A c \<le> l"
+  shows "accepts A finals c \<le> l"
   using assms(2,3,4)
 proof (induction rule: monoid_star_relp_induct_rev)
   case (monoid_star_refl c)
@@ -1155,7 +1161,7 @@ proof (induction rule: monoid_star_relp_induct_rev)
     by (metis dual_order.eq_iff accept_is_one_if_final_empty prod.exhaust_sel)
 next
   case (monoid_star_into_rtrancl p'w d p''u c d')
-  then have accpt: "accepts A p''u \<le> d'"
+  then have accpt: "accepts A finals p''u \<le> d'"
     by auto
   define p' where "p' = fst p'w"
   define w where "w = snd p'w"
@@ -1174,31 +1180,31 @@ qed
 lemma accepts_if_saturated_monoid_star_relp_final:
   assumes "saturated pre_star_rule A"
   assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* (p,[])" and "p \<in> finals"
-  shows "accepts A c \<le> l"
+  shows "accepts A finals c \<le> l"
   using accepts_if_saturated_monoid_star_relp_final' assms by simp 
 
 lemma lemma_3_1_w':
   assumes "saturated pre_star_rule A"
   assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* c'"
-  shows "accepts A c \<le> l * accepts (K$ 0) c'"
+  shows "accepts A finals c \<le> l * accepts (K$ 0) finals c'"
   using assms accepts_if_saturated_monoid_star_relp_final[OF assms(1)] 
-    accepts_K0_iff[of "fst c'" "snd c'"] by simp (metis prod.collapse)
+    accepts_K0_iff[of finals "fst c'" "snd c'"] by simp (metis prod.collapse)
 
 lemma lemma_3_1_w:
   assumes "saturated pre_star_rule A"
-  shows "accepts A c \<le> weight_pre_star (accepts (K$ 0)) c"
+  shows "accepts A finals c \<le> weight_pre_star (accepts (K$ 0) finals) c"
   unfolding weight_pre_star_def
-  using SumInf_bounded_if_set_bounded[of "{l * accepts (K$ 0) c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" "accepts A c"]
+  using SumInf_bounded_if_set_bounded[of "{l * accepts (K$ 0) finals c' |l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" "accepts A finals c"]
     lemma_3_1_w'[OF assms] by (fastforce simp add: dissect_set countable_monoid_star_all)
 
 theorem correctness:
   assumes "saturation pre_star_rule (K$ 0) A"
-  shows "accepts A (p,v) = weight_pre_star (accepts (K$ 0)) (p,v)"
+  shows "accepts A finals (p,v) = weight_pre_star (accepts (K$ 0) finals) (p,v)"
   using assms lemma_3_2_w_alternative''' lemma_3_1_w  saturation_def dual_order.eq_iff by metis
 
 theorem correctness':
   assumes "saturation pre_star_rule (K$ 0) A"
-  shows "accepts A c = weight_pre_star (accepts (K$ 0)) c"
+  shows "accepts A finals c = weight_pre_star (accepts (K$ 0) finals) c"
   using assms lemma_3_2_w_alternative''' lemma_3_1_w  saturation_def dual_order.eq_iff by (metis prod.exhaust)
 
 end
@@ -1261,9 +1267,17 @@ locale WPDS_with_W_automata = WPDS \<Delta>
   for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
   and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions"
   +
-  fixes finals :: "('ctr_loc, 'noninit) state set"
   assumes no_transition_to_init: "is_Init q \<Longrightarrow> ts $ (p, \<gamma>, q) = 0"
 begin
+
+interpretation dioidLTS transition_rel proof
+  show "countable transition_rel" by (fact countable_transition_rel)
+qed
+
+notation step_relp (infix "\<Rightarrow>" 80)
+notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
+notation l_step_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80)
+notation monoid_star_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [90,90,100] 100) 
 
 definition init_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weight::bounded_idempotent_semiring) rule set" where 
   "init_rules = {((Init p, \<gamma>), d, (Init p', w)) | p \<gamma> d p' w. (p,\<gamma>) \<midarrow>d\<hookrightarrow> (p',w)}"
@@ -1292,20 +1306,10 @@ next
 qed
 lemma countable_monoid_augmented: "countable (monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules))"
   by (fact countable_monoid_rtrancl[OF WPDS.countable_transition_rel[unfolded WPDS_def, OF finite_augmented_WPDS_rules]])
-(*sublocale WPDS_with_empty_W_automata augmented_WPDS_rules*)
 
-interpretation dioidLTS transition_rel proof
-  show "countable transition_rel" by (fact countable_transition_rel)
-qed
+interpretation augmented_WPDS: WPDS_with_empty_W_automata augmented_WPDS_rules
+  unfolding WPDS_with_empty_W_automata_def WPDS_def by (fact finite_augmented_WPDS_rules)
 
-notation step_relp (infix "\<Rightarrow>" 80)
-notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
-notation l_step_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80)
-notation monoid_star_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [90,90,100] 100) 
-
-
-definition accepts :: "('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
-  "accepts \<equiv> \<lambda>(p,w). (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (Init p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)})"
 
 lemma W_automata_instance[simp]: "W_automata ts" 
   unfolding W_automata_def monoidLTS_def using countable_wts[of ts] by blast
@@ -1317,13 +1321,13 @@ lemma dioidLTS_instance[simp]: "dioidLTS (WPDS.transition_rel augmented_WPDS_rul
   by (simp add: dioidLTS_def)
 
 definition augmented_rules_reach_empty where
-  "augmented_rules_reach_empty p w d = (\<exists>p' \<in> finals. ((Init p, w), d, (p',[])) \<in> monoidLTS.monoid_star (WPDS.transition_rel augmented_WPDS_rules))"
+  "augmented_rules_reach_empty finals p w d = (\<exists>p' \<in> finals. ((Init p, w), d, (p',[])) \<in> monoidLTS.monoid_star (WPDS.transition_rel augmented_WPDS_rules))"
 
 definition reach_conf_in_W_automaton where
-  "reach_conf_in_W_automaton p w d = (\<exists>l p' w'. (p, w) \<Midarrow>l\<Rightarrow>\<^sup>* (p', w') \<and> d = l * accepts (p',w'))"
+  "reach_conf_in_W_automaton finals p w d = (\<exists>l p' w'. (p, w) \<Midarrow>l\<Rightarrow>\<^sup>* (p', w') \<and> d = l * accepts ts finals (Init p',w'))"
 
 lemma reach_conf_in_W_automaton_unfold:
-  "\<^bold>\<Sum>{d. reach_conf_in_W_automaton p w d} = 
+  "\<^bold>\<Sum>{d. reach_conf_in_W_automaton finals p w d} = 
    \<^bold>\<Sum>{l * d | d l p' w' q. q \<in> finals \<and> (Init p', (w', d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (p', w')}"
 proof -
   have c: "\<And>l p' w'. countable {(d, (l, (p', w'))) |d. \<exists>q. q \<in> finals \<and> (Init p', (w', d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}"
@@ -1334,7 +1338,7 @@ proof -
                            of "{(d, q). (Init p', (w', d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}"]
     by (auto simp add: dissect_set) done
   have 
-    "\<^bold>\<Sum>{d. reach_conf_in_W_automaton p w d} =
+    "\<^bold>\<Sum>{d. reach_conf_in_W_automaton finals p w d} =
      \<^bold>\<Sum> {l * \<^bold>\<Sum> {d. \<exists>q. q \<in> finals \<and> (Init p', (w', d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)} | l p' w'. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (p', w')}"
     unfolding reach_conf_in_W_automaton_def accepts_def by simp meson
   moreover have 
@@ -1831,28 +1835,28 @@ proof -
 qed
 
 lemma augmented_rules_match_W_automaton:
-  "\<^bold>\<Sum>{d. augmented_rules_reach_empty p w d} = \<^bold>\<Sum>{d. reach_conf_in_W_automaton p w d}"
+  "\<^bold>\<Sum>{d. augmented_rules_reach_empty finals p w d} = \<^bold>\<Sum>{d. reach_conf_in_W_automaton finals p w d}"
   using augmented_rules_equal reach_conf_in_W_automaton_unfold unfolding augmented_rules_reach_empty_def accepts_def
   by (simp add: monoidLTS.monoid_star_is_monoid_rtrancl[OF monoidLTS_instance]) meson
 
 lemma unfold_pre_star_accepts_empty_automaton:
-  "dioidLTS.weight_pre_star (WPDS.transition_rel augmented_WPDS_rules) (WPDS_with_empty_W_automata.accepts finals (K$ 0)) (Init p, w) =
-   \<^bold>\<Sum>{d. augmented_rules_reach_empty p w d}"
+  "dioidLTS.weight_pre_star augmented_WPDS.transition_rel (accepts (K$ 0) finals) (Init p, w) =
+   \<^bold>\<Sum>{d. augmented_rules_reach_empty finals p w d}"
 proof -
   have "countable {d. monoid_rtranclp (monoidLTS.l_step_relp (WPDS.transition_rel augmented_WPDS_rules)) (Init p, w) (fst d) (snd d)}"
     using monoidLTS.countable_monoid_star_variant1[OF monoidLTS_instance, of "(Init p, w)"]
     by (metis (no_types, lifting) Collect_cong case_prod_beta)
-  moreover have "\<And>(a::('ctr_loc, 'noninit) state) (b::'label list) d::'weight. a \<notin> finals \<or> b \<noteq> [] \<Longrightarrow> d * WPDS_with_empty_W_automata.accepts finals (K$ 0) (a,b) = 0" 
+  moreover have "\<And>(a::('ctr_loc, 'noninit) state) (b::'label list) d::'weight. a \<notin> finals \<or> b \<noteq> [] \<Longrightarrow> d * accepts (K$ 0) finals (a,b) = 0" 
     using WPDS_with_empty_W_automata.accepts_K0_iff[OF WPDS_W_automata_instance, of finals] by fastforce
-  moreover have "\<And>(a::('ctr_loc, 'noninit) state) (b::'label list) d::'weight. a \<in> finals \<and> b = [] \<Longrightarrow> d * WPDS_with_empty_W_automata.accepts finals (K$ 0) (a,b) = d"
+  moreover have "\<And>(a::('ctr_loc, 'noninit) state) (b::'label list) d::'weight. a \<in> finals \<and> b = [] \<Longrightarrow> d * accepts (K$ 0) finals (a,b) = d"
     using WPDS_with_empty_W_automata.accepts_K0_iff[OF WPDS_W_automata_instance, of finals] by auto
   ultimately have 
-     "\<^bold>\<Sum> {a * WPDS_with_empty_W_automata.accepts finals (K$ 0) (aa, b) |a aa b.
+     "\<^bold>\<Sum> {a * accepts (K$ 0) finals (aa, b) |a aa b.
           monoid_rtranclp (monoidLTS.l_step_relp (WPDS.transition_rel augmented_WPDS_rules)) (Init p, w) a (aa, b)} =
       \<^bold>\<Sum> {l |l a b. a \<in> finals \<and> b = [] \<and> monoid_rtranclp (monoidLTS.l_step_relp (WPDS.transition_rel augmented_WPDS_rules)) (Init p, w) l (a,b)}"
     using SumInf_split_Qor0[of "\<lambda>t. monoid_rtranclp (monoidLTS.l_step_relp (WPDS.transition_rel augmented_WPDS_rules)) (Init p, w) (fst t) (snd t)"
                                "\<lambda>t. (fst (snd t)) \<in> finals \<and> (snd (snd t)) = []"
-                               "\<lambda>t. fst t * WPDS_with_empty_W_automata.accepts finals (K$ 0) (snd t)"
+                               "\<lambda>t. fst t * accepts (K$ 0) finals (snd t)"
                                "\<lambda>t. fst t"]
     by (safe, simp, meson)
   then show ?thesis 
@@ -1861,17 +1865,18 @@ proof -
     by simp metis
 qed
 
+abbreviation accepts_ts :: "('ctr_loc, 'noninit) state set \<Rightarrow> ('ctr_loc,'label) conf \<Rightarrow> 'weight" where
+  "accepts_ts finals \<equiv> (\<lambda>(p,w). accepts ts finals (Init p, w))"
+
 lemma augmented_rules_correct:
-  "dioidLTS.weight_pre_star (WPDS.transition_rel augmented_WPDS_rules) (WPDS_with_empty_W_automata.accepts finals (K$ 0)) (Init p, w) = weight_pre_star accepts (p, w)"
-  using unfold_pre_star_accepts_empty_automaton augmented_rules_match_W_automaton[of p w]
+  "dioidLTS.weight_pre_star augmented_WPDS.transition_rel (accepts (K$ 0) finals) (Init p, w) = weight_pre_star (accepts_ts finals) (p, w)"
+  using unfold_pre_star_accepts_empty_automaton augmented_rules_match_W_automaton[of finals p w]
   unfolding weight_pre_star_def reach_conf_in_W_automaton_def by simp meson
 
 lemma pre_star_correctness: 
-  assumes "saturation (WPDS_with_empty_W_automata.pre_star_rule augmented_WPDS_rules) (K$ 0) A"
-  shows "(WPDS_with_empty_W_automata.accepts finals) A (Init p, w) = weight_pre_star accepts (p,w)"
-  using assms augmented_rules_correct
-        WPDS_with_empty_W_automata.correctness[of augmented_WPDS_rules, of A finals "Init p" w]
-  by simp
+  assumes "saturation (augmented_WPDS.pre_star_rule) (K$ 0) A"
+  shows "accepts A finals (Init p, w) = weight_pre_star (accepts_ts finals) (p,w)"
+  using assms augmented_rules_correct augmented_WPDS.correctness by simp
 
 end
 
