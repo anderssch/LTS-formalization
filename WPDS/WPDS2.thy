@@ -8,7 +8,7 @@ type_synonym ('ctr_loc, 'label, 'weight) rule = "('ctr_loc \<times> 'label) \<ti
 type_synonym ('ctr_loc, 'label) conf = "'ctr_loc \<times> 'label list"
 
 locale WPDS =
-  fixes \<Delta> :: "('ctr_loc::countable, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
+  fixes \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
   assumes finite_rules: "finite \<Delta>"
 begin
 
@@ -93,8 +93,7 @@ lemma WPDS_LTS_mono:
 definition (in dioidLTS) accepts :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> 'ctr_loc set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
   "accepts ts finals \<equiv> \<lambda>(p,w). (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)})"
 
-locale WPDS_with_empty_W_automata = WPDS \<Delta>
-  for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
+context WPDS
 begin
 
 interpretation dioidLTS transition_rel proof
@@ -1307,14 +1306,14 @@ qed
 lemma countable_monoid_augmented: "countable (monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules))"
   by (fact countable_monoid_rtrancl[OF WPDS.countable_transition_rel[unfolded WPDS_def, OF finite_augmented_WPDS_rules]])
 
-interpretation augmented_WPDS: WPDS_with_empty_W_automata augmented_WPDS_rules
-  unfolding WPDS_with_empty_W_automata_def WPDS_def by (fact finite_augmented_WPDS_rules)
+interpretation augmented_WPDS: WPDS augmented_WPDS_rules
+  unfolding WPDS_def WPDS_def by (fact finite_augmented_WPDS_rules)
 
 
 lemma W_automata_instance[simp]: "W_automata ts" 
   unfolding W_automata_def monoidLTS_def using countable_wts[of ts] by blast
-lemma WPDS_W_automata_instance[simp]:"WPDS_with_empty_W_automata augmented_WPDS_rules"
-  by (simp add: WPDS_with_empty_W_automata_def WPDS_def finite_augmented_WPDS_rules)
+lemma WPDS_W_automata_instance[simp]:"WPDS augmented_WPDS_rules"
+  by (simp add: WPDS_def finite_augmented_WPDS_rules)
 lemma monoidLTS_instance[simp]: "monoidLTS (WPDS.transition_rel augmented_WPDS_rules)"
   by (simp add: monoidLTS_def WPDS.countable_transition_rel[of augmented_WPDS_rules] WPDS_def finite_augmented_WPDS_rules)
 lemma dioidLTS_instance[simp]: "dioidLTS (WPDS.transition_rel augmented_WPDS_rules)"
@@ -1847,9 +1846,9 @@ proof -
     using monoidLTS.countable_monoid_star_variant1[OF monoidLTS_instance, of "(Init p, w)"]
     by (metis (no_types, lifting) Collect_cong case_prod_beta)
   moreover have "\<And>(a::('ctr_loc, 'noninit) state) (b::'label list) d::'weight. a \<notin> finals \<or> b \<noteq> [] \<Longrightarrow> d * accepts (K$ 0) finals (a,b) = 0" 
-    using WPDS_with_empty_W_automata.accepts_K0_iff[OF WPDS_W_automata_instance, of finals] by fastforce
+    using WPDS.accepts_K0_iff[OF WPDS_W_automata_instance, of finals] by fastforce
   moreover have "\<And>(a::('ctr_loc, 'noninit) state) (b::'label list) d::'weight. a \<in> finals \<and> b = [] \<Longrightarrow> d * accepts (K$ 0) finals (a,b) = d"
-    using WPDS_with_empty_W_automata.accepts_K0_iff[OF WPDS_W_automata_instance, of finals] by auto
+    using WPDS.accepts_K0_iff[OF WPDS_W_automata_instance, of finals] by auto
   ultimately have 
      "\<^bold>\<Sum> {a * accepts (K$ 0) finals (aa, b) |a aa b.
           monoid_rtranclp (monoidLTS.l_step_relp (WPDS.transition_rel augmented_WPDS_rules)) (Init p, w) a (aa, b)} =
