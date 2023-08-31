@@ -411,161 +411,6 @@ next
     by (metis LTS.srcs_def2 inits_def \<open>\<nexists>q \<gamma> q'. (q, \<gamma>, Init q') \<in> A\<close> mem_Collect_eq state.collapse(1) subsetI)
 qed
 
-lemma lang_mono[mono]: "mono lang"
-  using accepts_mono unfolding lang_def less_eq_set_def monotone_on_def by simp
-lemma pre_star_mono[mono]: "mono pre_star"
-  unfolding pre_star_def mono_def by auto
-lemma pre_star_lang_mono[mono]: "mono (pre_star \<circ> lang)"
-  using lang_mono pre_star_mono unfolding mono_def by simp
-
-lemma step_rule_aux:
-  assumes "(p, \<gamma>) \<hookrightarrow> (p', w)"
-  assumes "c \<Rightarrow>\<^sup>* (p, \<gamma> # w')"
-  shows "c \<Rightarrow>\<^sup>* (p', lbl w @ w')"
-  using assms
-  by (meson step_relp_def2 rtranclp.simps)
-
-lemma lemma_3_2_a'':
-  assumes "inits \<subseteq> LTS.srcs A"
-  assumes "pre_star_rule A A'"
-  assumes "(Init p, w, q) \<in> LTS.trans_star A'"
-  shows "\<exists>p' w'. (Init p', w', q) \<in> LTS.trans_star A \<and> (p, w) \<Rightarrow>\<^sup>* (p', w')"
-  using assms(2) assms(3)
-proof (induction arbitrary: p q w)
-  case (add_trans p \<gamma> p' w q ts)
-  then show ?case sorry
-qed
-
-lemma word_into_init_empty:
-  fixes A :: "(('ctr_loc, 'noninit, 'label) state, 'label) transition set"
-  assumes "(p, w, Init q) \<in> LTS.trans_star A"
-  assumes "inits \<subseteq> LTS.srcs A"
-  shows "w = [] \<and> p = Init q"
-  sorry
-
-lemma pre_star_rule_subset_pre_star_lang_aux':
-  assumes "pre_star_rule A A'"
-  assumes "\<exists>p' w'. (p'',w'') \<Rightarrow>\<^sup>* (p',w') \<and> accepts A' (p',w')"
-  shows "\<exists>p w. (p'',w'') \<Rightarrow>\<^sup>* (p,w) \<and> accepts A (p,w)"
-  using assms
-  apply safe
-  subgoal for p' w'
-    oops
-
-lemma
-  assumes "(p'', w'') \<Rightarrow>\<^sup>* (p', w')"
-  assumes "qa \<in> finals"
-  assumes "(Init p', w', ss', qa) \<in> LTS.trans_star_states (insert (Init p, \<gamma>, q) A)"
-  assumes "(p, \<gamma>) \<hookrightarrow> (p'a, w)"
-  assumes "(Init p'a, lbl w, ss, q) \<in> LTS.trans_star_states A"
-  assumes "(Init p, \<gamma>, q) \<notin> A"
-  shows "\<exists>p w ss. (p'', w'') \<Rightarrow>\<^sup>* (p, w) \<and> (\<exists>q\<in>finals. (Init p, w, ss, q) \<in> LTS.trans_star_states A)"
-  using assms
-  nitpick
-  oops
-
-lemma
-  assumes "(p'', w'') \<Rightarrow>\<^sup>* (p', w')"
-  assumes "qa \<in> finals"
-  assumes "(Init p', w', qa) \<in> LTS.trans_star (insert (Init p, \<gamma>, q) A)"
-  assumes "(p, \<gamma>) \<hookrightarrow> (p'a, w)"
-  assumes "(Init p'a, lbl w, q) \<in> LTS.trans_star A"
-  assumes "(Init p, \<gamma>, q) \<notin> A"
-  shows "\<exists>p w. (p'', w'') \<Rightarrow>\<^sup>* (p, w) \<and> (\<exists>q\<in>finals. (Init p, w, q) \<in> LTS.trans_star A)"
-  using assms
-  nitpick
-  oops
-
-lemma pre_star_rule_subset_pre_star_lang_aux: 
-  assumes "pre_star_rule A A'"
-  assumes "\<exists>p' w'. (p'',w'') \<Rightarrow>\<^sup>* (p',w') \<and> accepts A' (p',w')"
-  shows "\<exists>p w. (p'',w'') \<Rightarrow>\<^sup>* (p,w) \<and> accepts A (p,w)"
-  using assms
-  unfolding pre_star_rule.simps accepts_def
-  apply simp
-  apply safe
-  subgoal for p p' \<gamma> w' p'a w q qa
-    apply (cases "p' = p \<and> (\<exists>waa. w' = \<gamma> # waa)")
-    apply simp
-     apply safe
-    subgoal for waa
-      using step_rule_aux[of p \<gamma> p'a w "(p'',w'')" waa]
-      apply simp
-    sorry
-  sorry
-  done
-
-value "pre_star_rule {} {(Init ctr_loc\<^sub>1, label\<^sub>1, Noninit noninit\<^sub>1)}"
-
-lemma pre_star_rule_subset_pre_star_lang: 
-  assumes "pre_star_rule A A'"
-  shows "pre_star (lang A') \<subseteq> pre_star (lang A)"
-  using pre_star_rule_subset_pre_star_lang_aux[OF assms(1)]
-  unfolding pre_star_def lang_def by fast
-
-lemma
-  assumes "qf \<in> finals"
-  assumes "(a, b) \<Rightarrow>\<^sup>* (p, \<gamma> # w')"
-  assumes "(Init p, \<gamma> # w', qf) \<in> LTS.trans_star (insert (Init p, \<gamma>, q) ts)"
-  assumes "(a, b) \<Rightarrow>\<^sup>* (p', lbl w @ w')"
-  assumes "(p, \<gamma>) \<hookrightarrow> (p', w)"
-  assumes "(Init p', lbl w, q) \<in> LTS.trans_star ts"
-  assumes "(Init p, \<gamma>, q) \<notin> ts"
-  assumes "(a, b) \<in> pre_star (lang (insert (Init p, \<gamma>, q) ts))"
-  shows "(a, b) \<in> pre_star (lang ts)"
-  using assms
-  (*"(p, w, ss, q1) \<in> LTS.trans_star_states A"*)
-  apply -
-  oops
-
-lemma 
-  assumes "(p, \<gamma>) \<hookrightarrow> (p', w)"
-  assumes "(Init p', lbl w, q) \<in> LTS.trans_star ts"
-  assumes "(Init p, \<gamma>, q) \<notin> ts"
-  assumes "(a, b) \<in> pre_star (lang (insert (Init p, \<gamma>, q) ts))"
-  shows   "(a, b) \<in> pre_star (lang ts)"
-  apply (cases "\<exists>w' qf. qf \<in> finals \<and> (a,b) \<Rightarrow>\<^sup>* (p, \<gamma>#w') \<and> (Init p, \<gamma>#w', qf) \<in> LTS.trans_star (insert (Init p, \<gamma>, q) ts)")
-   apply safe
-  subgoal for w' qf
-    apply (cases "(a,b) \<Rightarrow>\<^sup>* (p', lbl w @ w')")
-    defer
-    using step_rule_aux[OF assms(1)]
-    apply simp
-  using assms
-   apply -
-  oops
-
-lemma pre_star_rule_subset_pre_star_lang: 
-  assumes "pre_star_rule A A'"
-  shows "pre_star (lang A') \<subseteq> pre_star (lang A)"
-  using assms(1)
-  apply (induct rule: pre_star_rule.induct)
-  apply simp
-  apply safe
-  oops
-
-lemma pre_star_rule_invariant_pre_star:
-  assumes "pre_star_rule A A'"
-  shows "pre_star (lang A) = pre_star (lang A')"
-  apply safe
-  using assms pre_star_rule_mono pre_star_lang_mono unfolding mono_def
-   apply (simp, blast)
-  using assms pre_star_rule_subset_pre_star_lang by auto
-
-lemma saturated_pre_star_rule: 
-  assumes "saturated pre_star_rule A"
-  shows "pre_star (lang A) = lang A"
-  sorry
-
-theorem pre_star_rule_correct_new:
-  assumes "saturation pre_star_rule A A'"
-  shows "lang A' = pre_star (lang A)"
-  using assms
-        saturation_invariant_property[of pre_star_rule] 
-        pre_star_rule_invariant_pre_star 
-        saturated_pre_star_rule
-  by blast
-
 lemma lemma_3_1:
   assumes "p'w \<Rightarrow>\<^sup>* pv"
   assumes "pv \<in> lang A"
@@ -650,19 +495,51 @@ proof -
 qed
 
 (* This corresponds to and slightly generalizes Schwoon's lemma 3.2(b) *)
-lemma word_into_init_empty':
+lemma word_into_init_empty:
   fixes A :: "(('ctr_loc, 'noninit, 'label) state, 'label) transition set"
   assumes "(p, w, Init q) \<in> LTS.trans_star A"
   assumes "inits \<subseteq> LTS.srcs A"
   shows "w = [] \<and> p = Init q"
   using assms word_into_init_empty_states LTS.trans_star_trans_star_states by metis
 
+lemma step_relp_append_aux:
+  assumes "pu \<Rightarrow>\<^sup>* p1y"
+  shows "(fst pu, snd pu @ v) \<Rightarrow>\<^sup>* (fst p1y, snd p1y @ v)"
+  using assms 
+proof (induction rule: rtranclp_induct)
+  case base
+  then show ?case by auto
+next
+  case (step p'w p1y)
+  define p where "p = fst pu"
+  define u where "u = snd pu"
+  define p' where "p' = fst p'w"
+  define w where "w = snd p'w"
+  define p1 where "p1 = fst p1y"
+  define y where "y = snd p1y"
+  have step_1: "(p,u) \<Rightarrow>\<^sup>* (p',w)"
+    by (simp add: p'_def p_def step.hyps(1) u_def w_def)
+  have step_2: "(p',w) \<Rightarrow> (p1,y)"
+    by (simp add: p'_def p1_def step.hyps(2) w_def y_def)
+  have step_3: "(p, u @ v) \<Rightarrow>\<^sup>* (p', w @ v)"
+    by (simp add: p'_def p_def step.IH u_def w_def)
+
+  note step' = step_1 step_2 step_3
+
+  from step'(2) have "\<exists>\<gamma> w' wa. w = \<gamma> # w' \<and> y = lbl wa @ w' \<and> (p', \<gamma>) \<hookrightarrow> (p1, wa)"
+    using step_relp_def2[of p' w p1 y] by auto
+  then obtain \<gamma> w' wa where \<gamma>_w'_wa_p: " w = \<gamma> # w' \<and> y = lbl wa @ w' \<and> (p', \<gamma>) \<hookrightarrow> (p1, wa)"
+    by metis
+  then have "(p, u @ v) \<Rightarrow>\<^sup>* (p1, y @ v)"
+    by (metis (no_types, lifting) PDS.step_relp_def2 append.assoc append_Cons rtranclp.simps step_3)
+  then show ?case
+    by (simp add: p1_def p_def u_def y_def)
+qed
+
 lemma step_relp_append:
-  assumes "(p,w) \<Rightarrow>\<^sup>* (p',w')"
-  shows "(p, w @ v) \<Rightarrow>\<^sup>* (p', w' @ v)"
-  using rtranclp_induct[of "(\<Rightarrow>)" "(p,w)" "(p',w')" "\<lambda>(p',w'). (p,w @ v) \<Rightarrow>\<^sup>* (p', w' @ v)", OF assms(1)] 
-        step_rule_aux step_relp_def2 
-  by fastforce
+  assumes "(p, u) \<Rightarrow>\<^sup>* (p1, y)"
+  shows "(p, u @ v) \<Rightarrow>\<^sup>* (p1, y @ v)"
+  using assms step_relp_append_aux by auto
 
 lemma step_relp_append_empty:
   assumes "(p, u) \<Rightarrow>\<^sup>* (p1, [])"
