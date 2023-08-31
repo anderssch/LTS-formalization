@@ -12,7 +12,7 @@ type_synonym ('state, 'label, 'weight) w_transitions = "('state, 'label) transit
 type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list \<times> 'weight)) transition set"
 
 
-\<comment> \<open>Embed a weighted automata into a monoidLTS. All non-zero transitions are added. The label is lifted to the list-monoid.\<close>
+\<comment> \<open>Embed a weighted automaton into a monoidLTS. All non-zero transitions are added. The label is lifted to the list-monoid.\<close>
 definition wts_to_monoidLTS :: "('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
   "wts_to_monoidLTS ts = {(p, ([l],d), q) | p l d q. ts $ (p,l,q) = d}"
 
@@ -47,7 +47,7 @@ lemma monoid_rtrancl_wts_to_monoidLTS_refl:
   "(p, ([], 1), p) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
   by (metis monoid_rtrancl_refl one_list_def one_prod_def)
 
-locale W_automata = monoidLTS "wts_to_monoidLTS transition_relation"
+locale W_automaton = monoidLTS "wts_to_monoidLTS transition_relation"
   for transition_relation :: "('state::finite, 'label, 'weight::bounded_idempotent_semiring) w_transitions" +
   fixes initials :: "'state set" and finals :: "'state set"
 begin
@@ -84,7 +84,7 @@ lemma monoidLTS_reach_imp: "(q, d) \<in> monoidLTS_reach (wts_to_monoidLTS ts) p
 lemma monoid_star_code[code_unfold]: "(p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<longleftrightarrow> (q,d) \<in> monoidLTS_reach (wts_to_monoidLTS ts) p w"
   using monoidLTS_reach_imp monoid_star_imp_exec by fastforce
 
-\<comment> \<open>Auxiliary lemmas for WAutomata and monoidLTS\<close>
+\<comment> \<open>Auxiliary lemmas for WAutomaton and monoidLTS\<close>
 lemma wts_label_exist: "(p, w, q) \<in> wts_to_monoidLTS ts \<Longrightarrow> \<exists>l. fst w = [l]"
   unfolding wts_to_monoidLTS_def by fastforce
 

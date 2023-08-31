@@ -1310,9 +1310,9 @@ interpretation augmented_WPDS: WPDS augmented_WPDS_rules
   unfolding WPDS_def WPDS_def by (fact finite_augmented_WPDS_rules)
 
 
-lemma W_automata_instance[simp]: "W_automata ts" 
-  unfolding W_automata_def monoidLTS_def using countable_wts[of ts] by blast
-lemma WPDS_W_automata_instance[simp]:"WPDS augmented_WPDS_rules"
+lemma W_automaton_instance[simp]: "W_automaton ts" 
+  unfolding W_automaton_def monoidLTS_def using countable_wts[of ts] by blast
+lemma WPDS_instance[simp]:"WPDS augmented_WPDS_rules"
   by (simp add: WPDS_def finite_augmented_WPDS_rules)
 lemma monoidLTS_instance[simp]: "monoidLTS (WPDS.transition_rel augmented_WPDS_rules)"
   by (simp add: monoidLTS_def WPDS.countable_transition_rel[of augmented_WPDS_rules] WPDS_def finite_augmented_WPDS_rules)
@@ -1846,9 +1846,9 @@ proof -
     using monoidLTS.countable_monoid_star_variant1[OF monoidLTS_instance, of "(Init p, w)"]
     by (metis (no_types, lifting) Collect_cong case_prod_beta)
   moreover have "\<And>(a::('ctr_loc, 'noninit) state) (b::'label list) d::'weight. a \<notin> finals \<or> b \<noteq> [] \<Longrightarrow> d * accepts (K$ 0) finals (a,b) = 0" 
-    using WPDS.accepts_K0_iff[OF WPDS_W_automata_instance, of finals] by fastforce
+    using WPDS.accepts_K0_iff[OF WPDS_instance, of finals] by fastforce
   moreover have "\<And>(a::('ctr_loc, 'noninit) state) (b::'label list) d::'weight. a \<in> finals \<and> b = [] \<Longrightarrow> d * accepts (K$ 0) finals (a,b) = d"
-    using WPDS.accepts_K0_iff[OF WPDS_W_automata_instance, of finals] by auto
+    using WPDS.accepts_K0_iff[OF WPDS_instance, of finals] by auto
   ultimately have 
      "\<^bold>\<Sum> {a * accepts (K$ 0) finals (aa, b) |a aa b.
           monoid_rtranclp (monoidLTS.l_step_relp (WPDS.transition_rel augmented_WPDS_rules)) (Init p, w) a (aa, b)} =
