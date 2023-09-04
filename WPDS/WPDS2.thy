@@ -1877,7 +1877,90 @@ lemma pre_star_correctness:
   shows "accepts A finals (Init p, w) = weight_pre_star (accepts_ts finals) (p,w)"
   using assms augmented_rules_correct augmented_WPDS.correctness by simp
 
-end
 
+definition intersw :: "('state, ('label list \<times> 'weight)) transition set \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set \<Rightarrow> ('state \<times> 'state, ('label list \<times> 'weight)) transition set" where
+  "intersw ts1 ts2 = {((p1, q1), (\<alpha>,dp * dq), (p2, q2))| p1 q1 \<alpha> dp dq p2 q2. (p1, (\<alpha>,dp), p2) \<in> ts1 \<and> (q1, (\<alpha>,dq), q2) \<in> ts2}"
+
+lemma zero_one_path:
+  assumes "\<forall>(p1, (w,dp), p2) \<in> wts_to_monoidLTS ts1. dp = 1 \<or> dp = 0"
+  assumes "(p1, (\<alpha>#w1',1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+  shows "\<exists>p'. (p1, ([\<alpha>],1), p') \<in> wts_to_monoidLTS ts1 \<and> (p', (w1',1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+  using assms
+proof (induction w1' arbitrary: \<alpha> p1)
+  case Nil
+  then show ?case
+    by (metis (no_types, lifting) monoid_rtrancl_wts_to_monoidLTS_cases_rev mstar_wts_empty_one mult.right_neutral)
+next
+  case (Cons \<alpha>' w1')
+  obtain p1' d1 d2 where "(p1, ([\<alpha>], d1), p1') \<in> (wts_to_monoidLTS ts1)"
+                         "(p1', (\<alpha>'#w1', d2), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+                         "1 = d1 * d2"
+    using Cons(3) by (meson monoid_rtrancl_wts_to_monoidLTS_cases_rev)
+  have "d1 = 1"
+    using Cons.prems(1) \<open>(p1, ([\<alpha>], d1), p1') \<in> wts_to_monoidLTS ts1\<close> \<open>1 = d1 * d2\<close> by fastforce
+  have "d2 = 1"
+    using \<open>1 = d1 * d2\<close> \<open>d1 = 1\<close> by force
+  have "(p1', (\<alpha>' # w1', 1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+    using \<open>(p1', (\<alpha>' # w1', d2), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)\<close> \<open>d2 = 1\<close> by force
+  then show ?case
+    using \<open>(p1, ([\<alpha>], d1), p1') \<in> wts_to_monoidLTS ts1\<close> \<open>d1 = 1\<close> by blast
+qed
+
+lemma wtrans_star_inter1:
+  assumes "(p1, (w,1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+  assumes "(q1, (w,d), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+  assumes "\<forall>(p1, (w,dp), p2) \<in> wts_to_monoidLTS ts1. dp = 1 \<or> dp = 0"
+  shows "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
+  using assms(1,2)
+proof (induction w arbitrary: p1 q1 d)
+  case (Cons \<alpha> w1')
+  obtain p' where p'_p: "(p1, ([\<alpha>],1), p') \<in> wts_to_monoidLTS ts1 \<and> (p', (w1',1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+    using Cons(2) using monoid_rtrancl_wts_to_monoidLTS_cases_rev by (meson assms(3) zero_one_path)
+  obtain q' dq1q' dq'q2 where q'_p: "(q1, ([\<alpha>],dq1q'), q') \<in> wts_to_monoidLTS ts2 \<and> (q', (w1',dq'q2), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2) \<and> d = dq1q' * dq'q2"
+    using Cons(3) using monoid_rtrancl_wts_to_monoidLTS_cases_rev[of q1 \<alpha> w1' d q2 ts2] by meson
+  have ind: "((p', q'), (w1', 1 * dq'q2), (p2, q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
+  proof -
+    have "Suc (length w1') = length (\<alpha>#w1')"
+      by auto
+    moreover
+    have "(p', (w1',1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+      using p'_p by simp
+    moreover
+    have "(q', (w1',dq'q2), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+      using q'_p by simp
+    ultimately
+    have "((p', q'), (w1', dq'q2), (p2, q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
+      using Cons(1) using Cons(1) by auto
+    then show "((p', q'), (w1', 1 * dq'q2), (p2, q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
+      by auto
+  qed
+  moreover
+  have "((p1, q1), ([\<alpha>], 1 * dq1q'), (p', q')) \<in> (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
+    using p'_p q'_p unfolding intersw_def by force
+  ultimately
+  have "((p1, q1), (\<alpha>#w1', (1 * dq1q') * (1 * dq'q2)), (p2, q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
+    using monoid_rtrancl_into_rtrancl_rev[of "(p1,q1)" "([\<alpha>], 1 * dq1q')" "(p', q')"
+        "intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2)"
+        "(w1', 1 * dq'q2)"
+        "(p2, q2)"
+        ]
+    by (simp add: mult_prod_def times_list_def)
+  moreover
+  have "length ((\<alpha>#w1')) > 0"
+    by auto
+  moreover
+  have "hd ((\<alpha>#w1')) = \<alpha>"
+    by auto
+  ultimately
+  show ?case
+    by (simp add: q'_p)
+next
+  case Nil
+  then show ?case
+    by (metis fst_conv monoid_rtrancl.monoid_rtrancl_refl monoid_star_w0 mstar_wts_empty_one one_list_def one_prod_def)
+qed
+
+
+end
 
 end
