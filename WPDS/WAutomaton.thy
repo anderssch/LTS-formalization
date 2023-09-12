@@ -1,5 +1,5 @@
 theory WAutomaton
-  imports "LTS" "Saturation" "ReverseWellQuasiOrder" "FinFunWellFounded" "MonoidLTS" "Kleene_Algebra.Dioid_models"
+  imports "LTS" "Saturation" "ReverseWellQuasiOrder" "FinFunWellFounded" "MonoidLTS" "Kleene_Algebra.Dioid_models" "Set_More"
 begin
 
 \<comment> \<open>For the semantics of a weighted automaton, labels are lifted to the list-monoid and paired with a weight\<close>
@@ -63,6 +63,19 @@ fun monoidLTS_reach where
   "monoidLTS_reach p [] = {(p,1)}"
 | "monoidLTS_reach p (\<gamma>#w) = (\<Union>(q',d) \<in> (\<Union>(p',(\<gamma>',d),q') \<in> ts. if p' = p \<and> \<gamma>' = [\<gamma>] then {(q',d)} else {}).
       {(q,d*d') | q d'. (q,d') \<in> monoidLTS_reach q' w})"
+
+lemma finite_monoidLTS_reach:
+  assumes "finite ts"
+  shows "finite (monoidLTS_reach p w)"
+proof (induct rule: monoidLTS_reach.induct)
+  case (1 p)
+  then show ?case by simp
+next
+  case (2 p \<gamma> w)
+  show ?case using 2 assms
+    by (fastforce simp: dissect_set)
+qed
+
 end
 
 lemma monoid_star_imp_exec: "(p,w,q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> (q, snd w) \<in> monoidLTS_reach (wts_to_monoidLTS ts) p (fst w)"
@@ -259,6 +272,43 @@ theorem update_wts_sum:
   subgoal for x F
     using update_wts_step[of F x] by auto
   done
+
+lemma update_wts_empty: "update_wts f {} = f"
+  by (rule finfun_ext) (simp add: update_wts_sum[of "{}" f])
+
+lemma update_wts_less_eq:
+  fixes S::"('a \<times> 'b::idempotent_comm_monoid_add_ord) set"
+  assumes "finite S"
+  shows "(update_wts f S) \<le> f"
+  unfolding less_eq_finfun_def using update_wts_sum[OF assms, of f] by simp
+
+
+lemma update_wts_insert_absorb:
+  fixes S::"('a \<times> 'b::idempotent_comm_monoid_add) set"
+  assumes "finite S"
+  assumes "f $ x = f $ x + y"
+  shows "update_wts f (insert (x,y) S) = update_wts f S"
+  apply (rule finfun_ext)
+  subgoal for a
+proof -
+  have fin_b:"finite {b. (x,b) \<in> S}" 
+    using assms(1) finite_surj[OF assms(1), of "{b. (x,b) \<in> S}" snd] by force
+  have "{b. (x,b) \<in> (insert (x,y) S)} = insert y {b. (x,b) \<in> S}" by fast
+  then have aux: "\<Sum>{b. (x,b) \<in> (insert (x,y) S)} = y + \<Sum>{b. (x,b) \<in> S}"
+    using idem_sum_insert[OF fin_b] by presburger
+  have update_insert_sum: "update_wts f (insert (x, y) S) $ a = f $ a + \<Sum> {b. (a, b) \<in> insert (x, y) S}"
+    using update_wts_sum[of "insert (x,y) S" f a] assms(1) by blast
+  show ?thesis proof (cases "a = x")
+    case True
+    then have "update_wts f (insert (x, y) S) $ a = f $ a + y + \<Sum>{b. (x,b) \<in> S}"
+      using aux update_insert_sum by (simp add: ac_simps(1))
+    then show ?thesis using update_wts_sum[OF assms(1), of f a] True assms(2) by simp
+  next
+    case False
+    then have "{b. (a, b) \<in> insert (x, y) S} = {b. (a, b) \<in> S}" by simp
+    then show ?thesis using update_insert_sum update_wts_sum[OF assms(1), of f a] by argo
+  qed
+qed done
 
 
 \<comment> \<open>A weighted automaton is initialized with weights 1 (neutral element along paths) on existing transitions, 

@@ -54,6 +54,21 @@ end
     (https://www.isa-afp.org/entries/Kleene_Algebra.html)\<close>
 class idempotent_comm_monoid_add = idempotent_ab_semigroup_add + comm_monoid_add
 begin
+
+lemma idem_sum_elem: 
+  assumes "finite S"   
+  shows "x \<in> S \<Longrightarrow> \<Sum> S = x + \<Sum>S"
+  apply (induct rule: finite_induct[OF assms], simp)
+  subgoal for x' F
+    using add.left_commute[of x' x "\<Sum> F"]
+    by (cases "x = x'", simp_all add: ac_simps)
+  done
+
+lemma idem_sum_insert:
+  assumes "finite S"   
+  shows "\<Sum>(insert x S) = x + \<Sum>S"
+  using idem_sum_elem[OF assms] sum.insert_if[OF assms, of id x] by simp
+
 abbreviation sum_seq :: "(nat \<Rightarrow> 'a) \<Rightarrow> nat \<Rightarrow> 'a" where
   "sum_seq f i \<equiv> sum f {x. x < i}"
 
