@@ -1445,32 +1445,6 @@ lemma augmented_rules_1:
   by (induct rule: wpds_lts_induct_rev)
      (simp_all add: augmented_rules_1_base augmented_rules_1_step)
 
-lemma wpds_lts_aug_induct [consumes 1, case_names wpds_lts_base wpds_lts_step]:
-  assumes "((p, w), d, p', w') \<in> monoid_rtrancl (WPDS.transition_rel rules)"
-  assumes "(\<And>p w. P p w 1 p w)"
-  assumes "\<And>p w d p' w' d' p'' w''. 
-              ((p, w), d, (p', w')) \<in> monoid_rtrancl (WPDS.transition_rel rules) \<Longrightarrow> 
-              P p w d p' w' \<Longrightarrow> 
-              ((p', w'), d', (p'', w'')) \<in> WPDS.transition_rel rules \<Longrightarrow> 
-              P p w (d * d') p'' w''"
-  shows "P p w d p' w'"
-  using monoid_rtrancl.induct[of "(p, w)" d "(p', w')" "WPDS.transition_rel rules"
-                                 "\<lambda>pw d pw'. P (fst pw) (snd pw) d (fst pw') (snd pw')"]
-  using assms by force
-
-lemma wpds_lts_aug_induct_rev [consumes 1, case_names wpds_lts_base wpds_lts_step]:
-  assumes "((p, w), d, p', w') \<in> monoid_rtrancl (WPDS.transition_rel rules)"
-  assumes "(\<And>p w. P p w 1 p w)"
-  assumes "\<And>p w d p' w' d' p'' w''. 
-              ((p, w), d, (p', w')) \<in> WPDS.transition_rel rules \<Longrightarrow> 
-              P p' w' d' p'' w'' \<Longrightarrow> 
-              ((p', w'), d', (p'', w'')) \<in> monoid_rtrancl (WPDS.transition_rel rules) \<Longrightarrow> 
-              P p w (d * d') p'' w''"
-  shows "P p w d p' w'"
-  using monoid_rtrancl_induct_rev[of "(p, w)" d "(p', w')" "WPDS.transition_rel rules"
-                                     "\<lambda>pw d pw'. P (fst pw) (snd pw) d (fst pw') (snd pw')"]
-        assms by force
-
 lemma init_rule_is_Init:
   assumes "((p, w), d, p', w') \<in> WPDS.transition_rel init_rules"
   shows "is_Init p" and "is_Init p'"
@@ -1502,7 +1476,7 @@ lemma aug_rules_closure_to_init_from_init:
       and "is_Init p'" and "d \<noteq> 0"
     shows "is_Init p"
   using assms aug_rules_to_init_from_init
-  by (induct rule: wpds_lts_aug_induct_rev, simp) fastforce
+  by (induct rule: monoid_rtrancl_pair_induct_rev, simp) fastforce
 
 lemma wpds_lts_init_induct_rev [consumes 1, case_names wpds_lts_base wpds_lts_step]:
   assumes "((Init p, w), d, Init p', w') \<in> monoid_rtrancl (WPDS.transition_rel init_rules)"
@@ -1548,7 +1522,7 @@ lemma aug_to_init_rule_closure:
       and "d \<noteq> 0" and "is_Init p" and "is_Init p'"
   shows "((p, w), d, p', w') \<in> monoid_rtrancl (WPDS.transition_rel init_rules)"
   using assms
-  apply (induct rule: wpds_lts_aug_induct_rev, simp)
+  apply (induct rule: monoid_rtrancl_pair_induct_rev, simp)
   subgoal for p w d p' w' d' p'' w''
     using aug_to_init_rule[of "the_Ctr_Loc p" w d "the_Ctr_Loc p'" w']
           aug_rules_closure_to_init_from_init[of p' w' d' p'' w'']
@@ -1630,7 +1604,7 @@ lemma aug_to_pop_rule_closure:
       and "d \<noteq> 0" and "is_Noninit p"
   shows "((p, w), d, p', w') \<in> monoid_rtrancl (WPDS.transition_rel pop_ts_rules)"
   using assms
-  apply (induct rule: wpds_lts_aug_induct_rev, simp)
+  apply (induct rule: monoid_rtrancl_pair_induct_rev, simp)
   subgoal for p w d p' w' d' p'' w''
     using aug_to_pop_rule[of p w d p' w']
           monoid_rtrancl_into_rtrancl_rev[of "(p,w)" d "(p',w')" "WPDS.transition_rel pop_ts_rules" d' "(p'',w'')"]
@@ -1683,7 +1657,7 @@ lemma augmented_rules_2_init_noninit_split:
           ((Init p', w'), d', Noninit p'', w'') \<in> WPDS.transition_rel augmented_WPDS_rules \<and>
           ((Noninit p'', w''), d'', p\<^sub>2, w\<^sub>2) \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)"
   using assms
-  apply (induct rule: wpds_lts_aug_induct_rev)
+  apply (induct rule: monoid_rtrancl_pair_induct_rev)
     using state.exhaust_disc
      apply fast
     subgoal for p w d p' w' d' p'' w''
