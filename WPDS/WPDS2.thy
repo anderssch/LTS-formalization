@@ -1881,6 +1881,9 @@ lemma pre_star_correctness:
 definition intersw :: "('state, ('label list \<times> 'weight)) transition set \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set \<Rightarrow> ('state \<times> 'state, ('label list \<times> 'weight)) transition set" where
   "intersw ts1 ts2 = {((p1, q1), (\<alpha>,dp * dq), (p2, q2))| p1 q1 \<alpha> dp dq p2 q2. (p1, (\<alpha>,dp), p2) \<in> ts1 \<and> (q1, (\<alpha>,dq), q2) \<in> ts2}"
 
+(* Lav produkt med finfun istedet. *)
+
+
 lemma zero_one_path:
   assumes "\<forall>(p1, (w,dp), p2) \<in> wts_to_monoidLTS ts1. dp = 1 \<or> dp = 0"
   assumes "(p1, (\<alpha>#w1',1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"

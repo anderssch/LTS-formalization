@@ -9,7 +9,7 @@ Flemming Nielson
 ## Download the version considered in our FMCAD2023 submission
 
 ```
-$ git clone --branch FMCAD2023 https://github.com/anderssch/LTS-formalization/
+$ git clone --branch SAC2023 https://github.com/anderssch/LTS-formalization/
 ```
 
 The files will then be in `LTS-formalization/Datalog`
