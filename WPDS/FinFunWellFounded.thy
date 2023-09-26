@@ -164,7 +164,7 @@ lemma finfuns_UNIV: "finfuns (UNIV::('a set)) = UNIV"
 
 lemma wfp_on_spec: "wfp_on P A \<Longrightarrow> (\<And>i. f i \<in> A) \<Longrightarrow> \<exists>i. \<not> P (f (Suc i)) (f i)"
   unfolding wfp_on_def by blast
-lemma antisymp_on_spec: "antisymp_on P A \<Longrightarrow> (\<And>a b. a \<in> A \<Longrightarrow> b \<in> A \<Longrightarrow> P a b \<Longrightarrow> P b a \<Longrightarrow> a = b)"
+lemma antisymp_on_spec: "antisymp_on A P \<Longrightarrow> (\<And>a b. a \<in> A \<Longrightarrow> b \<in> A \<Longrightarrow> P a b \<Longrightarrow> P b a \<Longrightarrow> a = b)"
   unfolding antisymp_on_def by fastforce
 lemma wfp_onI: "(\<And>f::nat \<Rightarrow> 'a. \<forall>i. f i \<in> A \<Longrightarrow> (\<exists>i. \<not> strict P (f (Suc i)) (f i))) \<Longrightarrow> wfp_on (strict P) A"
   unfolding wfp_on_def by blast
@@ -230,8 +230,8 @@ proof safe
 qed
 
 lemma finfun_antisymp_on:
-  assumes "antisymp_on P UNIV"
-  shows "antisymp_on (finfun_emb P) (finfuns A)"
+  assumes "antisymp_on UNIV P"
+  shows "antisymp_on (finfuns A) (finfun_emb P)"
   using assms unfolding antisymp_on_def finfun_emb_def
   apply safe
   subgoal for f g
@@ -279,7 +279,7 @@ lemma aux_finfun_update_apply_P:
   using assms[of a] by simp
 
 lemma step_hom_correct:
-  assumes "reflp_on P UNIV"
+  assumes "reflp_on UNIV P"
   assumes "\<not> strict (prod_le (finfun_emb P) (finfun_emb P)) (step_hom a x) (step_hom a y)"
     shows "\<not> strict (finfun_emb P) x y"
   using assms unfolding step_hom_def finfuns_single finfun_emb_def prod_le_def reflp_on_def
@@ -298,7 +298,7 @@ lemma step_hom_correct:
 
 lemma finfuns_insert_prod_wfp: 
   assumes "wfp_on (strict (prod_le (finfun_emb P) (finfun_emb P))) (finfuns {a} \<times> finfuns A)"
-      and "reflp_on P UNIV"
+      and "reflp_on UNIV P"
       and "finite A"
     shows "wfp_on (strict (finfun_emb P)) (finfuns (insert a A))"
   using wfp_neg_map[OF assms(1), of "step_hom a" "(finfuns (insert a A))" "finfun_emb P"] 
@@ -310,12 +310,12 @@ lemma finfuns_insert_prod_wfp:
 lemma finfuns_insert_wfp:
   assumes "wfp_on (strict P) UNIV"
       and "wfp_on (strict (finfun_emb P)) (finfuns A)"
-      and "antisymp_on P UNIV"
-      and "reflp_on P UNIV"
+      and "antisymp_on UNIV P"
+      and "reflp_on UNIV P"
       and "finite A"
     shows "wfp_on (strict (finfun_emb P)) (finfuns (insert a A))"
-  using assms finfun_antisymp_on
-  using wfp_on_Sigma[of "finfun_emb P" "finfuns {a}" "finfun_emb P" "finfuns A"]
+  using assms finfun_antisymp_on 
+  using wfp_on_Sigma[of "finfuns {a}" "finfun_emb P" "finfuns A" "finfun_emb P"]
   using finfuns_single_wfp[of P a]
   using finfuns_insert_prod_wfp[of P a A]
   by blast
@@ -324,8 +324,8 @@ lemma finfuns_insert_wfp:
     This is the main result in this section, and goes by induction on the finite input domain A.\<close>
 lemma finite_finfuns_wfp:
   assumes "finite (A::'a set)"
-      and "antisymp_on P (UNIV::'b::zero set)"
-      and "reflp_on P UNIV"
+      and "antisymp_on (UNIV::'b::zero set) P"
+      and "reflp_on UNIV P"
       and "wfp_on (strict P) UNIV"
     shows "wfp_on (strict (finfun_emb P)) ((finfuns A)::(('a \<Rightarrow>f 'b) set))"  
   using assms
@@ -339,8 +339,8 @@ qed
 
 \<comment> \<open>Transitivity of the @{term finfun_emb} on @{term finfuns}.\<close>
 lemma finfuns_transp_on:
-  assumes "transp_on P UNIV"
-    shows "transp_on (finfun_emb P) (finfuns A)"
+  assumes "transp_on UNIV P"
+    shows "transp_on (finfuns A) (finfun_emb P)"
   using assms unfolding finfun_emb_def transp_on_def
   by blast
 
@@ -348,8 +348,8 @@ instantiation finfun :: (finite, "{wfp,zero}") wfp
 begin
 instance proof fix f :: "(nat \<Rightarrow> ('a::finite \<Rightarrow>f 'b::{wfp,zero}))"
     have f:"finite (UNIV::('a set))" by simp
-    have a:"antisymp_on (\<le>) (UNIV::('b::{wfp,zero} set))" by (fact antisymp_on_less_eq)
-    have r:"reflp_on (\<le>) (UNIV::('b::{wfp,zero} set))" unfolding reflp_on_def by simp
+    have a:"antisymp_on (UNIV::('b::{wfp,zero} set)) (\<le>)" by (fact antisymp_on_less_eq)
+    have r:"reflp_on (UNIV::('b::{wfp,zero} set)) (\<le>)" unfolding reflp_on_def by simp
     have w:"wfp_on (strict (\<le>)) (UNIV::('b::{wfp,zero} set))" using wfp_on_class .
     have "wfp_on (strict (\<le>)) (UNIV::(('a \<Rightarrow>f 'b) set))"
       using finite_finfuns_wfp[of UNIV "(\<le>)", OF f a r w]

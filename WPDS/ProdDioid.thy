@@ -37,8 +37,7 @@ instance proof
     using order_antisym[of "fst x" "fst y"] order_antisym[of "snd x" "snd y"] 
     unfolding less_eq_prod_def by (auto intro: prod_eqI)
 qed
-lemma antisymp_on_less_eq: "antisymp_on (\<le>) (A::('a set))"
-  unfolding antisymp_on_def by force
+lemma antisymp_on_less_eq: "antisymp_on (A::('a set)) (\<le>)" by simp
 lemma prod_le_is_less_eq_prod:
  "(prod_le (\<le>) (\<le>)) = ((\<le>)::('a \<times> 'b) \<Rightarrow> ('a \<times> 'b) \<Rightarrow> bool)"
   unfolding prod_le_def less_eq_prod_def by fastforce
@@ -116,8 +115,8 @@ lemma less_not_fst_implies_snd:
   by (simp add: prod_eq_iff[of "f (Suc i)" "f i"])
 
 lemma antisymp_on_Sigma:
-  assumes "antisymp_on P1 A1" and "antisymp_on P2 A2"
-  shows "antisymp_on (prod_le P1 P2) (A1 \<times> A2)"
+  assumes "antisymp_on A1 P1" and "antisymp_on A2 P2"
+  shows "antisymp_on (A1 \<times> A2) (prod_le P1 P2)"
   using assms unfolding antisymp_on_def prod_le_def by simp
 
 lemma finite_infinite_nat_disj:
@@ -207,13 +206,13 @@ proof -
 qed
 
 lemma PnotStrictP:
-  assumes "antisymp_on P A" "x \<in> A" "y \<in> A"
+  assumes "antisymp_on A P" "x \<in> A" "y \<in> A"
           "P x y" "\<not> (strict P) x y"
   shows   "x = y"
   using assms unfolding antisymp_on_def by blast
 
 lemma wfp_on_Sigma:
-  assumes "antisymp_on P1 A1" and "antisymp_on P2 A2"
+  assumes "antisymp_on A1 P1" and "antisymp_on A2 P2"
   assumes "wfp_on (strict P1) A1" and "wfp_on (strict P2) A2"
   shows "wfp_on (strict (prod_le P1 P2)) (A1 \<times> A2)" (is "wfp_on ?P ?A")
 proof -

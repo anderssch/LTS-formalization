@@ -163,8 +163,8 @@ lemma finite_card_le_wqo:
   assumes "finite A"
   shows "wqo_on (\<lambda>x y. card x \<ge> card y) A"
 proof -
-  have "reflp_on (\<lambda>x y. card x \<ge> card y) A" unfolding reflp_on_def by blast
-  moreover have "transp_on (\<lambda>x y. card x \<ge> card y) A" unfolding transp_on_def by simp
+  have "reflp_on A (\<lambda>x y. card x \<ge> card y)" unfolding reflp_on_def by blast
+  moreover have "transp_on A (\<lambda>x y. card x \<ge> card y)" unfolding transp_on_def by simp
   ultimately show ?thesis using finite_wqo_on[of "A" "(\<lambda>x y. card x \<ge> card y)"] using assms by simp
 qed
 

@@ -296,14 +296,14 @@ class wfp = order +
 begin
 lemma strict_le_is_less:"strict (\<le>) = (<)"
   using dual_order.strict_iff_not by presburger
-lemma transp_on_less_eq: "transp_on (\<le>) A"
+lemma transp_on_less_eq: "transp_on A (\<le>)"
   unfolding transp_on_def by fastforce
 
 lemma qo_on_less_eq: "qo_on (\<le>) A"
   unfolding qo_on_def reflp_on_def using transp_on_less_eq by simp
 lemma wfp_on_class: "wfp_on (strict (\<le>)) A"
   unfolding wfp_on_def using no_infinite_decending strict_le_is_less by blast
-lemma "irreflp_on (strict (\<le>)) A" by (fact irreflp_on_strict)
+lemma "irreflp_on A (strict (\<le>))" by (fact irreflp_on_strict)
 
 lemma no_antichain_on_implies_wqo_on: "(\<nexists>f. antichain_on (\<le>) f A) \<Longrightarrow> wqo_on (\<le>) A"
   using wqo_wf_and_no_antichain_conv[OF qo_on_less_eq] wfp_on_class by simp
