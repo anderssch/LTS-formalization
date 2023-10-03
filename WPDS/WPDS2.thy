@@ -1941,7 +1941,30 @@ lemma the_XY_lemma:
   assumes "(p1, (w,X), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
   assumes "(q1, (w,Y), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
   shows "\<exists>XY. ((p1,q1), (w,XY), (p2,q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
-  sorry
+using assms proof (induction w arbitrary: p1 q1 X Y)
+  case Nil
+  then show ?case
+    by (metis fst_conv monoid_rtrancl.monoid_rtrancl_refl monoid_star_w0 one_list_def one_prod_def)
+next
+  case (Cons a w)
+  obtain p' q' X1 X2 Y1 Y2 where pq':
+    "(p1, ([a], X1), p') \<in> (wts_to_monoidLTS ts1)" "(p', (w, X2), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+    "(q1, ([a], Y1), q') \<in> (wts_to_monoidLTS ts2)" "(q', (w, Y2), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+    by (meson Cons.prems(1) Cons.prems(2) monoid_rtrancl_wts_to_monoidLTS_cases_rev)
+  then have 1: "((p1,q1), ([a], X1 * Y1), (p',q')) \<in> (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
+    using intersw_def by fastforce
+  from pq' Cons(1) have "\<exists>XY. ((p',q'), (w, XY), (p2,q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
+    by blast
+  then obtain XY where XY: "((p',q'), (w, XY), (p2,q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
+    by auto
+  have "((p1, q1), ([a], X1 * Y1) * (w, XY), (p2, q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
+    using monoid_rtrancl_into_rtrancl_rev[of "(p1,q1)" "([a],X1 * Y1)" "(p',q')" "(intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))" "(w,XY)" "(p2,q2)"]
+    using 1 XY by auto
+  then have "((p1,q1), (a#w, (X1 * Y1)*XY), (p2,q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
+    unfolding mult_prod_def prod_def times_list_def by auto
+  then show ?case 
+    by auto
+qed
 
 lemma wtrans_star_inter1_0:
   assumes "(p1, (w,0), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
@@ -1953,7 +1976,7 @@ proof (induction w arbitrary: p1 q1 d)
   case (Cons \<alpha> w1')
   then have "(\<exists>p' d'. (p1, ([\<alpha>], 0), p') \<in> wts_to_monoidLTS ts1 \<and> (p', (w1',d'), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)) 
            \<or> (\<exists>p' d'. (p1, ([\<alpha>], d'), p') \<in> wts_to_monoidLTS ts1 \<and> (p', (w1',0), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1))"
-    sorry
+    by (smt (verit, del_insts) assms(3) augmented_WPDS.monoid_rtrancl_wts_to_monoidLTS_cases_rev mult.left_neutral prod.simps(2))
   then show ?case
   proof 
     assume "(\<exists>p' d'. (p1, ([\<alpha>], 0), p') \<in> wts_to_monoidLTS ts1 \<and> (p', (w1',d'), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1))"
@@ -2000,16 +2023,16 @@ proof (induction w arbitrary: p1 q1 d)
     then obtain q' X Y where "(q1, ([\<alpha>], X), q') \<in> wts_to_monoidLTS ts2" "(q', (w1', Y), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
       by auto
     ultimately
-    have START: "\<exists>XY. ((p1,q1), ([\<alpha>], XY), (p',q')) \<in> intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2)"
+    have "\<exists>XY. ((p1,q1), ([\<alpha>], XY), (p',q')) \<in> intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2)"
       unfolding intersw_def by auto
-    have "\<exists>XY. ((p',q'), (w1', XY), (p2,q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
-      using the_XY_lemma[of p' w1' _ p2 ts1 q' _ q2 ts2] Cons 
-      sorry
-    then obtain XY where END: "((p',q'), (w1', XY), (p2,q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
-      by blast
-    have "((p1, q1), ([\<alpha>]*w1', XY*0), (p2, q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
-      using START END
-      sorry
+    then obtain XY where START: "((p1,q1), ([\<alpha>], XY), (p',q')) \<in> intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2)"
+      unfolding intersw_def by auto
+    have "((p',q'), (w1', 0), (p2,q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
+      using Cons(1)[of p' q']
+      using \<open>(p', (w1', 0), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)\<close> \<open>(q', (w1', Y), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)\<close> by blast
+    then have "((p1, q1), ([\<alpha>]*w1', XY * 0), (p2, q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
+      using START
+      by (smt (verit, del_insts) fst_conv monoid_rtrancl_into_rtrancl_rev mult_prod_def snd_conv) 
     then have "((p1, q1), ([\<alpha>]*w1', 0), (p2, q2)) \<in> monoid_rtrancl (intersw (wts_to_monoidLTS ts1) (wts_to_monoidLTS ts2))"
       by force
     then show ?thesis
