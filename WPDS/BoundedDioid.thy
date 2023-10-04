@@ -289,13 +289,24 @@ lemma sum_superset_less_eq:
   unfolding less_eq_def using sum.subset_diff[OF assms, of id] by force
 
 lemma sum_greater_elem:
-  assumes "\<And>a. a \<in> A \<Longrightarrow> \<Sum> B \<le> a"
-      and "finite A" and "finite B"
-    shows "\<Sum> B \<le> \<Sum> A"
+  assumes "\<And>a. a \<in> A \<Longrightarrow> b \<le> a"
+      and "finite A"
+    shows "b \<le> \<Sum> A"
   using assms(1)
   unfolding less_eq_def
-  by (induct rule: finite_induct[OF assms(2)]) (simp_all add: local.add.left_commute local.meet.inf_commute)
-  
+  apply (induct rule: finite_induct[OF assms(2)])
+  by (simp_all add: local.add.left_commute local.meet.inf_commute)
+
+lemma sum_smaller_elem:
+  assumes "\<And>a. a \<in> A \<Longrightarrow> a \<le> b"
+      and "finite A"
+      and "A \<noteq> {}"
+    shows "\<Sum> A \<le> b"
+  using assms(1,3)
+  unfolding less_eq_def
+  apply (induct rule: finite_induct[OF assms(2)])
+   apply (simp_all add: local.add.left_commute local.meet.inf_commute)
+  by fastforce
 
 end
 

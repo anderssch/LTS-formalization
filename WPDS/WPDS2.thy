@@ -453,6 +453,27 @@ lemma pre_star_rule_pre_star_step: "pre_star_rule\<^sup>*\<^sup>* ts (pre_star_s
 lemma pre_star_rule_pre_star1s: "pre_star_rule\<^sup>*\<^sup>* ts ((pre_star_step ^^ k) ts)"
   by (induct k) (auto elim!: rtranclp_trans intro: pre_star_rule_pre_star_step)
 
+lemma pre_star_rule_sum_not_eq:
+  assumes "pre_star_rule ts ts'"
+  shows "ts + \<Sum> {ts'. pre_star_rule ts ts'} \<noteq> ts"
+proof (cases "{ts'. pre_star_rule ts ts'} = {}")
+  case True
+  then show ?thesis using assms by blast
+next
+  case False
+  have le:"\<Sum> {ts'. pre_star_rule ts ts'} \<le> ts" 
+    using sum_smaller_elem[of "{ts'. pre_star_rule ts ts'}" ts, OF _ finite_pre_star_rule_set[of ts] False]
+    using pre_star_rule_mono[of ts] by blast
+  have le':"\<Sum> {ts'. pre_star_rule ts ts'} \<le> ts'"
+    unfolding BoundedDioid.idempotent_ab_semigroup_add_ord_class.less_eq_def 
+    using idem_sum_elem[OF finite_pre_star_rule_set[of ts], of ts'] assms by (simp add: add.commute)
+  obtain t d where "ts' = ts(t $:= ts $ t + d)" and "ts' $ t \<noteq> ts $ t"
+    using assms finfun_upd_apply_same pre_star_rule_exists_t_d by force
+  then have "ts + ts' \<noteq> ts" using ts_update_idem by metis
+  then show ?thesis 
+    using le le' unfolding BoundedDioid.idempotent_ab_semigroup_add_ord_class.less_eq_def
+    using add.commute by metis
+qed
 
 lemma saturation_pre_star_exec: "saturation pre_star_rule ts (pre_star_exec ts)"
 proof -
@@ -460,14 +481,11 @@ proof -
   obtain k where k: "t = (pre_star_step ^^ k) ts" and eq: "pre_star_step t = t"
     using while_option_stop2[OF t[unfolded pre_star_loop_def]] by auto
   have "t = t + \<Sum> {ts. pre_star_rule t ts}" using eq pre_star_step_to_pre_star_rule_sum by simp
-  then have "\<And>ts. \<not> pre_star_rule t ts"
-    sorry
+  then have "\<And>ts. \<not> pre_star_rule t ts" using pre_star_rule_sum_not_eq by metis
   then show ?thesis
     unfolding saturation_def saturated_def pre_star_exec_def o_apply t
     by (simp_all add: pre_star_rule_pre_star1s k)
 qed
-
-
 
 
 
