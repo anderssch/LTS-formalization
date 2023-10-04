@@ -357,6 +357,9 @@ definition lt :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'c) 
                        (\<forall>p'. s p' = s p \<longrightarrow> \<rho> p' \<subseteq> \<rho>' p') \<and>
                        (\<forall>p'. s p' < s p \<longrightarrow> \<rho> p' = \<rho>' p'))"
 
+definition lt_prz :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'c) pred_val \<Rightarrow> bool" ("_ \<sqsubset>_\<sqsubset>\<^sub>p\<^sub>r\<^sub>z _") where
+  "(\<rho>\<^sub>M \<sqsubset>s\<sqsubset>\<^sub>p\<^sub>r\<^sub>z \<rho>\<^sub>N) \<longleftrightarrow> \<rho>\<^sub>N \<noteq> \<rho>\<^sub>M \<and> (\<forall>p\<^sub>A c\<^sub>A. c\<^sub>A \<in> \<rho>\<^sub>N p\<^sub>A - \<rho>\<^sub>M p\<^sub>A \<longrightarrow> (\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>M p\<^sub>B - \<rho>\<^sub>N p\<^sub>B \<and> s p\<^sub>A > s p\<^sub>B))"
+
 definition lte :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'c) pred_val \<Rightarrow> bool" ("_ \<sqsubseteq>_\<sqsubseteq> _") where
   "(\<rho> \<sqsubseteq>s\<sqsubseteq> \<rho>') \<longleftrightarrow> \<rho> = \<rho>' \<or> (\<rho> \<sqsubset>s\<sqsubset> \<rho>')"
 
@@ -531,6 +534,67 @@ next
   case (Suc n)
   then show ?case
     by (metis least_rank_p_st_def linorder_not_le)
+qed
+
+lemma
+  assumes "\<rho>\<^sub>M \<sqsubset>s\<sqsubset>\<^sub>p\<^sub>r\<^sub>z \<rho>\<^sub>N"
+  shows "\<rho>\<^sub>N \<sqsubset>s\<sqsubset> \<rho>\<^sub>M"
+proof -
+  from assms have nice: "\<rho>\<^sub>N \<noteq> \<rho>\<^sub>M \<and> (\<forall>p\<^sub>A c\<^sub>A. c\<^sub>A \<in> \<rho>\<^sub>N p\<^sub>A - \<rho>\<^sub>M p\<^sub>A \<longrightarrow> (\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>M p\<^sub>B - \<rho>\<^sub>N p\<^sub>B \<and> s p\<^sub>B < s p\<^sub>A))"
+    unfolding lt_prz_def by auto
+  then have "\<exists>p. \<rho>\<^sub>N p \<noteq> \<rho>\<^sub>M p"
+    by auto
+  then have "\<exists>p. least_rank_p_st (\<lambda>p. \<rho>\<^sub>N p \<noteq> \<rho>\<^sub>M p) p s"
+    using least_rank_p_st_exists by smt
+  then obtain p where "least_rank_p_st (\<lambda>p. \<rho>\<^sub>N p \<noteq> \<rho>\<^sub>M p) p s"
+    by auto
+  have "\<rho>\<^sub>N p \<noteq> \<rho>\<^sub>M p"
+    by (metis (mono_tags, lifting) \<open>least_rank_p_st (\<lambda>p. \<rho>\<^sub>N p \<noteq> \<rho>\<^sub>M p) p s\<close> least_rank_p_st_def)
+  then have "(\<exists>c. c \<in> \<rho>\<^sub>M p \<and> c \<notin> \<rho>\<^sub>N p) \<or> (\<exists>c. c \<in> \<rho>\<^sub>N p \<and> c \<notin> \<rho>\<^sub>M p)"
+    by auto
+  then show "\<rho>\<^sub>N \<sqsubset>s\<sqsubset> \<rho>\<^sub>M"
+  proof 
+    assume "\<exists>c. c \<in> \<rho>\<^sub>M p \<and> c \<notin> \<rho>\<^sub>N p"
+    then obtain c where "c \<in> \<rho>\<^sub>M p" "c \<notin> \<rho>\<^sub>N p"
+      by auto
+    have "(\<forall>p'. s p' < s p \<longrightarrow> \<rho>\<^sub>N p' = \<rho>\<^sub>M p')"
+      using \<open>least_rank_p_st (\<lambda>p. \<rho>\<^sub>N p \<noteq> \<rho>\<^sub>M p) p s\<close> below_least_rank_p_st by fastforce
+    have "(\<forall>p'. s p' = s p \<longrightarrow> \<rho>\<^sub>N p' \<subseteq> \<rho>\<^sub>M p')"
+      using \<open>\<forall>p'. s p' < s p \<longrightarrow> \<rho>\<^sub>N p' = \<rho>\<^sub>M p'\<close> nice by auto
+    then show ?thesis
+      unfolding lt_def using \<open>\<forall>p'. s p' < s p \<longrightarrow> \<rho>\<^sub>N p' = \<rho>\<^sub>M p'\<close> \<open>\<rho>\<^sub>N p \<noteq> \<rho>\<^sub>M p\<close> by blast
+  next 
+    assume "\<exists>c. c \<in> \<rho>\<^sub>N p \<and> c \<notin> \<rho>\<^sub>M p"
+    then obtain c where "c \<in> \<rho>\<^sub>N p \<and> c \<notin> \<rho>\<^sub>M p"
+      by auto
+    then have "\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>M p\<^sub>B - \<rho>\<^sub>N p\<^sub>B \<and> s p\<^sub>B < s p"
+      using nice by auto
+    then obtain p\<^sub>B c\<^sub>B where "c\<^sub>B \<in> \<rho>\<^sub>M p\<^sub>B - \<rho>\<^sub>N p\<^sub>B" "s p\<^sub>B < s p"
+      by auto
+    then have "False"
+      using \<open>least_rank_p_st (\<lambda>p. \<rho>\<^sub>N p \<noteq> \<rho>\<^sub>M p) p s\<close> below_least_rank_p_st by fastforce
+    then show ?thesis
+      by auto
+  qed
+qed
+
+lemma
+  assumes "\<rho>\<^sub>M \<sqsubset>s\<sqsubset> \<rho>\<^sub>N"
+  shows "\<rho>\<^sub>N \<sqsubset>s\<sqsubset>\<^sub>p\<^sub>r\<^sub>z \<rho>\<^sub>M"
+proof -
+  have "\<rho>\<^sub>M \<noteq> \<rho>\<^sub>N"
+    using assms lt_def by fastforce
+  moreover
+  have "(\<forall>p\<^sub>A c\<^sub>A. c\<^sub>A \<in> \<rho>\<^sub>M p\<^sub>A - \<rho>\<^sub>N p\<^sub>A \<longrightarrow> (\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>N p\<^sub>B - \<rho>\<^sub>M p\<^sub>B \<and> s p\<^sub>B < s p\<^sub>A))"
+  proof (rule, rule, rule)
+    fix p\<^sub>A c\<^sub>A
+    assume "c\<^sub>A \<in> \<rho>\<^sub>M p\<^sub>A - \<rho>\<^sub>N p\<^sub>A"
+    show "\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>N p\<^sub>B - \<rho>\<^sub>M p\<^sub>B \<and> s p\<^sub>B < s p\<^sub>A"
+      by (smt (verit) DiffD1 DiffD2 \<open>c\<^sub>A \<in> \<rho>\<^sub>M p\<^sub>A - \<rho>\<^sub>N p\<^sub>A\<close> antisym_conv3 assms lt_def psubset_imp_ex_mem subsetD)
+  qed
+  ultimately
+  show "\<rho>\<^sub>N \<sqsubset>s\<sqsubset>\<^sub>p\<^sub>r\<^sub>z \<rho>\<^sub>M"
+    unfolding lt_prz_def by auto
 qed
 
 lemma solves_leq:
