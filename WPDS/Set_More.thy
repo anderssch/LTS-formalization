@@ -43,6 +43,8 @@ lemma countable_f_on_P_Q_set3: "countable {(x, y, z). Q x y z} \<Longrightarrow>
 
 lemma finite_f_on_set: "finite X \<Longrightarrow> finite {f x | x. x \<in> X}"
   by (simp add: dissect_set)
+lemma finite_f_P_on_set: "finite X \<Longrightarrow> finite {f x | x. P x \<and> x \<in> X}"
+  by (simp add: dissect_set)
 
 lemma countable_prod: "countable {x. P x} \<Longrightarrow> countable {y. Q y} \<Longrightarrow> countable {(x,y). P x \<and> Q y}"
   by force
@@ -91,6 +93,21 @@ lemma countable_3_to_3_permutation:
   shows "countable {(c, a, b). X a b c}"  
   using countable_subset[OF _ countable_setcompr[OF assms, of "\<lambda>(a,b,c). (c,a,b)", simplified], of "{(c, a, b). X a b c}"]
   by blast
+
+
+lemma exists_set_between:
+  assumes "A \<subseteq> B" and "B \<subseteq> A \<union> C"
+  shows "\<exists>D \<subseteq> C. B = A \<union> D"
+  using assms by blast
+
+lemma finite_union_f:
+  assumes "finite X"
+  assumes "\<And>x. x \<in> X \<Longrightarrow> finite {f y| y. P x y}"
+  shows "finite {f y| x y. P x y \<and> x \<in> X}"
+proof -
+  have "(\<Union>x\<in>X. {f y |y. P x y}) = {f y | x y. P x y \<and> x \<in> X}" by blast
+  then show ?thesis using assms(2) finite_UN[OF assms(1), of "\<lambda>x. {f y |y. P x y}", symmetric] by auto
+qed
 
 
 end

@@ -72,7 +72,7 @@ proof (induct rule: monoidLTS_reach.induct)
   then show ?case by simp
 next
   case (2 p \<gamma> w)
-  show ?case using 2 assms
+  then show ?case using assms
     by (fastforce simp: dissect_set)
 qed
 
@@ -96,6 +96,79 @@ lemma monoidLTS_reach_imp: "(q, d) \<in> monoidLTS_reach (wts_to_monoidLTS ts) p
   done
 lemma monoid_star_code[code_unfold]: "(p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<longleftrightarrow> (q,d) \<in> monoidLTS_reach (wts_to_monoidLTS ts) p w"
   using monoidLTS_reach_imp monoid_star_imp_exec by fastforce
+
+
+context fixes ts :: "('state, 'label list \<times> 'weight::idempotent_semiring) transition set" begin
+fun monoidLTS_reach_not0 where
+  "monoidLTS_reach_not0 p [] = {(p,1)}"
+| "monoidLTS_reach_not0 p (\<gamma>#w) = (\<Union>(q',d) \<in> (\<Union>(p',(\<gamma>',d),q') \<in> ts. if p' = p \<and> \<gamma>' = [\<gamma>] \<and> d \<noteq> 0 then {(q',d)} else {}).
+      {(q,d*d') | q d'. (q,d') \<in> monoidLTS_reach_not0 q' w})"
+
+lemma finite_monoidLTS_reach_not0:
+  assumes "finite ts"
+  shows "finite (monoidLTS_reach_not0 p w)"
+proof (induct rule: monoidLTS_reach_not0.induct)
+  case (1 p)
+  then show ?case by simp
+next
+  case (2 p \<gamma> w)
+  then show ?case using assms by (fastforce simp: dissect_set)
+qed
+end
+
+
+lemma monoid_star_n0_imp_exec: "(p,w,q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> snd w = 0 \<or> (q, snd w) \<in> monoidLTS_reach_not0 (wts_to_monoidLTS ts) p (fst w)"
+proof (induct rule: monoid_rtrancl_induct_rev)
+  case (monoid_rtrancl_refl a)
+  then show ?case by (force simp add: one_prod_def one_list_def)
+next
+  case (monoid_rtrancl_into_rtrancl p w p' q w')
+  then obtain l where l:"[l] = fst w" unfolding wts_to_monoidLTS_def by force
+  then have lw': "l # fst w' = fst (w * w')" unfolding mult_prod_def times_list_def by fastforce
+  define d where "d = snd w"
+  define d' where "d' = snd w'"
+  have dd': "d * d' = snd (w * w')" using d_def d'_def unfolding mult_prod_def by fastforce
+  have w: "w = ([l], d)" using l d_def by simp
+  show ?case
+  proof (cases "d * d' = 0")
+    case True
+    then show ?thesis unfolding mult_prod_def dd' by simp
+  next
+    case False
+    then have d0:"d \<noteq> 0" and "d' \<noteq> 0" by auto
+    then have "(q, d') \<in> monoidLTS_reach_not0 (wts_to_monoidLTS ts) p' (fst w')"
+      using monoid_rtrancl_into_rtrancl(2) d'_def by blast
+    then have "(q, d * d') \<in> monoidLTS_reach_not0 (wts_to_monoidLTS ts) p (l # fst w')"
+      using monoid_rtrancl_into_rtrancl(1) False w d0 by fastforce
+    then show ?thesis using lw' dd' by argo
+  qed
+qed
+
+lemma monoidLTS_reach_n0_cons_exists:
+  assumes "(q, d) \<in> monoidLTS_reach_not0 (wts_to_monoidLTS ts) p (\<gamma> # w)"
+  shows "\<exists>p' d' d''. (p, ([\<gamma>], d'), p') \<in> wts_to_monoidLTS ts \<and> (q, d'') \<in> monoidLTS_reach_not0 (wts_to_monoidLTS ts) p' w \<and> d' \<noteq> 0 \<and> d = d' * d''"
+  using assms by (simp, safe) (metis empty_iff prod.inject singletonD)
+
+lemma monoidLTS_reach_n0_imp: "(q, d) \<in> monoidLTS_reach_not0 (wts_to_monoidLTS ts) p w \<Longrightarrow> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+proof (induct p w arbitrary: d rule: monoidLTS_reach_not0.induct[of _ "wts_to_monoidLTS ts"])
+  case (1 p d)
+  then show ?case by (simp add: monoid_rtrancl_refl[of p "wts_to_monoidLTS ts", unfolded one_prod_def one_list_def])
+next
+  case (2 p \<gamma> w d)
+  from 2(2) obtain p' d' d''
+    where *:"(p, ([\<gamma>], d'), p') \<in> wts_to_monoidLTS ts"
+            "(q, d'') \<in> monoidLTS_reach_not0 (wts_to_monoidLTS ts) p' w"
+            "d = d' * d''" and "d' \<noteq> 0" using monoidLTS_reach_n0_cons_exists by meson
+  then have "(p', d') \<in> (\<Union>(p', (\<gamma>', d), q')\<in>wts_to_monoidLTS ts. if p' = p \<and> \<gamma>' = [\<gamma>] \<and> d \<noteq> 0 then {(q', d)} else {})"
+    by fastforce
+  then show ?case 
+    using * 2(1) monoid_rtrancl_into_rtrancl_rev[of p "([\<gamma>],d')" p' "wts_to_monoidLTS ts" "(w,d'')" q]
+    unfolding mult_prod_def times_list_def by auto
+qed
+
+lemma monoid_star_n0_code[code_unfold]: "d \<noteq> 0 \<Longrightarrow> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<longleftrightarrow> (q,d) \<in> monoidLTS_reach_not0 (wts_to_monoidLTS ts) p w"
+  using monoidLTS_reach_n0_imp monoid_star_n0_imp_exec by fastforce
+
 
 \<comment> \<open>Auxiliary lemmas for WAutomaton and monoidLTS\<close>
 lemma wts_label_exist: "(p, w, q) \<in> wts_to_monoidLTS ts \<Longrightarrow> \<exists>l. fst w = [l]"
@@ -175,6 +248,47 @@ next
           monoid_star_w1[of a w b ts l] monoid_star_w1[of b w' c ts l'] wts_label_d'[of b w' c ts]    
     by (simp add: mult_prod_def) metis
 qed
+
+lemma mstar_wts_cons:
+  assumes "(p, (l # w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  shows   "\<exists>d' p' d''. d = d' * d'' \<and> (p, ([l], d'), p') \<in> wts_to_monoidLTS ts \<and> (p', (w, d''), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  using assms monoid_rtrancl_simps_rev[of p "(l#w, d)" q "wts_to_monoidLTS ts", unfolded mult_prod_def times_list_def one_prod_def one_list_def, simplified]
+  apply (simp, safe, simp)
+  subgoal for l' d' p' w' d''
+    apply (rule exI[of _ d'], rule exI[of _ p'], rule exI[of _ d''])
+    unfolding wts_to_monoidLTS_def by force
+  done
+
+lemma finite_mstar_wts_weights:
+  assumes "finite (wts_to_monoidLTS ts)"
+  shows   "finite {d. \<exists>p q. (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}"
+proof (induct w)
+  case Nil
+  then show ?case
+    using finite_subset[of "{d. \<exists>p q. (p, ([], d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}" "{1}"]
+          mstar_wts_empty_one[of _ _ _ ts] by fast
+next
+  case (Cons l w)
+  have f1:"finite {(p, ([l], d), q) |p d q. (p, ([l], d), q) \<in> wts_to_monoidLTS ts}"
+    using finite_subset[OF _ assms, of "{(p, ([l], d), q)| p d q. (p, ([l], d), q) \<in> wts_to_monoidLTS ts}"]
+    by blast
+  have "finite {d. \<exists>p q. (p, ([l], d), q) \<in> wts_to_monoidLTS ts}"
+    unfolding setcompr_eq_image3[of "\<lambda>p d q. d" "\<lambda>p d q. (p, ([l], d), q) \<in> wts_to_monoidLTS ts", simplified]
+    apply (rule finite_imageI)
+    using f1[unfolded setcompr_eq_image3[of "\<lambda>p d q. (p, ([l], d), q)" "\<lambda>p d q. (p, ([l], d), q) \<in> wts_to_monoidLTS ts", simplified]]
+    apply (rule finite_imageD)
+    unfolding inj_on_def by fastforce
+  then have "finite {d * d' |d d'. (\<exists>p q. (p, ([l], d), q) \<in> wts_to_monoidLTS ts) \<and> (\<exists>p q. (p, (w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
+    using finite_image_set2 Cons by fast
+  moreover have "{d. \<exists>p q. (p, (l # w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)} 
+              \<subseteq> {d * d' |d d'. (\<exists>p q. (p, ([l], d), q) \<in> wts_to_monoidLTS ts) \<and> (\<exists>p q. (p, (w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
+    apply safe
+    subgoal for d p q
+      using mstar_wts_cons by fast
+    done
+  ultimately show ?case using finite_subset by fast
+qed
+
 
 
 \<comment> \<open>For the executable pre-star, the saturation rule computes a set of new transition weights, 
@@ -282,33 +396,68 @@ lemma update_wts_less_eq:
   shows "(update_wts f S) \<le> f"
   unfolding less_eq_finfun_def using update_wts_sum[OF assms, of f] by simp
 
+lemma sum_snd_insert: 
+  fixes S::"('a \<times> 'b::idempotent_comm_monoid_add) set"
+  assumes "finite S"
+  shows "\<Sum> {b. b = y \<or> (x, b) \<in> S} = y + \<Sum> {b. (x, b) \<in> S}"
+proof -
+  have "{b. (x, b) \<in> S} = snd ` (S \<inter> ({x} \<times> UNIV))" by force
+  then have "finite {b. (x, b) \<in> S}" using assms by simp
+  moreover have "insert y {b. (x, b) \<in> S} = {b. b = y \<or> (x, b) \<in> S}" by fast
+  ultimately show "\<Sum> {b. b = y \<or> (x, b) \<in> S} = y + \<Sum> {b. (x, b) \<in> S}"
+    using idem_sum_insert[of "{b. (x, b) \<in> S}" y] by argo
+qed
+
+lemma update_wts_insert_unfold:
+  fixes S::"('a \<times> 'b::idempotent_comm_monoid_add) set"
+  assumes "finite S"
+  shows "update_wts f (insert (x,y) S) = update_wts f(x $:= f $ x + y) S"
+  apply (rule finfun_ext)
+  subgoal for a
+    unfolding update_wts_sum[OF assms, of "f(x $:= f $ x + y)" a] 
+              update_wts_sum[of "(insert (x,y) S)" f a, simplified, OF assms]
+proof (cases "a = x")
+  case True
+  show "f $ a + \<Sum> {b. a = x \<and> b = y \<or> (a, b) \<in> S} = f(x $:= f $ x + y) $ a + \<Sum> {b. (a, b) \<in> S}" 
+    using sum_snd_insert[OF assms] True by (simp add: ac_simps(1))
+next
+  case False
+  then show "f $ a + \<Sum> {b. a = x \<and> b = y \<or> (a, b) \<in> S} = f(x $:= f $ x + y) $ a + \<Sum> {b. (a, b) \<in> S}"
+    by simp
+qed done
 
 lemma update_wts_insert_absorb:
   fixes S::"('a \<times> 'b::idempotent_comm_monoid_add) set"
   assumes "finite S"
   assumes "f $ x = f $ x + y"
   shows "update_wts f (insert (x,y) S) = update_wts f S"
-  apply (rule finfun_ext)
-  subgoal for a
+  using update_wts_insert_unfold[OF assms(1)] assms(2) by simp
+
+lemma sum_snd_with_zeros:
+  fixes A B :: "('a \<times> 'b::idempotent_comm_monoid_add) set"
+  assumes "A \<subseteq> B"
+      and "B \<subseteq> A \<union> {u. \<exists>q. u = (q, 0)}"
+      and "finite A"
+    shows "\<Sum> {b. (a, b) \<in> A} = \<Sum> {b. (a, b) \<in> B}"
 proof -
-  have fin_b:"finite {b. (x,b) \<in> S}" 
-    using assms(1) finite_surj[OF assms(1), of "{b. (x,b) \<in> S}" snd] by force
-  have "{b. (x,b) \<in> (insert (x,y) S)} = insert y {b. (x,b) \<in> S}" by fast
-  then have aux: "\<Sum>{b. (x,b) \<in> (insert (x,y) S)} = y + \<Sum>{b. (x,b) \<in> S}"
-    using idem_sum_insert[OF fin_b] by presburger
-  have update_insert_sum: "update_wts f (insert (x, y) S) $ a = f $ a + \<Sum> {b. (a, b) \<in> insert (x, y) S}"
-    using update_wts_sum[of "insert (x,y) S" f a] assms(1) by blast
-  show ?thesis proof (cases "a = x")
+  obtain C where C:"C \<subseteq> {u. \<exists>q. u = (q, 0)}" and BAC:"B = A \<union> C" 
+    using exists_set_between[OF assms(1,2)] by blast
+  then have "\<Sum> {b. (a, b) \<in> A} = \<Sum> {b. (a, b) \<in> A \<union> C}"
+  proof (cases "(a,0) \<in> C")
     case True
-    then have "update_wts f (insert (x, y) S) $ a = f $ a + y + \<Sum>{b. (x,b) \<in> S}"
-      using aux update_insert_sum by (simp add: ac_simps(1))
-    then show ?thesis using update_wts_sum[OF assms(1), of f a] True assms(2) by simp
+    then have "{b. (a, b) \<in> ({(a, 0)} \<union> A)} = {b. (a, b) \<in> A \<union> C}"
+      using C by blast
+    moreover have "\<Sum> {b. (a, b) \<in> A} = \<Sum> {b. (a, b) \<in> ({(a, 0)} \<union> A)}"
+      using assms sum_snd_insert[OF assms(3), of 0 a] by simp
+    ultimately show ?thesis by argo
   next
     case False
-    then have "{b. (a, b) \<in> insert (x, y) S} = {b. (a, b) \<in> S}" by simp
-    then show ?thesis using update_insert_sum update_wts_sum[OF assms(1), of f a] by argo
+    then have "{b. (a, b) \<in> A} = {b. (a, b) \<in> A \<union> C}"
+      using C by blast
+    then show ?thesis by argo
   qed
-qed done
+  then show ?thesis using BAC by presburger
+qed
 
 
 \<comment> \<open>A weighted automaton is initialized with weights 1 (neutral element along paths) on existing transitions, 

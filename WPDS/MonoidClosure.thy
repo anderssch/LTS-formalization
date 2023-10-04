@@ -540,6 +540,24 @@ lemma monoid_rtrancl_pair_induct_rev [consumes 1, case_names base step]:
                                      "\<lambda>pw d pw'. P (fst pw) (snd pw) d (fst pw') (snd pw')"]
         assms by force
 
+lemma monoid_rtrancl_pair_weight_induct [consumes 1, case_names base step]:
+  assumes "(p, (w,d), p') \<in> monoid_rtrancl r"
+  assumes "(\<And>p. P p 1 1 p)"
+  assumes "\<And>p w d p' w' d' p''. 
+              (p, (w,d), p') \<in> monoid_rtrancl r \<Longrightarrow> 
+              P p w d p' \<Longrightarrow> 
+              (p', (w', d'), p'') \<in> r \<Longrightarrow> 
+              P p (w * w') (d * d') p''"
+  shows "P p w d p'"
+  using monoid_rtrancl.induct[of p "(w,d)" p' r
+                                 "\<lambda>p wd p'. P p (fst wd) (snd wd) p'"]
+  unfolding one_prod_def mult_prod_def using assms by simp
+
+lemma monoid_rtrancl_simps_rev:
+  "((x, y, z) \<in> monoid_rtrancl r) =
+   ((\<exists>a. x = a \<and> y = 1 \<and> z = a) \<or> (\<exists>a l b w c. x = a \<and> y = l * w \<and> z = c \<and> (a, l, b) \<in> r \<and> (b, w, c) \<in> monoid_rtrancl r))"
+  using monoid_rtrancl_cases_rev[of x y z r] monoid_rtrancl_into_rtrancl_rev[of x _ _ r] by auto
+
 
 context 
   fixes ts :: "('a::countable \<times> 'b::monoid_mult \<times> 'a) set"

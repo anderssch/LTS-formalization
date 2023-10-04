@@ -18,7 +18,7 @@ end
 instantiation finfun :: (type, plus) plus begin
   definition add_finfun_def: "a + b \<equiv> (\<lambda>(x,y). x + y) \<circ>$ ($a, b$)"
 instance ..
-  lemma add_finfun_apply: "(f + g) $ x = f $ x + g $ x"
+  lemma add_finfun_apply[simp]: "(f + g) $ x = f $ x + g $ x"
     unfolding add_finfun_def by simp
 end
 
@@ -81,7 +81,7 @@ instantiation finfun :: (type, idempotent_ab_semigroup_add_ord) idempotent_ab_se
 instance proof fix a b :: "('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add_ord)"
     have "(a \<le> b) = (\<forall>x. (a + b) $ x = a $ x)"
       unfolding less_eq_finfun_def add_finfun_def less_eq_def by simp
-    then show "(a \<le> b) = (a + b = a)" using finfun_ext[of "a + b" a] by auto
+    then show "(a \<le> b) = (a + b = a)" using finfun_ext[of "a + b" a] by fastforce
     show "(a < b) = (a \<le> b \<and> a \<noteq> b)" unfolding less_finfun_def by fastforce
   qed
 end
