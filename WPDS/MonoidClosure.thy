@@ -515,7 +515,7 @@ lemma monoid_rtrancl_cases_rev:
   using assms by (induct rule: monoid_rtrancl_induct_rev, simp_all)
 
 lemma monoid_rtrancl_pair_induct [consumes 1, case_names base step]:
-  assumes "((p, w), d, p', w') \<in> monoid_rtrancl r"
+  assumes "((p, w), d, (p', w')) \<in> monoid_rtrancl r"
   assumes "(\<And>p w. P p w 1 p w)"
   assumes "\<And>p w d p' w' d' p'' w''. 
               ((p, w), d, (p', w')) \<in> monoid_rtrancl r \<Longrightarrow> 
@@ -528,7 +528,7 @@ lemma monoid_rtrancl_pair_induct [consumes 1, case_names base step]:
   using assms by force
 
 lemma monoid_rtrancl_pair_induct_rev [consumes 1, case_names base step]:
-  assumes "((p, w), d, p', w') \<in> monoid_rtrancl r"
+  assumes "((p, w), d, (p', w')) \<in> monoid_rtrancl r"
   assumes "(\<And>p w. P p w 1 p w)"
   assumes "\<And>p w d p' w' d' p'' w''. 
               ((p, w), d, (p', w')) \<in> r \<Longrightarrow> 
