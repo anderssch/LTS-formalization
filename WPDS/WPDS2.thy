@@ -2474,8 +2474,6 @@ next
     by (smt (verit, del_insts) fst_conv l_def monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_prod_def w_def)
 qed
 
-thm wts_to_monoidLTS_pair_induct
-
 lemma monoid_rtrancl_fst_1_if_monoid_rtrancl_intersff_BETTER:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
@@ -2530,111 +2528,6 @@ next
     by (metis \<open>(p1, (w12 * w23, 1), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)\<close> times_list_def) 
 qed
 
-lemma monoid_rtrancl_fst_1_if_monoid_rtrancl_intersff:
-  fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
-  assumes "(p1q1, wd, p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
-  assumes "binary_aut ts1"
-  assumes "snd wd\<noteq>0"
-  shows "(fst p1q1, (fst wd,1), fst p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-  using assms 
-proof (induction rule: monoid_rtrancl.induct)
-  case (monoid_rtrancl_refl pq)
-  then show ?case
-    using monoid_rtrancl.intros(1) by (metis (no_types, lifting) fst_conv one_prod_def)
-next
-  case (monoid_rtrancl_into_rtrancl pq1 wd12 pq2 wd23 pq3)
-  define p1 where "p1 = fst pq1"
-  define q1 where "q1 = snd pq1"
-  define p2 where "p2 = fst pq2"
-  define q2 where "q2 = snd pq2"
-  define p3 where "p3 = fst pq3"
-  define q3 where "q3 = snd pq3"
-  define w12 where "w12 = fst wd12"
-  define d12 where "d12 = snd wd12"
-  define w23 where "w23 = fst wd23"
-  define d23 where "d23 = snd wd23"
-  have pq1_eq: "pq1 = (p1, q1)"
-    unfolding p1_def q1_def by auto
-  have pq2_eq: "pq2 = (p2, q2)"
-    unfolding p2_def q2_def by auto
-  have pq3_eq: "pq3 = (p3, q3)"
-    unfolding p3_def q3_def by auto
-  have wd12_eq: "wd12 = (w12,d12)"
-    unfolding w12_def d12_def by auto
-  have wd23_eq: "wd23 = (w23,d23)"
-    unfolding w23_def d23_def by auto
-  have pq2_eq: "pq2 = (p2, q2)"
-    unfolding p2_def q2_def by auto
-  have pq3_eq: "pq3 = (p3, q3)"
-    unfolding p3_def q3_def by auto
-  have wd12_eq: "wd12 = (w12,d12)"
-    unfolding w12_def d12_def by auto
-  have wd23_eq: "wd23 = (w23,d23)"
-    unfolding w23_def d23_def by auto
-
-  note indu = monoid_rtrancl_into_rtrancl[
-      unfolded 
-      p1_def[symmetric]
-      q1_def[symmetric]
-      p2_def[symmetric]
-      q2_def[symmetric]
-      p3_def[symmetric]
-      q3_def[symmetric]
-      w12_def[symmetric]
-      d12_def[symmetric]
-      pq1_eq
-      pq2_eq
-      pq3_eq
-      wd12_eq
-      wd23_eq
-      ]
-    
-  have "d12 \<noteq> 0"
-    using indu
-    by (metis (no_types, lifting) mult_prod_def mult_zero_left snd_conv)
-  have "d23 \<noteq> 0"
-    using indu
-    by (metis (no_types, lifting) mult_prod_def mult_zero_right snd_conv)
-
-  have "snd (w12, d12) \<noteq> 0"
-    using \<open>d12 \<noteq> 0\<close> by force
-
-  have "(fst (p1, q1), (fst (w12, d12), 1), fst (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-    using indu \<open>snd (w12, d12) \<noteq> 0\<close> by fastforce
-
-  then have "(p1, (w12, 1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-    using indu by auto
-  from indu(2) have "(intersff ts1 ts2) $ ((p2, q2), hd w23, (p3, q3)) = d23"
-    using wts_label_d' by force
-  then have "\<exists>d23p d23q. ts1 $ (p2, hd w23, p3) = d23p \<and> ts2 $ (q2, hd w23, q3) = d23q
-                     \<and> d23p * d23q = d23"
-    by (simp add: finfun_apply_intersff')
-  then have "\<exists>d23p d23q. (p2, (w23, d23p), p3) \<in> (wts_to_monoidLTS ts1) \<and> (q2, (w23, d23q), q3) \<in> (wts_to_monoidLTS ts2)
-                     \<and> d23p * d23q = d23"
-    by (smt (verit, best) indu(2) list.sel(1) mem_Collect_eq w23_def wd23_eq wts_label_exist wts_to_monoidLTS_def)
-  then obtain d23p d23q where
-    "(p2, (w23, d23p), p3) \<in> (wts_to_monoidLTS ts1)"
-    "(q2, (w23, d23q), q3) \<in> (wts_to_monoidLTS ts2)"
-    "d23p * d23q = d23"
-    by blast
-  have "(p2, (w23, 1), p3) \<in> wts_to_monoidLTS ts1"
-    using indu(2) \<open>d23 \<noteq> 0\<close> indu(4)
-    using \<open>(p2, (w23, d23p), p3) \<in> wts_to_monoidLTS ts1\<close> \<open>d23p * d23q = d23\<close>
-    by (metis binary_aut_def d_mult_not_zero(1) snd_conv wts_label_d') 
-  then
-  have "(p1, (w12 * w23, 1), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-    using \<open>(fst (p1, q1), (fst (w12, d12), 1), fst (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)\<close>
-    by (smt (verit, del_insts) fst_conv monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_1 mult_prod_def snd_conv)
- 
-  have "(p1, (w12, 1) * (w23, 1), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-    by (simp add: \<open>(p1, (w12 * w23, 1), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)\<close> mult_prod_def)
-  then show ?case
-    unfolding p1_def p3_def w12_def[symmetric] d12_def[symmetric] wd12_eq wd23_eq wd23_eq
-    by (simp add: mult_prod_def)
-qed
-
-thm wts_to_monoidLTS_pair_induct
-
 lemma monoid_rtrancl_snd_if_monoid_rtrancl_intersff_BETTER:
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   shows "\<exists>d'. (q1, (w,d'), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
@@ -2650,30 +2543,6 @@ next
   then show ?case
     using step(3) by (smt (verit, del_insts) fst_conv monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_prod_def times_list_def)
 qed
-
-lemma monoid_rtrancl_snd_if_monoid_rtrancl_intersff:
-  assumes "(p1q2, wd, p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
-  shows "\<exists>d'. (snd p1q2, (fst wd,d'), snd p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-  using assms
-proof (induction rule: monoid_rtrancl.induct)
-  case (monoid_rtrancl_refl a)
-  then show ?case
-    by (metis (no_types, opaque_lifting) eq_fst_iff monoid_rtrancl.monoid_rtrancl_refl)
-next
-  case (monoid_rtrancl_into_rtrancl a wd b ld' c)
-  define w where "w = fst wd"
-  define l where "l = fst ld'"
-  have "\<exists>d1. (snd a, (w,d1), snd b) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-    using monoid_rtrancl_into_rtrancl.IH monoid_rtrancl_into_rtrancl.prems w_def by fastforce
-  moreover
-  have "\<exists>d2. (snd b, (l,d2), snd c) \<in> wts_to_monoidLTS ts2"
-    by (smt (z3) l_def mem_Collect_eq monoid_rtrancl_into_rtrancl.hyps(2) wts_label_exist wts_to_monoidLTS_def)
-  ultimately
-  show ?case
-    by (smt (verit, del_insts) fst_conv l_def monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_prod_def w_def)
-qed
-
-thm wts_to_monoidLTS_pair_induct
 
 lemma monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero_BETTER:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
@@ -2728,109 +2597,6 @@ next
   then show ?case
     by (metis \<open>(q1, (w12 * w23, d12 * d23), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)\<close> times_list_def)
 qed
-
-lemma monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero:
-  fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
-  assumes "(p1q1, wd, p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
-  assumes "binary_aut ts1"
-  assumes "snd wd\<noteq>0"
-  shows "(snd p1q1, (fst wd,snd wd), snd p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-  using assms
-proof (induction rule: monoid_rtrancl.induct)
-  case (monoid_rtrancl_refl pq)
-  then show ?case
-    using monoid_rtrancl.intros(1) by auto 
-next
-  case (monoid_rtrancl_into_rtrancl pq1 wd12 pq2 wd23 pq3)
-  define p1 where "p1 = fst pq1"
-  define q1 where "q1 = snd pq1"
-  define p2 where "p2 = fst pq2"
-  define q2 where "q2 = snd pq2"
-  define p3 where "p3 = fst pq3"
-  define q3 where "q3 = snd pq3"
-  define w12 where "w12 = fst wd12"
-  define d12 where "d12 = snd wd12"
-  define w23 where "w23 = fst wd23"
-  define d23 where "d23 = snd wd23"
-  have pq1_eq: "pq1 = (p1, q1)"
-    unfolding p1_def q1_def by auto
-  have pq2_eq: "pq2 = (p2, q2)"
-    unfolding p2_def q2_def by auto
-  have pq3_eq: "pq3 = (p3, q3)"
-    unfolding p3_def q3_def by auto
-  have wd12_eq: "wd12 = (w12,d12)"
-    unfolding w12_def d12_def by auto
-  have wd23_eq: "wd23 = (w23,d23)"
-    unfolding w23_def d23_def by auto
-  have pq2_eq: "pq2 = (p2, q2)"
-    unfolding p2_def q2_def by auto
-  have pq3_eq: "pq3 = (p3, q3)"
-    unfolding p3_def q3_def by auto
-  have wd12_eq: "wd12 = (w12,d12)"
-    unfolding w12_def d12_def by auto
-  have wd23_eq: "wd23 = (w23,d23)"
-    unfolding w23_def d23_def by auto
-
-  note indu = monoid_rtrancl_into_rtrancl[
-      unfolded 
-      p1_def[symmetric]
-      q1_def[symmetric]
-      p2_def[symmetric]
-      q2_def[symmetric]
-      p3_def[symmetric]
-      q3_def[symmetric]
-      w12_def[symmetric]
-      d12_def[symmetric]
-      pq1_eq
-      pq2_eq
-      pq3_eq
-      wd12_eq
-      wd23_eq
-      ]
-    
-  have "d12 \<noteq> 0"
-    using indu
-    by (metis (no_types, lifting) mult_prod_def mult_zero_left snd_conv)
-  have "d23 \<noteq> 0"
-    using indu
-    by (metis (no_types, lifting) mult_prod_def mult_zero_right snd_conv)
-
-  have "snd (w12, d12) \<noteq> 0"
-    using \<open>d12 \<noteq> 0\<close> by force
-
-  have "(snd (p1, q1), (fst (w12, d12), snd (w12, d12)), snd (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-    using indu \<open>snd (w12, d12) \<noteq> 0\<close> by blast
-
-  then have "(q1, (w12, d12), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-    using indu by auto
-  from indu(2) have "\<exists>d23p d23q. ts1 $ (p2, (hd w23), p3) = d23p \<and> ts2 $ (q2, hd w23, q3) = d23q
-                     \<and> d23p * d23q = d23"
-    by (metis d23_def finfun_apply_intersff' w23_def wd23_eq wts_label_d')
-  then have "\<exists>d23p d23q. (p2, (w23, d23p), p3) \<in> (wts_to_monoidLTS ts1) \<and> (q2, (w23, d23q), q3) \<in> (wts_to_monoidLTS ts2)
-                     \<and> d23p * d23q = d23"
-    by (smt (verit, ccfv_SIG) list.sel(1) mem_Collect_eq monoid_rtrancl_into_rtrancl.hyps(2) w23_def wts_label_exist wts_to_monoidLTS_def)
-   then obtain d23p d23q where f:
-    "(p2, (w23, d23p), p3) \<in> (wts_to_monoidLTS ts1)"
-    "(q2, (w23, d23q), q3) \<in> (wts_to_monoidLTS ts2)"
-    "d23p * d23q = d23"
-    by blast
-  have "(p2, (w23, 1), p3) \<in> wts_to_monoidLTS ts1"
-    using indu(2) \<open>d23 \<noteq> 0\<close> indu(4)
-    using \<open>(p2, (w23, d23p), p3) \<in> wts_to_monoidLTS ts1\<close> \<open>d23p * d23q = d23\<close>
-    by (metis binary_aut_def d_mult_not_zero(1) snd_conv wts_label_d')
-  then
-  have "(q1, (w12 * w23, d12 * d23), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-    using \<open>(snd (p1, q1), (fst (w12, d12), snd (w12, d12)), snd (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)\<close>
-    by (metis (no_types, lifting) f fst_conv monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_1 mult_prod_def snd_conv wts_label_d')
-  
-  have "(q1, (w12, d12) * (w23, d23), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-    by (simp add: \<open>(q1, (w12 * w23, d12 * d23), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)\<close> mult_prod_def)
-  then show ?case
-    unfolding p1_def p3_def w12_def[symmetric] d12_def[symmetric] wd12_eq wd23_eq wd23_eq
-    by (simp add: q1_def q3_def)
-qed
-
-thm wts_to_monoidLTS_pair_induct
 
 lemma monoid_rtrancl_fst_or_snd_zero_if_monoid_rtrancl_intersff_zero_BETTER:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
@@ -2923,7 +2689,7 @@ next
         have "(q2, (w23, 0), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
           using True d23p_d23q_p(2) monoid_star_intros_step by blast
         have "\<exists>X. (q1, (w12, X), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-          using assms(2) outer_outer_False monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero
+          using assms(2) outer_outer_False monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero_BETTER
             step.hyps(1) by fastforce
         have "(q1, (w12 * w23, 0), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
           using d23p_d23q_p True \<open>\<exists>X. (q1, (w12, X), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)\<close>
@@ -2938,179 +2704,13 @@ next
         then show ?thesis
           using outer_False outer_outer_False d23_split False
             d13zero d23p_d23q_p(2) monoid_rtrancl.monoid_rtrancl_into_rtrancl 
-            monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero mult_1 prod.collapse
+            monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero_BETTER mult_1 prod.collapse
           by (smt (verit, best) fst_conv mult_prod_def snd_conv step.hyps(1) step.prems(1) times_list_def)
             (* Wow... Er det fordi 0=1 eller noget? *)
       qed
     qed
   qed
 qed
-
-lemma monoid_rtrancl_fst_or_snd_zero_if_monoid_rtrancl_intersff_zero:
-  fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
-  assumes "(p1q2, wd, p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
-  assumes "binary_aut ts1"
-  assumes "snd wd=0"
-  shows "(fst p1q2, (fst wd,0), fst p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1) \<or>
-         (snd p1q2, (fst wd,0), snd p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-  using assms 
-proof (induction rule: monoid_rtrancl.induct)
-  case (monoid_rtrancl_refl pq)
-  from this(2) show ?case
-    using monoid_rtrancl.intros(1) prod.collapse
-    by (metis (no_types, lifting))
-next
-  case (monoid_rtrancl_into_rtrancl pq1 wd12 pq2 wd23 pq3)
-  define p1 where "p1 = fst pq1"
-  define q1 where "q1 = snd pq1"
-  define p2 where "p2 = fst pq2"
-  define q2 where "q2 = snd pq2"
-  define p3 where "p3 = fst pq3"
-  define q3 where "q3 = snd pq3"
-  define w12 where "w12 = fst wd12"
-  define d12 where "d12 = snd wd12"
-  define w23 where "w23 = fst wd23"
-  define d23 where "d23 = snd wd23"
-  have pq1_eq: "pq1 = (p1, q1)"
-    unfolding p1_def q1_def by auto
-  have pq2_eq: "pq2 = (p2, q2)"
-    unfolding p2_def q2_def by auto
-  have pq3_eq: "pq3 = (p3, q3)"
-    unfolding p3_def q3_def by auto
-  have wd12_eq: "wd12 = (w12,d12)"
-    unfolding w12_def d12_def by auto
-  have wd23_eq: "wd23 = (w23,d23)"
-    unfolding w23_def d23_def by auto
-  have pq2_eq: "pq2 = (p2, q2)"
-    unfolding p2_def q2_def by auto
-  have pq3_eq: "pq3 = (p3, q3)"
-    unfolding p3_def q3_def by auto
-  have wd12_eq: "wd12 = (w12,d12)"
-    unfolding w12_def d12_def by auto
-  have wd23_eq: "wd23 = (w23,d23)"
-    unfolding w23_def d23_def by auto
-
-  note indu = monoid_rtrancl_into_rtrancl[
-      unfolded 
-      p1_def[symmetric]
-      q1_def[symmetric]
-      p2_def[symmetric]
-      q2_def[symmetric]
-      p3_def[symmetric]
-      q3_def[symmetric]
-      w12_def[symmetric]
-      d12_def[symmetric]
-      pq1_eq
-      pq2_eq
-      pq3_eq
-      wd12_eq
-      wd23_eq
-      ]
-  show ?case
-  proof (cases "d12 = 0")
-    case True
-    then have "(fst (p1, q1), (fst (w12, d12), 0), fst (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS ts1) \<or>
-    (snd (p1, q1), (fst (w12, d12), 0), snd (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-      using indu by auto
-    then show ?thesis
-    proof
-      assume "(fst (p1, q1), (fst (w12, d12), 0), fst (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-      then have "(p1, (w12, 0), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-        by auto
-      moreover
-      have "\<exists>X. (p2, (w23, X), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-        using indu
-        using monoid_rtrancl_fst_if_monoid_rtrancl_intersff monoid_rtrancl_into_rtrancl.hyps(2) 
-          monoid_star_intros_step p2_def p3_def w23_def by blast
-      ultimately
-      have "(p1, ((w12 * w23), 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-        by (smt (verit, del_insts) fst_conv monoid_rtrancl_rtrancl_into_rtrancl mult_prod_def mult_zero_left snd_conv)
-      then have "(fst pq1, (fst (wd12 * wd23), 0), fst pq3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-        by (simp add: mult_prod_def p1_def p3_def w12_def w23_def)
-      then show ?thesis
-        by blast
-    next
-      assume "(snd (p1, q1), (fst (w12, d12), 0), snd (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-      then have "(q1, (w12, 0), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-        by auto
-      moreover
-      have "\<exists>X. (q2, (w23, X), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-        by (smt (z3) mem_Collect_eq monoid_rtrancl_into_rtrancl.hyps(2) monoid_star_intros_step w23_def wts_label_exist wts_to_monoidLTS_def)
-      ultimately
-      have "(q1, ((w12 * w23), 0), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-        by (smt (verit, del_insts) True d12_def fst_conv monoid_rtrancl_rtrancl_into_rtrancl mult_prod_def mult_zero_left wd12_eq)
-      then have "(snd pq1, (fst (wd12 * wd23), 0), snd pq3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-        by (simp add: mult_prod_def q1_def q3_def w12_def w23_def)
-      then show ?thesis
-        by blast
-    qed
-  next
-    case False
-    note outer_outer_False = False
-    have "\<exists>d23p d23q. ts1 $ (p2, (hd w23), p3) = d23p \<and>
-                      ts2 $ (q2, (hd w23), q3) = d23q \<and>
-                      d23 = d23p * d23q"
-      using indu
-      by (metis d23_def finfun_apply_intersff' w23_def wd23_eq wts_label_d')
-    then obtain d23p d23q where d23p_d23q_p: "(p2, (w23, d23p), p3) \<in> wts_to_monoidLTS ts1"
-      "(q2, (w23, d23q), q3) \<in> wts_to_monoidLTS ts2"
-      "d23 = d23p * d23q"
-      by (smt (verit) indu(2) list.sel(1) mem_Collect_eq w23_def wd23_eq wts_label_exist wts_to_monoidLTS_def)
-      
-    
-    have d13zero: "d12 * d23 = 0"
-      by (metis indu(5) mult_prod_def snd_conv)
-    have d23_split: "d23 = d23p * d23q"
-      using \<open>d23 = d23p * d23q\<close> .
-    have d23p01: "d23p = 1 \<or> d23p = 0"
-      using \<open>(p2, (w23, d23p), p3) \<in> wts_to_monoidLTS ts1\<close> indu(4)
-      by (metis snd_conv wts_label_d' binary_aut_def) (* By the corresponding edge being in ts1*)
-    show ?thesis
-    proof (cases "d23p = 0")
-      case True
-      have "(p2, (w23, 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-        using True d23p_d23q_p(1) monoid_star_intros_step by blast
-      have "\<exists>X. (p1, (w12, X), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-        by (metis indu(1) monoid_rtrancl_fst_if_monoid_rtrancl_intersff p1_def p2_def pq1_eq pq2_eq w12_def wd12_eq)
-      have "(p1, (w12 * w23, 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-        using d23p_d23q_p(1) indu(2)
-        by (smt (verit, del_insts) True \<open>\<exists>X. (p1, (w12, X), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)\<close> d23_def d23_split fst_conv monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_prod_def mult_zero_left mult_zero_right wd23_eq)
-      then have "(fst pq1, (fst (wd12 * wd23), 0), fst pq3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-        unfolding p1_def w12_def w23_def p3_def mult_prod_def by auto
-      then show ?thesis
-        by auto
-    next
-      case False
-      note outer_False = False
-      show ?thesis
-      proof (cases "d23q = 0")
-        case True
-        have "(q2, (w23, 0), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-          using True d23p_d23q_p(2) monoid_star_intros_step by blast
-        have "\<exists>X. (q1, (w12, X), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-          using assms(2) indu(1) outer_outer_False
-          using monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero by force
-        have "(q1, (w12 * w23, 0), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-          using d23p_d23q_p indu
-          by (metis (no_types, lifting) True \<open>\<exists>X. (q1, (w12, X), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)\<close> d23_def d23_split fst_conv monoid_rtrancl.simps mult_prod_def mult_zero_right wd23_eq)
-        then have "(snd pq1, (fst (wd12 * wd23), 0), snd pq3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-          unfolding q1_def w12_def w23_def q3_def mult_prod_def by auto
-        then show ?thesis
-          by auto
-      next
-        case False
-        have "d23p = 1"
-          using d23p01 outer_False by auto
-        then show ?thesis
-          using outer_False outer_outer_False d23_split False
-            d13zero
-          by (metis d12_def d23p_d23q_p(2) monoid_rtrancl.monoid_rtrancl_into_rtrancl monoid_rtrancl_into_rtrancl.hyps(1) monoid_rtrancl_into_rtrancl.prems(1) monoid_rtrancl_into_rtrancl.prems(2) monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero mult_1 prod.collapse q2_def q3_def wd23_eq)
-            (* Wow... Er det fordi 0=1 eller noget? *)
-      qed
-    qed
-  qed
-qed
-
 
 end
 
