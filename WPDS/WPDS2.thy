@@ -2249,18 +2249,25 @@ lemma finfun_apply_intersff'2:
   shows "(intersff A A') $ ((p,p'), y, (q,q')) = d * d'"
   using assms finfun_apply_intersff' by auto
 
+lemma finfun_apply_intersff'2_wts_to_monoidLTS:
+  fixes p1::"'state::finite"
+  assumes "(p1, ([\<alpha>], dp), p') \<in> wts_to_monoidLTS ts1"
+  assumes "(q1, ([\<alpha>], dq), q') \<in> wts_to_monoidLTS ts2"
+  shows "((p1, q1), ([\<alpha>], dp * dq), p', q') \<in> wts_to_monoidLTS (intersff ts1 ts2)"
+  by (smt (verit, best) assms(1) assms(2) finfun_apply_intersff'2 mem_Collect_eq wts_label_d wts_to_monoidLTS_def)
+
 definition binary_aut :: "('state, 'label, 'weight) w_transitions \<Rightarrow> bool" where
   "binary_aut ts1 \<longleftrightarrow> (\<forall>p1 w p2. ts1 $ (p1, w, p2) = 1 \<or> ts1 $ (p1, w, p2) = 0)"
 
-lemma NEW_zero_one_path:
+lemma binary_aut_monoid_rtrancl_wts_to_monoidLTS_cases_rev:
   assumes "binary_aut ts1"
   assumes "(p1, (\<alpha>#w1',1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-  shows "\<exists>p'. ts1 $ (p1, \<alpha>, p') = 1 \<and> (p', (w1',1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+  shows "\<exists>p'. (p1, ([\<alpha>],1), p') \<in> wts_to_monoidLTS ts1 \<and> (p', (w1',1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
   using assms
 proof (induction w1' arbitrary: \<alpha> p1)
   case Nil
   then show ?case
-    by (metis monoid_rtrancl_wts_to_monoidLTS_cases_rev mstar_wts_empty_one mult.right_neutral wts_label_d)
+    by (metis monoid_rtrancl_wts_to_monoidLTS_cases_rev mstar_wts_empty_one mult.right_neutral)
 next
   case (Cons \<alpha>' w1')
   obtain p1' d1 d2 where "(p1, ([\<alpha>], d1), p1') \<in> (wts_to_monoidLTS ts1)"
@@ -2280,71 +2287,12 @@ next
     by (meson wts_label_d) 
 qed
 
-lemma NEW_aux1:
-  fixes p1::"'state::finite"
-  assumes "(p1, ([\<alpha>], 1), p') \<in> wts_to_monoidLTS ts1"
-  assumes "(q1, ([\<alpha>], dq1q'), q') \<in> wts_to_monoidLTS ts2"
-  shows "((p1, q1), ([\<alpha>], 1 * dq1q'), p', q') \<in> wts_to_monoidLTS (intersff ts1 ts2)"
-  by (smt (verit, best) assms(1) assms(2) finfun_apply_intersff'2 mem_Collect_eq wts_label_d wts_to_monoidLTS_def)
-
-lemma NEW_wtrans_star_inter1_1:
-  fixes p1::"'state::finite"
-  assumes "(p1, (w,1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-  assumes "(q1, (w,d), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-  assumes "binary_aut ts1"
-  shows "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff (ts1) (ts2)))"
-  using assms(1,2)
-proof (induction w arbitrary: p1 q1 d)
-  case (Cons \<alpha> w1')
-  obtain p' where p'_p: "(p1, ([\<alpha>],1), p') \<in> wts_to_monoidLTS ts1 \<and> (p', (w1',1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-    using Cons(2) using monoid_rtrancl_wts_to_monoidLTS_cases_rev
-    by (smt (verit, ccfv_threshold) binary_aut_def assms(3) mult_1 mult_zero_left snd_conv wts_label_d') 
-  obtain q' dq1q' dq'q2 where q'_p: "(q1, ([\<alpha>],dq1q'), q') \<in> wts_to_monoidLTS ts2 \<and> (q', (w1',dq'q2), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2) \<and> d = dq1q' * dq'q2"
-    using Cons(3) using monoid_rtrancl_wts_to_monoidLTS_cases_rev[of q1 \<alpha> w1' d q2 ts2] by meson
-  have ind: "((p', q'), (w1', 1 * dq'q2), (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
-  proof -
-    have "Suc (length w1') = length (\<alpha>#w1')"
-      by auto
-    moreover
-    have "(p', (w1',1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-      using p'_p by simp
-    moreover
-    have "(q', (w1',dq'q2), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-      using q'_p by simp
-    ultimately
-    have "((p', q'), (w1', dq'q2), (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
-      using Cons(1) using Cons(1) by auto
-    then show "((p', q'), (w1', 1 * dq'q2), (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
-      by auto
-  qed
-  moreover
-  have "((p1, q1), ([\<alpha>], 1 * dq1q'), (p', q')) \<in> (wts_to_monoidLTS (intersff ts1 ts2))"
-    using p'_p q'_p NEW_aux1 by blast
-  ultimately
-  have "((p1, q1), (\<alpha>#w1', (1 * dq1q') * (1 * dq'q2)), (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
-    using monoid_rtrancl_into_rtrancl_rev[of "(p1, q1)" " ([\<alpha>], 1 * dq1q')" "(p', q')" "wts_to_monoidLTS (intersff ts1 ts2)" "(w1', 1 * dq'q2)" "(p2, q2)"]
-    by (simp add: mult_prod_def times_list_def)
-  moreover
-  have "length ((\<alpha>#w1')) > 0"
-    by auto
-  moreover
-  have "hd ((\<alpha>#w1')) = \<alpha>"
-    by auto
-  ultimately
-  show ?case
-    by (simp add: q'_p)
-next
-  case Nil
-  then show ?case
-    by (metis fst_conv monoid_rtrancl.monoid_rtrancl_refl monoid_star_w0 mstar_wts_empty_one one_list_def one_prod_def)
-qed
-
-lemma NEW_the_XY_lemma:
+lemma monoid_rtrancl_intersff_if_monoid_rtrancl:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
-  assumes "(p1, (w,X), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-  assumes "(q1, (w,Y), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-  shows "\<exists>XY. ((p1,q1), (w,XY), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
-using assms proof (induction w arbitrary: p1 q1 X Y)
+  assumes "(p1, (w,dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+  assumes "(q1, (w,dq), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+  shows "\<exists>d. ((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
+using assms proof (induction w arbitrary: p1 q1 dp dq)
   case Nil
   then show ?case
     by (metis fst_conv monoid_rtrancl.monoid_rtrancl_refl monoid_star_w0 one_list_def one_prod_def)
@@ -2373,7 +2321,59 @@ next
     by auto
 qed
 
-lemma NEW_wtrans_star_inter1_0:
+lemma monoid_rtrancl_intersff_if_monoid_rtrancl_1:
+  fixes p1::"'state::finite"
+  assumes "(p1, (w,1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+  assumes "(q1, (w,d), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+  assumes "binary_aut ts1"
+  shows "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
+  using assms(1,2)
+proof (induction w arbitrary: p1 q1 d)
+  case (Cons \<alpha> w1')
+  obtain p' where p'_p: "(p1, ([\<alpha>],1), p') \<in> wts_to_monoidLTS ts1 \<and> (p', (w1',1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+    using Cons(2) using monoid_rtrancl_wts_to_monoidLTS_cases_rev
+    by (smt (verit, ccfv_threshold) binary_aut_def assms(3) mult_1 mult_zero_left snd_conv wts_label_d') 
+  obtain q' dq1q' dq'q2 where q'_p: "(q1, ([\<alpha>],dq1q'), q') \<in> wts_to_monoidLTS ts2 \<and> (q', (w1',dq'q2), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2) \<and> d = dq1q' * dq'q2"
+    using Cons(3) using monoid_rtrancl_wts_to_monoidLTS_cases_rev[of q1 \<alpha> w1' d q2 ts2] by meson
+  have ind: "((p', q'), (w1', 1 * dq'q2), (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
+  proof -
+    have "Suc (length w1') = length (\<alpha>#w1')"
+      by auto
+    moreover
+    have "(p', (w1',1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+      using p'_p by simp
+    moreover
+    have "(q', (w1',dq'q2), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+      using q'_p by simp
+    ultimately
+    have "((p', q'), (w1', dq'q2), (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
+      using Cons(1) using Cons(1) by auto
+    then show "((p', q'), (w1', 1 * dq'q2), (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
+      by auto
+  qed
+  moreover
+  have "((p1, q1), ([\<alpha>], 1 * dq1q'), (p', q')) \<in> (wts_to_monoidLTS (intersff ts1 ts2))"
+    using p'_p q'_p finfun_apply_intersff'2_wts_to_monoidLTS by blast 
+  ultimately
+  have "((p1, q1), (\<alpha>#w1', (1 * dq1q') * (1 * dq'q2)), (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
+    using monoid_rtrancl_into_rtrancl_rev[of "(p1, q1)" " ([\<alpha>], 1 * dq1q')" "(p', q')" "wts_to_monoidLTS (intersff ts1 ts2)" "(w1', 1 * dq'q2)" "(p2, q2)"]
+    by (simp add: mult_prod_def times_list_def)
+  moreover
+  have "length ((\<alpha>#w1')) > 0"
+    by auto
+  moreover
+  have "hd ((\<alpha>#w1')) = \<alpha>"
+    by auto
+  ultimately
+  show ?case
+    by (simp add: q'_p)
+next
+  case Nil
+  then show ?case
+    by (metis fst_conv monoid_rtrancl.monoid_rtrancl_refl monoid_star_w0 mstar_wts_empty_one one_list_def one_prod_def)
+qed
+
+lemma monoid_rtrancl_intersff_if_monoid_rtrancl_0:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
   assumes "(p1, (w,0), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
   assumes "(q1, (w,d), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
@@ -2402,7 +2402,7 @@ proof (induction w arbitrary: p1 q1 d)
     have START: "((p1,q1), ([\<alpha>], 0), (p',q')) \<in> wts_to_monoidLTS (intersff ts1 ts2)"
       by (smt (verit, del_insts) finfun_apply_intersff' mem_Collect_eq mult_zero_left wts_label_d wts_to_monoidLTS_def)
     have "\<exists>XY. ((p',q'), (w1', XY), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
-      using NEW_the_XY_lemma[of p' w1' _ p2 ts1 q' _ q2 ts2]
+      using monoid_rtrancl_intersff_if_monoid_rtrancl[of p' w1' _ p2 ts1 q' _ q2 ts2]
         Cons
       using \<open>(p', (w1', d'), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)\<close> \<open>(q', (w1', Y), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)\<close> monoid_star_intros_step by blast
     then obtain XY where END: "((p',q'), (w1', XY), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
@@ -2445,7 +2445,29 @@ next
     by (metis fst_conv monoid_rtrancl.monoid_rtrancl_refl monoid_star_w0 mstar_wts_empty_one one_list_def one_prod_def)
 qed
 
-lemma NEW_inters_trans_star1_1:
+lemma monoid_rtrancl_fst_if_monoid_rtrancl_intersff:
+  assumes "(p1q2, wd, p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
+  shows "\<exists>d'. (fst p1q2, (fst wd,d'), fst p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+  using assms 
+proof (induction rule: monoid_rtrancl.induct)
+  case (monoid_rtrancl_refl a)
+  then show ?case
+    by (metis (no_types, opaque_lifting) eq_fst_iff monoid_rtrancl.monoid_rtrancl_refl)
+next
+  case (monoid_rtrancl_into_rtrancl a wd b ld' c)
+  define w where "w = fst wd"
+  define l where "l = fst ld'"
+  have "\<exists>d1. (fst a, (w,d1), fst b) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+    using monoid_rtrancl_into_rtrancl.IH monoid_rtrancl_into_rtrancl.prems w_def by fastforce
+  moreover
+  have "\<exists>d2. (fst b, (l,d2), fst c) \<in> wts_to_monoidLTS ts1"
+    by (smt (z3) l_def mem_Collect_eq monoid_rtrancl_into_rtrancl.hyps(2) wts_label_exist wts_to_monoidLTS_def)
+  ultimately
+  show ?case
+    by (smt (verit, del_insts) fst_conv l_def monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_prod_def w_def)
+qed
+
+lemma monoid_rtrancl_fst_1_if_monoid_rtrancl_intersff:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
   assumes "(p1q1, wd, p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   assumes "binary_aut ts1"
@@ -2539,9 +2561,8 @@ next
   then
   have "(p1, (w12 * w23, 1), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
     using \<open>(fst (p1, q1), (fst (w12, d12), 1), fst (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)\<close>
-    apply auto
-    by (smt (verit, del_insts) fst_conv monoid_rtrancl.monoid_rtrancl_into_rtrancl mult.right_neutral mult_prod_def snd_conv)
-
+    by (smt (verit, del_insts) fst_conv monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_1 mult_prod_def snd_conv)
+ 
   have "(p1, (w12, 1) * (w23, 1), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
     by (simp add: \<open>(p1, (w12 * w23, 1), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)\<close> mult_prod_def)
   then show ?case
@@ -2549,7 +2570,29 @@ next
     by (simp add: mult_prod_def)
 qed
 
-lemma NEW_inters_trans_star2_1:
+lemma monoid_rtrancl_snd_if_monoid_rtrancl_intersff:
+  assumes "(p1q2, wd, p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
+  shows "\<exists>d'. (snd p1q2, (fst wd,d'), snd p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+  using assms
+proof (induction rule: monoid_rtrancl.induct)
+  case (monoid_rtrancl_refl a)
+  then show ?case
+    by (metis (no_types, opaque_lifting) eq_fst_iff monoid_rtrancl.monoid_rtrancl_refl)
+next
+  case (monoid_rtrancl_into_rtrancl a wd b ld' c)
+  define w where "w = fst wd"
+  define l where "l = fst ld'"
+  have "\<exists>d1. (snd a, (w,d1), snd b) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+    using monoid_rtrancl_into_rtrancl.IH monoid_rtrancl_into_rtrancl.prems w_def by fastforce
+  moreover
+  have "\<exists>d2. (snd b, (l,d2), snd c) \<in> wts_to_monoidLTS ts2"
+    by (smt (z3) l_def mem_Collect_eq monoid_rtrancl_into_rtrancl.hyps(2) wts_label_exist wts_to_monoidLTS_def)
+  ultimately
+  show ?case
+    by (smt (verit, del_insts) fst_conv l_def monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_prod_def w_def)
+qed
+
+lemma monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
   assumes "(p1q1, wd, p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   assumes "binary_aut ts1"
@@ -2641,9 +2684,8 @@ next
   then
   have "(q1, (w12 * w23, d12 * d23), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
     using \<open>(snd (p1, q1), (fst (w12, d12), snd (w12, d12)), snd (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)\<close>
-    apply auto
-    by (smt (verit) f fst_conv monoid_rtrancl.simps mult_1 mult_prod_def snd_conv wts_label_d wts_label_exist)
-
+    by (metis (no_types, lifting) f fst_conv monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_1 mult_prod_def snd_conv wts_label_d')
+  
   have "(q1, (w12, d12) * (w23, d23), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
     by (simp add: \<open>(q1, (w12 * w23, d12 * d23), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)\<close> mult_prod_def)
   then show ?case
@@ -2651,51 +2693,7 @@ next
     by (simp add: q1_def q3_def)
 qed
 
-lemma NEW_the_X_lemma:
-  assumes "(p1q2, wd, p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
-  shows "\<exists>X. (fst p1q2, (fst wd,X), fst p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-  using assms 
-proof (induction rule: monoid_rtrancl.induct)
-  case (monoid_rtrancl_refl a)
-  then show ?case
-    by (metis (no_types, opaque_lifting) eq_fst_iff monoid_rtrancl.monoid_rtrancl_refl)
-next
-  case (monoid_rtrancl_into_rtrancl a wd b ld' c)
-  define w where "w = fst wd"
-  define l where "l = fst ld'"
-  have "\<exists>X1. (fst a, (w,X1), fst b) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-    using monoid_rtrancl_into_rtrancl.IH monoid_rtrancl_into_rtrancl.prems w_def by fastforce
-  moreover
-  have "\<exists>X2. (fst b, (l,X2), fst c) \<in> wts_to_monoidLTS ts1"
-    by (smt (z3) l_def mem_Collect_eq monoid_rtrancl_into_rtrancl.hyps(2) wts_label_exist wts_to_monoidLTS_def)
-  ultimately
-  show ?case
-    by (smt (verit, del_insts) fst_conv l_def monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_prod_def w_def)
-qed
-
-lemma NEW_the_Y_lemma:
-  assumes "(p1q2, wd, p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS(intersff ts1 ts2))"
-  shows "\<exists>X. (snd p1q2, (fst wd,X), snd p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-  using assms
-proof (induction rule: monoid_rtrancl.induct)
-  case (monoid_rtrancl_refl a)
-  then show ?case
-    by (metis (no_types, opaque_lifting) eq_fst_iff monoid_rtrancl.monoid_rtrancl_refl)
-next
-  case (monoid_rtrancl_into_rtrancl a wd b ld' c)
-  define w where "w = fst wd"
-  define l where "l = fst ld'"
-  have "\<exists>X1. (snd a, (w,X1), snd b) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-    using monoid_rtrancl_into_rtrancl.IH monoid_rtrancl_into_rtrancl.prems w_def by fastforce
-  moreover
-  have "\<exists>X2. (snd b, (l,X2), snd c) \<in> wts_to_monoidLTS ts2"
-    by (smt (z3) l_def mem_Collect_eq monoid_rtrancl_into_rtrancl.hyps(2) wts_label_exist wts_to_monoidLTS_def)
-  ultimately
-  show ?case
-    by (smt (verit, del_insts) fst_conv l_def monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_prod_def w_def)
-qed
-
-lemma NEW_inters_trans_star__0:
+lemma monoid_rtrancl_fst_or_snd_zero_if_monoid_rtrancl_intersff_zero:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
   assumes "(p1q2, wd, p2q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   assumes "binary_aut ts1"
@@ -2768,8 +2766,9 @@ next
         by auto
       moreover
       have "\<exists>X. (p2, (w23, X), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-        using indu NEW_the_X_lemma
-        by (smt (verit, ccfv_threshold) binary_aut_def mem_Collect_eq monoid_rtrancl_into_rtrancl.hyps(2) monoid_star_intros_step w23_def wts_label_exist wts_to_monoidLTS_def)
+        using indu
+        using monoid_rtrancl_fst_if_monoid_rtrancl_intersff monoid_rtrancl_into_rtrancl.hyps(2) 
+          monoid_star_intros_step p2_def p3_def w23_def by blast
       ultimately
       have "(p1, ((w12 * w23), 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
         by (smt (verit, del_insts) fst_conv monoid_rtrancl_rtrancl_into_rtrancl mult_prod_def mult_zero_left snd_conv)
@@ -2819,8 +2818,7 @@ next
       have "(p2, (w23, 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
         using True d23p_d23q_p(1) monoid_star_intros_step by blast
       have "\<exists>X. (p1, (w12, X), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-        using indu(4) monoid_rtrancl_into_rtrancl.hyps(1) p1_def p2_def NEW_the_X_lemma w12_def
-        by blast
+        by (metis indu(1) monoid_rtrancl_fst_if_monoid_rtrancl_intersff p1_def p2_def pq1_eq pq2_eq w12_def wd12_eq)
       have "(p1, (w12 * w23, 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
         using d23p_d23q_p(1) indu(2)
         by (smt (verit, del_insts) True \<open>\<exists>X. (p1, (w12, X), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)\<close> d23_def d23_split fst_conv monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_prod_def mult_zero_left mult_zero_right wd23_eq)
@@ -2838,7 +2836,7 @@ next
           using True d23p_d23q_p(2) monoid_star_intros_step by blast
         have "\<exists>X. (q1, (w12, X), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
           using assms(2) indu(1) outer_outer_False
-          by (metis (no_types, opaque_lifting) NEW_inters_trans_star2_1 d12_def monoid_rtrancl_into_rtrancl.hyps(1) prod.exhaust_sel q1_def q2_def wd12_eq)
+          using monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero by force
         have "(q1, (w12 * w23, 0), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
           using d23p_d23q_p indu
           by (metis (no_types, lifting) True \<open>\<exists>X. (q1, (w12, X), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)\<close> d23_def d23_split fst_conv monoid_rtrancl.simps mult_prod_def mult_zero_right wd23_eq)
@@ -2853,12 +2851,13 @@ next
         then show ?thesis
           using outer_False outer_outer_False d23_split False
             d13zero
-          by (metis NEW_inters_trans_star2_1 d12_def d23p_d23q_p(2) monoid_rtrancl.monoid_rtrancl_into_rtrancl monoid_rtrancl_into_rtrancl.hyps(1) monoid_rtrancl_into_rtrancl.prems(1) monoid_rtrancl_into_rtrancl.prems(2) mult_1 prod.collapse q2_def q3_def wd23_eq)
-          (* Wow... Er det fordi 0=1 eller noget? *)
+          by (metis d12_def d23p_d23q_p(2) monoid_rtrancl.monoid_rtrancl_into_rtrancl monoid_rtrancl_into_rtrancl.hyps(1) monoid_rtrancl_into_rtrancl.prems(1) monoid_rtrancl_into_rtrancl.prems(2) monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero mult_1 prod.collapse q2_def q3_def wd23_eq)
+            (* Wow... Er det fordi 0=1 eller noget? *)
       qed
     qed
   qed
 qed
+
 
 end
 
