@@ -2474,7 +2474,7 @@ next
     by (smt (verit, del_insts) fst_conv l_def monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_prod_def w_def)
 qed
 
-lemma monoid_rtrancl_fst_1_if_monoid_rtrancl_intersff_BETTER:
+lemma monoid_rtrancl_fst_1_if_monoid_rtrancl_intersff:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   assumes "binary_aut ts1"
@@ -2528,7 +2528,7 @@ next
     by (metis \<open>(p1, (w12 * w23, 1), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)\<close> times_list_def) 
 qed
 
-lemma monoid_rtrancl_snd_if_monoid_rtrancl_intersff_BETTER:
+lemma monoid_rtrancl_snd_if_monoid_rtrancl_intersff:
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   shows "\<exists>d'. (q1, (w,d'), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
   using assms
@@ -2544,7 +2544,7 @@ next
     using step(3) by (smt (verit, del_insts) fst_conv monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_prod_def times_list_def)
 qed
 
-lemma monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero_BETTER:
+lemma monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   assumes "binary_aut ts1"
@@ -2598,7 +2598,7 @@ next
     by (metis \<open>(q1, (w12 * w23, d12 * d23), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)\<close> times_list_def)
 qed
 
-lemma monoid_rtrancl_fst_or_snd_zero_if_monoid_rtrancl_intersff_zero_BETTER:
+lemma monoid_rtrancl_fst_or_snd_zero_if_monoid_rtrancl_intersff_zero:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   assumes "binary_aut ts1"
@@ -2639,7 +2639,7 @@ next
       moreover
       have "\<exists>X. (q2, (w23, X), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
         using mem_Collect_eq monoid_star_intros_step wts_label_exist wts_to_monoidLTS_def
-        using monoid_rtrancl_snd_if_monoid_rtrancl_intersff_BETTER step.hyps(2) by fastforce
+        using monoid_rtrancl_snd_if_monoid_rtrancl_intersff step.hyps(2) by fastforce
       ultimately
       have "(q1, ((w12 * w23), 0), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
         using True fst_conv monoid_rtrancl_rtrancl_into_rtrancl mult_prod_def mult_zero_left by (smt (verit, del_insts) snd_conv)
@@ -2671,7 +2671,7 @@ next
       have "(p2, (w23, 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
         using True d23p_d23q_p(1) monoid_star_intros_step by blast
       have "\<exists>X. (p1, (w12, X), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-        using monoid_rtrancl_fst_1_if_monoid_rtrancl_intersff_BETTER outer_outer_False step by blast
+        using monoid_rtrancl_fst_1_if_monoid_rtrancl_intersff outer_outer_False step by blast
       have "(p1, (w12 * w23, 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
         using d23p_d23q_p(1)  True \<open>\<exists>X. (p1, (w12, X), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)\<close> 
           d23_split fst_conv monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_prod_def mult_zero_left 
@@ -2689,7 +2689,7 @@ next
         have "(q2, (w23, 0), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
           using True d23p_d23q_p(2) monoid_star_intros_step by blast
         have "\<exists>X. (q1, (w12, X), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-          using assms(2) outer_outer_False monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero_BETTER
+          using assms(2) outer_outer_False monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero
             step.hyps(1) by fastforce
         have "(q1, (w12 * w23, 0), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
           using d23p_d23q_p True \<open>\<exists>X. (q1, (w12, X), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)\<close>
@@ -2704,7 +2704,7 @@ next
         then show ?thesis
           using outer_False outer_outer_False d23_split False
             d13zero d23p_d23q_p(2) monoid_rtrancl.monoid_rtrancl_into_rtrancl 
-            monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero_BETTER mult_1 prod.collapse
+            monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero mult_1 prod.collapse
           by (smt (verit, best) fst_conv mult_prod_def snd_conv step.hyps(1) step.prems(1) times_list_def)
             (* Wow... Er det fordi 0=1 eller noget? *)
       qed
