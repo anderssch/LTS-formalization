@@ -69,6 +69,51 @@ lemma idem_sum_insert:
   shows "\<Sum>(insert x S) = x + \<Sum>S"
   using idem_sum_elem[OF assms] sum.insert_if[OF assms, of id x] by simp
 
+lemma idem_sum_const:
+  assumes "finite S"
+      and "S \<noteq> {}"
+    shows "(\<Sum>x\<in>S. y) = y"
+  using assms
+  apply (induct rule: finite_induct, simp)
+  subgoal for x F
+    by (cases "F = {}", simp_all)
+  done
+
+lemma idem_sum_image:
+  assumes "finite S"
+  shows "\<Sum> (f ` S) = sum f S"
+  apply (induct rule: finite_induct[OF assms], simp)
+  subgoal for x F
+    using idem_sum_insert[of "(f ` F)" "f x"] 
+    by fastforce
+  done
+
+lemma idem_sum_distrib:
+  assumes "finite S"
+      and "S \<noteq> {}"
+    shows "y + \<Sum> S = \<Sum> {y + x | x. x \<in> S}"
+  using sum.distrib[of "\<lambda>x. y" id S, simplified, symmetric] 
+  unfolding idem_sum_const[OF assms, of y]
+  using idem_sum_image[OF assms(1), of "(+) y"]
+  unfolding setcompr_eq_image[of "(+) y"] by simp
+
+lemma idem_sum_distrib':
+  assumes "finite S"
+    shows "y + \<Sum> S = y + \<Sum> {y + x | x. x \<in> S}"
+  apply (cases "S = {}", simp)
+  unfolding idem_sum_distrib[OF assms, of y, symmetric] 
+  by (simp add: ac_simps)
+
+lemma sum_split:
+  assumes "finite {x. P x}"
+  shows  "\<Sum> {x. P x} = \<Sum> {x. P x \<and> Q x} + \<Sum> {x. P x \<and> \<not> Q x}"
+proof -
+  have "{x. P x \<and> Q x} \<inter> {x. P x \<and> \<not> Q x} = {}" by blast
+  moreover have "{x. P x \<and> Q x} \<union> {x. P x \<and> \<not> Q x} = {x. P x}" by blast
+  ultimately show ?thesis 
+    using sum.union_disjoint[of "{x. P x \<and> Q x}" "{x. P x \<and> \<not> Q x}" id, simplified] assms by simp
+qed
+
 abbreviation sum_seq :: "(nat \<Rightarrow> 'a) \<Rightarrow> nat \<Rightarrow> 'a" where
   "sum_seq f i \<equiv> sum f {x. x < i}"
 
@@ -244,13 +289,24 @@ lemma sum_superset_less_eq:
   unfolding less_eq_def using sum.subset_diff[OF assms, of id] by force
 
 lemma sum_greater_elem:
-  assumes "\<And>a. a \<in> A \<Longrightarrow> \<Sum> B \<le> a"
-      and "finite A" and "finite B"
-    shows "\<Sum> B \<le> \<Sum> A"
+  assumes "\<And>a. a \<in> A \<Longrightarrow> b \<le> a"
+      and "finite A"
+    shows "b \<le> \<Sum> A"
   using assms(1)
   unfolding less_eq_def
-  by (induct rule: finite_induct[OF assms(2)]) (simp_all add: local.add.left_commute local.meet.inf_commute)
-  
+  apply (induct rule: finite_induct[OF assms(2)])
+  by (simp_all add: local.add.left_commute local.meet.inf_commute)
+
+lemma sum_smaller_elem:
+  assumes "\<And>a. a \<in> A \<Longrightarrow> a \<le> b"
+      and "finite A"
+      and "A \<noteq> {}"
+    shows "\<Sum> A \<le> b"
+  using assms(1,3)
+  unfolding less_eq_def
+  apply (induct rule: finite_induct[OF assms(2)])
+   apply (simp_all add: local.add.left_commute local.meet.inf_commute)
+  by fastforce
 
 end
 

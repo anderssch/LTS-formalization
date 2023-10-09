@@ -206,10 +206,10 @@ proof -
 qed
 
 lemma finite_sum_less_eq:
-  assumes "finite W" and "finite W'" and "\<^bold>\<Sum> W = \<Sum> W'"
+  assumes "finite W" and "\<^bold>\<Sum> W = \<Sum> W'"
   shows "\<Sum> W' \<le> \<Sum> W"
-  using assms(3) countable_SumInf_elem[OF countable_finite[OF assms(1)]]
-        sum_greater_elem[OF _ assms(1,2)]
+  using assms(2) countable_SumInf_elem[OF countable_finite[OF assms(1)]]
+        sum_greater_elem[OF _ assms(1)]
   by presburger
 
 lemma SumInf_empty[simp]: "\<^bold>\<Sum> {} = 0"
@@ -244,7 +244,7 @@ proof -
   have "A' \<subseteq> B" using subsetA assms(1) by fast
   then have "\<And>a. a \<in> A' \<Longrightarrow> \<Sum> B' \<le> a" 
     using countable_SumInf_elem[OF assms(2)] eqB by auto
-  then have "\<Sum> B' \<le> \<Sum> A'" using sum_greater_elem[of A' B'] finA finB by fastforce
+  then have "\<Sum> B' \<le> \<Sum> A'" using sum_greater_elem[of A' "\<Sum> B'"] finA finB by fastforce
   then show ?thesis using eqA eqB by argo
 qed
 
