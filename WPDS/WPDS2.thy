@@ -2249,9 +2249,6 @@ lemma finfun_apply_intersff'2:
   shows "(intersff A A') $ ((p,p'), y, (q,q')) = d * d'"
   using assms finfun_apply_intersff' by auto
 
-(* Lav produkt med finfun istedet. *)
-
-
 lemma NEW_zero_one_path:
   assumes "\<forall>p1 w p2. ts1 $ (p1, w, p2) = 1 \<or> ts1 $ (p1, w, p2) = 0"
   assumes "(p1, (\<alpha>#w1',1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
