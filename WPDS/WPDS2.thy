@@ -2598,7 +2598,7 @@ next
       then have "(p1, (w12, 0), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
         by auto
       moreover
-      have "\<exists>X. (p2, (w23, X), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+      have "\<exists>dp23. (p2, (w23, dp23), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
         by (smt (verit) fst_conv mem_Collect_eq monoid_star_intros_step step.hyps(2) wts_label_exist wts_to_monoidLTS_def)
       ultimately
       have "(p1, ((w12 * w23), 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
@@ -2610,7 +2610,7 @@ next
       then have "(q1, (w12, 0), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
         by auto
       moreover
-      have "\<exists>X. (q2, (w23, X), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+      have "\<exists>dq23. (q2, (w23, dq23), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
         using mem_Collect_eq monoid_star_intros_step wts_label_exist wts_to_monoidLTS_def
         using monoid_rtrancl_snd_if_monoid_rtrancl_intersff step.hyps(2) by fastforce
       ultimately
@@ -2641,16 +2641,18 @@ next
     show ?thesis
     proof (cases "d23p = 0")
       case True
-      have "(p2, (w23, 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-        using True d23p_d23q_p(1) monoid_star_intros_step by blast
-      have "\<exists>X. (p1, (w12, X), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+      have "(p2, (w23, 0), p3) \<in> wts_to_monoidLTS ts1"
+        using True d23p_d23q_p(1) by blast
+      moreover
+      have "\<exists>dp12. (p1, (w12, dp12), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
         using monoid_rtrancl_fst_1_if_monoid_rtrancl_intersff outer_outer_False step by blast
+      ultimately
       have "(p1, (w12 * w23, 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-        using d23p_d23q_p(1)  True \<open>\<exists>X. (p1, (w12, X), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)\<close> 
-          d23_split fst_conv monoid_rtrancl.monoid_rtrancl_into_rtrancl mult_prod_def mult_zero_left 
-          mult_zero_right by (smt (verit, ccfv_threshold) snd_conv)
+        using monoid_rtrancl_into_rtrancl[of p1 "(w12,_)" p2 "(wts_to_monoidLTS ts1)"
+            "(w23, d23p)" p3]
+        using True by (auto simp add: mult_prod_def)
       then have "(p1, ((w12 * w23), 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
-        unfolding  mult_prod_def by auto
+        unfolding mult_prod_def by auto
       then show ?thesis
         by (simp add: times_list_def)
     next
@@ -2659,27 +2661,34 @@ next
       show ?thesis
       proof (cases "d23q = 0")
         case True
-        have "(q2, (w23, 0), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+        have "(q2, (w23, 0), q3) \<in> wts_to_monoidLTS ts2"
           using True d23p_d23q_p(2) monoid_star_intros_step by blast
-        have "\<exists>X. (q1, (w12, X), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+        moreover
+        have "\<exists>dq12. (q1, (w12, dq12), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
           using assms(2) outer_outer_False monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero
             step.hyps(1) by fastforce
+        ultimately
         have "(q1, (w12 * w23, 0), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
-          using d23p_d23q_p True \<open>\<exists>X. (q1, (w12, X), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)\<close>
-            d23_split fst_conv monoid_rtrancl.simps mult_prod_def mult_zero_right 
-          by (smt (verit, ccfv_threshold) snd_conv)
-        then show ?thesis
-          by (simp add: times_list_def)
+          using monoid_rtrancl_into_rtrancl[of q1 "(w12,_)" q2 "(wts_to_monoidLTS ts2)"
+              "(w23, d23q)" q3]
+          using True by (auto simp add: mult_prod_def)
+        then show ?thesis 
+          unfolding times_list_def by metis
       next
         case False
-        have "d23p = 1"
+        have d23p_one: "d23p = 1"
           using d23p01 outer_False by auto
+        have "(q1, (w12, d12), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+          using monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero outer_outer_False step.hyps(1)
+            step.prems(1) by blast
+        moreover
+        have "(q2, (w23, d23q), q3) \<in> wts_to_monoidLTS ts2"
+          using d23p_d23q_p(2) by fastforce
+        ultimately
+        have "(q1, (w12 @ w23, d12 * d23q), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+          using monoid_rtrancl.intros(2)[of q1 "(w12,_)"] by (auto simp add: mult_prod_def times_list_def)
         then show ?thesis
-          using outer_False outer_outer_False d23_split False
-            d13zero d23p_d23q_p(2) monoid_rtrancl.monoid_rtrancl_into_rtrancl 
-            monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero mult_1 prod.collapse
-          by (smt (verit, best) fst_conv mult_prod_def snd_conv step.hyps(1) step.prems(1) times_list_def)
-            (* Wow... Er det fordi 0=1 eller noget? *)
+          using d23p_one d13zero d23_split by force
       qed
     qed
   qed
