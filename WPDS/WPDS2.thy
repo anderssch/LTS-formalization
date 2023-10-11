@@ -2328,6 +2328,28 @@ next
     using p1'_p(1) d1 by (meson wts_label_d) 
 qed
 
+lemma BINBINBINBIN':
+  assumes "(p1, (w,d), p2) \<in> wts_to_monoidLTS ts1"
+  assumes "binary_aut ts1"
+  shows "d = 1 \<or> d = 0"
+  by (metis assms(1) assms(2) binary_aut_def snd_conv wts_label_d')
+
+lemma BINBINBINBIN:
+  assumes "(p1, (w,d), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+  assumes "binary_aut ts1"
+  shows "d = 1 \<or> d = 0"
+  using assms
+proof (induction rule: wts_to_monoidLTS_induct)
+  case (base p)
+  then show ?case
+    by auto 
+next
+  case (step p w d p' w' d' p'')
+  then show ?case
+    using BINBINBINBIN' by fastforce
+qed
+
+
 lemma monoid_rtrancl_intersff_if_monoid_rtrancl:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
   assumes "(p1, (w,dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
@@ -2454,7 +2476,7 @@ next
 qed
 
 lemma monoid_rtrancl_fst_if_monoid_rtrancl_intersff:
-  assumes "((p1,q2), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
+  assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   shows "\<exists>d'. (p1, (w,d'), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
   using assms 
 proof (induction rule: wts_to_monoidLTS_pair_induct)
@@ -2691,6 +2713,71 @@ next
           using d23p_one d13zero d23_split by force
       qed
     qed
+  qed
+qed
+
+lemma intersff_correct:
+  fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
+  assumes "binary_aut ts1"
+  shows "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2)) \<longleftrightarrow>
+           (\<exists>dp dq. (p1, (w,dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1) \<and>
+                     (q1, (w,dq), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2) \<and> dp * dq = d)"
+proof (cases "d = 0")
+  case True
+  show ?thesis
+  proof 
+    assume inter: "((p1, q1), (w, d), p2, q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
+    then have dis0: "(p1, (w, 0), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1) \<or> (q1, (w, 0), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+      using True
+      using monoid_rtrancl_fst_or_snd_zero_if_monoid_rtrancl_intersff_zero[of p1 q1 w d p2 q2 ts1 ts2] assms by auto
+    moreover
+    have p1p2: "\<exists>dp. (p1, (w, dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+      using monoid_rtrancl_fst_if_monoid_rtrancl_intersff[of p1 q1 w d p2, OF inter] by auto
+    moreover
+    have "\<exists>dq. (q1, (w, dq), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+      by (meson inter monoid_rtrancl_snd_if_monoid_rtrancl_intersff)
+    ultimately
+    show "\<exists>dp dq. (p1, (w, dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1) \<and> (q1, (w, dq), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2) \<and> dp * dq = d"
+      using True mult_not_zero by blast
+  next
+    assume "\<exists>dp dq. (p1, (w, dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1) \<and> (q1, (w, dq), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2) \<and> dp * dq = d"
+    then obtain dp dq where
+      "(p1, (w, dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+      "(q1, (w, dq), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+      "dp * dq = d"
+      by auto
+    then show "((p1, q1), (w, d), p2, q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
+      apply (cases "dp = 0")
+       apply (simp add: assms monoid_rtrancl_intersff_if_monoid_rtrancl_0)
+      apply (subgoal_tac "dp = 1")
+      apply (simp add: assms monoid_rtrancl_intersff_if_monoid_rtrancl_1)
+      using assms
+      using assms BINBINBINBIN apply metis
+      (* The argument is that a path through a binary automaton is either 0 or 1 *)
+      done
+  qed
+next
+  case False
+  show ?thesis
+  proof 
+    assume "((p1, q1), (w, d), p2, q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
+    show "\<exists>dp dq. (p1, (w, dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1) \<and> (q1, (w, dq), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2) \<and> dp * dq = d"
+      by (meson False \<open>((p1, q1), (w, d), p2, q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))\<close> assms monoid_rtrancl_fst_1_if_monoid_rtrancl_intersff monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero mult_1)
+  next 
+    assume "\<exists>dp dq. (p1, (w, dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1) \<and> (q1, (w, dq), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2) \<and> dp * dq = d"
+    then obtain dp dq where
+      "(p1, (w, dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+      "(q1, (w, dq), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+      "dp * dq = d"
+      by auto
+    then show "((p1, q1), (w, d), p2, q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
+      apply (cases "dp = 0")
+      using False apply fastforce
+      apply (subgoal_tac "dp = 1")
+       apply (simp add: assms monoid_rtrancl_intersff_if_monoid_rtrancl_1)
+      using assms BINBINBINBIN apply metis
+        (* The argument is that a path through a binary automaton is either 0 or 1 *)
+      done
   qed
 qed
 
