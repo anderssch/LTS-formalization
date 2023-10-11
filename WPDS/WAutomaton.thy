@@ -196,7 +196,19 @@ qed
 lemma mstar_wts_empty_one: "(p, ([],d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> d = 1"
   using mstar_wts_one by (simp add: one_list_def, fastforce)
 
+lemma wts_to_monoidLTS_exists: (* TODO: rename *)
+  assumes "w23 = [l]"
+  shows "\<exists>dp23. (p2, (w23, dp23), p3) \<in> wts_to_monoidLTS ts1"
+  using assms wts_to_monoidLTS_def by fastforce
+
+lemma wts_to_monoidLTS_exists_iff:
+  "(\<exists>dp23. (p2, (w23, dp23), p3) \<in> wts_to_monoidLTS ts1) \<longleftrightarrow> (\<exists>l. w23 = [l])"
+  using wts_label_exist wts_to_monoidLTS_exists by fastforce
+
+
+
 \<comment> \<open>Unfold monoid_closure of transitions for 0, 1 and 2 transitions\<close>
+  
 lemma monoid_star_w0:
   assumes "(p, w, q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
   assumes "fst w = []"
