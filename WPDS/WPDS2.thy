@@ -2261,7 +2261,7 @@ lemma finfun_apply_intersff':
 
 lemma finfun_apply_intersff[code]:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
-  shows "(($) (intersff ts1 ts2)) = (\<lambda>edge. (ts1 $ (fst_trans edge) * ts2 $ (snd_trans edge)))"
+  shows "(($) (intersff ts1 ts2)) = (\<lambda>t. (ts1 $ (fst_trans t) * ts2 $ (snd_trans t)))"
 proof (rule HOL.ext)
   fix t
   show "intersff ts1 ts2 $ t = ts1 $ (fst_trans t) * ts2 $ (snd_trans t)"
@@ -2609,7 +2609,7 @@ next
       have "\<exists>dp23. (p2, (w23, dp23), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
         by (meson member_wts_to_monoidLTS_intersff monoid_star_intros_step step.hyps(2))
       ultimately
-      have "(p1, ((w12 * w23), 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+      have "(p1, ((w12 @ w23), 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
         using monoid_rtrancl_rtrancl_into_rtrancl[of p1 "(w12, 0)" p2 "(wts_to_monoidLTS ts1)" "(w23, _)" p3]
         by auto
       then show ?thesis
@@ -2647,11 +2647,11 @@ next
       have "\<exists>dp12. (p1, (w12, dp12), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
         using monoid_rtrancl_fst_1_if_monoid_rtrancl_intersff outer_outer_False step by blast
       ultimately
-      have "(p1, (w12 * w23, 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+      have "(p1, (w12 @ w23, 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
         using monoid_rtrancl_into_rtrancl[of p1 "(w12,_)" p2 "(wts_to_monoidLTS ts1)"
             "(w23, d23p)" p3]
         using True by auto
-      then have "(p1, ((w12 * w23), 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+      then have "(p1, ((w12 @ w23), 0), p3) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
         by auto
       then show ?thesis
         by simp
@@ -2668,7 +2668,7 @@ next
           using assms(2) outer_outer_False monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero
             step.hyps(1) by fastforce
         ultimately
-        have "(q1, (w12 * w23, 0), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+        have "(q1, (w12 @ w23, 0), q3) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
           using monoid_rtrancl_into_rtrancl[of q1 "(w12,_)" q2 "(wts_to_monoidLTS ts2)"
               "(w23, d23q)" q3]
           using True by auto
