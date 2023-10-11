@@ -2,6 +2,8 @@ theory WAutomaton
   imports "LTS" "Saturation" "ReverseWellQuasiOrder" "FinFunWellFounded" "MonoidLTS" "Kleene_Algebra.Dioid_models" "Set_More"
 begin
 
+declare times_list_def[simp]
+
 \<comment> \<open>For the semantics of a weighted automaton, labels are lifted to the list-monoid and paired with a weight\<close>
 type_synonym ('label, 'weight) wautomaton_label = "('label list \<times> 'weight)" 
 
@@ -81,7 +83,7 @@ end
 lemma monoid_star_imp_exec: "(p,w,q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> (q, snd w) \<in> monoidLTS_reach (wts_to_monoidLTS ts) p (fst w)"
   apply (induct rule: monoid_rtrancl_induct_rev)
   apply (force simp add: one_prod_def one_list_def)
-  by (fastforce simp add: mult_prod_def times_list_def wts_to_monoidLTS_def)
+  by (fastforce simp add: wts_to_monoidLTS_def)
 
 lemma monoidLTS_reach_imp: "(q, d) \<in> monoidLTS_reach (wts_to_monoidLTS ts) p w \<Longrightarrow> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
   apply (induct p w arbitrary: d rule: monoidLTS_reach.induct[of _ "wts_to_monoidLTS ts"])
@@ -90,7 +92,7 @@ lemma monoidLTS_reach_imp: "(q, d) \<in> monoidLTS_reach (wts_to_monoidLTS ts) p
     apply auto[1]
     subgoal for _ _ _ _ q' d d'
       using monoid_rtrancl_into_rtrancl_rev[of p "([\<gamma>],d)" q' "wts_to_monoidLTS ts" "(w',d')" q]
-      apply (auto simp add: mult_prod_def times_list_def wts_to_monoidLTS_def)
+      apply (auto simp add: wts_to_monoidLTS_def)
       by (metis empty_iff singleton_iff fst_eqD snd_eqD)
     done
   done
@@ -190,8 +192,9 @@ proof (induct rule: monoid_rtrancl.induct)
 next
   case (monoid_rtrancl_into_rtrancl a w b l c)
   from \<open>(b, l, c) \<in> wts_to_monoidLTS ts\<close> have "fst l \<noteq> []" using wts_label_not_empty by fast
-  then have "fst (w * l) \<noteq> []" by (simp add: mult_prod_def times_list_def)
-  then show ?case by (simp add: monoid_rtrancl_into_rtrancl.prems one_list_def)
+  then have "fst (w * l) \<noteq> []" by simp
+  then show ?case
+    using monoid_rtrancl_into_rtrancl.prems by (simp add: monoid_rtrancl_into_rtrancl.prems one_list_def)
 qed
 lemma mstar_wts_empty_one: "(p, ([],d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> d = 1"
   using mstar_wts_one by (simp add: one_list_def, fastforce)
@@ -220,8 +223,8 @@ proof (induct rule: monoid_rtrancl.induct)
 next
   case (monoid_rtrancl_into_rtrancl a w b l c)
   from \<open>(b, l, c) \<in> wts_to_monoidLTS ts\<close> have "fst l \<noteq> []" using wts_label_not_empty by fast
-  then have "fst (w * l) \<noteq> []" by (simp add: mult_prod_def times_list_def)
-  then show ?case by (simp add: monoid_rtrancl_into_rtrancl.prems)
+  then have "fst (w * l) \<noteq> []" by simp
+  then show ?case using monoid_rtrancl_into_rtrancl.prems by simp
 qed
 
 lemma monoid_star_w1:
@@ -235,11 +238,11 @@ proof (induct rule: monoid_rtrancl.induct)
 next
   case (monoid_rtrancl_into_rtrancl a w b w' c)
   then have "fst w = []" 
-    by (simp add: mult_prod_def times_list_def append_eq_Cons_conv wts_label_not_empty[of b w' c ts])
+    by (simp add: append_eq_Cons_conv wts_label_not_empty[of b w' c ts])
   then show ?case 
     using monoid_rtrancl_into_rtrancl.hyps monoid_rtrancl_into_rtrancl.prems
           monoid_star_w0[of a w b ts] mstar_wts_one[of a w b ts] wts_label_d'[of b w' c ts]
-    by (simp add: mult_prod_def one_list_def times_list_def)
+    by (simp add: one_list_def)
 qed
 
 lemma monoid_star_w2:
@@ -253,12 +256,11 @@ proof (induct rule: monoid_rtrancl.induct)
 next
   case (monoid_rtrancl_into_rtrancl a w b w' c)
   then have "fst w = [l] \<and> fst w' = [l']" 
-    using wts_label_exist[of b w' c ts] 
-    by (auto simp add: times_list_def mult_prod_def)
+    using wts_label_exist[of b w' c ts] by auto
   then show ?case 
     using monoid_rtrancl_into_rtrancl.hyps monoid_rtrancl_into_rtrancl.prems 
           monoid_star_w1[of a w b ts l] monoid_star_w1[of b w' c ts l'] wts_label_d'[of b w' c ts]    
-    by (simp add: mult_prod_def) metis
+    by simp metis
 qed
 
 lemma mstar_wts_cons:
