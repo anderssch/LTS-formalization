@@ -7,7 +7,7 @@ instantiation prod :: (one, one) one begin
   definition one_prod_def: "1 = (1,1)" instance .. 
 end
 instantiation prod :: (times, times) times begin
-  definition mult_prod_def: "a * b \<equiv> (fst a * fst b, snd a * snd b)"
+  definition mult_prod_def[simp]: "a * b \<equiv> (fst a * fst b, snd a * snd b)"
   instance ..
 end
 instantiation prod :: (zero, zero) zero begin 

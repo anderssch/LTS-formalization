@@ -228,9 +228,9 @@ next
   from \<open>(b, d'l', c) \<in> list_embed_ts ts\<close> have "snd d'l' \<noteq> []"
     unfolding list_embed_monoid_def list_embed_ts_def[of ts] by auto
   then have \<open>snd (dl * d'l') \<noteq> []\<close> 
-    by (simp add: mult_prod_def times_list_def)
+    by (simp add: times_list_def )
   then show ?case 
-    by (simp add: monoid_rtrancl_into_rtrancl.prems)
+    using monoid_rtrancl_into_rtrancl.prems by simp
 qed
 
 lemma length_list_embed:
