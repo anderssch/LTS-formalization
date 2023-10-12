@@ -612,6 +612,7 @@ thm pre_star_rule_less
     pre_star_rule_add
     pre_star_rules_less_eq
     pre_star_rule_exists_t_d
+    pre_star_rule_confluence_ish
 (*
 lemma 
   assumes "pre_star_rule ts ts'"
@@ -646,47 +647,17 @@ lemma
   assumes "pre_star_rule ts\<^sub>1 ts\<^sub>2"
   assumes "pre_star_rule ts\<^sub>1 ts\<^sub>3"
   shows "\<exists>ts\<^sub>4. pre_star_rule\<^sup>*\<^sup>* ts\<^sub>2 ts\<^sub>4 \<and> ts\<^sub>4 \<le> (ts\<^sub>2 + ts\<^sub>3)"
-proof -
-  obtain t d where ts2:"ts\<^sub>2 = ts\<^sub>1(t $:= ts\<^sub>1 $ t + d)" and td_ne:"ts\<^sub>1 $ t + d \<noteq> ts\<^sub>1 $ t" using pre_star_rule_exists_t_d[OF assms(1)] by blast
-  obtain t' d' where ts3:"ts\<^sub>3 = ts\<^sub>1(t' $:= ts\<^sub>1 $ t' + d')" and t'd'_ne:"ts\<^sub>1 $ t' + d' \<noteq> ts\<^sub>1 $ t'" using pre_star_rule_exists_t_d[OF assms(2)] by blast
-  
-  show ?thesis
-    apply (rule exI[of _ "ts\<^sub>2"])
-qed
+  using pre_star_rule_confluence_ish[OF assms(2,1)]
+  using pre_star_rules_less_eq by auto
 
 
 lemma 
   assumes "pre_star_rule ts\<^sub>1 ts\<^sub>2"
   assumes "pre_star_rule ts\<^sub>1 ts\<^sub>3"
   shows "\<exists>ts'. pre_star_rule\<^sup>*\<^sup>* ts\<^sub>1 ts' \<and> ts' \<le> (ts\<^sub>1 + ts\<^sub>2 + ts\<^sub>3)"
-  using pre_star_rule_add[OF assms(1)]
-
-  using assms(2) unfolding pre_star_rule.simps[of ts\<^sub>1 ts\<^sub>3]
-  apply safe
-  apply simp
-  subgoal for p \<gamma> d p' w d' q
-    using wts_monoid_rtrancl_mono[OF assms(1), of p' "lbl w" d' q] assms(1)
-    apply simp
-    apply auto
-    subgoal for d'a
-      apply (rule exI[of _ "ts\<^sub>2((p, \<gamma>, q) $:= ts\<^sub>2 $ (p, \<gamma>, q) + d * d'a)"])
-      using neq_mono[of "d*d'a" "d*d'" "ts\<^sub>1 $ (p, \<gamma>, q)"]
-      using idempotent_semiring_ord_class.mult_isol[of d'a d' d]
-      apply simp
-      unfolding less_eq_finfun_def
-      apply safe
-      defer 
-      subgoal for a b c
-        apply (cases "(a,b,c) = (p,\<gamma>,q)")
-        by (auto simp add: meet.inf.coboundedI2 meet.le_infI2 meet.le_infI1)
-      using pre_star_rule.intros[of p \<gamma> d p' w d'a q ts\<^sub>2 "ts\<^sub>2 $ (p, \<gamma>, q)", simplified] 
-      apply (cases "ts\<^sub>1 = ts\<^sub>2", simp)
-      using finfun_noteq_exist[of ts\<^sub>1 ts\<^sub>2]
-      apply simp
-      apply (cases "ts\<^sub>1 $ (p, \<gamma>, q) = ts\<^sub>2 $ (p, \<gamma>, q)", simp)
-      apply safe
-      subgoal for a b c
-  oops
+  using pre_star_rule_add[OF assms(1)] pre_star_rules_less_eq
+        pre_star_rule_confluence_ish[OF assms(2) pre_star_rule_add[OF assms(1)]]
+  by (meson converse_rtranclp_into_rtranclp meet.le_inf_iff)
 
 lemma pre_star_rule_to_sum_exists:
   assumes "pre_star_rule ts ts'"
@@ -731,7 +702,7 @@ lemma pre_star_sum_to_rule_exists:
 
 lemma 
 (*  assumes "saturation pre_star_rule ts ts'"*)
-  assumes "pre_star_rule ts ts'" and "\<not> Ex (pre_star_rule ts')"
+  assumes "pre_star_rule ts ts'" and "saturated pre_star_rule ts'"
   shows  "pre_star_rule_sum\<^sup>*\<^sup>* ts ts'"
 proof -
   obtain ts'' where sum:"pre_star_rule_sum ts ts''" and le1:"ts'' \<le> ts'" 
@@ -740,7 +711,8 @@ proof -
     using pre_star_sum_to_rule_exists[of ts ts''] by blast
   have le3:"ts''' \<le> ts'" using le1 le2 by fastforce
   have "ts''' = ts'" using assms(1,2) le3 rule
-    using pre_star_rules_less_eq[OF rule]   
+    using pre_star_rules_less_eq[OF rule]
+    using saturated_pre_star_rule_less_eq[OF _ assms(1,2)]
     sorry
   then have "ts'' = ts'" using le1 le2 by simp
 
