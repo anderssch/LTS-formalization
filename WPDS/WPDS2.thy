@@ -2236,20 +2236,12 @@ lemma finfun_apply_pair_weight':
 
 lemma finfun_apply_pair_weight[code]:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
-  shows "(($) (pair_weight ts1 ts2)) = (\<lambda>edge. (ts1 $ (fst_trans edge), ts2 $ (snd_trans edge)))"
-  apply (rule HOL.ext)
-  subgoal for edge
-    apply (cases edge)
-    subgoal for p1q1 l p2 q2
-      apply (cases p1q1)
-      subgoal for p1 q1
-        apply auto
-        using finfun_apply_pair_weight'[of ts1 ts2] 
-        apply auto
-        done
-      done
-    done
-  done
+  shows "(($) (pair_weight ts1 ts2)) = (\<lambda>t. (ts1 $ (fst_trans t), ts2 $ (snd_trans t)))"
+proof (rule HOL.ext)
+  fix t 
+  show "pair_weight ts1 ts2 $ t = (ts1 $ (fst_trans t), ts2 $ (snd_trans t))"
+    using finfun_apply_pair_weight' by (cases t) fastforce
+qed
 
 definition intersff :: "('state, 'label, 'weight) w_transitions \<Rightarrow> ('state, 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions" where
   "intersff = (\<lambda>ts1 ts2. (case_prod (*)) \<circ>$ (pair_weight ts1 ts2))"
@@ -2328,13 +2320,13 @@ next
     using p1'_p(1) d1 by (meson wts_label_d) 
 qed
 
-lemma BINBINBINBIN':
+lemma binary_aut_transition_binary:
   assumes "(p1, (w,d), p2) \<in> wts_to_monoidLTS ts1"
   assumes "binary_aut ts1"
   shows "d = 1 \<or> d = 0"
   by (metis assms(1) assms(2) binary_aut_def snd_conv wts_label_d')
 
-lemma BINBINBINBIN:
+lemma binary_aut_path_binary:
   assumes "(p1, (w,d), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
   assumes "binary_aut ts1"
   shows "d = 1 \<or> d = 0"
@@ -2346,9 +2338,8 @@ proof (induction rule: wts_to_monoidLTS_induct)
 next
   case (step p w d p' w' d' p'')
   then show ?case
-    using BINBINBINBIN' by fastforce
+    using binary_aut_transition_binary by fastforce
 qed
-
 
 lemma monoid_rtrancl_intersff_if_monoid_rtrancl:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
@@ -2492,13 +2483,6 @@ next
     by auto
 qed
 
-lemma non_zero_edge: (* TODO: RENAME *)
-  assumes "binary_aut ts1"
-  assumes "(p2, (w23, d23p), p3) \<in> (wts_to_monoidLTS ts1)"
-  assumes "d23p \<noteq> 0"
-  shows "d23p = 1"
-  by (metis assms(1) assms(2) assms(3) binary_aut_def snd_conv wts_label_d')
-
 lemma monoid_rtrancl_fst_1_if_monoid_rtrancl_intersff:
   fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
@@ -2523,16 +2507,13 @@ next
   moreover
   have "(intersff ts1 ts2) $ ((p2, q2), hd w23, (p3, q3)) = d23"
     using wts_label_d' step.hyps(2) by fastforce
-  then have "\<exists>d23p d23q. ts1 $ (p2, hd w23, p3) = d23p \<and> ts2 $ (q2, hd w23, q3) = d23q
-                     \<and> d23p * d23q = d23"
-    by (simp add: finfun_apply_intersff')
   then obtain d23p d23q where
     "(p2, (w23, d23p), p3) \<in> (wts_to_monoidLTS ts1)"
     "(q2, (w23, d23q), q3) \<in> (wts_to_monoidLTS ts2)"
     "d23p * d23q = d23"
-    using step.hyps(2) unfolding wts_to_monoidLTS_def by auto
+    by (metis member_wts_to_monoidLTS_intersff step.hyps(2))
   then have "(p2, (w23, 1), p3) \<in> wts_to_monoidLTS ts1"
-    using d23_non0 non_zero_edge step.prems(1) by fastforce
+    using binary_aut_transition_binary d23_non0 step.prems(1) by force
   ultimately
   show ?case
     using monoid_rtrancl.monoid_rtrancl_into_rtrancl[of p1 "(w12, 1)" p2 "(wts_to_monoidLTS ts1)" "(w23, 1)" p3]
@@ -2578,24 +2559,14 @@ next
   have "(q1, (w12, d12), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
     using \<open>d12 \<noteq> 0\<close> by (simp add: step.IH step.prems(1)) 
 
-  have "\<exists>d23p d23q.
-          ts1 $ (p2, (hd w23), p3) = d23p \<and>
-          ts2 $ (q2, hd w23, q3) = d23q \<and>
-          d23p * d23q = d23"
-    using finfun_apply_intersff' wts_label_d' by (metis fst_conv snd_conv step.hyps(2))
-  then have "\<exists>d23p d23q. 
-               (p2, (w23, d23p), p3) \<in> (wts_to_monoidLTS ts1) \<and>
-               (q2, (w23, d23q), q3) \<in> (wts_to_monoidLTS ts2) \<and>
-               d23p * d23q = d23"
-    using step.hyps(2) unfolding wts_to_monoidLTS_def by auto
-  then obtain d23p d23q where f:
+  obtain d23p d23q where f:
     "(p2, (w23, d23p), p3) \<in> (wts_to_monoidLTS ts1)"
     "(q2, (w23, d23q), q3) \<in> (wts_to_monoidLTS ts2)"
     "d23p * d23q = d23"
-    by blast
+    by (metis member_wts_to_monoidLTS_intersff step.hyps(2))
 
   have "d23p = 1"
-    by (metis \<open>d23 \<noteq> 0\<close> d_mult_not_zero(1) f(1) f(3) non_zero_edge step.prems(1))
+    by (metis \<open>d23 \<noteq> 0\<close> d_mult_not_zero(1) f(1) f(3) binary_aut_transition_binary step.prems(1))
   then have "d23q = d23"
     using f(3) by auto
   then show ?case
@@ -2747,14 +2718,7 @@ proof (cases "d = 0")
       "dp * dq = d"
       by auto
     then show "((p1, q1), (w, d), p2, q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
-      apply (cases "dp = 0")
-       apply (simp add: assms monoid_rtrancl_intersff_if_monoid_rtrancl_0)
-      apply (subgoal_tac "dp = 1")
-      apply (simp add: assms monoid_rtrancl_intersff_if_monoid_rtrancl_1)
-      using assms
-      using assms BINBINBINBIN apply metis
-      (* The argument is that a path through a binary automaton is either 0 or 1 *)
-      done
+      using assms binary_aut_path_binary monoid_rtrancl_intersff_if_monoid_rtrancl_0 monoid_rtrancl_intersff_if_monoid_rtrancl_1 by fastforce 
   qed
 next
   case False
@@ -2771,13 +2735,7 @@ next
       "dp * dq = d"
       by auto
     then show "((p1, q1), (w, d), p2, q2) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
-      apply (cases "dp = 0")
-      using False apply fastforce
-      apply (subgoal_tac "dp = 1")
-       apply (simp add: assms monoid_rtrancl_intersff_if_monoid_rtrancl_1)
-      using assms BINBINBINBIN apply metis
-        (* The argument is that a path through a binary automaton is either 0 or 1 *)
-      done
+      using False assms binary_aut_path_binary monoid_rtrancl_intersff_if_monoid_rtrancl_1 by fastforce
   qed
 qed
 
