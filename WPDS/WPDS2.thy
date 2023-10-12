@@ -180,7 +180,13 @@ inductive pre_star_rule :: "('ctr_loc, 'label, 'weight) w_transitions saturation
       \<Longrightarrow> (d'' + (d * d')) \<noteq> d''
       \<Longrightarrow> pre_star_rule ts ts((p, \<gamma>, q) $:= d'' + (d * d'))"
 
-lemma pre_star_rule_mono: "pre_star_rule ts ts' \<Longrightarrow> ts' \<le> ts"
+lemma pre_star_rule_elim2:
+  assumes "pre_star_rule ts ts'"
+  shows "\<exists>p \<gamma> d p' w d' q. ts' = ts((p, \<gamma>, q) $:= ts $ (p, \<gamma>, q) + (d * d')) \<and> (p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w) \<and> 
+          (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> ts $ (p, \<gamma>, q) + (d * d') \<noteq> ts $ (p, \<gamma>, q)"
+  using assms unfolding pre_star_rule.simps[of ts ts'] by presburger
+
+lemma pre_star_rule_less_eq: "pre_star_rule ts ts' \<Longrightarrow> ts' \<le> ts"
   unfolding less_eq_finfun_def
   unfolding pre_star_rule.simps
   apply simp
@@ -188,6 +194,12 @@ lemma pre_star_rule_mono: "pre_star_rule ts ts' \<Longrightarrow> ts' \<le> ts"
   subgoal for p \<gamma> d p' w d' q a b c
     by (cases "(a, b, c) = (p, \<gamma>, q)", auto)
   done
+
+lemma pre_star_rule_less: "pre_star_rule ts ts' \<Longrightarrow> ts' < ts"
+  unfolding less_finfun_def
+  using pre_star_rule_less_eq[of ts ts'] pre_star_rule.simps finfun_upd_apply_same 
+  by (simp, metis)
+
 
 lemma finite_wts: 
   fixes wts::"('ctr_loc, 'label, 'weight) w_transitions"
@@ -252,6 +264,96 @@ lemma finfun_noteq_ext: "\<exists>t. ts $ t \<noteq> ts' $ t \<Longrightarrow> t
 lemma finfun_noteq_exist: "ts \<noteq> ts' \<Longrightarrow> \<exists>t. ts $ t \<noteq> ts' $ t" by (meson finfun_ext)
 lemma finfun_eqE: "ts = ts' \<Longrightarrow> (\<And>t. ts $ t = ts' $ t \<Longrightarrow> P )\<Longrightarrow> P" by simp
 
+
+lemma wts_to_monoidLTS_mono': "ts \<le> ts' \<Longrightarrow> (p, (w, d), q) \<in> wts_to_monoidLTS ts \<Longrightarrow> \<exists>d'. (p, (w, d'), q) \<in> wts_to_monoidLTS ts' \<and> d \<le> d'"
+  unfolding less_eq_finfun_def wts_to_monoidLTS_def by blast
+
+lemma wts_to_monoidLTS_mono: "ts' \<le> ts \<Longrightarrow> (p, (w, d), q) \<in> wts_to_monoidLTS ts \<Longrightarrow> \<exists>d'. (p, (w, d'), q) \<in> wts_to_monoidLTS ts' \<and> d' \<le> d"
+  unfolding less_eq_finfun_def wts_to_monoidLTS_def by blast
+
+lemma wts_monoid_rtrancl_mono: 
+  assumes "ts' \<le> ts"
+  assumes "(p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  shows "\<exists>d'. (p, (w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts') \<and> d' \<le> d"
+proof (induction rule: monoid_rtrancl_pair_weight_induct[OF assms(2)])
+  case (1 p)
+  then show ?case 
+    by (rule exI[of _ "1"]) 
+       (simp add: monoid_rtrancl_refl[of _ "wts_to_monoidLTS ts'", unfolded one_prod_def])
+next
+  case (2 p w d p' w' d' p'')
+  obtain da da' 
+    where da:"(p, (w, da), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts')" "da \<le> d" 
+     and da':"(p', (w', da'), p'') \<in> wts_to_monoidLTS ts'" "da' \<le> d'" 
+    using 2(3) wts_to_monoidLTS_mono[OF assms(1) 2(2)] by blast
+  show ?case
+    apply (rule exI[of _ "da * da'"])
+    using da(2) da'(2) monoid_rtrancl_into_rtrancl[OF da(1) da'(1)]
+    by (simp add: mult_prod_def idempotent_semiring_ord_class.mult_isol_var)
+qed
+
+
+lemma ts_different_update_nleq_apply_neq:
+  fixes ts :: "('ctr_loc, 'label, 'weight) w_transitions"
+  assumes "d' \<le> d\<^sub>2"
+  assumes "\<not> ts(t\<^sub>1 $:= ts $ t\<^sub>1 + d\<^sub>1) \<le> ts(t\<^sub>2 $:= ts $ t\<^sub>2 + d\<^sub>2)" 
+  shows "ts(t\<^sub>1 $:= ts $ t\<^sub>1 + d\<^sub>1) $ t\<^sub>2 + d' \<noteq> ts(t\<^sub>1 $:= ts $ t\<^sub>1 + d\<^sub>1) $ t\<^sub>2"
+  using assms[unfolded less_eq_finfun_def]
+  apply safe
+  subgoal for a b c
+    using neq_mono[of "d'" "d\<^sub>2" "ts $ t\<^sub>1 + d\<^sub>1"] neq_mono[of "d'" "d\<^sub>2" "ts $ t\<^sub>2"]
+    unfolding idempotent_ab_semigroup_add_ord_class.less_eq_def
+    apply (cases "t\<^sub>1 = t\<^sub>2")
+     apply (cases "(a, b, c) = t\<^sub>1", simp add: add.commute add.left_commute, simp)
+    apply (cases "(a, b, c) = t\<^sub>2", simp add: add.commute add.left_commute)
+    by (cases "(a, b, c) = t\<^sub>1", simp add: add.commute add.left_commute, simp)
+  done
+
+lemma ts_update_update_less_eq:
+  fixes ts :: "('ctr_loc, 'label, 'weight) w_transitions"
+  assumes "d' \<le> d\<^sub>2"
+  shows "ts(t\<^sub>1 $:= ts $ t\<^sub>1 + d\<^sub>1)(t\<^sub>2 $:= ts(t\<^sub>1 $:= ts $ t\<^sub>1 + d\<^sub>1) $ t\<^sub>2 + d') \<le> ts(t\<^sub>2 $:= ts $ t\<^sub>2 + d\<^sub>2)"
+  unfolding less_eq_finfun_def
+  apply (rule allI)
+  subgoal for t
+    using assms unfolding idempotent_ab_semigroup_add_ord_class.less_eq_def
+    apply (cases "t\<^sub>1 = t\<^sub>2")
+     apply (cases "t = t\<^sub>1", simp add: add.assoc add.left_commute, simp)
+    apply (cases "t = t\<^sub>2", simp add: add.assoc add.left_commute)
+    by (cases "t = t\<^sub>1", simp add: add.assoc add.left_commute add.commute, simp)
+  done
+
+lemma pre_star_rule_confluence_ish:
+  assumes "pre_star_rule ts\<^sub>1 ts\<^sub>2"
+  assumes "pre_star_rule ts\<^sub>1 ts\<^sub>3"
+  shows "\<exists>ts\<^sub>4. pre_star_rule\<^sup>*\<^sup>* ts\<^sub>3 ts\<^sub>4 \<and> ts\<^sub>4 \<le> ts\<^sub>2"
+proof -
+  obtain p\<^sub>2 \<gamma>\<^sub>2 d\<^sub>2 p'\<^sub>2 w\<^sub>2 d'\<^sub>2 q\<^sub>2 where ts2:
+    "ts\<^sub>2 = ts\<^sub>1((p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) $:= ts\<^sub>1 $ (p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) + d\<^sub>2 * d'\<^sub>2)"
+    "(p\<^sub>2, \<gamma>\<^sub>2) \<midarrow>d\<^sub>2\<hookrightarrow> (p'\<^sub>2, w\<^sub>2)"
+    "(p'\<^sub>2, (lbl w\<^sub>2, d'\<^sub>2), q\<^sub>2) \<in> monoid_rtrancl (wts_to_monoidLTS ts\<^sub>1)"
+    using pre_star_rule_elim2[OF assms(1)] by blast
+  obtain t\<^sub>3 d\<^sub>3 where ts3:"ts\<^sub>3 = ts\<^sub>1(t\<^sub>3 $:= ts\<^sub>1 $ t\<^sub>3 + d\<^sub>3)" 
+    using pre_star_rule_exists_t_d[OF assms(2)] by blast
+  obtain d' where d'_le:"d' \<le> d'\<^sub>2" and d'_ts3:"(p'\<^sub>2, (lbl w\<^sub>2, d'), q\<^sub>2) \<in> monoid_rtrancl (wts_to_monoidLTS ts\<^sub>3)"
+    using wts_monoid_rtrancl_mono[OF pre_star_rule_less_eq[OF assms(2)] ts2(3)] by blast
+  show ?thesis proof (cases "ts\<^sub>3 \<le> ts\<^sub>2")
+    case True
+    then show ?thesis by (simp add: exI[of _ "ts\<^sub>3"])
+  next 
+    case False
+    then have "ts\<^sub>3 $ (p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) + d\<^sub>2 * d' \<noteq> ts\<^sub>3 $ (p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2)"
+      using ts_different_update_nleq_apply_neq[OF idempotent_semiring_ord_class.mult_isol[OF d'_le]]
+      unfolding ts2(1) ts3 by blast
+    then have "pre_star_rule ts\<^sub>3 ts\<^sub>3((p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) $:= ts\<^sub>3 $ (p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) + d\<^sub>2 * d')"
+      using pre_star_rule.intros[OF ts2(2) d'_ts3, of "ts\<^sub>3 $ (p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2)"] by fast
+    then show ?thesis unfolding ts2(1) ts3
+      using ts_update_update_less_eq[OF idempotent_semiring_ord_class.mult_isol[OF d'_le, of d\<^sub>2]]
+      by blast
+  qed
+qed
+
+(*
 lemma pre_star_rule_pre_star_step1':  
   assumes "X \<subseteq> {ts'. pre_star_rule ts ts'}"
   shows "pre_star_rule\<^sup>*\<^sup>* ts (ts + \<Sum> X)"
@@ -273,8 +375,35 @@ proof -
   qed
 qed
 
-lemma pre_star_rule_to_pre_star_rule_sum: "pre_star_rule\<^sup>*\<^sup>* ts (ts + \<Sum> {ts'. pre_star_rule ts ts'})"
-  using pre_star_rule_pre_star_step1'[of "{ts'. pre_star_rule ts ts'}" ts] by blast
+(*thm BNF_Wellorder_Relation.wo_rel.well_order_induct wf_induct*)
+lemma pre_star_rule_pre_star_step1':  
+  assumes "\<Sum> {ts'. pre_star_rule ts ts'} \<le> X"
+  shows "pre_star_rule\<^sup>*\<^sup>* ts (ts + X)"
+proof -
+  have "finite X" using finite_pre_star_rule_set[of ts] finite_subset[OF assms] by argo
+  then show ?thesis using assms
+  proof (induct X arbitrary: ts rule: finite_induct)
+    case empty
+    then show ?case by simp
+  next
+    case (insert x F ts)
+    have x:"pre_star_rule ts x" using insert(4) by blast
+    have "F \<subseteq> {ts'. pre_star_rule (ts) ts'}" using insert(4) by simp
+    then have F:"F \<subseteq> {ts'. pre_star_rule (ts + x) ts'}" using insert(1,2,4) sorry (* pre_star_rule_add_mono by auto*)
+    show ?case
+      using insert(1,2) insert(3)[of "ts + x", OF F] 
+            converse_rtranclp_into_rtranclp[of pre_star_rule ts "ts + x" "(ts + (x + \<Sum> F))", OF pre_star_rule_add[OF x]]
+      by (simp add: add.assoc)
+  qed
+qed*)
+
+lemma pre_star_rule_confluence:
+  assumes "pre_star_rule ts\<^sub>1 ts\<^sub>2"
+  assumes "pre_star_rule ts\<^sub>1 ts\<^sub>3"
+  assumes "pre_star_rule ts\<^sub>2 ts\<^sub>4"
+  shows "pre_star_rule\<^sup>*\<^sup>* ts\<^sub>3 ts\<^sub>4"
+  oops
+
 
 
 \<comment> \<open>Definition of executable pre_star\<close>
@@ -446,12 +575,12 @@ lemma pre_star_step_to_pre_star_rule_sum: "pre_star_step ts = ts + \<Sum> {ts'. 
     by simp
   done
 
+inductive pre_star_rule_sum :: "('ctr_loc, 'label, 'weight) w_transitions saturation_rule" where
+  "ts + \<Sum>{ts'. pre_star_rule ts ts'} \<noteq> ts \<Longrightarrow> pre_star_rule_sum ts (ts + \<Sum>{ts'. pre_star_rule ts ts'})"
 
-lemma pre_star_rule_pre_star_step: "pre_star_rule\<^sup>*\<^sup>* ts (pre_star_step ts)"
-  unfolding pre_star_step_to_pre_star_rule_sum using pre_star_rule_to_pre_star_rule_sum by blast
-
-lemma pre_star_rule_pre_star1s: "pre_star_rule\<^sup>*\<^sup>* ts ((pre_star_step ^^ k) ts)"
-  by (induct k) (auto elim!: rtranclp_trans intro: pre_star_rule_pre_star_step)
+lemma pre_star_rule_sum_less: "pre_star_rule_sum ts ts' \<Longrightarrow> ts' < ts"
+  unfolding less_finfun_def using pre_star_rule_sum.cases[of ts ts']
+  by (metis meet.inf_le1 order_antisym_conv)
 
 lemma pre_star_rule_sum_not_eq:
   assumes "pre_star_rule ts ts'"
@@ -463,7 +592,7 @@ next
   case False
   have le:"\<Sum> {ts'. pre_star_rule ts ts'} \<le> ts" 
     using sum_smaller_elem[of "{ts'. pre_star_rule ts ts'}" ts, OF _ finite_pre_star_rule_set[of ts] False]
-    using pre_star_rule_mono[of ts] by blast
+    using pre_star_rule_less_eq[of ts] by blast
   have le':"\<Sum> {ts'. pre_star_rule ts ts'} \<le> ts'"
     unfolding BoundedDioid.idempotent_ab_semigroup_add_ord_class.less_eq_def 
     using idem_sum_elem[OF finite_pre_star_rule_set[of ts], of ts'] assms by (simp add: add.commute)
@@ -475,17 +604,207 @@ next
     using add.commute by metis
 qed
 
-lemma saturation_pre_star_exec: "saturation pre_star_rule ts (pre_star_exec ts)"
+lemma pre_star_rules_less_eq: "pre_star_rule\<^sup>*\<^sup>* ts ts' \<Longrightarrow> ts' \<le> ts"
+  by (induct rule: rtranclp.induct, simp) (fastforce dest: pre_star_rule_less)
+
+thm pre_star_rule_less 
+    pre_star_rule_add
+    pre_star_rules_less_eq
+    pre_star_rule_exists_t_d
+(*
+lemma 
+  assumes "pre_star_rule ts ts'"
+  assumes "pre_star_rule ts ts''"
+  shows "pre_star_rule (ts + ts') ts''"
+proof -
+  obtain t d where ts':"ts' = ts(t $:= ts $ t + d)" and td_ne:"ts $ t + d \<noteq> ts $ t" using pre_star_rule_exists_t_d[OF assms(1)] by blast
+  obtain t' d' where ts'':"ts'' = ts(t' $:= ts $ t' + d')" and t'd'_ne:"ts $ t' + d' \<noteq> ts $ t'" using pre_star_rule_exists_t_d[OF assms(2)] by blast
+  show ?thesis
+  proof (cases "t = t'")
+    case True
+    then show ?thesis sorry
+  next
+    case False
+
+    then show ?thesis 
+      sorry
+  qed
+  oops
+*)
+
+lemma 
+  assumes "pre_star_rule ts ts'"
+  assumes "pre_star_rule ts ts''"
+  assumes "pre_star_rule (ts + ts') ts''"
+  shows "pre_star_rule\<^sup>*\<^sup>* ts (ts + ts' + ts'')"
+  using pre_star_rule_add[OF assms(1)] pre_star_rule_add[of "ts + ts'" "ts''"]
+  using assms(3)
+  by fastforce
+
+lemma 
+  assumes "pre_star_rule ts\<^sub>1 ts\<^sub>2"
+  assumes "pre_star_rule ts\<^sub>1 ts\<^sub>3"
+  shows "\<exists>ts\<^sub>4. pre_star_rule\<^sup>*\<^sup>* ts\<^sub>2 ts\<^sub>4 \<and> ts\<^sub>4 \<le> (ts\<^sub>2 + ts\<^sub>3)"
+proof -
+  obtain t d where ts2:"ts\<^sub>2 = ts\<^sub>1(t $:= ts\<^sub>1 $ t + d)" and td_ne:"ts\<^sub>1 $ t + d \<noteq> ts\<^sub>1 $ t" using pre_star_rule_exists_t_d[OF assms(1)] by blast
+  obtain t' d' where ts3:"ts\<^sub>3 = ts\<^sub>1(t' $:= ts\<^sub>1 $ t' + d')" and t'd'_ne:"ts\<^sub>1 $ t' + d' \<noteq> ts\<^sub>1 $ t'" using pre_star_rule_exists_t_d[OF assms(2)] by blast
+  
+  show ?thesis
+    apply (rule exI[of _ "ts\<^sub>2"])
+qed
+
+
+lemma 
+  assumes "pre_star_rule ts\<^sub>1 ts\<^sub>2"
+  assumes "pre_star_rule ts\<^sub>1 ts\<^sub>3"
+  shows "\<exists>ts'. pre_star_rule\<^sup>*\<^sup>* ts\<^sub>1 ts' \<and> ts' \<le> (ts\<^sub>1 + ts\<^sub>2 + ts\<^sub>3)"
+  using pre_star_rule_add[OF assms(1)]
+
+  using assms(2) unfolding pre_star_rule.simps[of ts\<^sub>1 ts\<^sub>3]
+  apply safe
+  apply simp
+  subgoal for p \<gamma> d p' w d' q
+    using wts_monoid_rtrancl_mono[OF assms(1), of p' "lbl w" d' q] assms(1)
+    apply simp
+    apply auto
+    subgoal for d'a
+      apply (rule exI[of _ "ts\<^sub>2((p, \<gamma>, q) $:= ts\<^sub>2 $ (p, \<gamma>, q) + d * d'a)"])
+      using neq_mono[of "d*d'a" "d*d'" "ts\<^sub>1 $ (p, \<gamma>, q)"]
+      using idempotent_semiring_ord_class.mult_isol[of d'a d' d]
+      apply simp
+      unfolding less_eq_finfun_def
+      apply safe
+      defer 
+      subgoal for a b c
+        apply (cases "(a,b,c) = (p,\<gamma>,q)")
+        by (auto simp add: meet.inf.coboundedI2 meet.le_infI2 meet.le_infI1)
+      using pre_star_rule.intros[of p \<gamma> d p' w d'a q ts\<^sub>2 "ts\<^sub>2 $ (p, \<gamma>, q)", simplified] 
+      apply (cases "ts\<^sub>1 = ts\<^sub>2", simp)
+      using finfun_noteq_exist[of ts\<^sub>1 ts\<^sub>2]
+      apply simp
+      apply (cases "ts\<^sub>1 $ (p, \<gamma>, q) = ts\<^sub>2 $ (p, \<gamma>, q)", simp)
+      apply safe
+      subgoal for a b c
+  oops
+
+lemma pre_star_rule_to_sum_exists:
+  assumes "pre_star_rule ts ts'"
+  shows "\<exists>ts''. pre_star_rule_sum ts ts'' \<and> ts'' \<le> ts'"
+  using assms pre_star_rule_less[OF assms] idem_sum_elem[OF finite_pre_star_rule_set[of ts], of ts']
+  apply (simp add: pre_star_rule_sum.simps)
+  apply safe
+   apply (metis leD meet.inf.bounded_iff meet.inf.orderI)
+  by (simp add: meet.inf.absorb_iff2 meet.inf_left_commute)
+
+lemma pre_star_rule_to_sum_less:
+  assumes "pre_star_rule ts ts'"
+  shows "\<exists>ts''. pre_star_rule_sum ts ts'' \<and> ts'' < ts \<and> ts'' \<le> ts'"
+  using pre_star_rule_to_sum_exists[OF assms] pre_star_rule_sum_less[of ts] by blast
+
+
+lemma 
+  assumes "pre_star_rule ts ts(t $:= ts $ t + d)" 
+  assumes "\<And>x. \<not> pre_star_rule ts(t $:= ts $ t + d) x"
+  assumes "pre_star_rule\<^sup>*\<^sup>* ts ts''"
+  assumes "ts $ t + d \<noteq> ts $ t"
+  shows "ts(t $:= ts $ t + d) \<le> ts''"
+  using assms(3,2,1) unfolding saturated_def
+  using pre_star_rule_less[OF assms(1)]
+  using pre_star_rules_less_eq[OF assms(3)]
+  apply (induct rule: rtranclp.induct, simp)
+  subgoal for a b c
+    apply simp
+    using pre_star_rules_less_eq[of a b]
+    using pre_star_rule_less[of b c]
+    apply simp
+    
+    oops
+
+lemma pre_star_sum_to_rule_exists:
+  assumes "pre_star_rule_sum ts ts'"
+  shows "\<exists>ts''. pre_star_rule\<^sup>*\<^sup>* ts ts'' \<and> ts'' \<le> ts'"
+  using assms 
+  apply (simp add: pre_star_rule_sum.simps)
+  apply safe
+  sorry
+
+lemma 
+(*  assumes "saturation pre_star_rule ts ts'"*)
+  assumes "pre_star_rule ts ts'" and "\<not> Ex (pre_star_rule ts')"
+  shows  "pre_star_rule_sum\<^sup>*\<^sup>* ts ts'"
+proof -
+  obtain ts'' where sum:"pre_star_rule_sum ts ts''" and le1:"ts'' \<le> ts'" 
+    using pre_star_rule_to_sum_exists[of ts ts'] assms(1) by blast
+  then obtain ts''' where rule:"pre_star_rule\<^sup>*\<^sup>* ts ts'''" and le2:"ts''' \<le> ts''" 
+    using pre_star_sum_to_rule_exists[of ts ts''] by blast
+  have le3:"ts''' \<le> ts'" using le1 le2 by fastforce
+  have "ts''' = ts'" using assms(1,2) le3 rule
+    using pre_star_rules_less_eq[OF rule]   
+    sorry
+  then have "ts'' = ts'" using le1 le2 by simp
+
+  oops
+
+lemma saturated_pre_star_rule_to_sum: "saturated pre_star_rule ts \<Longrightarrow> saturated pre_star_rule_sum ts"
+  unfolding saturated_def
+proof -
+  assume "\<not> Ex (pre_star_rule ts)"
+  then have "ts + \<Sum>{ts'. pre_star_rule ts ts'} = ts" by auto
+  then show "\<not> Ex (pre_star_rule_sum ts)" using pre_star_rule_sum.simps[of ts] by blast
+qed
+
+lemma saturated_pre_star_sum_to_rule: "saturated pre_star_rule_sum ts \<Longrightarrow> saturated pre_star_rule ts"
+  unfolding saturated_def using pre_star_rule_to_sum_exists pre_star_rule_sum.cases by blast
+
+
+lemma saturation_pre_star_rule_to_sum:
+  assumes "saturation pre_star_rule ts ts'"
+  shows "saturation pre_star_rule_sum ts ts'"
+proof -
+  have "pre_star_rule_sum\<^sup>*\<^sup>* ts ts'"
+    using assms
+    sorry
+  then show ?thesis using assms saturated_pre_star_rule_to_sum unfolding saturation_def by blast
+qed
+
+
+
+lemma saturation_pre_star_sum_to_rule:
+  assumes "saturation pre_star_rule_sum ts ts'"
+  shows "saturation pre_star_rule ts ts'"
+proof -
+  have "pre_star_rule\<^sup>*\<^sup>* ts ts'"
+    using assms
+    sorry
+  then show ?thesis using assms saturated_pre_star_sum_to_rule unfolding saturation_def by simp
+qed
+
+lemma saturation_pre_star_rule_sum: "saturation pre_star_rule ts ts' \<longleftrightarrow> saturation pre_star_rule_sum ts ts'"
+  using saturation_pre_star_rule_to_sum saturation_pre_star_sum_to_rule by blast
+  
+
+lemma pre_star_rule_sum_pre_star_step: "pre_star_rule_sum\<^sup>*\<^sup>* ts (pre_star_step ts)"
+  unfolding pre_star_step_to_pre_star_rule_sum using pre_star_rule_sum.intros[of ts] by fastforce
+lemma pre_star_rule_sum_pre_star_step_k: "pre_star_rule_sum\<^sup>*\<^sup>* ts ((pre_star_step ^^ k) ts)"
+  by (induct k) (auto elim!: rtranclp_trans intro: pre_star_rule_sum_pre_star_step)
+
+
+lemma saturation_pre_star_exec':"saturation pre_star_rule_sum ts (pre_star_exec ts)"
 proof -
   from pre_star_exec_terminates obtain t where t: "pre_star_loop ts = Some t" by blast
   obtain k where k: "t = (pre_star_step ^^ k) ts" and eq: "pre_star_step t = t"
     using while_option_stop2[OF t[unfolded pre_star_loop_def]] by auto
   have "t = t + \<Sum> {ts. pre_star_rule t ts}" using eq pre_star_step_to_pre_star_rule_sum by simp
   then have "\<And>ts. \<not> pre_star_rule t ts" using pre_star_rule_sum_not_eq by metis
+  then have "t + \<Sum>{ts. pre_star_rule t ts} = t" by auto
+  then have "\<And>ts. \<not> pre_star_rule_sum t ts" using pre_star_rule_sum.simps by blast
   then show ?thesis
     unfolding saturation_def saturated_def pre_star_exec_def o_apply t
-    by (simp_all add: pre_star_rule_pre_star1s k)
+    by (simp_all add: pre_star_rule_sum_pre_star_step_k k)
 qed
+
+lemma saturation_pre_star_exec: "saturation pre_star_rule ts (pre_star_exec ts)"
+  using saturation_pre_star_exec' saturation_pre_star_rule_sum by auto
 
 
 
@@ -508,16 +827,6 @@ proof -
   then have "ts $ (p, \<gamma>, q) > ts' $ (p, \<gamma>, q)" using assms(2) by simp
   then show ?thesis using assms(2) finfun_update_greater[of ts' "(p, \<gamma>, q)" ts] by blast
 qed
-
-lemma pre_star_rule_less:
-  assumes "pre_star_rule A B"
-  shows "A > B"
-  using assms by (auto simp add:pre_star_rule.simps pre_star_rule_less_aux)
-
-lemma pre_star_rule_less_eq:
-  assumes "pre_star_rule A B"
-  shows "A \<ge> B"
-  using pre_star_rule_less[OF assms(1)] by simp
 
 lemma pre_star_saturation_exi:
   shows "\<exists>ts'. saturation pre_star_rule ts ts'"
@@ -1657,8 +1966,6 @@ qed
 lemma countable_monoid_augmented: "countable (monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules))"
   by (fact countable_monoid_rtrancl[OF WPDS.countable_transition_rel[unfolded WPDS_def, OF finite_augmented_WPDS_rules]])
 
-interpretation augmented_WPDS: WPDS augmented_WPDS_rules
-  unfolding WPDS_def WPDS_def by (fact finite_augmented_WPDS_rules)
 
 
 lemma W_automaton_instance[simp]: "W_automaton ts" 
@@ -1669,6 +1976,9 @@ lemma monoidLTS_instance[simp]: "monoidLTS (WPDS.transition_rel augmented_WPDS_r
   by (simp add: monoidLTS_def WPDS.countable_transition_rel[of augmented_WPDS_rules] WPDS_def finite_augmented_WPDS_rules)
 lemma dioidLTS_instance[simp]: "dioidLTS (WPDS.transition_rel augmented_WPDS_rules)"
   by (simp add: dioidLTS_def)
+
+interpretation augmented_WPDS: WPDS augmented_WPDS_rules by simp
+interpretation augmented_dioidLTS: dioidLTS augmented_WPDS.transition_rel by simp
 
 definition augmented_rules_reach_empty where
   "augmented_rules_reach_empty finals p w d = (\<exists>p' \<in> finals. ((Init p, w), d, (p',[])) \<in> monoidLTS.monoid_star (WPDS.transition_rel augmented_WPDS_rules))"

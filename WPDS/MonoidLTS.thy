@@ -564,6 +564,9 @@ definition weight_pre_star :: "('state \<Rightarrow> 'weight) \<Rightarrow> ('st
   "weight_pre_star C c = \<^bold>\<Sum>{l*(C c') | l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
 definition weight_post_star :: "('state \<Rightarrow> 'weight) \<Rightarrow> ('state \<Rightarrow> 'weight)" where
   "weight_post_star C c = \<^bold>\<Sum>{(C c')*l | c' l. c' \<Midarrow>l\<Rightarrow>\<^sup>* c}"
+definition weight_reach :: "('state \<Rightarrow> 'weight) \<Rightarrow> ('state \<Rightarrow> 'weight) \<Rightarrow> 'weight" where
+  "weight_reach C C' = \<^bold>\<Sum>{(C c) * l * (C' c') | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+
 end
 
 

@@ -47,6 +47,14 @@ next
   thus "x \<le> y" by simp
 qed
 
+lemma neq_mono: "a \<le> b \<Longrightarrow> c + b \<noteq> c \<Longrightarrow> c + a \<noteq> c"
+  by (metis meet.inf.absorb1 meet.inf.coboundedI2)
+lemma neq_mono_less: "a \<le> b \<Longrightarrow> c + b \<noteq> c \<Longrightarrow> c + a < c"
+  unfolding less_def using neq_mono by simp
+lemma add_less_mono: "a \<le> b \<Longrightarrow> c + b < c \<Longrightarrow> c + a < c"
+  unfolding less_def using neq_mono by simp
+
+
 end
 
 \<comment> \<open>Many lemmas and proofs in these classes are heavily inspired from AFP theory Kleene_Algebra.Dioid, 
@@ -350,6 +358,7 @@ end
 class wfp = order +
   assumes no_infinite_decending: "\<nexists>f. \<forall>i. (f i) > (f (Suc i))"
 begin
+
 lemma strict_le_is_less:"strict (\<le>) = (<)"
   using dual_order.strict_iff_not by presburger
 lemma transp_on_less_eq: "transp_on A (\<le>)"
@@ -360,6 +369,7 @@ lemma qo_on_less_eq: "qo_on (\<le>) A"
 lemma wfp_on_class: "wfp_on (strict (\<le>)) A"
   unfolding wfp_on_def using no_infinite_decending strict_le_is_less by blast
 lemma "irreflp_on A (strict (\<le>))" by (fact irreflp_on_strict)
+lemma wfP_strict_class: "wfP (strict (\<le>))" using wfp_on_UNIV wfp_on_class[of UNIV] by blast
 
 lemma no_antichain_on_implies_wqo_on: "(\<nexists>f. antichain_on (\<le>) f A) \<Longrightarrow> wqo_on (\<le>) A"
   using wqo_wf_and_no_antichain_conv[OF qo_on_less_eq] wfp_on_class by simp
