@@ -674,6 +674,18 @@ lemma pre_star_rule_to_sum_less:
   using pre_star_rule_to_sum_exists[OF assms] pre_star_rule_sum_less[of ts] by blast
 
 
+lemma saturated_pre_star_rule_less_eq:
+  assumes "pre_star_rule ts\<^sub>1 ts\<^sub>2"
+  assumes "pre_star_rule ts\<^sub>1 ts\<^sub>3" 
+  assumes "saturated pre_star_rule ts\<^sub>3"
+  shows "ts\<^sub>3 \<le> ts\<^sub>2"
+  using pre_star_rule_confluence_ish[OF assms(1,2)]
+  apply safe
+  subgoal for ts\<^sub>4 using assms(3)[unfolded saturated_def]
+    by - (induct rule: converse_rtranclp_induct, simp_all)
+  done
+
+
 lemma 
   assumes "pre_star_rule ts ts(t $:= ts $ t + d)" 
   assumes "\<And>x. \<not> pre_star_rule ts(t $:= ts $ t + d) x"
@@ -3021,6 +3033,23 @@ next
   qed
 qed
 
+
+definition pre_star_exec' where
+ "pre_star_exec' = augmented_WPDS.pre_star_exec (K$ 0)"
+
+definition weight_reach' where 
+  "weight_reach' = augmented_dioidLTS.weight_reach"
+
+lemma 
 end
 
+
+lemma 
+  assumes "binary_aut ts"
+    and "binary_aut ts'"
+  shows "dioidLTS.SumInf {d| c d. d = dioidLTS.accepts (WPDS_with_W_automata.intersff ts (WPDS_with_W_automata.pre_star_exec' \<Delta> ts')) (finals\<times>finals') c} = 
+         WPDS_with_W_automata.weight_reach' \<Delta> ts' (dioidLTS.accepts ts finals) (dioidLTS.accepts ts' finals')" 
+  oops
+(* TODO: Make executable version of "dioidLTS.SumInf {d | c d. d = dioidLTS.accepts ts finals c}" *)
+  
 end
