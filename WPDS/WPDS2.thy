@@ -53,6 +53,9 @@ notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 notation l_step_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80)
 notation monoid_star_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [90,90,100] 100) 
 
+definition weight_reach' where 
+  "weight_reach' = dioidLTS.weight_reach transition_rel"
+
 lemma step_relp_def2:
   "(p, \<gamma>w') \<Midarrow>d\<Rightarrow> (p',ww') \<longleftrightarrow> (\<exists>\<gamma> w' w. \<gamma>w' = \<gamma>#w' \<and> ww' = (lbl w)@w' \<and> (p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
   by (meson l_step_relp_def transition_rel.simps)
@@ -686,6 +689,133 @@ lemma saturated_pre_star_rule_less_eq:
   done
 
 
+lemma saturated_pre_star_rule2_less_eq:
+  assumes "pre_star_rule\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2"
+  assumes "pre_star_rule ts\<^sub>1 ts\<^sub>3" 
+  shows "\<exists>ts\<^sub>4. pre_star_rule\<^sup>*\<^sup>* ts\<^sub>3 ts\<^sub>4 \<and> ts\<^sub>4 \<le> ts\<^sub>2"
+  using assms
+  apply (induct arbitrary: ts\<^sub>3 rule: converse_rtranclp_induct)
+  using pre_star_rule_less_eq
+   apply blast
+  subgoal for y z ts\<^sub>3
+    using pre_star_rule_confluence_ish[of y ts\<^sub>3 z]
+    apply simp
+    apply safe
+    subgoal for ts\<^sub>4
+      apply (cases "ts\<^sub>4 = z")
+      apply simp
+
+    using pre_star_rule_confluence_ish[of y z ts\<^sub>3]
+    oops
+
+
+lemma saturated_pre_star_rule_less_eq:
+  assumes "pre_star_rule ts\<^sub>1 ts\<^sub>2"
+  assumes "pre_star_rule\<^sup>+\<^sup>+ ts\<^sub>1 ts\<^sub>3" 
+  assumes "saturated pre_star_rule ts\<^sub>3"
+  shows "ts\<^sub>3 \<le> ts\<^sub>2"
+  using assms(2,1,3)
+  apply (induct rule: converse_tranclp_induct)
+   apply (simp add: saturated_pre_star_rule_less_eq)
+  subgoal for y z
+    apply simp
+  using pre_star_rule_confluence_ish[OF assms(1)]
+  oops
+
+(*
+lemma saturated_pre_star_rule_less_eq':
+  assumes "pre_star_rule\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2"
+  assumes "pre_star_rule\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>3" 
+  assumes "saturated pre_star_rule ts\<^sub>3"
+  shows "ts\<^sub>3 \<le> ts\<^sub>2"
+  using assms(2,1,3)
+  apply (induct arbitrary: ts\<^sub>2 rule: converse_rtranclp_induct)
+  subgoal for ts\<^sub>2
+    by (induct rule: converse_rtranclp_induct, simp_all add: saturated_def)
+  subgoal for y z ts\<^sub>2
+    apply simp
+    apply (rotate_tac,rotate_tac,rotate_tac)
+    apply (induct rule: converse_rtranclp_induct)
+    using pre_star_rules_less_eq[OF converse_rtranclp_into_rtranclp[of pre_star_rule ts\<^sub>2 z ts\<^sub>3]]
+     apply fastforce
+    subgoal for y za
+      apply simp
+      using pre_star_rule_confluence_ish[of y za z]
+      apply simp
+      apply safe
+      subgoal for ts\<^sub>4
+      apply auto
+
+      using pre_star_rules_less_eq[of za ts\<^sub>2]
+      apply simp
+    using rtranclp.rtrancl_into_rtrancl[of pre_star_rule ts\<^sub>1 y z]
+    apply simp
+    using pre_star_rule_confluence_ish[of y ts\<^sub>2 z]
+          pre_star_rules_less_eq[of z ts\<^sub>3]
+using rtranclp.rtrancl_into_rtrancl[of pre_star_rule ts\<^sub>1 y z]
+    apply simp
+    apply safe
+    subgoal for ts\<^sub>4
+      apply (cases "ts\<^sub>3 = ts\<^sub>4", simp)
+    using saturated_pre_star_rule_less_eq[of y z ts\<^sub>3]
+    apply simp
+*)
+lemma "ts\<^sub>1 \<noteq> ts\<^sub>2 \<Longrightarrow> pre_star_rule\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2 \<Longrightarrow> \<exists>ts'. pre_star_rule ts\<^sub>1 ts' \<and>  pre_star_rule\<^sup>*\<^sup>* ts' ts\<^sub>2"
+  by (metis converse_rtranclpE)
+
+lemma "ts\<^sub>1 \<noteq> ts\<^sub>2 \<Longrightarrow> pre_star_rule\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2 \<Longrightarrow> \<exists>ts'. pre_star_rule\<^sup>*\<^sup>* ts\<^sub>1 ts' \<and>  pre_star_rule ts' ts\<^sub>2"
+  by (metis rtranclp.cases)
+
+lemma saturated_pre_star_rule_less_eq':
+  assumes "pre_star_rule\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2"
+  assumes "pre_star_rule ts\<^sub>1 ts\<^sub>3" 
+  assumes "saturated pre_star_rule ts\<^sub>3"
+  shows "ts\<^sub>3 \<le> ts\<^sub>2"
+  using assms
+  apply (cases "ts\<^sub>1 = ts\<^sub>2", simp add: pre_star_rule_less_eq)
+  apply (erule converse_rtranclpE, simp)
+  subgoal for ts'
+    using pre_star_rules_less_eq[of ts' ts\<^sub>2]
+    using saturated_pre_star_rule_less_eq[OF _ assms(2), of ts']
+    apply simp
+  apply (induct rule: converse_rtranclp_induct)
+  using pre_star_rule_less_eq
+   apply simp
+  subgoal for y z
+    apply simp
+    using saturated_pre_star_rule_less_eq[of y z ts\<^sub>3]
+          pre_star_rules_less_eq[of z ts\<^sub>2]
+    apply simp
+    using pre_star_rule_confluence_ish[of y z ts\<^sub>3]
+    oops
+
+lemma 
+  assumes "pre_star_rule\<^sup>*\<^sup>* ts ts''"
+  assumes "pre_star_rule ts ts'" 
+  assumes "\<And>x. \<not> pre_star_rule ts' x"
+  shows "ts' \<le> ts''"
+  using assms
+  apply (induct rule: converse_rtranclp_induct)
+  using pre_star_rules_less_eq[OF rtranclp.rtrancl_into_rtrancl]
+   apply auto[1]
+  subgoal for y z
+    apply simp
+    using pre_star_rule_confluence_ish[of y ts' z]
+    using pre_star_rule_confluence_ish[of y z ts']
+    apply simp
+    apply (erule exE)
+    subgoal for ts\<^sub>4
+      apply (cases "ts' = ts\<^sub>4")
+      apply simp
+
+   apply (fastforce dest: pre_star_rule_less[of _ ts'])
+  apply simp
+  subgoal for a b c
+  using pre_star_rule_confluence_ish
+   apply auto
+  oops
+
+
 lemma 
   assumes "pre_star_rule ts ts(t $:= ts $ t + d)" 
   assumes "\<And>x. \<not> pre_star_rule ts(t $:= ts $ t + d) x"
@@ -747,7 +877,7 @@ lemma saturation_pre_star_rule_to_sum:
   shows "saturation pre_star_rule_sum ts ts'"
 proof -
   have "pre_star_rule_sum\<^sup>*\<^sup>* ts ts'"
-    using assms
+    using assms unfolding saturation_def
     sorry
   then show ?thesis using assms saturated_pre_star_rule_to_sum unfolding saturation_def by blast
 qed
@@ -759,7 +889,7 @@ lemma saturation_pre_star_sum_to_rule:
   shows "saturation pre_star_rule ts ts'"
 proof -
   have "pre_star_rule\<^sup>*\<^sup>* ts ts'"
-    using assms
+    using assms unfolding saturation_def
     sorry
   then show ?thesis using assms saturated_pre_star_sum_to_rule unfolding saturation_def by simp
 qed
@@ -3040,9 +3170,79 @@ definition pre_star_exec' where
 definition weight_reach' where 
   "weight_reach' = augmented_dioidLTS.weight_reach"
 
+
+thm weight_reach_def
+
 lemma 
+  assumes "saturation (augmented_WPDS.pre_star_rule) (K$ 0) A"
+    and "binary_aut ts"
+    and "binary_aut ts'"
+  shows "dioidLTS.weight_reach (wts_to_weightLTS (intersff ts' A)) (\<lambda>p. if is_Init (fst p) \<and> is_Init (snd p) then 1 else 0) (\<lambda>p. if p \<in> finals'\<times>finals then 1 else 0) 
+       = weight_reach' (accepts ts' finals') (accepts ts finals)"
+  oops
+
+
+lemma 
+  assumes "saturation (augmented_WPDS.pre_star_rule) (K$ 0) A"
+    and "binary_aut ts"
+    and "binary_aut ts'"
+    and "accepts ts' finals' c = 1"
+  shows "accepts (intersff ts' A) (finals'\<times>finals) c = weight_pre_star (accepts_ts finals) c" (* \<^bold>\<Sum> {d. }"*)
+  oops
+
+
 end
 
+lemma 
+(*  assumes "saturation (WPDS_with_W_automata.augmented_WPDS.pre_star_rule) (K$ 0) A"*)
+  assumes "binary_aut ts"
+    and "binary_aut ts'"
+  shows "WPDS.weight_reach' \<Delta> (dioidLTS.accepts ts' finals') (dioidLTS.accepts ts finals) = 
+        dioidLTS.weight_reach (wts_to_weightLTS (WPDS_with_W_automata.intersff ts' A)) (\<lambda>p. if is_Init (fst p) \<and> is_Init (snd p) then 1 else 0) (\<lambda>p. if p \<in> finals'\<times>finals then 1 else 0)"
+  oops
+
+term WPDS.pre_star_rule
+
+inductive weight_reach_rule :: "('state, 'weight) transition set \<Rightarrow> ('state \<Rightarrow>f 'weight::bounded_idempotent_semiring) saturation_rule"
+  for ts :: "('state, 'weight) transition set" where
+      "(p,d,q) \<in> ts \<Longrightarrow> (state_weight $ p) * d + state_weight $ q \<noteq> state_weight $ q 
+       \<Longrightarrow> weight_reach_rule ts state_weight state_weight(q $:= state_weight $ q + state_weight $ p * d)"
+
+lemma "saturation (weight_reach_rule ts) A = P" oops
+
+
+definition weight_reach_step where "weight_reach_step ts state_weight = update_wts state_weight (\<Union>(p,d,q)\<in>ts. {(q,state_weight $ p * d)})"
+
+definition "weight_reach_loop ts = while_option (\<lambda>s. weight_reach_step ts s \<noteq> s) (weight_reach_step ts)"
+definition "weight_reach_exec ts = the o weight_reach_loop ts"
+
+lemma
+  assumes "finite ts"
+  assumes "saturation (weight_reach_rule ts) S1 S2"
+  shows "weight_reach_exec ts S1 = S2"
+  oops
+(* Finite number of states. *)
+(* inductive weight_reach_rule *)
+(* while_option  *)
+
+definition finfun_sum :: "('a \<Rightarrow>f 'b::bounded_idempotent_semiring) \<Rightarrow> 'a set \<Rightarrow> 'b" where
+  "finfun_sum f finals = \<Sum>{f$s |s. s \<in> finals}"
+
+definition "weight_reach_sum_exec ts inits finals = finfun_sum (weight_reach_exec ts (update_wts (K$ 0) {(p,1) |p. p \<in> inits})) finals"
+
+lemma weight_reach_sum_exec_correct[code]:
+  "dioidLTS.weight_reach ts (\<lambda>p. if p \<in> inits then 1 else 0) (\<lambda>p. if p \<in> finals then 1 else 0) = weight_reach_sum_exec ts inits finals"
+  oops
+
+lemma "dioidLTS.weight_reach (wts_to_weightLTS (WPDS_with_W_automata.intersff ts' A)) (\<lambda>p. if is_Init (fst p) \<and> is_Init (snd p) then 1 else 0) (\<lambda>p. if p \<in> finals'\<times>finals then 1 else 0)
+  = weight_reach_sum_exec ts inits finals"
+
+lemma big_good_correctness_code:
+assumes "binary_aut ts"
+    and "binary_aut ts'"
+  shows "WPDS.weight_reach' \<Delta> (dioidLTS.accepts ts finals) (dioidLTS.accepts ts' finals') = 
+         weight_reach_sum_exec (WPDS_with_W_automata.intersff ts (WPDS_with_W_automata.pre_star_exec' \<Delta> ts')) inits (finals \<times> finals')"
+  oops
 
 lemma 
   assumes "binary_aut ts"
