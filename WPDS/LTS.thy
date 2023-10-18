@@ -340,34 +340,6 @@ inductive transition_of :: "('state, 'label) transition \<Rightarrow> 'state lis
   "transition_of (s1,\<gamma>,s2) (s1#s2#ss, \<gamma>#w)"
 | "transition_of (s1,\<gamma>,s2) (ss, w) \<Longrightarrow> 
    transition_of (s1,\<gamma>,s2) (s#ss, \<mu>#w)"
-
-lemma path_with_word_induct_non_empty_word: 
-  "(x10, x20, x30, x40) \<in> trans_star_states \<Longrightarrow> x20 \<noteq> [] \<Longrightarrow>
-   (\<And>p \<gamma> q'. (p, \<gamma>, q') \<in> transition_relation \<Longrightarrow> P p [\<gamma>] [p, q'] q') \<Longrightarrow>
-   (\<And>p \<gamma> q' w ss q. (p, \<gamma>, q') \<in> transition_relation \<Longrightarrow>
-                     w \<noteq> [] \<Longrightarrow> 
-                     (q', w, ss, q) \<in> trans_star_states \<Longrightarrow> 
-                     P q' w ss q \<Longrightarrow> 
-                     P p (\<gamma> # w) (p # ss) q)
-   \<Longrightarrow> P x10 x20 x30 x40"
-proof (induction rule: trans_star_states.induct)
-  case (trans_star_states_refl p)
-  then show ?case by auto
-next
-  case (trans_star_states_step p \<gamma> q' w ss q)
-  show ?case
-  proof (cases "w = []")
-    case True
-    then show ?thesis
-      by (metis LTS.trans_star_states.simps list.distinct(1) trans_star_states_step.hyps(1) 
-          trans_star_states_step.hyps(2) trans_star_states_step.prems(2))
-  next
-    case False
-    then show ?thesis
-      using trans_star_states_step.IH trans_star_states_step.hyps(1) trans_star_states_step.hyps(2) 
-        trans_star_states_step.prems(2) trans_star_states_step.prems(3) by force
-  qed
-qed
                                                   
 lemma path_with_word_not_empty[simp]: "\<not>([],w) \<in> path_with_word"
   using LTS.path_with_word.cases by blast
