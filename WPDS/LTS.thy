@@ -11,6 +11,12 @@ type_synonym ('state, 'label) transition = "'state \<times> 'label \<times> 'sta
 
 subsection \<open>LTS functions\<close>
 
+fun trans_hd :: "('state, 'label) transition \<Rightarrow> 'state" where
+  "trans_hd (s1,\<gamma>,s2) = s1"
+
+fun trans_tl :: "('state, 'label) transition \<Rightarrow> 'state" where
+  "trans_tl (s1,\<gamma>,s2) = s2"
+
 fun transitions_of :: "'state list * 'label list \<Rightarrow> ('state, 'label) transition multiset" where
   "transitions_of (s1#s2#ss, \<gamma>#w) = {# (s1, \<gamma>, s2) #} + transitions_of (s2#ss, w)"
 | "transitions_of ([s1],_) = {#}"
@@ -67,7 +73,7 @@ begin
 text \<open>More definitions.\<close>
 
 definition step_relp  :: "'state \<Rightarrow> 'state \<Rightarrow> bool" (infix "\<Rightarrow>" 80) where
-  "(c \<Rightarrow> c') \<longleftrightarrow> (\<exists>l. (c, l, c') \<in> transition_relation)"
+  "c \<Rightarrow> c' \<longleftrightarrow> (\<exists>l. (c, l, c') \<in> transition_relation)"
 
 abbreviation step_starp :: "'state \<Rightarrow> 'state \<Rightarrow> bool" (infix "\<Rightarrow>\<^sup>*" 80) where
   "c \<Rightarrow>\<^sup>* c' \<equiv> step_relp\<^sup>*\<^sup>* c c'"
@@ -108,17 +114,30 @@ inductive_set path_with_word :: "('state list * 'label list) set" where
   path_with_word_refl[iff]: "([s],[]) \<in> path_with_word"
 | path_with_word_step: "(s'#ss, w) \<in> path_with_word \<Longrightarrow> (s,l,s') \<in> transition_relation \<Longrightarrow> (s#s'#ss,l#w) \<in> path_with_word"
 
-definition get_start :: "('state list \<times> 'label list) \<Rightarrow> 'state" where
-  "get_start \<pi> = hd (fst \<pi>)"
+definition start_of :: "('state list \<times> 'label list) \<Rightarrow> 'state" where
+  "start_of \<pi> = hd (fst \<pi>)"
 
-definition get_end :: "('state list \<times> 'label list) \<Rightarrow> 'state" where
-  "get_end \<pi> = last (fst \<pi>)"
+definition end_of :: "('state list \<times> 'label list) \<Rightarrow> 'state" where
+  "end_of \<pi> = last (fst \<pi>)"
+
+abbreviation path_with_word_from :: "'state \<Rightarrow> ('state list * 'label list) set" where
+  "path_with_word_from q == {\<pi>. \<pi> \<in> path_with_word \<and> start_of \<pi> = q}"
+
+abbreviation path_with_word_to :: "'state \<Rightarrow> ('state list * 'label list) set" where
+  "path_with_word_to q == {\<pi>. \<pi> \<in> path_with_word \<and> end_of \<pi> = q}"
+
+abbreviation path_with_word_from_to :: "'state \<Rightarrow> 'state \<Rightarrow> ('state list * 'label list) set" where
+  "path_with_word_from_to start end == {\<pi>. \<pi> \<in> path_with_word \<and> start_of \<pi> = start \<and> end_of \<pi> = end}"
+
+inductive_set transition_list_path :: "('state, 'label) transition list set" where
+  "(q, l, q') \<in> transition_relation \<Longrightarrow> [(q, l, q')] \<in> transition_list_path"
+| "(q, l, q') \<in> transition_relation \<Longrightarrow> (q', l', q'') # ts \<in> transition_list_path \<Longrightarrow> (q, l, q') # (q', l', q'') # ts \<in> transition_list_path"
 
 lemma singleton_path_start_end:
   assumes "([s], []) \<in> LTS.path_with_word pg"
-  shows "get_start ([s], []) = get_end ([s], [])"
+  shows "start_of ([s], []) = end_of ([s], [])"
   using assms
-  by (simp add: get_end_def get_start_def) 
+  by (simp add: end_of_def start_of_def) 
 
 lemma path_with_word_length:
   assumes "(ss, w) \<in> path_with_word"
@@ -150,7 +169,6 @@ next
   then show ?case
     by (metis (no_types) LTS.path_with_word.path_with_word_refl LTS.path_with_word.path_with_word_step LTS.path_with_word_length One_nat_def Suc_1 Suc_inject Suc_leI Suc_le_mono butlast.simps(2) length_0_conv length_Cons list.distinct(1) list.size(4) not_gr0)
 qed
-
 
 lemma transition_butlast:
   assumes "(ss, w) \<in> path_with_word"
@@ -216,6 +234,64 @@ next
 
     then have "P (ss' @ [s, s']) (w' @ [l])"
       using Suc(5)[of ss' s w' l s'] ss'w'_path tr by auto
+    then show ?thesis
+      using s_split w_split by auto
+  qed
+qed
+
+lemma path_with_word_from_induct_reverse: 
+  "(ss, w) \<in> path_with_word_from start \<Longrightarrow>
+   (\<And>s. P [s] []) \<Longrightarrow>
+   (\<And>ss s w l s'. (ss @ [s], w) \<in> path_with_word_from start \<Longrightarrow> P (ss @ [s]) w \<Longrightarrow> (s, l, s') \<in> transition_relation \<Longrightarrow> P (ss @ [s, s']) (w @ [l])) \<Longrightarrow>
+   P ss w"
+proof (induction "length ss" arbitrary: ss w)
+  case 0
+  then show ?case
+    by (metis (no_types, lifting) Suc_eq_plus1 mem_Collect_eq nat.simps(3) path_with_word_length)
+next
+  case (Suc n)
+
+  show ?case
+  proof (cases "n = 0")
+    case True
+    then show ?thesis
+      using  Suc.prems(1,2) length_0_conv list.distinct(1) path_with_word.cases
+      by (metis (no_types, lifting) Suc.hyps(2) length_Suc_conv list.inject mem_Collect_eq)
+  next
+    case False
+    define ss' where "ss' = butlast (butlast ss)"
+    define s where "s = last (butlast ss)"
+    define s' where "s' = last ss"
+    define w' where "w' = butlast w"
+    define l where "l = last w"
+
+    have len_ss: "length ss \<ge> 2"
+      using False Suc.hyps(2) by linarith
+
+    then have s_split: "ss' @ [s, s'] = ss"
+      by (metis One_nat_def Suc_1 Suc_le_mono Zero_not_Suc append.assoc append.simps(1) append_Cons append_butlast_last_id le_less length_append_singleton list.size(3) s'_def s_def ss'_def zero_order(3))
+
+    have w_split: "w' @ [l] = w"
+      by (metis (no_types, lifting) False LTS.path_with_word_length One_nat_def Suc.hyps(2) Suc.prems(1) Suc_inject add.right_neutral add_Suc_right l_def list.size(3) mem_Collect_eq snoc_eq_iff_butlast w'_def)
+
+    have ss'w'_path: "(ss' @ [s], w') \<in> path_with_word"
+      using Suc(3) path_with_word_butlast len_ss
+      by (metis (no_types, lifting) butlast.simps(2) butlast_append list.discI mem_Collect_eq not_Cons_self2 s_split w'_def)
+
+    have ss'w'_path_from: "(ss' @ [s], w') \<in> path_with_word_from start"
+      using Suc(3) butlast.simps(2) start_of_def list.sel(1) list.simps(3) mem_Collect_eq path_with_word.simps prod.sel(1) s_def snoc_eq_iff_butlast ss'_def ss'w'_path w_split by (metis (no_types, lifting) hd_append)
+
+    have tr: "(s, l, s') \<in> transition_relation"
+      using Suc(3) s'_def s_def l_def transition_butlast len_ss by blast
+
+    have nl: "n = length (ss' @ [s])"
+      using False Suc.hyps(2) ss'_def by force
+
+    have "P (ss' @ [s]) w'"
+      using Suc(1)[of "ss' @ [s]" w', OF nl ss'w'_path_from Suc(4) ] Suc(5) by fastforce
+
+    then have "P (ss' @ [s, s']) (w' @ [l])"
+      using Suc(5)[of ss' s w' l s'] tr ss'w'_path_from by blast
     then show ?thesis
       using s_split w_split by auto
   qed
