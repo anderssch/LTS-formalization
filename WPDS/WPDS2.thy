@@ -1221,7 +1221,8 @@ proof -
       step_relp_seq by (force simp add: countable_monoid_star_all dissect_set)
   also have "... \<le> (\<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* pi) * (\<^bold>\<Sigma>(pi,w'') \<Rightarrow>\<^sup>* p2)"
     using SumInf_left_distr[of "{d'. (pi, w'') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}" "\<^bold>\<Sum> {d'. (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (pi, [])}"] 
-      SumInf_of_SumInf_right_distr_simple by (force simp add: countable_monoid_star_all dissect_set)
+          SumInf_of_SumInf_right_distr_simple[of "\<lambda>d'. (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (pi, [])"]
+    by (simp add: dissect_set countable_monoid_star_all)
   also have "... \<le> d1 * d2"
     using assms BoundedDioid.mult_isol_var by auto
   finally 
@@ -1273,7 +1274,8 @@ proof (induction w arbitrary: d p)
   have "(p, []) \<Midarrow>1\<Rightarrow>\<^sup>* (p', [])"
     using Nil monoid_star_pop by fastforce
   have "d \<ge> \<^bold>\<Sigma>(p, []) \<Rightarrow>\<^sup>* p'" 
-    using countable_SumInf_elem  \<open>(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])\<close> \<open>d = 1\<close> 
+    using countable_SumInf_elem[of "{d'. (p, []) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}" d]
+          \<open>(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])\<close> \<open>d = 1\<close> 
     by (simp add: countable_monoid_star_all dissect_set)
   then show ?case .
 next
