@@ -76,14 +76,7 @@ lemma monoidLTS_monoid_star_mono:
 *)
 
 
-
-\<comment> \<open>If the @{typ 'weight} of a LTS is a dioid with additive and multiplicative identities, 
-    we can express the meet-over-all-paths value as a generalization of pre-star and post-star.\<close>
-locale dioidLTS = monoidLTS transition_relation
-  for transition_relation :: "('state::countable, 'weight::bounded_idempotent_semiring) transition set"
-begin
-
-definition path_seq :: "'weight set \<Rightarrow> nat \<Rightarrow> 'weight" where
+definition path_seq :: "'weight::bounded_idempotent_semiring set \<Rightarrow> nat \<Rightarrow> 'weight" where
   "path_seq W \<equiv> if W = {} then (\<lambda>_. 0) else SOME f. \<forall>l. l \<in> W \<longleftrightarrow> (\<exists>i. f i = l)"
 
 lemma path_seq_empty[simp]: "path_seq {} i = 0"
@@ -124,8 +117,10 @@ lemma path_seq_notin_set_zero:
   by simp
 
 
-definition SumInf :: "'weight set \<Rightarrow> 'weight" ("\<^bold>\<Sum>") where
+definition SumInf :: "'weight::bounded_idempotent_semiring set \<Rightarrow> 'weight" ("\<^bold>\<Sum>") where
   "\<^bold>\<Sum> W = suminf (path_seq W)"
+
+
 
 lemma countable_obtain_seq:
   assumes "countable W"
@@ -133,6 +128,7 @@ lemma countable_obtain_seq:
   using assms unfolding countable_def inj_on_def by presburger
 
 lemma countable_SumInf_exists_sumseq_bound:
+  fixes W :: "'weight::bounded_idempotent_semiring set"
   assumes "countable W"
   shows "\<exists>f N. \<forall>n\<ge>N. \<^bold>\<Sum> W = sum_seq f n \<and> {f i | i. i < N} \<subseteq> W"
 proof (cases "W = {}")
@@ -174,7 +170,7 @@ lemma countable_suminf_obtains_sumseq:
   using countable_SumInf_exists_sumseq_bound[OF assms] by fast
 
 lemma SumInf_exists_finite_subset:
-  fixes W :: "'weight set"
+  fixes W :: "'weight::bounded_idempotent_semiring set"
   assumes "countable W"
   shows "\<exists>W'. W' \<subseteq> W \<and> finite W' \<and> \<^bold>\<Sum> W = \<Sum> W'"
 proof -
@@ -188,13 +184,13 @@ proof -
 qed
 
 lemma SumInf_obtains_finite_subset:
-  fixes W :: "'weight set"
+  fixes W :: "'weight::bounded_idempotent_semiring set"
   assumes "countable W"
   obtains W' where "W' \<subseteq> W" and "finite W'" and "\<^bold>\<Sum> W = \<Sum> W'"
   using SumInf_exists_finite_subset[OF assms] by blast
 
 lemma countable_SumInf_elem:
-  fixes W :: "'weight set"
+  fixes W :: "'weight::bounded_idempotent_semiring set"
   assumes "countable W"
   assumes "w \<in> W"
   shows "\<^bold>\<Sum> W \<le> w"
@@ -230,7 +226,7 @@ proof -
 qed
 
 lemma singleton_SumInf[simp]: "\<^bold>\<Sum> {w} = w"
-  using finite_SumInf_is_sum by simp
+  using finite_SumInf_is_sum[of "{w}"] by simp
 
 lemma SumInf_mono: 
   assumes "A \<subseteq> B"
@@ -266,7 +262,7 @@ proof -
 qed
 
 lemma sum_insert[simp]:
-  assumes "finite (D' ::'weight set)"
+  assumes "finite (D' ::'weight::bounded_idempotent_semiring set)"
   shows "\<Sum> (insert d D') = d + \<Sum> D'"
   using assms
 proof (induction)
@@ -510,7 +506,7 @@ lemma SumInf_bounded_by_SumInf_if_members_bounded:
 
 lemma SumInf_mult_isor:
   assumes "countable {d . X d}"
-  assumes "d \<le> (d' :: 'weight)"
+  assumes "d \<le> (d' :: 'weight::bounded_idempotent_semiring)"
   shows "\<^bold>\<Sum> {d * d''| d''. X d''} \<le> \<^bold>\<Sum> {d' * d''| d''. X d''}"
   by (rule SumInf_bounded_by_SumInf_if_members_bounded)
      (use assms idempotent_semiring_ord_class.mult_isor countable_setcompr[of X] in auto)
@@ -559,6 +555,12 @@ proof -
     using SumInf_equal_with_0[OF countable_setcompr[OF assms(1), of f]] by simp
 qed
 
+
+\<comment> \<open>If the @{typ 'weight} of a LTS is a dioid with additive and multiplicative identities, 
+    we can express the meet-over-all-paths value as a generalization of pre-star and post-star.\<close>
+locale dioidLTS = monoidLTS transition_relation
+  for transition_relation :: "('state::countable, 'weight::bounded_idempotent_semiring) transition set"
+begin
 
 definition weight_pre_star :: "('state \<Rightarrow> 'weight) \<Rightarrow> ('state \<Rightarrow> 'weight)" where
   "weight_pre_star C c = \<^bold>\<Sum>{l*(C c') | l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
