@@ -180,15 +180,41 @@ lemma accepts_def2:
 inductive pre_star_rule :: "('ctr_loc, 'label, 'weight) w_transitions saturation_rule" where
   add_trans: "((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))
       \<Longrightarrow> (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)
-      \<Longrightarrow> (ts $ (p, \<gamma>, q)) = d''
-      \<Longrightarrow> (d'' + (d * d')) \<noteq> d''
-      \<Longrightarrow> pre_star_rule ts ts((p, \<gamma>, q) $:= d'' + (d * d'))"
+      \<Longrightarrow> (ts $ (p, \<gamma>, q) + (d * d')) \<noteq> ts $ (p, \<gamma>, q)
+      \<Longrightarrow> pre_star_rule ts ts((p, \<gamma>, q) $:= ts $ (p, \<gamma>, q) + (d * d'))"
+
 
 lemma pre_star_rule_elim2:
   assumes "pre_star_rule ts ts'"
   shows "\<exists>p \<gamma> d p' w d' q. ts' = ts((p, \<gamma>, q) $:= ts $ (p, \<gamma>, q) + (d * d')) \<and> (p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w) \<and> 
           (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> ts $ (p, \<gamma>, q) + (d * d') \<noteq> ts $ (p, \<gamma>, q)"
   using assms unfolding pre_star_rule.simps[of ts ts'] by presburger
+
+inductive pre_star_rule_Anders :: "('ctr_loc, 'label, 'weight) w_transitions saturation_rule" where
+  add_trans_Anders: "((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))
+      \<Longrightarrow> (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)
+      \<Longrightarrow> d' \<le> d''
+      \<Longrightarrow> (ts $ (p, \<gamma>, q) + (d * d'')) \<noteq> ts $ (p, \<gamma>, q)
+      \<Longrightarrow> pre_star_rule_Anders ts ts((p, \<gamma>, q) $:= ts $ (p, \<gamma>, q) + (d * d''))"
+
+lemma pre_star_rule_Anders_elim2:
+  assumes "pre_star_rule_Anders ts ts'"
+  shows "\<exists>p \<gamma> d p' w d' q d''. ts' = ts((p, \<gamma>, q) $:= ts $ (p, \<gamma>, q) + (d * d'')) \<and> (p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w) \<and> 
+          (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> d' \<le> d'' \<and> ts $ (p, \<gamma>, q) + (d * d'') \<noteq> ts $ (p, \<gamma>, q)"
+  using assms unfolding pre_star_rule_Anders.simps[of ts ts'] by presburger
+
+lemma pre_star_rule_Anders_less_eq: "pre_star_rule_Anders ts ts' \<Longrightarrow> ts' \<le> ts"
+  unfolding less_eq_finfun_def
+  unfolding pre_star_rule_Anders.simps
+  apply simp
+  apply safe
+  subgoal for p \<gamma> d p' w d' q d'' a b c
+    by (cases "(a, b, c) = (p, \<gamma>, q)", auto)
+  done
+lemma pre_star_rule_Anders_star_less_eq: "pre_star_rule_Anders\<^sup>*\<^sup>* ts ts' \<Longrightarrow> ts' \<le> ts"
+  apply (induct rule: rtranclp_induct, simp)
+  using pre_star_rule_Anders_less_eq by fastforce
+
 
 lemma pre_star_rule_less_eq: "pre_star_rule ts ts' \<Longrightarrow> ts' \<le> ts"
   unfolding less_eq_finfun_def
@@ -296,6 +322,60 @@ next
     by (simp add: mult_prod_def idempotent_semiring_ord_class.mult_isol_var)
 qed
 
+lemma pre_star_rule_Anders_mono:
+  assumes "pre_star_rule_Anders\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2"
+  assumes "pre_star_rule_Anders ts\<^sub>1 ts\<^sub>3"
+  shows "pre_star_rule_Anders\<^sup>*\<^sup>* ts\<^sub>2 (ts\<^sub>2 + ts\<^sub>3)"
+proof -
+  obtain p\<^sub>2 \<gamma>\<^sub>2 d\<^sub>2 p'\<^sub>2 w\<^sub>2 d'\<^sub>2 q\<^sub>2 d''\<^sub>2 where ts3:
+    "ts\<^sub>3 = ts\<^sub>1((p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) $:= ts\<^sub>1 $ (p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) + d\<^sub>2 * d''\<^sub>2)"
+    "(p\<^sub>2, \<gamma>\<^sub>2) \<midarrow>d\<^sub>2\<hookrightarrow> (p'\<^sub>2, w\<^sub>2)"
+    "(p'\<^sub>2, (lbl w\<^sub>2, d'\<^sub>2), q\<^sub>2) \<in> monoid_rtrancl (wts_to_monoidLTS ts\<^sub>1)"
+    "d'\<^sub>2 \<le> d''\<^sub>2"
+    using pre_star_rule_Anders_elim2[OF assms(2)] by blast
+  obtain d' where d'_le:"d' \<le> d'\<^sub>2" and d'_ts2:"(p'\<^sub>2, (lbl w\<^sub>2, d'), q\<^sub>2) \<in> monoid_rtrancl (wts_to_monoidLTS ts\<^sub>2)"
+    using wts_monoid_rtrancl_mono[OF pre_star_rule_Anders_star_less_eq[OF assms(1)] ts3(3)] by blast
+  show ?thesis 
+  proof (cases "ts\<^sub>2((p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) $:= ts\<^sub>2 $ (p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) + d\<^sub>2 * d''\<^sub>2) = ts\<^sub>2 + ts\<^sub>1((p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) $:= ts\<^sub>1 $ (p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) + d\<^sub>2 * d''\<^sub>2)")
+    case True
+    note myTrue = True
+    then show ?thesis proof (cases "ts\<^sub>2 $ (p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) + d\<^sub>2 * d''\<^sub>2 \<noteq> ts\<^sub>2 $ (p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2)")
+      case True
+      then have "pre_star_rule_Anders ts\<^sub>2 ts\<^sub>2((p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) $:= ts\<^sub>2 $ (p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) + d\<^sub>2 * d''\<^sub>2)"
+        using pre_star_rule_Anders.intros[OF ts3(2) d'_ts2, of d''\<^sub>2] ts3(4) d'_le
+        by fastforce
+      then show ?thesis 
+        unfolding ts3(1) using myTrue by simp
+    next
+      case False
+      then show ?thesis 
+        using myTrue unfolding ts3(1) by simp
+    qed
+  next
+    case False
+    then show ?thesis 
+      unfolding ts3(1) using pre_star_rule_Anders_star_less_eq[OF assms(1)]
+      using finfun_noteq_exist[OF False]
+      apply safe
+      subgoal for a b c
+        apply (cases "(p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) = (a,b,c)")
+         apply clarsimp
+         defer
+        unfolding idempotent_ab_semigroup_add_ord_class.less_eq_def 
+         apply clarsimp
+        sorry (* Her nåede vi til! *)
+      done
+  qed
+   
+qed
+
+lemma pre_star_rule_Anders_star_mono:
+  assumes "pre_star_rule_Anders\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2"
+  assumes "pre_star_rule_Anders ts\<^sub>1 ts\<^sub>3"
+  shows "pre_star_rule_Anders\<^sup>*\<^sup>* ts\<^sub>1 (ts\<^sub>2 + ts\<^sub>3)"
+  using rtranclp_trans[of pre_star_rule_Anders ts\<^sub>1 ts\<^sub>2 "ts\<^sub>2 + ts\<^sub>3", OF assms(1)]
+  using assms(2) assms(1) pre_star_rule_Anders_mono by simp
+
 
 lemma ts_different_update_nleq_apply_neq:
   fixes ts :: "('ctr_loc, 'label, 'weight) w_transitions"
@@ -350,7 +430,7 @@ proof -
       using ts_different_update_nleq_apply_neq[OF idempotent_semiring_ord_class.mult_isol[OF d'_le]]
       unfolding ts2(1) ts3 by blast
     then have "pre_star_rule ts\<^sub>3 ts\<^sub>3((p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) $:= ts\<^sub>3 $ (p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) + d\<^sub>2 * d')"
-      using pre_star_rule.intros[OF ts2(2) d'_ts3, of "ts\<^sub>3 $ (p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2)"] by fast
+      using pre_star_rule.intros[OF ts2(2) d'_ts3] by fast
     then show ?thesis unfolding ts2(1) ts3
       using ts_update_update_less_eq[OF idempotent_semiring_ord_class.mult_isol[OF d'_le, of d\<^sub>2]]
       by blast
@@ -610,6 +690,30 @@ qed
 
 lemma pre_star_rules_less_eq: "pre_star_rule\<^sup>*\<^sup>* ts ts' \<Longrightarrow> ts' \<le> ts"
   by (induct rule: rtranclp.induct, simp) (fastforce dest: pre_star_rule_less)
+
+
+lemma pre_star_rule_to_Anders: "pre_star_rule ts ts' \<Longrightarrow> pre_star_rule_Anders ts ts'"
+  using pre_star_rule.simps pre_star_rule_Anders.simps by blast
+
+lemma pre_star_rule_sum_to_Anders_induct:
+  assumes "X \<subseteq> Collect (pre_star_rule ts)"
+    and "finite X"
+  shows "pre_star_rule_Anders\<^sup>*\<^sup>* ts (ts + \<Sum> X)"
+  using assms(1)
+  apply (induct rule: finite_induct[OF assms(2)], simp)
+  subgoal for ts' F
+    using pre_star_rule_Anders_star_mono[of ts "(ts + \<Sum> F)" ts']
+          pre_star_rule_to_Anders[of ts ts']
+    by (simp add: add.left_commute add.commute)
+  done
+
+lemma pre_star_rule_sum_to_Anders: "pre_star_rule_sum ts ts' \<Longrightarrow> pre_star_rule_Anders\<^sup>*\<^sup>* ts ts'"
+  using pre_star_rule_sum.simps pre_star_rule_sum_to_Anders_induct[OF _ finite_pre_star_rule_set] 
+  by simp
+
+lemma pre_star_rule_Anders_to_rule: "pre_star_rule_Anders ts ts' \<Longrightarrow> \<exists>ts''. pre_star_rule ts ts'' \<and> ts'' \<le> ts'"
+  oops
+
 
 thm pre_star_rule_less 
     pre_star_rule_add
@@ -3249,7 +3353,7 @@ assumes "binary_aut ts"
 lemma 
   assumes "binary_aut ts"
     and "binary_aut ts'"
-  shows "dioidLTS.SumInf {d| c d. d = dioidLTS.accepts (WPDS_with_W_automata.intersff ts (WPDS_with_W_automata.pre_star_exec' \<Delta> ts')) (finals\<times>finals') c} = 
+  shows "\<^bold>\<Sum> {d| c d. d = dioidLTS.accepts (WPDS_with_W_automata.intersff ts (WPDS_with_W_automata.pre_star_exec' \<Delta> ts')) (finals\<times>finals') c} = 
          WPDS_with_W_automata.weight_reach' \<Delta> ts' (dioidLTS.accepts ts finals) (dioidLTS.accepts ts' finals')" 
   oops
 (* TODO: Make executable version of "dioidLTS.SumInf {d | c d. d = dioidLTS.accepts ts finals c}" *)
