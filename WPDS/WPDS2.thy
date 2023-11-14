@@ -712,8 +712,32 @@ lemma pre_star_rule_sum_to_Anders: "pre_star_rule_sum ts ts' \<Longrightarrow> p
   using pre_star_rule_sum.simps pre_star_rule_sum_to_Anders_induct[OF _ finite_pre_star_rule_set] 
   by simp
 
-lemma pre_star_rule_Anders_to_rule: "pre_star_rule_Anders ts ts' \<Longrightarrow> \<exists>ts''. pre_star_rule ts ts'' \<and> ts'' \<le> ts'"
-  oops
+lemma pre_star_rule_Anders_to_rule:
+  assumes "pre_star_rule_Anders ts ts'"
+  shows "\<exists>ts''. pre_star_rule ts ts'' \<and> ts'' \<le> ts'"
+proof - 
+  obtain p \<gamma> d p' w d' q d'' where step:
+    "ts' = ts((p, \<gamma>, q) $:= ts $ (p, \<gamma>, q) + d * d'')"
+    "(p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)"
+    "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+    "d' \<le> d''"
+    "ts $ (p, \<gamma>, q) + d * d'' \<noteq> ts $ (p, \<gamma>, q)"
+    using assms pre_star_rule_Anders_elim2[of ts ts'] by auto
+
+  have "ts $ (p, \<gamma>, q) + d * d' \<noteq> ts $ (p, \<gamma>, q)"
+    by (meson step(4,5) idempotent_semiring_ord_class.mult_isol_equiv_subdistl
+        idempotent_semiring_ord_class.subdistl neq_mono)
+  then have ts_ts'': "pre_star_rule ts ts((p, \<gamma>, q) $:= ts $ (p, \<gamma>, q) + d * d')"
+    using step(3,2) pre_star_rule.simps by blast
+
+  have "ts((p, \<gamma>, q) $:= ts $ (p, \<gamma>, q) + d * d') \<le> ts'"
+    by (metis (no_types, lifting) ts_different_update_nleq_apply_neq step(4,1) finfun_upd_apply_same 
+        idempotent_semiring_ord_class.mult_isol_equiv_subdistl meet.inf.right_idem
+        idempotent_semiring_ord_class.subdistl)
+  then show ?thesis
+    using ts_ts'' by blast
+qed
+
 
 
 thm pre_star_rule_less 
@@ -939,9 +963,11 @@ lemma
     
     oops
 
+
 lemma pre_star_sum_to_rule_exists:
   assumes "pre_star_rule_sum ts ts'"
   shows "\<exists>ts''. pre_star_rule\<^sup>*\<^sup>* ts ts'' \<and> ts'' \<le> ts'"
+
   using assms 
   apply (simp add: pre_star_rule_sum.simps)
   apply safe
