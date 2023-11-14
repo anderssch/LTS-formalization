@@ -1095,15 +1095,11 @@ lemma pre_star_sum_to_rule_exists:
   assumes "pre_star_rule_sum ts ts'"
   shows "\<exists>ts''. pre_star_rule\<^sup>*\<^sup>* ts ts'' \<and> ts'' \<le> ts'"
 proof -
- 
   have "pre_star_rule_Anders\<^sup>*\<^sup>* ts ts'"
     using pre_star_rule_sum_to_Anders assms(1) by auto
-  
-
-  using assms 
-  apply (simp add: pre_star_rule_sum.simps)
-  apply safe
-  sorry
+  then show "\<exists>ts''. pre_star_rule\<^sup>*\<^sup>* ts ts'' \<and> ts'' \<le> ts'"
+    using pre_star_rule_Anders_to_rule_star[of ts ts'] by auto
+qed
 
 lemma 
 (*  assumes "saturation pre_star_rule ts ts'"*)
