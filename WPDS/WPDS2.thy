@@ -363,10 +363,11 @@ proof -
          defer
         unfolding idempotent_ab_semigroup_add_ord_class.less_eq_def 
          apply clarsimp
-        sorry (* Her nåede vi til! *)
-      done
+        apply (metis add_finfun_apply)
+        apply (metis add.assoc add_finfun_apply)
+        done
+      done (* Her nåede vi til! *)
   qed
-   
 qed
 
 lemma pre_star_rule_Anders_star_mono:
