@@ -738,7 +738,133 @@ proof -
     using ts_ts'' by blast
 qed
 
+lemma pre_star_rule_Anders_to_rule_star:
+  assumes "pre_star_rule_Anders\<^sup>*\<^sup>* ts ts'"
+  shows "\<exists>ts''. pre_star_rule\<^sup>*\<^sup>* ts ts'' \<and> ts'' \<le> ts'"
+  using assms
+proof (induction rule: rtranclp_induct)
+  case base
+  then show ?case
+    by auto
+next
+  case (step ts' ts'') (* Unfortunately this is not using pre_star_rule_Anders_to_rule as a lemma *)
+  have "pre_star_rule_Anders\<^sup>*\<^sup>* ts ts'"
+    using step by auto
+  have "pre_star_rule_Anders ts' ts''"
+    using step by auto
+  then obtain p \<gamma> d p' w d' q d'' where ooo:
+    "ts'' = ts'((p, \<gamma>, q) $:= ts' $ (p, \<gamma>, q) + d * d'')"
+    "(p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)"
+    "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts')"
+    "d' \<le> d''"
+    "ts' $ (p, \<gamma>, q) + d * d'' \<noteq> ts' $ (p, \<gamma>, q)"
+    using pre_star_rule_Anders_elim2[of ts' ts''] by blast
 
+  obtain ts''' where s: "pre_star_rule\<^sup>*\<^sup>* ts ts'''" "ts''' \<le> ts'"
+    using step by auto
+
+  define pn where "pn = p"
+  define \<gamma>n where "\<gamma>n = \<gamma>"
+  define dn where "dn = d"
+  define p'n where "p'n = p'"
+  define wn where "wn = w"
+
+  define qn where "qn = q"
+
+  obtain d'n where d'n:
+    "(p'n, (lbl wn, d'n), qn) \<in> monoid_rtrancl (wts_to_monoidLTS ts''')"
+    "d'n \<le> d'"
+    by (metis ooo(3) p'n_def qn_def s(2) wn_def wts_monoid_rtrancl_mono)
+
+  have "(pn, \<gamma>n) \<midarrow>dn\<hookrightarrow> (p'n, wn)"
+    using \<gamma>n_def \<open>(p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)\<close> dn_def p'n_def pn_def wn_def by force
+  have "(p'n, (lbl wn, d'n), qn) \<in> monoid_rtrancl (wts_to_monoidLTS ts''')"
+    using d'n by auto
+  show ?case
+  proof (cases "ts''' $ (pn, \<gamma>n, qn) + dn * d'n \<noteq> ts''' $ (pn, \<gamma>n, qn)")
+    case True
+
+    have "pre_star_rule ts''' ts'''((pn, \<gamma>n, qn) $:= ts''' $ (pn, \<gamma>n, qn) + dn * d'n)"
+      using \<open>(p'n, (lbl wn, d'n), qn) \<in> monoid_rtrancl (wts_to_monoidLTS ts''')\<close>
+        \<open>(pn, \<gamma>n) \<midarrow>dn\<hookrightarrow> (p'n, wn)\<close> \<open>ts''' $ (pn, \<gamma>n, qn) + dn * d'n \<noteq> ts''' $ (pn, \<gamma>n, qn)\<close> 
+        pre_star_rule.intros by auto
+
+    define ts'''' where "ts'''' = ts'''((pn, \<gamma>n, qn) $:= ts''' $ (pn, \<gamma>n, qn) + dn * d'n)"
+
+
+    have "pre_star_rule ts''' ts''''"
+      using pre_star_rule.intros[of pn \<gamma>n dn p'n wn d'n qn ts'''] ts''''_def
+      using \<open>pre_star_rule ts''' ts'''((pn, \<gamma>n, qn) $:= ts''' $ (pn, \<gamma>n, qn) + dn * d'n)\<close> by force 
+
+    have "ts'''' \<le> ts''"
+      unfolding ooo(1) ts''''_def
+      unfolding less_eq_finfun_def
+      apply auto
+      subgoal for pp ll qq
+
+        using s(2)
+        apply (cases "(pp, ll, qq) = (pn, \<gamma>n, qn)")
+        subgoal
+          apply auto
+          apply (smt (verit, del_insts) \<gamma>n_def d'n(2) dn_def dual_order.refl finfun_upd_apply 
+              idempotent_semiring_ord_class.mult_isol_var less_eq_finfun_def meet.inf_mono ooo(4) 
+              order.trans pn_def qn_def)
+          done
+        subgoal
+          apply auto
+          subgoal
+            apply (simp add: \<gamma>n_def less_eq_finfun_def)
+            done
+          subgoal
+            apply (simp add: less_eq_finfun_def pn_def)
+            done
+          subgoal
+            apply (simp add: less_eq_finfun_def qn_def)
+            done
+          done
+        done
+      done
+
+    show ?thesis
+      by (meson \<open>pre_star_rule ts''' ts''''\<close> \<open>pre_star_rule\<^sup>*\<^sup>* ts ts'''\<close> \<open>ts''' \<le> ts'\<close> \<open>ts'''' \<le> ts''\<close> rtranclp.rtrancl_into_rtrancl)
+  next
+    case False
+    then have "ts''' $ (pn, \<gamma>n, qn) + dn * d'n = ts''' $ (pn, \<gamma>n, qn)"
+      by metis
+    
+    have a: "pre_star_rule\<^sup>*\<^sup>* ts ts'''"
+      by (simp add: s(1))
+    have b: "ts''' \<le> ts''"
+      unfolding ooo(1)
+      unfolding less_eq_finfun_def
+      apply auto
+      subgoal for pp ll qq
+        apply (cases "(pp, ll, qq) = (pn, \<gamma>n, qn)")
+        subgoal
+          apply auto
+          apply (smt (verit) False \<gamma>n_def d'n(2) dn_def finfun_upd_apply_same 
+              idempotent_semiring_ord_class.mult_isol_equiv_subdistl 
+              idempotent_semiring_ord_class.subdistl less_eq_finfun_def meet.inf_mono ooo(4) 
+              order.trans pn_def qn_def s(2))
+          done
+        subgoal
+          apply auto
+          subgoal
+            apply (simp add: \<gamma>n_def less_eq_finfun_elem s(2))
+            done
+          subgoal
+            apply (simp add: less_eq_finfun_elem pn_def s(2))
+            done
+          subgoal
+            apply (simp add: less_eq_finfun_elem qn_def s(2))
+            done
+          done
+        done
+      done
+    show ?thesis
+      using a b by auto
+  qed
+qed
 
 thm pre_star_rule_less 
     pre_star_rule_add
@@ -963,10 +1089,16 @@ lemma
     
     oops
 
+    find_theorems pre_star_rule_Anders pre_star_rule
 
 lemma pre_star_sum_to_rule_exists:
   assumes "pre_star_rule_sum ts ts'"
   shows "\<exists>ts''. pre_star_rule\<^sup>*\<^sup>* ts ts'' \<and> ts'' \<le> ts'"
+proof -
+ 
+  have "pre_star_rule_Anders\<^sup>*\<^sup>* ts ts'"
+    using pre_star_rule_sum_to_Anders assms(1) by auto
+  
 
   using assms 
   apply (simp add: pre_star_rule_sum.simps)
