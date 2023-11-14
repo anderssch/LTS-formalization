@@ -896,6 +896,7 @@ qed
 
 end
 
+
 subsection \<open>More LTS lemmas\<close>
 
 lemma hd_transition_list_append_path_with_word:
@@ -1404,6 +1405,7 @@ lemma LTS_path_with_word_mono:
   "mono LTS.path_with_word"
   by (auto simp: mono_def path_with_word_mono')
 
+
 subsection \<open>Reverse transition system\<close>
 
 fun rev_edge :: "('n,'v) transition \<Rightarrow> ('n,'v) transition" where
@@ -1479,7 +1481,9 @@ qed
 
 end
 
+
 section \<open>LTS with epsilon\<close>
+
 
 subsection \<open>LTS functions\<close>
 
@@ -1495,6 +1499,7 @@ definition inters_\<epsilon> :: "('state, 'label option) transition set \<Righta
      {((p1, q1), \<epsilon>, (p1, q2)) | p1 q1 q2. (q1, \<epsilon>, q2) \<in> ts2}"
 
 end
+
 
 subsection \<open>LTS with epsilon locale\<close>
 
