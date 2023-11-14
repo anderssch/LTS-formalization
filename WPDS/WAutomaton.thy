@@ -18,6 +18,11 @@ type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list
 definition wts_to_monoidLTS :: "('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
   "wts_to_monoidLTS ts = {(p, ([l],d), q) | p l d q. ts $ (p,l,q) = d}"
 
+definition wts_to_weightLTS :: "('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, 'weight) transition set" where
+  "wts_to_weightLTS ts = {(p, d, q) | p l d q. ts $ (p,l,q) = d}"
+
+lemma "finite (wts_to_weightLTS ts)" oops (* THIS should be true!! *)
+
 lemma finite_wts: 
   assumes "finfun_default A = 0"
   shows "finite (wts_to_monoidLTS A)"
