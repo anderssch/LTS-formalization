@@ -435,18 +435,13 @@ proof -
     case False
     then show ?thesis 
       unfolding ts3(1) using pre_star_rule_weak_star_less_eq[OF assms(1)]
-      using finfun_noteq_exist[OF False]
+      using finfun_noteq_exist[OF False] unfolding idempotent_ab_semigroup_add_ord_class.less_eq_def
       apply safe
       subgoal for a b c
         apply (cases "(p\<^sub>2, \<gamma>\<^sub>2, q\<^sub>2) = (a,b,c)")
-         apply clarsimp
-         defer
-        unfolding idempotent_ab_semigroup_add_ord_class.less_eq_def 
-         apply clarsimp
-        apply (metis add_finfun_apply)
-        apply (metis add.assoc add_finfun_apply)
-        done
-      done (* Her nåede vi til! *)
+         apply (simp, metis add.assoc add_finfun_apply)
+        by (simp, metis add_finfun_apply)
+      done
   qed
 qed
 
@@ -545,6 +540,22 @@ proof -
     using ts_ts'' by blast
 qed
 
+lemma finfun_less_eq_spec: "ts\<^sub>1 \<le> ts\<^sub>2 \<Longrightarrow> ts\<^sub>1 $ t \<le> ts\<^sub>2 $ t"
+  unfolding less_eq_finfun_def by simp
+
+lemma ts_update_same_mono:
+  fixes ts\<^sub>1 ts\<^sub>2 :: "('ctr_loc, 'label, 'weight) w_transitions"
+  assumes "ts\<^sub>1 \<le> ts\<^sub>2"
+  assumes "d\<^sub>1 \<le> d\<^sub>2"
+  shows "ts\<^sub>1(t $:= ts\<^sub>1 $ t + d\<^sub>1) \<le> ts\<^sub>2(t $:= ts\<^sub>2 $ t + d\<^sub>2)"
+  unfolding less_eq_finfun_def
+  apply clarsimp
+  subgoal for p \<gamma> q
+    apply (cases "(p, \<gamma>, q) = t")
+     using meet.inf_mono[OF finfun_less_eq_spec[OF assms(1), of t] assms(2)] assms(2)
+     by (simp_all add: finfun_less_eq_spec[OF assms(1), of "(p, \<gamma>, q)"])
+  done
+
 lemma pre_star_rule_weak_to_rule_star:
   assumes "pre_star_rule_weak\<^sup>*\<^sup>* ts ts'"
   shows "\<exists>ts''. pre_star_rule\<^sup>*\<^sup>* ts ts'' \<and> ts'' \<le> ts'"
@@ -554,122 +565,37 @@ proof (induction rule: rtranclp_induct)
   then show ?case
     by auto
 next
-  case (step ts' ts'') (* Unfortunately this is not using pre_star_rule_weak_to_rule as a lemma *)
-  have "pre_star_rule_weak\<^sup>*\<^sup>* ts ts'"
-    using step by auto
-  have "pre_star_rule_weak ts' ts''"
+  case (step ts\<^sub>1 ts\<^sub>2) (* Unfortunately this is not using pre_star_rule_weak_to_rule as a lemma *)
+  have "pre_star_rule_weak ts\<^sub>1 ts\<^sub>2"
     using step by auto
   then obtain p \<gamma> d p' w d' q d'' where ooo:
-    "ts'' = ts'((p, \<gamma>, q) $:= ts' $ (p, \<gamma>, q) + d * d'')"
+    "ts\<^sub>2 = ts\<^sub>1((p, \<gamma>, q) $:= ts\<^sub>1 $ (p, \<gamma>, q) + d * d'')"
     "(p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)"
-    "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts')"
+    "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts\<^sub>1)"
     "d' \<le> d''"
-    "ts' $ (p, \<gamma>, q) + d * d'' \<noteq> ts' $ (p, \<gamma>, q)"
-    using pre_star_rule_weak_elim2[of ts' ts''] by blast
+    using pre_star_rule_weak_elim2[of ts\<^sub>1 ts\<^sub>2] by blast
 
-  obtain ts''' where s: "pre_star_rule\<^sup>*\<^sup>* ts ts'''" "ts''' \<le> ts'"
+  obtain ts\<^sub>3 where s: "pre_star_rule\<^sup>*\<^sup>* ts ts\<^sub>3" "ts\<^sub>3 \<le> ts\<^sub>1"
     using step by auto
 
-  define pn where "pn = p"
-  define \<gamma>n where "\<gamma>n = \<gamma>"
-  define dn where "dn = d"
-  define p'n where "p'n = p'"
-  define wn where "wn = w"
+  obtain d'n where d'n:"(p', (lbl w, d'n), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts\<^sub>3)" "d'n \<le> d'"
+    by (metis ooo(3) s(2) wts_monoid_rtrancl_mono)
+  have "d'n \<le> d''" using \<open>d' \<le> d''\<close>  d'n(2) by simp
+  then have dd_leq:"d * d'n \<le> d * d''" using idempotent_semiring_ord_class.mult_isol_var by fast
 
-  define qn where "qn = q"
-
-  obtain d'n where d'n:
-    "(p'n, (lbl wn, d'n), qn) \<in> monoid_rtrancl (wts_to_monoidLTS ts''')"
-    "d'n \<le> d'"
-    by (metis ooo(3) p'n_def qn_def s(2) wn_def wts_monoid_rtrancl_mono)
-
-  have "(pn, \<gamma>n) \<midarrow>dn\<hookrightarrow> (p'n, wn)"
-    using \<gamma>n_def \<open>(p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)\<close> dn_def p'n_def pn_def wn_def by force
-  have "(p'n, (lbl wn, d'n), qn) \<in> monoid_rtrancl (wts_to_monoidLTS ts''')"
-    using d'n by auto
   show ?case
-  proof (cases "ts''' $ (pn, \<gamma>n, qn) + dn * d'n \<noteq> ts''' $ (pn, \<gamma>n, qn)")
+  proof (cases "ts\<^sub>3 $ (p, \<gamma>, q) + d * d'n \<noteq> ts\<^sub>3 $ (p, \<gamma>, q)")
     case True
-
-    have "pre_star_rule ts''' ts'''((pn, \<gamma>n, qn) $:= ts''' $ (pn, \<gamma>n, qn) + dn * d'n)"
-      using \<open>(p'n, (lbl wn, d'n), qn) \<in> monoid_rtrancl (wts_to_monoidLTS ts''')\<close>
-        \<open>(pn, \<gamma>n) \<midarrow>dn\<hookrightarrow> (p'n, wn)\<close> \<open>ts''' $ (pn, \<gamma>n, qn) + dn * d'n \<noteq> ts''' $ (pn, \<gamma>n, qn)\<close> 
-        pre_star_rule.intros by auto
-
-    define ts'''' where "ts'''' = ts'''((pn, \<gamma>n, qn) $:= ts''' $ (pn, \<gamma>n, qn) + dn * d'n)"
-
-
-    have "pre_star_rule ts''' ts''''"
-      using pre_star_rule.intros[of pn \<gamma>n dn p'n wn d'n qn ts'''] ts''''_def
-      using \<open>pre_star_rule ts''' ts'''((pn, \<gamma>n, qn) $:= ts''' $ (pn, \<gamma>n, qn) + dn * d'n)\<close> by force 
-
-    have "ts'''' \<le> ts''"
-      unfolding ooo(1) ts''''_def
-      unfolding less_eq_finfun_def
-      apply auto
-      subgoal for pp ll qq
-
-        using s(2)
-        apply (cases "(pp, ll, qq) = (pn, \<gamma>n, qn)")
-        subgoal
-          apply auto
-          apply (smt (verit, del_insts) \<gamma>n_def d'n(2) dn_def dual_order.refl finfun_upd_apply 
-              idempotent_semiring_ord_class.mult_isol_var less_eq_finfun_def meet.inf_mono ooo(4) 
-              order.trans pn_def qn_def)
-          done
-        subgoal
-          apply auto
-          subgoal
-            apply (simp add: \<gamma>n_def less_eq_finfun_def)
-            done
-          subgoal
-            apply (simp add: less_eq_finfun_def pn_def)
-            done
-          subgoal
-            apply (simp add: less_eq_finfun_def qn_def)
-            done
-          done
-        done
-      done
-
-    show ?thesis
-      by (meson \<open>pre_star_rule ts''' ts''''\<close> \<open>pre_star_rule\<^sup>*\<^sup>* ts ts'''\<close> \<open>ts''' \<le> ts'\<close> \<open>ts'''' \<le> ts''\<close> rtranclp.rtrancl_into_rtrancl)
+    define ts\<^sub>4 where "ts\<^sub>4 = ts\<^sub>3((p, \<gamma>, q) $:= ts\<^sub>3 $ (p, \<gamma>, q) + d * d'n)"
+    have "pre_star_rule ts\<^sub>3 ts\<^sub>4"
+      unfolding ts\<^sub>4_def using ooo(2) d'n(1) True pre_star_rule.intros by auto 
+    moreover have "ts\<^sub>4 \<le> ts\<^sub>2" unfolding ooo(1) ts\<^sub>4_def using ts_update_same_mono[OF s(2) dd_leq] by blast
+    ultimately show ?thesis using rtranclp.rtrancl_into_rtrancl[OF s(1)] by blast
   next
     case False
-    then have "ts''' $ (pn, \<gamma>n, qn) + dn * d'n = ts''' $ (pn, \<gamma>n, qn)"
-      by metis
-    
-    have a: "pre_star_rule\<^sup>*\<^sup>* ts ts'''"
-      by (simp add: s(1))
-    have b: "ts''' \<le> ts''"
-      unfolding ooo(1)
-      unfolding less_eq_finfun_def
-      apply auto
-      subgoal for pp ll qq
-        apply (cases "(pp, ll, qq) = (pn, \<gamma>n, qn)")
-        subgoal
-          apply auto
-          apply (smt (verit) False \<gamma>n_def d'n(2) dn_def finfun_upd_apply_same 
-              idempotent_semiring_ord_class.mult_isol_equiv_subdistl 
-              idempotent_semiring_ord_class.subdistl less_eq_finfun_def meet.inf_mono ooo(4) 
-              order.trans pn_def qn_def s(2))
-          done
-        subgoal
-          apply auto
-          subgoal
-            apply (simp add: \<gamma>n_def less_eq_finfun_elem s(2))
-            done
-          subgoal
-            apply (simp add: less_eq_finfun_elem pn_def s(2))
-            done
-          subgoal
-            apply (simp add: less_eq_finfun_elem qn_def s(2))
-            done
-          done
-        done
-      done
-    show ?thesis
-      using a b by auto
+    have "ts\<^sub>3 \<le> ts\<^sub>2"
+      unfolding ooo(1) using False ts_update_same_mono[OF s(2) dd_leq, of "(p, \<gamma>, q)"] by simp
+    then show ?thesis using s(1) by auto
   qed
 qed
 
@@ -785,8 +711,7 @@ lemma saturated_pre_star_rule_weak_star_less_eq':
   shows "ts\<^sub>3 \<le> ts\<^sub>2"
   using pre_star_rule_weak_mono[OF assms(2,1)] assms(3)[unfolded saturated_def]
   unfolding idempotent_ab_semigroup_add_ord_class.less_eq_def
-  apply (cases "ts\<^sub>3 = ts\<^sub>3 + ts\<^sub>2", simp)
-  using converse_rtranclpE[of pre_star_rule_weak ts\<^sub>3 "ts\<^sub>3 + ts\<^sub>2"] by auto
+  using converse_rtranclpE[of pre_star_rule_weak ts\<^sub>3 "ts\<^sub>3 + ts\<^sub>2"] by metis
 
 lemma saturated_pre_star_rule_weak_star_less_eq:
   assumes "pre_star_rule_weak\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2"
