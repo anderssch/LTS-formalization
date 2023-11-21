@@ -211,6 +211,18 @@ lemma pre_star_rule_Anders_less_eq: "pre_star_rule_Anders ts ts' \<Longrightarro
   subgoal for p \<gamma> d p' w d' q d'' a b c
     by (cases "(a, b, c) = (p, \<gamma>, q)", auto)
   done
+lemma pre_star_rule_Anders_less: "pre_star_rule_Anders ts ts' \<Longrightarrow> ts' < ts"
+  unfolding less_eq_strict less_eq_finfun_def
+  unfolding pre_star_rule_Anders.simps
+  apply clarsimp
+  subgoal for p \<gamma> d p' w d' q d''
+    apply safe
+    subgoal for a b c
+      by (cases "(a, b, c) = (p, \<gamma>, q)", auto)
+    apply (rule exI[of _ p], rule exI[of _ \<gamma>], rule exI[of _ q])
+    by (simp add: order_class.order_eq_iff)
+  done
+
 lemma pre_star_rule_Anders_star_less_eq: "pre_star_rule_Anders\<^sup>*\<^sup>* ts ts' \<Longrightarrow> ts' \<le> ts"
   apply (induct rule: rtranclp_induct, simp)
   using pre_star_rule_Anders_less_eq by fastforce
@@ -696,6 +708,10 @@ lemma pre_star_rules_less_eq: "pre_star_rule\<^sup>*\<^sup>* ts ts' \<Longrighta
 lemma pre_star_rule_to_Anders: "pre_star_rule ts ts' \<Longrightarrow> pre_star_rule_Anders ts ts'"
   using pre_star_rule.simps pre_star_rule_Anders.simps by blast
 
+lemma pre_star_rule_to_Anders_star: "pre_star_rule\<^sup>*\<^sup>* ts ts' \<Longrightarrow> pre_star_rule_Anders\<^sup>*\<^sup>* ts ts'"
+  apply (induct rule: rtranclp_induct, simp)
+  using pre_star_rule_to_Anders by fastforce
+
 lemma pre_star_rule_sum_to_Anders_induct:
   assumes "X \<subseteq> Collect (pre_star_rule ts)"
     and "finite X"
@@ -943,6 +959,16 @@ lemma saturated_pre_star_rule_less_eq:
     by - (induct rule: converse_rtranclp_induct, simp_all)
   done
 
+
+lemma saturated_pre_star_rule_Anders_star_less_eq':
+  assumes "pre_star_rule_Anders ts\<^sub>1 ts\<^sub>2"
+  assumes "pre_star_rule_Anders\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>3" 
+  assumes "saturated pre_star_rule_Anders ts\<^sub>3"
+  shows "ts\<^sub>3 \<le> ts\<^sub>2"
+  using pre_star_rule_Anders_mono[OF assms(2,1)] assms(3)[unfolded saturated_def]
+  unfolding idempotent_ab_semigroup_add_ord_class.less_eq_def
+  apply (cases "ts\<^sub>3 = ts\<^sub>3 + ts\<^sub>2", simp)
+  using converse_rtranclpE[of pre_star_rule_Anders ts\<^sub>3 "ts\<^sub>3 + ts\<^sub>2"] by auto
 
 lemma saturated_pre_star_rule2_less_eq:
   assumes "pre_star_rule\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2"
