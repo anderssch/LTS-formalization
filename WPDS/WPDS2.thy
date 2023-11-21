@@ -190,6 +190,8 @@ lemma pre_star_rule_elim2:
           (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> ts $ (p, \<gamma>, q) + (d * d') \<noteq> ts $ (p, \<gamma>, q)"
   using assms unfolding pre_star_rule.simps[of ts ts'] by presburger
 
+section \<open>Code generation 1\<close>
+
 inductive pre_star_rule_Anders :: "('ctr_loc, 'label, 'weight) w_transitions saturation_rule" where
   add_trans_Anders: "((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))
       \<Longrightarrow> (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)
@@ -1189,7 +1191,7 @@ lemma pre_star_rule_sum_pre_star_step_k: "pre_star_rule_sum\<^sup>*\<^sup>* ts (
   by (induct k) (auto elim!: rtranclp_trans intro: pre_star_rule_sum_pre_star_step)
 
 
-lemma saturation_pre_star_exec':"saturation pre_star_rule_sum ts (pre_star_exec ts)"
+lemma saturation_pre_star_exec': "saturation pre_star_rule_sum ts (pre_star_exec ts)"
 proof -
   from pre_star_exec_terminates obtain t where t: "pre_star_loop ts = Some t" by blast
   obtain k where k: "t = (pre_star_step ^^ k) ts" and eq: "pre_star_step t = t"
@@ -1207,14 +1209,7 @@ lemma saturation_pre_star_exec: "saturation pre_star_rule ts (pre_star_exec ts)"
   using saturation_pre_star_exec' saturation_pre_star_rule_sum by auto
 
 
-
-theorem pre_star_rule_correct:
-  assumes "saturation pre_star_rule (ts_to_wts {}) A"
-  shows "accepts A finals = weight_pre_star (accepts (ts_to_wts {}) finals)"
-  using assms
-  apply simp
-    \<comment> \<open>TODO\<close>
-  oops
+section \<open>Pre* correctness\<close>
 
 lemma pre_star_rule_less_aux:
   fixes ts::"(('ctr_loc, 'label, 'weight::bounded_idempotent_semiring) w_transitions)"
@@ -2272,6 +2267,8 @@ theorem pre_star_rule_correct:
 end
 
 
+section \<open>Pre* on WAutomata\<close>
+
 datatype ('ctr_loc, 'noninit) state =
   is_Init: Init (the_Ctr_Loc: 'ctr_loc) (* p \<in> P *)
   | is_Noninit: Noninit (the_St: 'noninit) (* q \<in> Q \<and> q \<notin> P *)
@@ -2324,6 +2321,7 @@ instantiation state :: (enum, enum) enum begin
   qed (simp_all only: enum_state_def enum_all_state_def enum_ex_state_def UNIV_state,
        auto simp add: enum_UNIV distinct_map enum_distinct inj_def) 
 end
+
 
 locale WPDS_with_W_automata = WPDS \<Delta>
   for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
@@ -2915,6 +2913,9 @@ lemma pre_star_correctness:
   shows "accepts A finals (Init p, w) = weight_pre_star (accepts_ts finals) (p,w)"
   using assms augmented_rules_correct augmented_WPDS.correctness by simp
 
+
+section \<open>Intersection\<close>
+
 fun fst_trans :: "(('state \<times> 'state), 'label) transition \<Rightarrow> ('state, 'label) transition" where
   "fst_trans ((p1,q1),l,(p2,q2)) = (p1,l,p2)"
 
@@ -3450,6 +3451,7 @@ next
   qed
 qed
 
+section \<open>Code generation 2\<close>
 
 definition pre_star_exec' where
  "pre_star_exec' = augmented_WPDS.pre_star_exec (K$ 0)"
