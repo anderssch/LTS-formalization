@@ -515,6 +515,10 @@ lemma pre_star_rule_sum_to_weak: "pre_star_rule_sum ts ts' \<Longrightarrow> pre
   using pre_star_rule_sum.simps pre_star_rule_sum_to_weak_induct[OF _ finite_pre_star_rule_set] 
   by simp
 
+lemma pre_star_rule_sum_star_to_weak: "pre_star_rule_sum\<^sup>*\<^sup>* ts ts' \<Longrightarrow> pre_star_rule_weak\<^sup>*\<^sup>* ts ts'"
+  apply (induct rule: rtranclp_induct, simp)
+  using pre_star_rule_sum_to_weak by fastforce
+
 lemma pre_star_rule_weak_to_rule:
   assumes "pre_star_rule_weak ts ts'"
   shows "\<exists>ts''. pre_star_rule ts ts'' \<and> ts'' \<le> ts'"
@@ -695,6 +699,33 @@ proof -
   oops
 *)
 
+
+
+\<comment> \<open>This is an idea for the rule** to sum** direction.\<close>
+inductive pre_star_rule_sum_weak :: "('ctr_loc, 'label, 'weight) w_transitions saturation_rule" where
+  "\<Sum>{ts'. pre_star_rule ts ts'} \<le> ts'' \<Longrightarrow> ts + ts'' \<noteq> ts \<Longrightarrow> pre_star_rule_sum_weak ts (ts + ts'')"
+
+lemma "pre_star_rule ts ts' \<Longrightarrow> pre_star_rule_sum_weak ts ts'"
+  oops
+lemma "pre_star_rule\<^sup>*\<^sup>* ts ts' \<Longrightarrow> pre_star_rule_sum_weak\<^sup>*\<^sup>* ts ts'"
+  oops
+lemma 
+  assumes "pre_star_rule_sum_weak\<^sup>*\<^sup>* ts ts'"
+  shows "\<exists>ts''. pre_star_rule_sum\<^sup>*\<^sup>* ts ts'' \<and> ts'' \<le> ts'"
+  oops
+lemma "saturated pre_star_rule_sum ts \<Longrightarrow> saturated pre_star_rule_sum_weak ts"
+  oops
+lemma saturated_pre_star_rule_weak_star_less_eq:
+  assumes "pre_star_rule_sum_weak\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2"
+  assumes "pre_star_rule_sum_weak\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>3"
+  assumes "saturated pre_star_rule_sum_weak ts\<^sub>3"
+  shows "ts\<^sub>3 \<le> ts\<^sub>2"
+  oops
+
+
+
+
+
 lemma 
   assumes "pre_star_rule ts ts'"
   assumes "pre_star_rule ts ts''"
@@ -756,6 +787,41 @@ lemma saturated_pre_star_rule_weak_star_less_eq':
   unfolding idempotent_ab_semigroup_add_ord_class.less_eq_def
   apply (cases "ts\<^sub>3 = ts\<^sub>3 + ts\<^sub>2", simp)
   using converse_rtranclpE[of pre_star_rule_weak ts\<^sub>3 "ts\<^sub>3 + ts\<^sub>2"] by auto
+
+lemma saturated_pre_star_rule_weak_star_less_eq:
+  assumes "pre_star_rule_weak\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2"
+  assumes "pre_star_rule_weak\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>3"
+  assumes "saturated pre_star_rule_weak ts\<^sub>3"
+  shows "ts\<^sub>3 \<le> ts\<^sub>2"
+proof (cases "ts\<^sub>1 = ts\<^sub>2")
+  case True
+  then show ?thesis using pre_star_rule_weak_star_less_eq[OF assms(2)] by simp
+next
+  case False
+  (*then obtain ts\<^sub>4 where A:"pre_star_rule_weak ts\<^sub>1 ts\<^sub>4" and B:"pre_star_rule_weak\<^sup>*\<^sup>* ts\<^sub>4 ts\<^sub>2"
+    using converse_rtranclpE[OF assms(1)] by auto*)
+  then obtain ts\<^sub>4 where A:"pre_star_rule_weak\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>4" and B:"pre_star_rule_weak ts\<^sub>4 ts\<^sub>2"
+    using rtranclp.cases[OF assms(1)] by metis
+  then have "ts\<^sub>3 \<le> ts\<^sub>4" using saturated_pre_star_rule_weak_star_less_eq' sorry
+  then show ?thesis
+    using pre_star_rule_weak_star_less_eq[OF B]
+    sorry
+qed
+
+
+\<comment> \<open>This is pretty much the sum** to rule** direction (assuming the lemma above)\<close>
+lemma stuff:
+  assumes "pre_star_rule_sum\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2"
+  assumes "saturated pre_star_rule_weak ts\<^sub>2"
+  shows "pre_star_rule\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2"
+proof -
+  have W:"pre_star_rule_weak\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2" using pre_star_rule_sum_star_to_weak[OF assms(1)] by fast
+  obtain ts\<^sub>3 where R:"pre_star_rule\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>3" and leq:"ts\<^sub>3 \<le> ts\<^sub>2" using pre_star_rule_weak_to_rule_star[OF W] by blast
+  have "ts\<^sub>2 \<le> ts\<^sub>3" using saturated_pre_star_rule_weak_star_less_eq[OF pre_star_rule_to_weak_star[OF R] W assms(2)] by simp
+  then have "ts\<^sub>2 = ts\<^sub>3" using leq by auto
+  then show ?thesis using R by fast
+qed
+
 
 lemma saturated_pre_star_rule2_less_eq:
   assumes "pre_star_rule\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2"
@@ -898,6 +964,10 @@ qed
 
 lemma saturated_pre_star_sum_to_rule: "saturated pre_star_rule_sum ts \<Longrightarrow> saturated pre_star_rule ts"
   unfolding saturated_def using pre_star_rule_to_sum_exists pre_star_rule_sum.cases by blast
+
+lemma saturated_pre_star_rule_to_weak: "saturated pre_star_rule ts \<Longrightarrow> saturated pre_star_rule_weak ts"
+  unfolding saturated_def using pre_star_rule_weak_to_rule by blast
+
 
 subsection \<open>Equivalence of saturation for resp pre_star_rule and pre_star_rule_sum\<close>
 
@@ -1142,15 +1212,7 @@ lemma pre_star_saturation_exi:
   by (rule wfp_class_saturation_exi[of pre_star_rule ts])
      (simp add: pre_star_rule_less)
 
-lemma saturation_rtranclp_pre_star_rule_incr: "pre_star_rule\<^sup>*\<^sup>* A B \<Longrightarrow> A \<ge> B"
-proof (induction rule: rtranclp_induct)
-  case base
-  then show ?case by auto
-next
-  case (step y z)
-  then show ?case
-    using pre_star_rule_less by fastforce
-qed
+lemma saturation_rtranclp_pre_star_rule_incr: "pre_star_rule\<^sup>*\<^sup>* A B \<Longrightarrow> A \<ge> B" by (fact pre_star_rules_less_eq)
 
 lemma pre_star_rule_update_spec:
   assumes "pre_star_rule A A'"
