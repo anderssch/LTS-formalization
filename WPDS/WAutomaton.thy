@@ -1,5 +1,5 @@
 theory WAutomaton
-  imports "LTS" "Saturation" "ReverseWellQuasiOrder" "FinFunWellFounded" "MonoidLTS" "Kleene_Algebra.Dioid_models" "Set_More"
+  imports "LTS" "Saturation" "ReverseWellQuasiOrder" "FinFunWellFounded" "FinFunAddUpdate" "MonoidLTS" "Kleene_Algebra.Dioid_models" "Set_More"
 begin
 
 declare times_list_def[simp]
@@ -312,40 +312,28 @@ qed
 
 \<comment> \<open>For the executable pre-star, the saturation rule computes a set of new transition weights, 
     that are updated using the dioid's plus operator to combine with the existing value.\<close>
-definition finfun_update_plus :: "'a \<Rightarrow> 'b \<Rightarrow> ('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add) \<Rightarrow> ('a \<Rightarrow>f 'b)" where
-  "finfun_update_plus a b f = f(a $:= (f$a) + b)"
-
 definition finfun_update_plus_pair :: "('a \<times> 'b) \<Rightarrow> ('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add) \<Rightarrow> ('a \<Rightarrow>f 'b)" where
-  "finfun_update_plus_pair p = finfun_update_plus (fst p) (snd p)"
+  "finfun_update_plus_pair p f = f((fst p) $+= (snd p))"
 
 definition update_wts :: "('a \<Rightarrow>f 'b::idempotent_comm_monoid_add) \<Rightarrow> ('a \<times> 'b) set \<Rightarrow> ('a \<Rightarrow>f 'b)" where
   "update_wts = Finite_Set.fold finfun_update_plus_pair"
+(*
+definition update_1_wts :: "('a \<Rightarrow>f 'b::idempotent_comm_monoid_add) \<Rightarrow> ('a \<times> 'b) set \<Rightarrow> ('a \<Rightarrow>f 'b)" where
+  "update_1_wts ts updates = (let U = {(a,b) \<in> updates. ts$a + b \<noteq> ts$a} in if U = {} then ts else (let x = take_1 U in finfun_update_plus_pair ts x))"*)
+(* finfun_update_plus_pair
+wts $ (p, \<gamma>, q) + d * d' \<noteq> wts $ (p, \<gamma>, q)*)
 
-lemma finfun_update_plus_apply: "finfun_update_plus a b f $ a = f $ a + b"
-  unfolding finfun_update_plus_def by simp
-lemma finfun_update_plus_apply_other: "a \<noteq> x \<Longrightarrow> finfun_update_plus x b f $ a = f $ a"
-  unfolding finfun_update_plus_def by simp
 lemma finfun_update_plus_pair_apply: "finfun_update_plus_pair (a,b) f $ a = f $ a + b"
-  unfolding finfun_update_plus_pair_def using finfun_update_plus_apply by force
+  unfolding finfun_update_plus_pair_def using finfun_add_update_apply_same by force
 lemma finfun_update_plus_pair_apply_other: "a \<noteq> x \<Longrightarrow> finfun_update_plus_pair (x,b) f $ a = f $ a"
-  unfolding finfun_update_plus_pair_def using finfun_update_plus_apply_other by fastforce
-
-lemma finfun_update_plus_commute: "finfun_update_plus a b \<circ> finfun_update_plus a' b' = finfun_update_plus a' b' \<circ> finfun_update_plus a b"
-  apply (cases "a = a'")
-  unfolding finfun_update_plus_def
-   apply (simp add: comp_def add.commute add.left_commute)
-  using FinFun.finfun_comp_aux.upd_commute by fastforce
-
-lemma finfun_update_plus_idem: "finfun_update_plus a b \<circ> finfun_update_plus a b = finfun_update_plus a b"
-  unfolding finfun_update_plus_def comp_def using finfun_upd_apply_same
-  by (simp add: add.commute idempotent_ab_semigroup_add_class.add_left_idem)
+  unfolding finfun_update_plus_pair_def using finfun_add_update_apply_other by fastforce
 
 lemma finfun_update_plus_pair_idem: "comp_fun_idem finfun_update_plus_pair"
   apply standard
   subgoal for x y
-    unfolding finfun_update_plus_pair_def using finfun_update_plus_commute by fast
+    unfolding finfun_update_plus_pair_def using finfun_add_update_commute by fastforce
   subgoal for x
-    unfolding finfun_update_plus_pair_def using finfun_update_plus_idem by fast
+    unfolding finfun_update_plus_pair_def using finfun_add_update_idem by fastforce
   done
 lemma finfun_update_plus_pair_idem_on_UNIV: "comp_fun_idem_on UNIV finfun_update_plus_pair"
   using finfun_update_plus_pair_idem by (simp add: comp_fun_idem_def')
