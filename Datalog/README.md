@@ -6,7 +6,7 @@ Anders Schlichtkrull
 René Rydhof Hansen
 Flemming Nielson
 
-## Download the version considered in our FMCAD2023 submission
+## Download the version considered in our SAC2023 paper
 
 ```
 $ git clone --branch SAC2023 https://github.com/anderssch/LTS-formalization/
