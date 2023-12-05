@@ -651,19 +651,49 @@ proof -
     using ts_ts'' by blast
 qed
 
-(*lemma pre_star_rule_sum_mono':
+lemma pre_star_rule_sum_mono_point:
   assumes "ts\<^sub>2 \<le> ts\<^sub>1"
   assumes "pre_star_rule ts\<^sub>1 ts\<^sub>1'"
-  assumes "pre_star_rule ts\<^sub>2 ts\<^sub>2'"
-  shows "ts\<^sub>2 + ts\<^sub>2' \<le> ts\<^sub>1 + ts\<^sub>1'"
-*)
+  shows "ts\<^sub>2 + \<Sum> {ts'. pre_star_rule ts\<^sub>2 ts'} \<le> ts\<^sub>1'"
+proof - 
+  obtain p \<gamma> d p' w d' q where step:
+    "ts\<^sub>1' = ts\<^sub>1((p, \<gamma>, q) $+= d * d')"
+    "(p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)"
+    "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts\<^sub>1)"
+    "ts\<^sub>1 $ (p, \<gamma>, q) + d * d' \<noteq> ts\<^sub>1 $ (p, \<gamma>, q)"
+    using assms pre_star_rule_elim2[of ts\<^sub>1 ts\<^sub>1'] by auto
+
+  obtain d'' where d'':"(p', (lbl w, d''), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts\<^sub>2)" "d'' \<le> d'"
+    using wts_monoid_rtrancl_mono[OF assms(1)] step(3) by blast
+  have d_leq:"d * d'' \<le> d * d'" using d''(2) idempotent_semiring_ord_class.mult_isol by blast
+  show ?thesis 
+  proof (cases "ts\<^sub>2 $ (p, \<gamma>, q) + d * d'' \<noteq> ts\<^sub>2 $ (p, \<gamma>, q)")
+    case True
+    then have r:"pre_star_rule ts\<^sub>2 ts\<^sub>2((p,\<gamma>,q) $+= d * d'')"
+      using step d''(1) pre_star_rule.intros by fast
+    then have "\<Sum> {ts'. pre_star_rule ts\<^sub>2 ts'} \<le> ts\<^sub>2((p, \<gamma>, q) $+= d * d'')"
+      by (simp add: finite_pre_star_rule_set elem_greater_than_sum)
+    moreover have "ts\<^sub>2((p, \<gamma>, q) $+= d * d'') \<le> ts\<^sub>1((p, \<gamma>, q) $+= d * d')"
+      using d''(2) assms(1) d_leq finfun_add_update_same_mono by fast
+    ultimately show ?thesis
+      unfolding step(1) by (meson meet.le_infI2 order_trans)
+  next
+    case False
+    then show ?thesis
+      by (metis assms(1) d_leq finfun_add_update_same_mono finfun_upd_triv step(1) meet.inf.coboundedI1)
+  qed
+qed
+
+lemma pre_star_rule_sum_mono':
+  assumes "ts\<^sub>2 \<le> ts\<^sub>1"
+  shows "ts\<^sub>2 + \<Sum> {ts'. pre_star_rule ts\<^sub>2 ts'} \<le> \<Sum> {ts'. pre_star_rule ts\<^sub>1 ts'}"
+  using pre_star_rule_sum_mono_point[OF assms]
+  by (metis finite_pre_star_rule_set mem_Collect_eq sum_greater_elem)
 
 lemma pre_star_rule_sum_mono:
   assumes "ts\<^sub>2 \<le> ts\<^sub>1"
   shows "ts\<^sub>2 + \<Sum> {ts'. pre_star_rule ts\<^sub>2 ts'} \<le> ts\<^sub>1 + \<Sum> {ts'. pre_star_rule ts\<^sub>1 ts'}"
-  using assms
-  
-  sorry
+  using assms meet.inf.coboundedI1 pre_star_rule_sum_mono'[of ts\<^sub>2 ts\<^sub>1] by auto
 
 lemma pre_star_rule_sum_weak_star_to_sum_star:
   assumes "pre_star_rule_sum_weak\<^sup>*\<^sup>* ts ts'"
@@ -673,7 +703,7 @@ proof (induction rule: rtranclp_induct)
   case base
   then show ?case by auto
 next
-  case (step ts\<^sub>1 ts\<^sub>2) (* Unfortunately this is not using pre_star_rule_weak_to_rule as a lemma *)
+  case (step ts\<^sub>1 ts\<^sub>2)
   have "pre_star_rule_sum_weak ts\<^sub>1 ts\<^sub>2"
     using step by auto
   then obtain ts'' where ooo:
@@ -693,8 +723,6 @@ next
     have "pre_star_rule_sum ts\<^sub>3 ts\<^sub>4"
       unfolding ts\<^sub>4_def using ooo True pre_star_rule_sum.intros[of ts\<^sub>3] by fast
     moreover have "ts\<^sub>4 \<le> ts\<^sub>2" unfolding ooo(3) ts\<^sub>4_def using ts3less by blast
-      (*using ooo(1) s(2) ts3less idempotent_ab_semigroup_add_ord_class.meet.inf_mono
-      by blast*)
     ultimately show ?thesis using rtranclp.rtrancl_into_rtrancl[OF s(1)] by blast
   next
     case False
