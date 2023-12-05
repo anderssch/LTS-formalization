@@ -315,8 +315,16 @@ lemma sum_smaller_elem:
   apply (induct rule: finite_induct[OF assms(2)])
    apply (simp_all add: local.add.left_commute local.meet.inf_commute)
   by fastforce
-
 end
+
+lemma elem_greater_than_sum:
+  fixes P :: "'a::idempotent_comm_monoid_add_ord \<Rightarrow> bool"
+  assumes "P x"
+  assumes "finite {a. P a}"
+  shows "\<Sum>{a. P a} \<le> x"
+  using assms idem_sum_elem[OF assms(2), of x] unfolding idempotent_ab_semigroup_add_ord_class.less_eq_def
+  by (simp add: add.commute)
+
 
 \<comment> \<open>An idempotent semiring that follows the definition of [RSJM'05].\<close>
 class idempotent_semiring = semiring_0 + monoid_mult + idempotent_ab_semigroup_add

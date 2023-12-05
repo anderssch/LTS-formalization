@@ -617,10 +617,14 @@ proof -
 inductive pre_star_rule_sum_weak :: "('ctr_loc, 'label, 'weight) w_transitions saturation_rule" where
   "\<Sum>{ts'. pre_star_rule ts ts'} \<le> ts'' \<Longrightarrow> ts + ts'' \<noteq> ts \<Longrightarrow> pre_star_rule_sum_weak ts (ts + ts'')"
 
-lemma "pre_star_rule ts ts' \<Longrightarrow> pre_star_rule_sum_weak ts ts'"
-  oops
+lemma pre_star_rule_to_sum_weak: "pre_star_rule ts ts' \<Longrightarrow> pre_star_rule_sum_weak ts ts'"
+  using elem_greater_than_sum[of "\<lambda>ts'. pre_star_rule ts ts'" ts', OF _ finite_pre_star_rule_set]
+  by (metis idempotent_ab_semigroup_add_ord_class.less_def meet.inf_absorb2 pre_star_rule_less pre_star_rule_sum_weak.intros)
+
 lemma "pre_star_rule\<^sup>*\<^sup>* ts ts' \<Longrightarrow> pre_star_rule_sum_weak\<^sup>*\<^sup>* ts ts'"
-  oops
+  apply (induct rule: rtranclp_induct, simp)
+  using pre_star_rule_to_sum_weak by fastforce
+
 lemma 
   assumes "pre_star_rule_sum_weak\<^sup>*\<^sup>* ts ts'"
   shows "\<exists>ts''. pre_star_rule_sum\<^sup>*\<^sup>* ts ts'' \<and> ts'' \<le> ts'"
