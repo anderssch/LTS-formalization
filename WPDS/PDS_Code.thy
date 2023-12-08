@@ -4,17 +4,65 @@ begin
 
 global_interpretation pds: PDS_with_P_automata \<Delta> F_ctr_loc F_ctr_loc_st
   for \<Delta> :: "('ctr_loc::{enum, linorder}, 'label::{finite, linorder}) rule set"
-  and F_ctr_loc :: "('ctr_loc) set"
-  and F_ctr_loc_st :: "('state::finite) set"
+    and F_ctr_loc :: "('ctr_loc) set"
+    and F_ctr_loc_st :: "('state::finite) set"
   defines pre_star = "PDS_with_P_automata.pre_star_exec \<Delta>"
-  and pre_star_check = "PDS_with_P_automata.pre_star_exec_check \<Delta>"
-  and inits = "PDS_with_P_automata.inits"
-  and finals = "PDS_with_P_automata.finals F_ctr_loc F_ctr_loc_st"
-  and accepts = "PDS_with_P_automata.accepts F_ctr_loc F_ctr_loc_st"
-  and language = "PDS_with_P_automata.lang F_ctr_loc F_ctr_loc_st"
-  and step_starp = "rtranclp (LTS.step_relp (PDS.transition_rel \<Delta>))"
-  and accepts_pre_star_check = "PDS_with_P_automata.accept_pre_star_exec_check \<Delta> F_ctr_loc F_ctr_loc_st"
+(*
+  Input: 
+    * Pushdown Automaton
+    * P-Automaton
+  Output:
+    * P-Automaton (The pre_star automaton of the input)
+*)
+    and pre_star_check = "PDS_with_P_automata.pre_star_exec_check \<Delta>"
+(*
+  Input:
+    * Pushdown Automaton
+    * P-Automaton
+  Output
+    * P-Automaton option <-- (If inits \<subseteq> LTS.srcs A the pre_star automaton. Else None)
+*)
+    and inits = "PDS_with_P_automata.inits"
+(*
+  Input:
+    * No input
+  Output:
+    * Set of P-Automaton states
+*)
+    and finals = "PDS_with_P_automata.finals F_ctr_loc F_ctr_loc_st"
+(*
+  Input:
+    * Set of final ctr_loc states
+    * Set of final non-initial states
+  Output:
+    * Set of P-Automaton states
+*)
+    and accepts = "PDS_with_P_automata.accepts F_ctr_loc F_ctr_loc_st"
+(*
+  Input:
+    * Set of final ctr_loc states
+    * Set of final non-initial states
+    * P-automaton
+    * Configuration
+  Output:
+    * Boolean
+*)
+    and language = "PDS_with_P_automata.lang F_ctr_loc F_ctr_loc_st"
+    and step_starp = "rtranclp (LTS.step_relp (PDS.transition_rel \<Delta>))"
+(*
+  Input:
+    * Pushdown Automaton
+    * Configuration
+    * Configuration
+  Output:
+    * Bool
+*)
+    and accepts_pre_star_check = "PDS_with_P_automata.accept_pre_star_exec_check \<Delta> F_ctr_loc F_ctr_loc_st"
   .
+
+term step_starp
+term language
+
 
 global_interpretation inter: Intersection_P_Automaton
   initial_automaton Init "finals initial_F_ctr_loc initial_F_ctr_loc_st"

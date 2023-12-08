@@ -1199,13 +1199,13 @@ lemma pre_star_rule_sum_pre_star_step: "pre_star_rule_sum\<^sup>*\<^sup>* ts (pr
 lemma pre_star_rule_sum_pre_star_step_k: "pre_star_rule_sum\<^sup>*\<^sup>* ts ((pre_star_step ^^ k) ts)"
   by (induct k) (auto elim!: rtranclp_trans intro: pre_star_rule_sum_pre_star_step)
 
+
+
 definition "pre_star_loop = while_option (\<lambda>s. pre_star_step s \<noteq> s) pre_star_step"
+definition "pre_star_loop0 = pre_star_loop (ts_to_wts {})"
 definition "pre_star_exec = the o pre_star_loop"
-definition "pre_star_exec_check = pre_star_loop (ts_to_wts {})"
-(*
-definition "pre_star_exec = while (\<lambda>s. pre_star_step s \<noteq> s) pre_star_step"
-*)
-definition "accept_pre_star_exec c = accepts (pre_star_exec (ts_to_wts {})) c"
+definition "pre_star_exec0 = the pre_star_loop0"
+definition "accept_pre_star_exec0 c = accepts pre_star_exec0 c"
 
 lemma pre_star_exec_terminates: 
   fixes ts :: "('ctr_loc \<times> 'label \<times> 'ctr_loc) \<Rightarrow>f 'weight"
@@ -2294,6 +2294,9 @@ datatype ('ctr_loc, 'noninit) state =
   is_Init: Init (the_Ctr_Loc: 'ctr_loc) (* p \<in> P *)
   | is_Noninit: Noninit (the_St: 'noninit) (* q \<in> Q \<and> q \<notin> P *)
 
+definition inits' :: "('ctr_loc, 'noninit) state set" where 
+  "inits' = {q. is_Init q}"
+
 lemma finitely_many_states:
   assumes "finite (UNIV :: 'ctr_loc set)"
   assumes "finite (UNIV :: 'noninit set)"
@@ -2355,9 +2358,11 @@ interpretation dioidLTS transition_rel proof
   show "countable transition_rel" by (fact countable_transition_rel)
 qed
 
+definition "step_relp' = step_relp"
 notation step_relp (infix "\<Rightarrow>" 80)
 notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 notation l_step_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80)
+definition "l_step_relp' = l_step_relp"
 notation monoid_star_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [90,90,100] 100) 
 
 definition init_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weight::bounded_idempotent_semiring) rule set" where 
@@ -2924,6 +2929,8 @@ qed
 abbreviation accepts_ts :: "('ctr_loc, 'noninit) state set \<Rightarrow> ('ctr_loc,'label) conf \<Rightarrow> 'weight" where
   "accepts_ts finals \<equiv> (\<lambda>(p,w). accepts ts finals (Init p, w))"
 
+find_consts name: accepts
+
 lemma augmented_rules_correct:
   "dioidLTS.weight_pre_star augmented_WPDS.transition_rel (accepts (K$ 0) finals) (Init p, w) = weight_pre_star (accepts_ts finals) (p, w)"
   using unfold_pre_star_accepts_empty_automaton augmented_rules_match_W_automaton[of finals p w]
@@ -3475,8 +3482,12 @@ qed
 section \<open>Code generation 2\<close>
 
 definition pre_star_exec' where
- "pre_star_exec' = augmented_WPDS.pre_star_exec (K$ 0)"
+  "pre_star_exec' = augmented_WPDS.pre_star_exec0"
 
+definition accept_pre_star_exec0' where
+  "accept_pre_star_exec0' = augmented_WPDS.accept_pre_star_exec0"
+
+(*
 definition weight_reach' where 
   "weight_reach' = augmented_dioidLTS.weight_reach"
 
@@ -3499,7 +3510,7 @@ lemma
     and "accepts ts' finals' c = 1"
   shows "accepts (intersff ts' A) (finals'\<times>finals) c = weight_pre_star (accepts_ts finals) c" (* \<^bold>\<Sum> {d. }"*)
   oops
-
+*)
 
 end
 
@@ -3546,7 +3557,8 @@ lemma weight_reach_sum_exec_correct[code]:
 
 lemma "dioidLTS.weight_reach (wts_to_weightLTS (WPDS_with_W_automata.intersff ts' A)) (\<lambda>p. if is_Init (fst p) \<and> is_Init (snd p) then 1 else 0) (\<lambda>p. if p \<in> finals'\<times>finals then 1 else 0)
   = weight_reach_sum_exec ts inits finals"
-
+  oops
+(*
 lemma big_good_correctness_code:
 assumes "binary_aut ts"
     and "binary_aut ts'"
@@ -3562,4 +3574,7 @@ lemma
   oops
 (* TODO: Make executable version of "dioidLTS.SumInf {d | c d. d = dioidLTS.accepts ts finals c}" *)
   
+*)
+
 end
+

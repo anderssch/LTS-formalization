@@ -1,4 +1,4 @@
-theory P_Automata imports LTS.LTS begin
+theory P_Automata imports LTS begin
 
 section \<open>Automata\<close>
 
