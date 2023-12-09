@@ -299,7 +299,22 @@ lemma pre_star_rule_pre_star1s: "pre_star_rule\<^sup>*\<^sup>* ts (((\<lambda>s.
   by (induct k) (auto elim!: rtranclp_trans intro: pre_star_rule_pre_star1)
 
 definition "pre_star_loop = while_option (\<lambda>s. s \<union> pre_star1 s \<noteq> s) (\<lambda>s. s \<union> pre_star1 s)"
+term pre_star_loop
+(*
+Input:
+  P-automaton
+Output:
+  P-automaton option
+*)
+
 definition "pre_star_exec = the o pre_star_loop"
+(*
+Input:
+  P-automaton
+Output:
+  P-automaton
+*)
+
 definition "pre_star_exec_check A = (if inits \<subseteq> LTS.srcs A then pre_star_loop A else None)"
 
 definition "accept_pre_star_exec_check A c = (if inits \<subseteq> LTS.srcs A then Some (accepts (pre_star_exec A) c) else None)"

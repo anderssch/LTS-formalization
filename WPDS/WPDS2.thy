@@ -2294,8 +2294,8 @@ datatype ('ctr_loc, 'noninit) state =
   is_Init: Init (the_Ctr_Loc: 'ctr_loc) (* p \<in> P *)
   | is_Noninit: Noninit (the_St: 'noninit) (* q \<in> Q \<and> q \<notin> P *)
 
-definition inits' :: "('ctr_loc, 'noninit) state set" where 
-  "inits' = {q. is_Init q}"
+definition inits_set :: "('ctr_loc, 'noninit) state set" where 
+  "inits_set = {q. is_Init q}"
 
 lemma finitely_many_states:
   assumes "finite (UNIV :: 'ctr_loc set)"
