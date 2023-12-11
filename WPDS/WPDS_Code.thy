@@ -9,7 +9,7 @@ definition "checking ts \<longleftrightarrow> (\<forall>q. is_Init q \<longright
 
 global_interpretation wpds: WPDS_with_W_automata \<Delta> ts
   for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
-  and ts :: "(('ctr_loc, 'noninit::enum) state \<times> 'label \<times> ('ctr_loc, 'noninit) state) \<Rightarrow>f 'weight"
+  and ts :: "(('ctr_loc, 'noninit::enum) state, 'label) transition \<Rightarrow>f 'weight"
   defines pre_star = "WPDS_with_W_automata.pre_star_exec' \<Delta>"
 (* 
   Input:
@@ -77,7 +77,9 @@ global_interpretation wpds: WPDS_with_W_automata \<Delta> ts
   subgoal (* TODO: HOW CAN WE SOLVE THIS SUBGOAL?????? *)
     sorry
   done
- 
+
+declare accepts_pre_star_check_def[code]
+
 export_code accepts_pre_star_check in SML (* TODO: THIS GIVES AN ERROR "No code equations" *)
 
 (* TODO: ADAPT THE FOLLOWING TO DO WEIGHTED INTERSECTION:  *)
