@@ -61,14 +61,26 @@ global_interpretation wpds: WPDS_with_W_automata \<Delta> ts
   Output:
     * Bool
 *)
-    and accepts_pre_star_check = "if checking ts then Some (WPDS_with_W_automata.accept_pre_star_exec0' \<Delta> ts) else None"
-
-term accepts_pre_star_check
-
-(* TODO: CHECK IF THE TYPE OF accepts_pre_star_check IS OK *)
+    and accepts_pre_star_check = "\<lambda>finals pv. if checking ts then Some (WPDS_with_W_automata.accept_pre_star_exec0' \<Delta> ts finals pv) else None"
+(*
+  Input
+    * Pushdown Automaton
+    * W-Automaton
+    * Set of final states
+    * Configuration
+    * Weight
+*)
+  unfolding WPDS_with_W_automata_def WPDS_def WPDS_with_W_automata_axioms_def
+  apply rule
+  subgoal (* TODO: HOW CAN WE SOLVE THIS SUBGOAL?????? *)
+    sorry 
+  subgoal (* TODO: HOW CAN WE SOLVE THIS SUBGOAL?????? *)
+    sorry
+  done
  
+export_code accepts_pre_star_check in SML (* TODO: THIS GIVES AN ERROR "No code equations" *)
 
-
+(* TODO: ADAPT THE FOLLOWING TO DO WEIGHTED INTERSECTION:  *)
 global_interpretation inter: Intersection_P_Automaton
   initial_automaton Init "finals initial_F_ctr_loc initial_F_ctr_loc_st"
   "pre_star \<Delta> final_automaton" "finals final_F_ctr_loc final_F_ctr_loc_st"
