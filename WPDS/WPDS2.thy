@@ -1113,7 +1113,7 @@ lemma ts_sum_apply:
   unfolding setcompr_eq_image 
   by (induct rule: finite_induct[OF assms], simp_all add: zero_finfun_def)
 
-lemma pre_star_updates_to_rule: "(t, d) \<in> pre_star_updates ts \<Longrightarrow> ts $ t + d \<noteq> ts $ t \<Longrightarrow> pre_star_rule ts ts(t $:= ts $ t + d)"
+lemma pre_star_updates_to_rule: "(t, d) \<in> pre_star_updates ts \<Longrightarrow> ts $ t + d \<noteq> ts $ t \<Longrightarrow> pre_star_rule ts ts(t $+= d)"
   unfolding pre_star_updates_def
   using monoid_star_code add_trans[unfolded is_rule_def]
   by fast

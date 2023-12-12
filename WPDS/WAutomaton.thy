@@ -343,7 +343,7 @@ lemma folding_idem_finfun_update_plus_pair: "folding_idem finfun_update_plus_pai
   apply standard
   using finfun_add_update_commute finfun_add_update_idem by fastforce+
 
-lemma (in folding_idem) fold_code[code_unfold]:
+lemma (in folding_idem) fold_code:
   shows "Finite_Set.fold f z (set A) = foldr f A z"
   unfolding eq_fold[symmetric]
 proof (induct A)
