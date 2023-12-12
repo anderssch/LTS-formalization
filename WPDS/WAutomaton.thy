@@ -338,6 +338,27 @@ lemma finfun_update_plus_pair_idem: "comp_fun_idem finfun_update_plus_pair"
 lemma finfun_update_plus_pair_idem_on_UNIV: "comp_fun_idem_on UNIV finfun_update_plus_pair"
   using finfun_update_plus_pair_idem by (simp add: comp_fun_idem_def')
 
+lemma folding_idem_finfun_update_plus_pair: "folding_idem finfun_update_plus_pair"
+  unfolding finfun_update_plus_pair_def
+  apply standard
+  using finfun_add_update_commute finfun_add_update_idem by fastforce+
+
+lemma (in folding_idem) fold_code[code_unfold]:
+  shows "Finite_Set.fold f z (set A) = foldr f A z"
+  unfolding eq_fold[symmetric]
+proof (induct A)
+  case Nil
+  then show ?case by simp
+next
+  case (Cons a X)
+  then show ?case by fastforce
+qed
+
+lemma update_wts_code[code]: "update_wts f (set A) = foldr finfun_update_plus_pair A f"
+  using folding_idem.fold_code[OF folding_idem_finfun_update_plus_pair, of f A]
+  unfolding update_wts_def by blast
+
+
 lemma update_wts_insert:
   assumes "finite S"
   shows "update_wts f (insert x S) = finfun_update_plus_pair x (update_wts f S)"
