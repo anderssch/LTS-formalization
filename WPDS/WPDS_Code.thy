@@ -242,9 +242,53 @@ instance
       done
     done
   subgoal for P
-    sorry
+    unfolding enum_all_operation_def
+    apply rule
+    subgoal
+      apply auto
+      subgoal for x
+        unfolding local.enum_all_a_def
+        apply auto
+        apply (cases x)
+          apply auto
+        done
+      done
+    subgoal
+      apply rule
+      subgoal
+        apply auto
+        done
+      apply rule
+      subgoal
+        apply auto
+        unfolding local.enum_all_a_def
+        apply auto
+        done
+      subgoal
+        apply auto
+        unfolding local.enum_all_a_def
+        apply auto
+        done
+      done
+    done
   subgoal for P
-    sorry
+    unfolding enum_ex_operation_def
+    apply auto
+    subgoal
+      unfolding local.enum_ex_a_def
+      apply auto
+      done
+    subgoal
+      unfolding local.enum_ex_a_def
+      apply auto
+      done
+    subgoal for x
+      unfolding local.enum_ex_a_def
+      unfolding enum_class.enum_ex
+      apply auto
+      apply (metis operation.exhaust)
+      done
+    done
   done
 end
 
