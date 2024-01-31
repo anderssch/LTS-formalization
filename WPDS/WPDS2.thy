@@ -13,7 +13,7 @@ locale WPDS =
   assumes finite_rules: "finite \<Delta>"
 begin
 
-fun lbl :: "'label operation \<Rightarrow> 'label list" where
+primrec lbl :: "'label operation \<Rightarrow> 'label list" where
   "lbl pop = []"
 | "lbl (swap \<gamma>) = [\<gamma>]" 
 | "lbl (push \<gamma>  \<gamma>') = [\<gamma>, \<gamma>']"
