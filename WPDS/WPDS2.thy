@@ -2326,6 +2326,147 @@ proof -
     unfolding split by auto
 qed
 
+lemma finitely_many_states2:
+  assumes "finite (UNIV :: ('ctr_loc, 'noninit) state set)"
+  shows "finite (UNIV :: 'ctr_loc set)"
+proof -
+  define Init' :: "'ctr_loc \<Rightarrow> ('ctr_loc, 'noninit) state" where
+    "Init' = Init"
+  define Noninit' :: "'noninit \<Rightarrow> ('ctr_loc, 'noninit) state" where
+    "Noninit' = Noninit"
+  
+  have "finite (Init' ` UNIV)"
+    by (meson assms infinite_iff_countable_subset top_greatest)
+  moreover
+  have "inj Init'"
+    using Init'_def inj_on_def by blast
+  ultimately
+  show ?thesis
+    using finite_imageD by blast
+qed
+
+lemma finitely_many_states3:
+  assumes "finite (UNIV :: ('ctr_loc, 'noninit) state set)"
+  shows "finite (UNIV :: 'noninit set)"
+proof -
+  define Init' :: "'ctr_loc \<Rightarrow> ('ctr_loc, 'noninit) state" where
+    "Init' = Init"
+  define Noninit' :: "'noninit \<Rightarrow> ('ctr_loc, 'noninit) state" where
+    "Noninit' = Noninit"
+
+  have "finite (Noninit' ` UNIV)"
+    by (meson assms infinite_iff_countable_subset top_greatest)
+  moreover
+  have "inj Noninit'"
+    using Noninit'_def injI by fastforce
+  ultimately
+  show ?thesis
+    using finite_imageD by blast
+qed
+
+lemma finitely_many_states_iff:
+  "finite (UNIV :: ('ctr_loc, 'noninit) state set) \<longleftrightarrow> finite (UNIV :: 'ctr_loc set) \<and> finite (UNIV :: 'noninit set)"
+  using finitely_many_states finitely_many_states2 finitely_many_states3 by blast
+
+lemma finite_card_states':
+  assumes "finite (X :: 'ctr_loc set)"
+  assumes "finite (Y :: 'noninit set)"
+  shows "card (Init ` X \<union> Noninit ` Y) = card X + card Y"
+  using assms
+proof (induction "card X + card Y" arbitrary: X Y)
+  case 0
+  then show ?case
+    by auto
+next
+  case (Suc n)
+  have "X \<noteq> {} \<or> Y \<noteq> {}"
+    using Suc.hyps(2) by force
+  then show ?case
+  proof
+    assume "X \<noteq> {}"
+    obtain x where "x \<in> X"
+      using \<open>X \<noteq> {}\<close> by blast
+    define X' where "X' = X - {x}"
+    have "card (Init ` X' \<union> Noninit ` Y) = card X' + card Y"
+      by (metis Suc.hyps(1) Suc.hyps(2) Suc.prems(1) Suc.prems(2) X'_def \<open>x \<in> X\<close>
+          ab_semigroup_add_class.add_ac(1) card_Suc_Diff1 diff_add_inverse finite.emptyI 
+          finite_Diff2 finite_Diff_insert plus_1_eq_Suc)
+    have "card X = Suc (card X')"
+      by (metis Suc.prems(1) X'_def \<open>x \<in> X\<close> card.remove)
+    have "Init ` X = {Init x} \<union> Init ` X' "
+      using X'_def \<open>x \<in> X\<close> by blast
+    have "card (Init ` X \<union> Noninit ` Y) = card ({Init x} \<union> Init ` X' \<union> Noninit ` Y)"
+      by (simp add: \<open>Init ` X = {Init x} \<union> Init ` X'\<close>)
+    also have "... = Suc (card (Init ` X' \<union> Noninit ` Y))"
+      by (smt (verit, del_insts) Diff_empty Diff_insert0 Suc.prems(1) Suc.prems(2) UnE 
+          Un_insert_left X'_def card_insert_disjoint finite.insertI finite_Diff2 finite_Un 
+          finite_imageI imageE insertCI insert_Diff1 mk_disjoint_insert state.distinct(1) 
+          state.inject(1) sup_bot_left)
+    also have "... = Suc (card X') + card Y"
+      using \<open>card (Init ` X' \<union> Noninit ` Y) = card X' + card Y\<close> by presburger
+    also have "... = card X + card Y"
+      using \<open>card X = Suc (card X')\<close> by presburger
+    finally show ?case
+      .
+  next
+    assume "Y \<noteq> {}"
+    obtain y where "y \<in> Y"
+      using \<open>Y \<noteq> {}\<close> by blast
+    define Y' where "Y' = Y - {y}"
+    have "card (Init ` X \<union> Noninit ` Y') = card X + card Y'"
+      by (metis (full_types) Suc.hyps(1) Suc.hyps(2) Suc.prems(1) Suc.prems(2) Suc_inject Y'_def
+          \<open>y \<in> Y\<close> add.left_commute card.remove finite.emptyI finite_Diff2 finite_insert 
+          plus_1_eq_Suc)
+    have "card Y = Suc (card Y')"
+      by (metis Suc.prems(2) Y'_def \<open>y \<in> Y\<close> card.remove)
+    have "Noninit ` Y = {Noninit y} \<union> Noninit ` Y' "
+      using Y'_def \<open>y \<in> Y\<close> by blast
+    have "card (Init ` X \<union> Noninit ` Y) = card (Init ` X \<union> {Noninit y} \<union> Noninit ` Y')"
+      by (simp add: \<open>Noninit ` Y = {Noninit y} \<union> Noninit ` Y'\<close>)
+    also have "... = Suc (card (Init ` X \<union> Noninit ` Y'))"
+      by (smt (z3) Diff_insert_absorb Suc.prems(1) Suc.prems(2) Un_iff Un_insert_left 
+          Un_insert_right Y'_def \<open>y \<in> Y\<close> card_insert_disjoint finite_Un finite_imageI image_iff
+          insertE insert_is_Un insert_not_empty mk_disjoint_insert state.distinct(1) state.inject(2) 
+          sup_bot.right_neutral)
+    also have "... = card X + Suc (card Y')"
+      using \<open>card (Init ` X \<union> Noninit ` Y') = card X + card Y'\<close> by presburger
+    also have "... = card X + card Y"
+      using \<open>card Y = Suc (card Y')\<close> by presburger
+    finally show ?case
+      .
+  qed
+qed
+
+lemma finite_card_states:
+  assumes "finite (UNIV :: 'ctr_loc set)"
+  assumes "finite (UNIV :: 'noninit set)"
+  shows "card (UNIV :: ('ctr_loc, 'noninit) state set) = card (UNIV :: 'ctr_loc set) + card (UNIV :: 'noninit set)"
+proof -
+  define Init' :: "'ctr_loc \<Rightarrow> ('ctr_loc, 'noninit) state" where
+    "Init' = Init"
+  define Noninit' :: "'noninit \<Rightarrow> ('ctr_loc, 'noninit) state" where
+    "Noninit' = Noninit"
+  have split: "UNIV = (Init' ` UNIV) \<union> (Noninit' ` UNIV)"
+    unfolding Init'_def Noninit'_def
+  proof (rule; rule; rule)
+    fix x :: "('ctr_loc, 'noninit) state"
+    assume "x \<in> UNIV"
+    moreover
+    assume "x \<notin> range Noninit"
+    ultimately
+    show "x \<in> range Init"
+      by (metis range_eqI state.exhaust)
+  qed
+  have "CARD(('ctr_loc, 'noninit) state) = card ((Init' ` UNIV) \<union> (Noninit' ` UNIV))"
+    using split by auto
+  also
+  have "... = CARD('ctr_loc) + CARD('noninit)"
+    using finite_card_states'[of UNIV UNIV] assms unfolding Init'_def Noninit'_def by auto
+  finally
+  show ?thesis
+    .
+qed
+
 instantiation state :: (finite, finite) finite begin
   instance by standard (simp add: finitely_many_states)
 end
