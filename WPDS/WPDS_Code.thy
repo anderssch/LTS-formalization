@@ -92,19 +92,10 @@ definition finite_UNIV_state :: "(('a, 'b) state, bool) phantom" where
   "finite_UNIV_state  == Phantom(('a, 'b) state) (finite UNIV_a \<and> finite UNIV_b)"
 
 instance
-  apply standard
-  unfolding finite_UNIV_state_def
-  apply auto
-  subgoal
-    apply (simp add: UNIV_a_def UNIV_b_def finitely_many_states)
-    done
-  subgoal
-    using UNIV_a_def finitely_many_states_iff apply auto
-    done
-  subgoal
-    apply (simp add: WPDS_Code.UNIV_b_def finitely_many_states_iff)
-    done
-  done
+  by standard 
+    (auto simp add: UNIV_a_def UNIV_b_def finitely_many_states finite_UNIV_state_def
+      finitely_many_states_iff)
+
 end
 
 instantiation state :: (card_UNIV,card_UNIV) card_UNIV begin
@@ -119,27 +110,9 @@ definition card_UNIV_state :: "(('a, 'b) state) card_UNIV" where
   "card_UNIV_state == Phantom(('a, 'b) state) (if (finite UNIV_a' \<and> finite UNIV_b') then CARD('a) + CARD('b) else 0)"
 
 instance
-  apply standard
-  unfolding card_UNIV_state_def
-  subgoal
-    apply auto
-    subgoal
-      unfolding UNIV_a'_def
-      unfolding UNIV_b'_def
-      apply (simp add: finite_card_states)
-      done
-    subgoal
-      unfolding UNIV_a'_def
-      unfolding UNIV_b'_def
-      using card.infinite finitely_many_states2 apply blast
-      done
-    subgoal
-      unfolding UNIV_a'_def
-      unfolding UNIV_b'_def
-      using card.infinite finitely_many_states_iff apply blast
-      done
-    done
-  done
+  by standard
+    (auto simp add: card_UNIV_state_def UNIV_a'_def UNIV_b'_def finite_card_states 
+      finitely_many_states_iff)
 end
 
 instantiation operation :: (enum) enum begin
@@ -161,135 +134,64 @@ definition enum_all_operation :: "('a operation \<Rightarrow> bool) \<Rightarrow
 definition enum_ex_operation :: "('a operation \<Rightarrow> bool) \<Rightarrow> bool" where
   "enum_ex_operation P \<equiv> P pop \<or> enum_ex_a (\<lambda>x. P (swap x)) \<or> enum_ex_a (\<lambda>x. enum_ex_a (\<lambda>y. P (push x y)))"
 
-instance 
-  apply standard
-  subgoal
-    apply auto
-    unfolding enum_operation_def
-    apply simp
-    subgoal for x
-      apply (induction x)
-      subgoal
-        apply simp
-        done
-      subgoal for x
-        apply (subgoal_tac "swap x \<in> swap ` set enum_a")
-        subgoal
-          apply auto
-          done
-        subgoal 
-          unfolding local.enum_a_def
-          using UNIV_enum by auto
-        done
-      subgoal for x y
-        apply (subgoal_tac "push x y \<in> set (map (\<lambda>(x,y). push x y) (List.product enum_a enum_a))")
-        subgoal
-          apply auto
-          done
-        subgoal
-          apply auto
-          using \<open>\<And>xa. swap xa = pop \<or> swap xa \<in> swap ` set local.enum_a \<or> swap xa \<in>
-                         (\<lambda>a. case a of (a, b) \<Rightarrow> push a b) ` (set local.enum_a \<times> set local.enum_a)\<close> 
-            imageE operation.distinct(5) operation.inject(1) pair_imageI split_beta apply fastforce
-          done
-        done
-      done
-    done
-  subgoal
-    unfolding enum_operation_def
-    apply auto
-    subgoal
-      apply (subgoal_tac "inj swap \<and> distinct local.enum_a")
-      subgoal
-        apply auto
-        using distinct_map inj_on_def apply blast
-        done
-      subgoal
-        apply auto
-        subgoal
-          apply (meson injI operation.inject(1))
-          done
-        subgoal
-          unfolding enum_a_def
-          using enum_distinct
-          apply auto
-          done
-        done
-      done
-    subgoal
-      apply (subgoal_tac "inj_on (\<lambda>(x, y). push x y) (set (List.product local.enum_a local.enum_a)) \<and> distinct (List.product local.enum_a local.enum_a)")
-      subgoal
-        using distinct_map apply blast
-        done
-      subgoal
-        apply rule
-        subgoal
-          apply auto
-          apply (simp add: inj_on_def)
-          done
-        subgoal
-          apply (subgoal_tac "distinct local.enum_a")
-          subgoal
-            apply (simp add: distinct_product)
-            done
-          subgoal
-            unfolding enum_a_def
-            using enum_distinct
-            apply auto
-            done
-          done
-        done
-      done
-    done
-  subgoal for P
-    unfolding enum_all_operation_def
-    apply rule
-    subgoal
-      apply auto
-      subgoal for x
-        unfolding local.enum_all_a_def
-        apply auto
-        apply (cases x)
-          apply auto
-        done
-      done
-    subgoal
-      apply rule
-      subgoal
-        apply auto
-        done
-      apply rule
-      subgoal
-        apply auto
-        unfolding local.enum_all_a_def
-        apply auto
-        done
-      subgoal
-        apply auto
-        unfolding local.enum_all_a_def
-        apply auto
-        done
-      done
-    done
-  subgoal for P
-    unfolding enum_ex_operation_def
-    apply auto
-    subgoal
-      unfolding local.enum_ex_a_def
-      apply auto
-      done
-    subgoal
-      unfolding local.enum_ex_a_def
-      apply auto
-      done
-    subgoal for x
-      unfolding local.enum_ex_a_def
-      unfolding enum_class.enum_ex
-      apply auto
-      apply (metis operation.exhaust)
-      done
-    done
-  done
+instance proof
+  have swap_enum: "\<forall>x. swap x \<in> swap ` set enum_a"
+    unfolding local.enum_a_def using UNIV_enum by auto
+
+  show "(UNIV :: 'a operation set) = set enum_class.enum"
+  proof
+    show "(UNIV :: 'a operation set) \<subseteq> set enum_class.enum"
+    proof 
+      fix x :: "'a operation"
+      show "x \<in> set enum_class.enum"
+        unfolding enum_operation_def using swap_enum by (induction x) auto
+    qed
+  next
+    show "set enum_class.enum \<subseteq> (UNIV :: 'a operation set)"
+      by auto
+  qed
+
+  have "distinct (map swap local.enum_a)"
+    using distinct_map inj_on_def unfolding enum_a_def using enum_distinct by force
+  moreover
+  have "distinct (map (\<lambda>(x, y). push x y) (List.product local.enum_a local.enum_a))"
+    using distinct_map distinct_product enum_distinct unfolding enum_a_def 
+    by (force simp add: inj_on_def)
+  ultimately
+  show "distinct (enum_class.enum :: 'a operation list)"
+    unfolding enum_operation_def by auto
+
+  show "\<And>P :: 'a operation \<Rightarrow> bool. enum_class.enum_all P = Ball UNIV P"
+  proof -
+    fix P :: "'a operation \<Rightarrow> bool"
+    show "enum_class.enum_all P = Ball UNIV P"
+    proof 
+      assume "enum_class.enum_all P"
+      moreover 
+      have "\<And>x. P pop \<Longrightarrow> \<forall>x. P (swap x) \<Longrightarrow> \<forall>x y. P (push x y) \<Longrightarrow> P x"
+        by (metis operation.exhaust)
+      ultimately show "Ball UNIV P"
+        unfolding enum_all_operation_def local.enum_all_a_def by auto
+    next
+      assume "Ball UNIV P"
+      then show "enum_class.enum_all P"
+        unfolding enum_all_operation_def local.enum_all_a_def by auto
+    qed
+  qed
+  show "\<And>P :: 'a operation \<Rightarrow> bool. enum_class.enum_ex P = Bex UNIV P"
+  proof
+    fix P :: "'a operation \<Rightarrow> bool"
+    assume "enum_class.enum_ex P"
+    then show "Bex UNIV P"
+      unfolding enum_ex_operation_def local.enum_ex_a_def by auto
+  next
+    fix P :: "'a operation \<Rightarrow> bool"
+    assume "Bex UNIV P"
+    then show "enum_class.enum_ex P"
+      unfolding enum_ex_operation_def local.enum_ex_a_def enum_class.enum_ex
+      by (metis operation.exhaust)
+  qed
+qed
 end
 
 export_code accepts_pre_star_check in SML (* TODO: THIS GIVES AN ERROR "No code equations" *)
