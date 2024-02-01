@@ -194,6 +194,14 @@ instance proof
 qed
 end
 
+find_theorems wpds.lbl
+
+lemma x[code]:
+  "wpds.lbl pop = ([] ::('a ::{bounded_idempotent_semiring,finite}) list)"
+  "wpds.lbl (swap (\<gamma>::'a::{bounded_idempotent_semiring,finite})) = [\<gamma>]" 
+  "wpds.lbl (push \<gamma>  \<gamma>') = [\<gamma>, \<gamma>']"
+  by auto
+
 export_code accepts_pre_star_check in SML (* TODO: THIS GIVES AN ERROR "No code equations" *)
 
 (* TODO: ADAPT THE FOLLOWING TO DO WEIGHTED INTERSECTION:  *)
