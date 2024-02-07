@@ -5,6 +5,19 @@ begin
 term WPDS_with_W_automata
 
 
+
+fun accepts_code :: "('state \<times> 'label \<times> 'state) \<Rightarrow>f 'weight::bounded_idempotent_semiring \<Rightarrow> 'state set \<Rightarrow> ('state \<times> 'label list) \<Rightarrow> 'weight"  where
+    "accepts_code ts finals (p,[]) = (if p \<in> finals then 1 else 0)"
+ |  "accepts_code ts finals (p,(y#w)) = (\<Sum>{(ts $ (p,y,q) * (accepts_code ts finals (q,w))) | q. ts $ (p,y,q) \<noteq> 0})"
+
+thm dioidLTS.accepts_def
+
+lemma accepts_code_correct[code]:"dioidLTS.accepts ts finals (p,w) = accepts_code ts finals (p,w)"
+  unfolding dioidLTS.accepts_def
+  apply -
+  sorry
+
+
 definition "checking ts \<longleftrightarrow> (\<forall>q. is_Init q \<longrightarrow> (\<forall>p \<gamma>. ts $ (p, \<gamma>, q) = 0))"
 
 global_interpretation wpds: WPDS_with_W_automata \<Delta> ts
