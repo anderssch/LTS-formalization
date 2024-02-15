@@ -1207,6 +1207,9 @@ definition "pre_star_exec = the o pre_star_loop"
 definition "pre_star_exec0 = the pre_star_loop0"
 definition "accept_pre_star_exec0 c = accepts pre_star_exec0 c"
 
+lemma pre_star_exec0_simp: "pre_star_exec0 = pre_star_exec (K$0)" 
+  by (simp add: pre_star_exec0_def pre_star_exec_def pre_star_loop0_def)
+
 lemma pre_star_exec_terminates: 
   fixes ts :: "('ctr_loc \<times> 'label \<times> 'ctr_loc) \<Rightarrow>f 'weight"
   shows "\<exists>t. pre_star_loop ts = Some t"
@@ -1236,6 +1239,9 @@ qed
 
 lemma saturation_pre_star_exec: "saturation pre_star_rule ts (pre_star_exec ts)"
   using saturation_pre_star_exec' saturation_pre_star_rule_sum by auto
+
+lemma saturation_pre_star_exec0: "saturation pre_star_rule (ts_to_wts {}) pre_star_exec0"
+  using saturation_pre_star_exec pre_star_exec0_simp by simp
 
 
 section \<open>Pre* correctness\<close>
@@ -3627,6 +3633,13 @@ definition pre_star_exec' where
 
 definition accept_pre_star_exec0' where
   "accept_pre_star_exec0' = augmented_WPDS.accept_pre_star_exec0"
+
+lemma pre_star_exec'_saturation: "saturation augmented_WPDS.pre_star_rule (K$ 0) pre_star_exec'"
+  unfolding pre_star_exec'_def using augmented_WPDS.saturation_pre_star_exec0 by simp
+
+lemma pre_star_exec_correctness: 
+  "accepts pre_star_exec' finals (Init p, w) = weight_pre_star (accepts_ts finals) (p,w)"
+  using pre_star_correctness pre_star_exec'_saturation by blast
 
 (*
 definition weight_reach' where 

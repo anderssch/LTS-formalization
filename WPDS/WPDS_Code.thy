@@ -17,10 +17,37 @@ lemma accepts_code_correct[code]:"dioidLTS.accepts ts finals (p,w) = accepts_cod
   apply -
   sorry
 
+locale WPDS_Code =
+  fixes \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
+    and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions"
+begin
+definition "checking rules A \<longleftrightarrow> (finite rules \<and> (\<forall>q. is_Init q \<longrightarrow> (\<forall>p \<gamma>. A $ (p, \<gamma>, q) = 0)))"
+
+definition "lbl = WPDS.lbl"
+
+lemma checking_implies: "checking \<Delta> ts \<Longrightarrow> WPDS_with_W_automata \<Delta> ts"
+  unfolding checking_def WPDS_with_W_automata_def WPDS_def WPDS_with_W_automata_axioms_def by blast
+
+thm WPDS_with_W_automata.pre_star_exec_correctness
+lemma pre_star_exec_correctness:
+  assumes "checking \<Delta> ts"
+  shows "dioidLTS.accepts (WPDS_with_W_automata.pre_star_exec' \<Delta> ts) finals (Init p, w) =
+         dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (\<lambda>(p, w). dioidLTS.accepts ts finals (Init p, w)) (p, w)"
+  using WPDS_with_W_automata.pre_star_exec_correctness[of \<Delta> ts finals p w] checking_implies[OF assms] by blast
+
+
+end
+
+(*global_interpretation wpds: WPDS_Code \<Delta> ts
+  for \<Delta> :: "('ctr_loc::{enum,card_UNIV}, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
+  and ts :: "(('ctr_loc, 'noninit::{enum,card_UNIV}) state, 'label) transition \<Rightarrow>f 'weight"
+  defines pre_star = "WPDS_with_W_automata.pre_star_exec' \<Delta>"
+  .
+*)
 
 definition "checking ts \<longleftrightarrow> (\<forall>q. is_Init q \<longrightarrow> (\<forall>p \<gamma>. ts $ (p, \<gamma>, q) = 0))"
 
-global_interpretation wpds: WPDS_with_W_automata \<Delta> ts
+global_interpretation wpds: WPDS_Code \<Delta> ts
   for \<Delta> :: "('ctr_loc::{enum,card_UNIV}, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
   and ts :: "(('ctr_loc, 'noninit::{enum,card_UNIV}) state, 'label) transition \<Rightarrow>f 'weight"
   defines pre_star = "WPDS_with_W_automata.pre_star_exec' \<Delta>"
@@ -83,13 +110,8 @@ global_interpretation wpds: WPDS_with_W_automata \<Delta> ts
     * Configuration
     * Weight
 *)
-  unfolding WPDS_with_W_automata_def WPDS_def WPDS_with_W_automata_axioms_def
-  apply rule
-  subgoal (* TODO: HOW CAN WE SOLVE THIS SUBGOAL?????? *)
-    sorry 
-  subgoal (* TODO: HOW CAN WE SOLVE THIS SUBGOAL?????? *)
-    sorry
-  done
+  .
+
 
 declare accepts_pre_star_check_def[code]
 
@@ -207,14 +229,14 @@ instance proof
 qed
 end
 
-find_theorems wpds.lbl
+(*find_theorems wpds.lbl
 
 lemma x[code]:
   "wpds.lbl pop = ([] ::('a ::{bounded_idempotent_semiring,finite}) list)"
   "wpds.lbl (swap (\<gamma>::'a::{bounded_idempotent_semiring,finite})) = [\<gamma>]" 
   "wpds.lbl (push \<gamma>  \<gamma>') = [\<gamma>, \<gamma>']"
-  by auto
-
+  unfolding wpds.lbl_def by auto
+*)
 export_code accepts_pre_star_check in SML (* TODO: THIS GIVES AN ERROR "No code equations" *)
 
 (* TODO: ADAPT THE FOLLOWING TO DO WEIGHTED INTERSECTION:  *)
