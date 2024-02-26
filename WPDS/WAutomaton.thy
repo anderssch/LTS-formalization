@@ -58,7 +58,7 @@ locale W_automaton = monoidLTS "wts_to_monoidLTS transition_relation"
   for transition_relation :: "('state::finite, 'label, 'weight::bounded_idempotent_semiring) w_transitions" +
   fixes initials :: "'state set" and finals :: "'state set"
 begin
-interpretation monoidLTS "wts_to_monoidLTS transition_relation" ..
+interpretation monoidLTS "wts_to_monoidLTS transition_relation" .
 end
 
 \<comment> \<open>The weighted version of the @{term LTS.reach} function. 

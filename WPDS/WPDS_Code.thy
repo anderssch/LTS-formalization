@@ -2,38 +2,42 @@ theory WPDS_Code
   imports WPDS2 "Deriving.Derive"
 begin
 
-term WPDS_with_W_automata
-
-
 
 fun accepts_code :: "('state \<times> 'label \<times> 'state) \<Rightarrow>f 'weight::bounded_idempotent_semiring \<Rightarrow> 'state set \<Rightarrow> ('state \<times> 'label list) \<Rightarrow> 'weight"  where
     "accepts_code ts finals (p,[]) = (if p \<in> finals then 1 else 0)"
  |  "accepts_code ts finals (p,(y#w)) = (\<Sum>{(ts $ (p,y,q) * (accepts_code ts finals (q,w))) | q. ts $ (p,y,q) \<noteq> 0})"
-
-thm dioidLTS.accepts_def
-
 lemma accepts_code_correct[code]:"dioidLTS.accepts ts finals (p,w) = accepts_code ts finals (p,w)"
   unfolding dioidLTS.accepts_def
   apply -
   sorry
+
 
 locale WPDS_Code =
   fixes \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
     and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions"
 begin
 definition "checking rules A \<longleftrightarrow> (finite rules \<and> (\<forall>q. is_Init q \<longrightarrow> (\<forall>p \<gamma>. A $ (p, \<gamma>, q) = 0)))"
+lemma checking_implies: "checking \<Delta> ts \<Longrightarrow> WPDS_with_W_automata \<Delta> ts"
+  unfolding checking_def WPDS_with_W_automata_def finite_WPDS_def WPDS_with_W_automata_axioms_def by blast
+
 
 definition "lbl = WPDS.lbl"
 
-lemma checking_implies: "checking \<Delta> ts \<Longrightarrow> WPDS_with_W_automata \<Delta> ts"
-  unfolding checking_def WPDS_with_W_automata_def WPDS_def WPDS_with_W_automata_axioms_def by blast
+definition "augmented_WPDS_rules = WPDS_with_W_automata_no_assms.augmented_WPDS_rules"
+definition "pre_star_exec' = WPDS_with_W_automata_no_assms.pre_star_exec'"
+definition "accept_pre_star_exec0' = WPDS_with_W_automata_no_assms.accept_pre_star_exec0'"
+declare accept_pre_star_exec0'_def[code]
 
 thm WPDS_with_W_automata.pre_star_exec_correctness
 lemma pre_star_exec_correctness:
   assumes "checking \<Delta> ts"
-  shows "dioidLTS.accepts (WPDS_with_W_automata.pre_star_exec' \<Delta> ts) finals (Init p, w) =
+  shows "dioidLTS.accepts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts) finals (Init p, w) =
          dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (\<lambda>(p, w). dioidLTS.accepts ts finals (Init p, w)) (p, w)"
   using WPDS_with_W_automata.pre_star_exec_correctness[of \<Delta> ts finals p w] checking_implies[OF assms] by blast
+
+(*
+lemma augmented_WPDS_rules_code2[code]: "checking \<Delta> ts \<Longrightarrow> WPDS_with_W_automata_no_assms.augmented_WPDS_rules \<Delta> ts = (\<Union>((p, \<gamma>), d, (p', w)) \<in> \<Delta>. {((Init p, \<gamma>), d, (Init p', w))}) \<union> {((p,\<gamma>), d, (q, pop)) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
+  *)
 
 
 end
@@ -45,12 +49,13 @@ end
   .
 *)
 
-definition "checking ts \<longleftrightarrow> (\<forall>q. is_Init q \<longrightarrow> (\<forall>p \<gamma>. ts $ (p, \<gamma>, q) = 0))"
+
+(*definition "checking ts \<longleftrightarrow> (\<forall>q. is_Init q \<longrightarrow> (\<forall>p \<gamma>. ts $ (p, \<gamma>, q) = 0))"*)
 
 global_interpretation wpds: WPDS_Code \<Delta> ts
   for \<Delta> :: "('ctr_loc::{enum,card_UNIV}, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
   and ts :: "(('ctr_loc, 'noninit::{enum,card_UNIV}) state, 'label) transition \<Rightarrow>f 'weight"
-  defines pre_star = "WPDS_with_W_automata.pre_star_exec' \<Delta>"
+defines pre_star = "WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta>"
 (* 
   Input:
      * A weighted pushdown system
@@ -58,7 +63,7 @@ global_interpretation wpds: WPDS_Code \<Delta> ts
    Output:
      * A W-Automaton
  *)
-    and pre_star_check = "if checking ts then Some (WPDS_with_W_automata.pre_star_exec' \<Delta> ts) else None"
+    and pre_star_check = "if WPDS_Code.checking \<Delta> ts then Some (WPDS_Code.pre_star_exec' \<Delta> ts) else None"
 (*
   Input:
      * A weighted pushdown system
@@ -82,7 +87,7 @@ global_interpretation wpds: WPDS_Code \<Delta> ts
   Output
     * A weight
 *)
-    and step_starp = "if checking ts then Some (WPDS_with_W_automata.pre_star_exec' \<Delta> ts) else None"
+    and step_starp = "if WPDS_Code.checking \<Delta> ts then Some (WPDS_Code.pre_star_exec' \<Delta> ts) else None"
 (*
   Input:
     * Pushdown Automaton
@@ -101,7 +106,7 @@ global_interpretation wpds: WPDS_Code \<Delta> ts
   Output:
     * Bool
 *)
-    and accepts_pre_star_check = "\<lambda>finals pv. if checking ts then Some (WPDS_with_W_automata.accept_pre_star_exec0' \<Delta> ts finals pv) else None"
+    and accepts_pre_star_check = "\<lambda>finals pv. if WPDS_Code.checking \<Delta> ts then Some (WPDS_Code.accept_pre_star_exec0' \<Delta> ts finals pv) else None"
 (*
   Input
     * Pushdown Automaton
@@ -112,8 +117,20 @@ global_interpretation wpds: WPDS_Code \<Delta> ts
 *)
   .
 
+term init_rules
 
+declare accepts_def[code]
 declare accepts_pre_star_check_def[code]
+
+thm WPDS_Code.accept_pre_star_exec0'_def
+
+(*lemma accepts_pre_star_check_code[code]: 
+  "accepts_pre_star_check \<Delta> ts finals (p, w) = (if wpds.checking \<Delta> ts then Some (accepts_code (WPDS_Code.pre_star_exec' \<Delta> ts) finals (p, w)) else None)"
+  unfolding accepts_pre_star_check_def accepts_code_correct[of "(wpds.pre_star_exec' \<Delta> ts)" finals p w, symmetric]
+  unfolding wpds.accept_pre_star_exec0'_def WPDS_Code.pre_star_exec'_def
+  using WPDS_with_W_automata_no_assms.accept_pre_star_exec0'_unfold[of \<Delta> ts]
+  by simp  
+*)
 
 instantiation state :: (finite_UNIV,finite_UNIV) finite_UNIV begin
 
@@ -229,15 +246,14 @@ instance proof
 qed
 end
 
-(*find_theorems wpds.lbl
+declare WPDS.lbl.simps[code]
+declare WPDS_with_W_automata_no_assms.augmented_WPDS_rules_def[code]
+declare WPDS_with_W_automata_no_assms.init_rules_def[code]
+declare WPDS_with_W_automata_no_assms.pop_ts_rules_def[code]
+declare WPDS.accept_pre_star_exec0_def[code]
 
-lemma x[code]:
-  "wpds.lbl pop = ([] ::('a ::{bounded_idempotent_semiring,finite}) list)"
-  "wpds.lbl (swap (\<gamma>::'a::{bounded_idempotent_semiring,finite})) = [\<gamma>]" 
-  "wpds.lbl (push \<gamma>  \<gamma>') = [\<gamma>, \<gamma>']"
-  unfolding wpds.lbl_def by auto
-*)
-export_code accepts_pre_star_check in SML (* TODO: THIS GIVES AN ERROR "No code equations" *)
+export_code accepts_pre_star_check in Haskell (*SML gives depency cycle.*)
+
 
 (* TODO: ADAPT THE FOLLOWING TO DO WEIGHTED INTERSECTION:  *)
 global_interpretation inter: Intersection_P_Automaton
