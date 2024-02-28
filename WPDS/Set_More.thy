@@ -46,6 +46,33 @@ lemma finite_f_on_set: "finite X \<Longrightarrow> finite {f x | x. x \<in> X}"
 lemma finite_f_P_on_set: "finite X \<Longrightarrow> finite {f x | x. P x \<and> x \<in> X}"
   by (simp add: dissect_set)
 
+lemma finite_prod: "finite {x. P x} \<Longrightarrow> finite {y. Q y} \<Longrightarrow> finite {(x,y). P x \<and> Q y}"
+  by force
+
+lemma finite_prod_f_g: 
+  assumes "finite {f x | x. True}"
+  assumes "finite {g x | x. True}"
+  shows "finite {(f x, g x)| x. True}"
+proof -
+  have sub:"{u. \<exists>x. u = (f x, g x)} \<subseteq> {(x, y). (\<exists>xa. x = f xa) \<and> (\<exists>x. y = g x)}" by blast
+  show ?thesis using finite_prod[of "\<lambda>u. \<exists>x. u = f x" "\<lambda>u. \<exists>x. u = g x"] finite_subset[OF sub] assms
+  by force
+qed
+
+
+lemma finite_prod2: 
+  assumes "finite {(x,z). P x z}"
+  assumes "finite {(y,z). Q y z}"
+  shows "finite {(x,y)| x y z. P x z \<and> Q y z}"
+proof -
+  have fx:"finite {x | x z. P x z}" using finite_f_P_on_set[OF assms(1), of fst "\<lambda>(x,z). P x z"] by simp
+  have fy:"finite {y | y z. Q y z}" using finite_f_P_on_set[OF assms(2), of fst "\<lambda>(y,z). Q y z"] by simp
+  show ?thesis
+    using finite_prod[OF fx fy] finite_subset[of "{(x,y)| x y z. P x z \<and> Q y z}" "{x. Ex (P x)} \<times> {y. Ex (Q y)}"]
+    by auto
+qed
+
+
 lemma countable_prod: "countable {x. P x} \<Longrightarrow> countable {y. Q y} \<Longrightarrow> countable {(x,y). P x \<and> Q y}"
   by force
 

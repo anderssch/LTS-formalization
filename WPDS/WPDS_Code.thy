@@ -15,21 +15,7 @@ proof -
     by (smt (verit, del_insts) case_prod_conv mem_Collect_eq pair_imageI)
 
   have Z: "wts_to_monoidLTS ts = {(p, (a, d), q1) | q1 d p a. (p, (a, d), q1) \<in> wts_to_monoidLTS ts}"
-    apply rule
-     apply rule
-    subgoal for x
-      apply (cases x)
-      subgoal for a b c
-        apply (cases b)
-        apply auto
-        done
-      done
-    subgoal
-      apply rule
-      apply auto
-      done
-    done
-
+    by auto
   have "finite (wts_to_monoidLTS ts)"
     using WPDS.finite_wts[of ts] by auto
   then have "finite {(p, (a, d), q1) | q1 d p a. (p, (a, d), q1) \<in> wts_to_monoidLTS ts}"
@@ -127,10 +113,18 @@ next
         \<Sum> {ts $ (p, a, q) * accepts_code ts finals (q, w) |q. True}"
     by (metis (no_types, opaque_lifting) local.Cons wts_label_d wts_to_monoidLTS_exists)
 
-  have c: "\<Sum> {ts $ (p, a, q) * accepts_code ts finals (q, w) |q. ts $ (p, a, q) \<noteq> 0} = 
-           \<Sum> {ts $ (p, a, q) * accepts_code ts finals (q, w) |q. True}"
-    sorry
-
+  have f:"finite {(ts $ (p, a, q), accepts_code ts finals (q, w)) |q. True}" 
+    using finite_f_on_set[of UNIV "\<lambda>q. ts $ (p, a, q)"]
+          finite_f_on_set[of UNIV "\<lambda>q. accepts_code ts finals (q, w)"]
+          finite_prod_f_g by fastforce
+  have "{aa * b |aa b. \<exists>q. aa = ts $ (p, a, q) \<and> b = accepts_code ts finals (q, w)} = {ts $ (p, a, q) * accepts_code ts finals (q, w) |q. True}"
+    by blast
+  moreover have "{aa * b |aa b. (\<exists>q. aa = ts $ (p, a, q) \<and> b = accepts_code ts finals (q, w)) \<and> aa \<noteq> 0} = 
+        {ts $ (p, a, q) * accepts_code ts finals (q, w) |q. ts $ (p, a, q) \<noteq> 0}"
+    by blast
+  ultimately have c: "\<Sum> {ts $ (p, a, q) * accepts_code ts finals (q, w) |q. ts $ (p, a, q) \<noteq> 0} = 
+                      \<Sum> {ts $ (p, a, q) * accepts_code ts finals (q, w) |q. True}"
+    using sum_mult_not0_is_sum[OF f, of fst snd, simplified] by argo
   show ?case
     unfolding accepts_code.simps(2) nisse[symmetric] using a b c by auto
 qed
@@ -241,7 +235,6 @@ defines pre_star = "WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta>"
 *)
   .
 
-term init_rules
 
 declare accepts_def[code]
 declare accepts_pre_star_check_def[code]

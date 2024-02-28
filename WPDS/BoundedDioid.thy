@@ -330,7 +330,44 @@ lemma elem_greater_than_sum:
 class idempotent_semiring = semiring_0 + monoid_mult + idempotent_ab_semigroup_add
 begin
 subclass idempotent_comm_monoid_add ..
+
+lemma sum_mult_not0_is_sum:
+  assumes "finite {a. P a}"
+  shows "\<Sum>{f a * g a | a. P a \<and> f a \<noteq> 0} = \<Sum>{f a * g a | a. P a}"
+proof -
+  have fnot0:"finite {f a * g a | a. P a \<and> f a \<noteq> 0}" using assms by simp
+  have f0:"finite {f a * g a | a. P a \<and> f a = 0}" using assms by simp
+  have is0: "\<Sum>{f a * g a | a. P a \<and> f a = 0} = 0" 
+    using sum.neutral[of "{f a * g a |a. P a \<and> f a = 0}" id] mult_zero_left
+    by fastforce
+
+  have "\<forall>x\<in>{f a * g a |a. P a \<and> f a = 0}. id x = 0"
+    using mult_zero_left by fastforce
+  then have A:"\<forall>x\<in>{f a * g a |a. P a \<and> f a \<noteq> 0} \<inter> {f a * g a |a. P a \<and> f a = 0}. id x = 0"
+    by blast
+  have "{f a * g a | a. P a \<and> f a \<noteq> 0} \<union> {f a * g a | a. P a \<and> f a = 0} = {f a * g a | a. P a}" by blast
+  then have "\<Sum>{f a * g a | a. P a} = \<Sum>{f a * g a | a. P a \<and> f a \<noteq> 0} + \<Sum>{f a * g a | a. P a \<and> f a = 0}"
+    using sum.union_inter_neutral[OF fnot0 f0 A] by simp
+  then show ?thesis using is0 by simp
+qed
+
+lemma sum_not0_is_sum:
+  assumes "finite {a. P a}"
+  shows "\<Sum>{a | a. P a \<and> a \<noteq> 0} = \<Sum>{a | a. P a}"
+proof -
+  have fnot0:"finite {a | a. P a \<and> a \<noteq> 0}" using assms by simp
+  have f0:"finite {a | a. P a \<and> a = 0}" using assms by simp
+  have is0: "\<Sum>{a | a. P a \<and> a = 0} = 0"
+    by (simp add: sum.neutral)
+  have "{a | a. P a \<and> a \<noteq> 0} \<union> {a | a. P a \<and> a = 0} = {a | a. P a}" by blast
+  then have "\<Sum>{a | a. P a} = \<Sum>{a | a. P a \<and> a \<noteq> 0} + \<Sum>{a | a. P a \<and> a = 0}"
+    using sum.union_inter_neutral[OF fnot0 f0, of id] by simp
+  then show ?thesis using is0 by simp
+qed
+
 end
+
+
 
 class idempotent_semiring_ord = idempotent_semiring + idempotent_ab_semigroup_add_ord
 begin
