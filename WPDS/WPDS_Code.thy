@@ -39,14 +39,16 @@ proof -
     assume "(p, ([a], d), q1) \<in> wts_to_monoidLTS ts"
     have "countable (monoid_rtrancl (wts_to_monoidLTS ts))"
       using countable_monoid_rtrancl countable_wts by blast
-    then have "countable {(q1, (w, b), a) |a b q1 w. ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
+    then have "countable {(q1, (w, b), a) |a b q1 w. (q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}"
       sorry
     then have "countable {(q1, (w, b), a) |a b. ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
       using Collect_mono_iff countable_subset by fastforce
-    then have "countable {(q1, (w, b), a) |a b. a \<in> finals \<and> ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
+    then have A:"countable {(q1, (w, b), a) |a b. a \<in> finals \<and> ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
       by (smt (verit, best) countable_subset mem_Collect_eq subsetI)
-    then have "countable {((a, b)) |a b. a \<in> finals \<and> ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
-      sorry
+    have "countable {((a, b)) |a b. a \<in> finals \<and> ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
+      using countable_f_on_set[OF A, of "\<lambda>x. (snd (snd x), snd (fst (snd x)))"]
+      apply simp
+      by (smt (verit) Collect_cong Pair_inject case_prodE case_prodI2)
     then show "countable {((a, b), (q1, d)) |a b. a \<in> finals \<and> ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
       using countable_image[of "{(a, b) |a b. a \<in> finals \<and> (q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}" "\<lambda>(a, b). ((a, b), q1, d)"] 
       unfolding image_def
