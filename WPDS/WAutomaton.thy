@@ -309,6 +309,146 @@ next
 qed
 
 
+lemma monoid_star_intros_step':
+  assumes "(p,w,q) \<in> wts_to_monoidLTS A"
+  shows "(p,w,q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+  using monoid_rtrancl.intros(2)[of p 1 p "(wts_to_monoidLTS A)" w q] assms
+  by (metis monoid_rtrancl.simps mult_1)
+
+lemma monoid_star_intros_step:
+  assumes "pwq \<in> wts_to_monoidLTS A"
+  shows "pwq \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+  using assms monoid_star_intros_step' by (cases pwq) auto
+
+lemma monoid_rtrancl_wts_to_monoidLTS_cases_rev':
+  assumes "(p\<^sub>1, w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3, p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  shows "\<exists>d\<^sub>1\<^sub>3. w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = ([],d\<^sub>1\<^sub>3) \<or>
+           (\<exists>p\<^sub>2 d\<^sub>2\<^sub>3 \<gamma>\<^sub>1\<^sub>2 w\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2.
+               w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = (\<gamma>\<^sub>1\<^sub>2#w\<^sub>2\<^sub>3,d\<^sub>1\<^sub>3) \<and>
+               (p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> wts_to_monoidLTS ts \<and>
+               (p\<^sub>2, (w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
+               d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3)"
+  using assms
+proof (induction rule: monoid_rtrancl.induct)
+  case (monoid_rtrancl_refl)
+  then show ?case
+    by (simp add: one_list_def one_prod_def)
+next
+  case (monoid_rtrancl_into_rtrancl p\<^sub>1 w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 p\<^sub>3 w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4 p\<^sub>4)
+  show ?case
+  proof (cases "(fst w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3)")
+    case (Cons \<gamma>\<^sub>1\<^sub>2 w\<^sub>2\<^sub>3)
+    define w\<^sub>1\<^sub>3 where "w\<^sub>1\<^sub>3 = (fst w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3)"
+    define d\<^sub>1\<^sub>3 where "d\<^sub>1\<^sub>3 = (snd w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3)"
+    define w\<^sub>3\<^sub>4 where "w\<^sub>3\<^sub>4 = fst w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4"
+    define d\<^sub>3\<^sub>4 where "d\<^sub>3\<^sub>4 = snd w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4"
+    define w\<^sub>2\<^sub>4 where "w\<^sub>2\<^sub>4 = w\<^sub>2\<^sub>3 @ w\<^sub>3\<^sub>4"
+    have w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4_split: "w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4 = (w\<^sub>3\<^sub>4,d\<^sub>3\<^sub>4)"
+      by (simp add: d\<^sub>3\<^sub>4_def w\<^sub>3\<^sub>4_def)
+
+    have w24_tl: "w\<^sub>2\<^sub>4 = tl (fst (w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 * w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4))"
+      by (simp add: local.Cons w\<^sub>2\<^sub>4_def w\<^sub>3\<^sub>4_def)
+
+    have "w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = (\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>3, d\<^sub>1\<^sub>3)"
+      using Cons by (metis d\<^sub>1\<^sub>3_def surjective_pairing) 
+
+    then have "(\<exists>p\<^sub>2 d\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2.
+                   w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = (\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>3, d\<^sub>1\<^sub>3) \<and>
+                   (p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> wts_to_monoidLTS ts \<and> 
+                   (p\<^sub>2, (w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
+                   d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3)"
+      using monoid_rtrancl_into_rtrancl.IH by auto
+    then obtain p\<^sub>2 d\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2 where p\<^sub>2_d\<^sub>2\<^sub>3_d\<^sub>1\<^sub>2_p:
+      "w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = (\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>3, d\<^sub>1\<^sub>3)"
+      "(p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> wts_to_monoidLTS ts"
+      "(p\<^sub>2, (w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+      "d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3"
+      using d\<^sub>1\<^sub>3_def Cons by auto
+
+    define d\<^sub>2\<^sub>4 where "d\<^sub>2\<^sub>4 = d\<^sub>2\<^sub>3 * d\<^sub>3\<^sub>4"
+
+    have "(p\<^sub>2, (w\<^sub>2\<^sub>4, d\<^sub>2\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+      using local.Cons monoid_rtrancl_into_rtrancl.hyps(2)  w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4_split d\<^sub>2\<^sub>4_def p\<^sub>2_d\<^sub>2\<^sub>3_d\<^sub>1\<^sub>2_p(3)
+        monoid_rtrancl.monoid_rtrancl_into_rtrancl[of p\<^sub>2 "(w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3)" p\<^sub>3 "wts_to_monoidLTS ts" "(w\<^sub>3\<^sub>4, d\<^sub>3\<^sub>4)" p\<^sub>4]
+      unfolding w\<^sub>1\<^sub>3_def[symmetric] w\<^sub>2\<^sub>4_def by simp
+    moreover
+    define d\<^sub>1\<^sub>4 where "d\<^sub>1\<^sub>4 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>4"
+    moreover
+    have "(p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> wts_to_monoidLTS ts"
+      using p\<^sub>2_d\<^sub>2\<^sub>3_d\<^sub>1\<^sub>2_p by fastforce
+    moreover
+    have "w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 * w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4 = (\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>4, d\<^sub>1\<^sub>4)"
+      by (metis append_Cons d\<^sub>1\<^sub>3_def d\<^sub>1\<^sub>4_def d\<^sub>2\<^sub>4_def d\<^sub>3\<^sub>4_def local.Cons mult.assoc mult_prod_def
+          p\<^sub>2_d\<^sub>2\<^sub>3_d\<^sub>1\<^sub>2_p(4) times_list_def w\<^sub>2\<^sub>4_def w\<^sub>3\<^sub>4_def)
+    ultimately show ?thesis
+      by metis
+  next
+    case Nil
+    then show ?thesis
+      by (metis monoid_rtrancl.monoid_rtrancl_refl monoid_rtrancl_into_rtrancl.hyps(1)
+          monoid_rtrancl_into_rtrancl.hyps(2) monoid_rtrancl_into_rtrancl.prems monoid_star_w0
+          mstar_wts_empty_one mult.right_neutral mult_1 one_list_def one_prod_def prod.exhaust_sel
+          wts_label_exist)
+  qed
+qed
+
+lemma monoid_rtrancl_wts_to_monoidLTS_cases_rev:
+  assumes "(p, (\<gamma>#w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  shows "\<exists>d' s d''.
+           (p, ([\<gamma>], d'), s) \<in> wts_to_monoidLTS ts \<and>
+           (s, (w, d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
+           d = d' * d''"
+  using assms monoid_rtrancl_wts_to_monoidLTS_cases_rev' by fastforce
+
+lemma wts_to_monoidLTS_induct[consumes 1, case_names base step]:
+  assumes "(p, (w, d), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  assumes "(\<And>p. P p [] 1 p)"
+  assumes "(\<And>p w d p' w' d' p''. 
+             (p, (w, d), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> 
+             P p w d p' \<Longrightarrow> 
+            (p', (w', d'), p'') \<in> wts_to_monoidLTS ts \<Longrightarrow> 
+            P p (w @ w') (d * d') p'')"
+  shows "P p w d p'"
+  using monoid_rtrancl_pair_weight_induct[of p w d p' "wts_to_monoidLTS ts" P] assms
+  by (simp add: one_list_def)
+
+lemma wts_to_monoidLTS_pair_induct[consumes 1, case_names base step]:
+  assumes "((p,q), (w, d), (p',q')) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  assumes "(\<And>p q. P p q [] 1 p q)"
+  assumes "(\<And>p q w d p' q' w' d' p'' q''. 
+             ((p,q), (w, d), (p',q')) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> 
+             P p q w d p' q' \<Longrightarrow> 
+            ((p',q'), (w', d'), (p'',q'')) \<in> wts_to_monoidLTS ts \<Longrightarrow> 
+            P p q (w @ w') (d * d') p'' q'')"
+  shows "P p q w d p' q'"
+  using wts_to_monoidLTS_induct[of
+      "(p,q)" w d "(p',q')"
+      ts
+      "\<lambda>x y z a. P (fst x) (snd x) y z (fst a) (snd a)"]
+    assms by auto
+
+(* We are not using this induction. But it could be useful. *)
+lemma wts_to_monoidLTS_induct_reverse:
+  assumes "(p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  assumes "(\<And>a. P a [] 1 a)"
+  assumes "(\<And>p w d p' l d' p''.
+             (p, (w,d), p') \<in> (wts_to_monoidLTS ts) \<Longrightarrow> 
+             P p' l d' p'' \<Longrightarrow>
+             (p', (l,d'), p'') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow>
+             P p (w @ l) (d*d') p'')"
+  shows "P p w d p'"
+  using assms monoid_rtrancl_induct_rev[of p "(w,d)" p' "(wts_to_monoidLTS ts)" "\<lambda>x y z. P x (fst y) (snd y) z"]
+  by (simp add: one_list_def one_prod_def)
+
+lemma monoid_star_nonempty:
+  assumes "(p, w, p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  assumes "fst w \<noteq> []"
+  shows "\<exists>pi d1 d2. (snd w) = d1 * d2 \<and> 
+                    (pi, (tl (fst w), d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
+                    (p, ([hd (fst w)], d1), pi) \<in> wts_to_monoidLTS ts"
+  by (metis assms list.collapse monoid_rtrancl_wts_to_monoidLTS_cases_rev surjective_pairing)
+
+
 
 \<comment> \<open>For the executable pre-star, the saturation rule computes a set of new transition weights, 
     that are updated using the dioid's plus operator to combine with the existing value.\<close>

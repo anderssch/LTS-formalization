@@ -611,6 +611,8 @@ class bounded_idempotent_semiring = bounded_idempotent_comm_monoid_add_topology 
 begin
 end
 
+lemma d_mult_not_zero: assumes "(d::'weight::bounded_idempotent_semiring) * d' \<noteq> 0" shows "d \<noteq> 0" and "d' \<noteq> 0"
+  using assms by auto
 
 (* TODO *)
 lemma Suminf_lower: "x \<in> A \<Longrightarrow> \<Sum>A \<le> x" oops

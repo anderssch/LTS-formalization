@@ -3,7 +3,6 @@ theory WPDS2
 begin
 
 
-
 datatype 'label operation = pop | swap 'label | push 'label 'label
 \<comment> \<open>WPDS has a @{typ "'weight::bounded_idempotent_semiring"} on the rule.\<close>
 type_synonym ('ctr_loc, 'label, 'weight) rule = "('ctr_loc \<times> 'label) \<times> 'weight \<times> ('ctr_loc \<times> 'label operation)"
@@ -13,6 +12,9 @@ type_synonym ('ctr_loc, 'label) conf = "'ctr_loc \<times> 'label list"
 \<comment> \<open>Generalization of PDS_with_P_automata.accepts that computes the meet-over-all-paths in the W-automaton.\<close>
 definition (in dioidLTS) accepts :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> 'ctr_loc set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
   "accepts ts finals \<equiv> \<lambda>(p,w). (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)})"
+
+definition (in dioidLTS) accepts_full :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> 'ctr_loc set \<Rightarrow> 'ctr_loc set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
+  "accepts_full ts inits finals \<equiv> \<lambda>(p,w). if p \<in> inits then accepts ts finals (p,w) else 0"
 
 
 locale WPDS =
@@ -1353,149 +1355,6 @@ lemma sound_intro:
   assumes "\<And>p p' \<gamma> d. (p, ([\<gamma>], d), p') \<in> wts_to_monoidLTS A \<Longrightarrow> (\<^bold>\<Sigma>(p, [\<gamma>])\<Rightarrow>\<^sup>*p') \<le> d"
   shows "sound A"
   unfolding sound_def using assms by auto
-
-lemma monoid_star_intros_step':
-  assumes "(p,w,q) \<in> wts_to_monoidLTS A"
-  shows "(p,w,q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-  using monoid_rtrancl.intros(2)[of p 1 p "(wts_to_monoidLTS A)" w q] assms
-  by (metis monoid_rtrancl.simps mult_1)
-
-lemma monoid_star_intros_step:
-  assumes "pwq \<in> wts_to_monoidLTS A"
-  shows "pwq \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-  using assms monoid_star_intros_step' by (cases pwq) auto
-
-lemma monoid_rtrancl_wts_to_monoidLTS_cases_rev':
-  assumes "(p\<^sub>1, w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3, p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-  shows "\<exists>d\<^sub>1\<^sub>3. w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = ([],d\<^sub>1\<^sub>3) \<or>
-           (\<exists>p\<^sub>2 d\<^sub>2\<^sub>3 \<gamma>\<^sub>1\<^sub>2 w\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2.
-               w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = (\<gamma>\<^sub>1\<^sub>2#w\<^sub>2\<^sub>3,d\<^sub>1\<^sub>3) \<and>
-               (p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> wts_to_monoidLTS ts \<and>
-               (p\<^sub>2, (w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
-               d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3)"
-  using assms
-proof (induction rule: monoid_rtrancl.induct)
-  case (monoid_rtrancl_refl)
-  then show ?case
-    by (simp add: one_list_def one_prod_def)
-next
-  case (monoid_rtrancl_into_rtrancl p\<^sub>1 w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 p\<^sub>3 w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4 p\<^sub>4)
-  show ?case
-  proof (cases "(fst w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3)")
-    case (Cons \<gamma>\<^sub>1\<^sub>2 w\<^sub>2\<^sub>3)
-    define w\<^sub>1\<^sub>3 where "w\<^sub>1\<^sub>3 = (fst w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3)"
-    define d\<^sub>1\<^sub>3 where "d\<^sub>1\<^sub>3 = (snd w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3)"
-    define w\<^sub>3\<^sub>4 where "w\<^sub>3\<^sub>4 = fst w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4"
-    define d\<^sub>3\<^sub>4 where "d\<^sub>3\<^sub>4 = snd w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4"
-    define w\<^sub>2\<^sub>4 where "w\<^sub>2\<^sub>4 = w\<^sub>2\<^sub>3 @ w\<^sub>3\<^sub>4"
-    have w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4_split: "w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4 = (w\<^sub>3\<^sub>4,d\<^sub>3\<^sub>4)"
-      by (simp add: d\<^sub>3\<^sub>4_def w\<^sub>3\<^sub>4_def)
-
-    have w24_tl: "w\<^sub>2\<^sub>4 = tl (fst (w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 * w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4))"
-      by (simp add: local.Cons w\<^sub>2\<^sub>4_def w\<^sub>3\<^sub>4_def)
-
-    have "w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = (\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>3, d\<^sub>1\<^sub>3)"
-      using Cons by (metis d\<^sub>1\<^sub>3_def surjective_pairing) 
-
-    then have "(\<exists>p\<^sub>2 d\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2.
-                   w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = (\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>3, d\<^sub>1\<^sub>3) \<and>
-                   (p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> wts_to_monoidLTS ts \<and> 
-                   (p\<^sub>2, (w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
-                   d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3)"
-      using monoid_rtrancl_into_rtrancl.IH by auto
-    then obtain p\<^sub>2 d\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2 where p\<^sub>2_d\<^sub>2\<^sub>3_d\<^sub>1\<^sub>2_p:
-      "w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 = (\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>3, d\<^sub>1\<^sub>3)"
-      "(p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> wts_to_monoidLTS ts"
-      "(p\<^sub>2, (w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-      "d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3"
-      using d\<^sub>1\<^sub>3_def Cons by auto
-
-    define d\<^sub>2\<^sub>4 where "d\<^sub>2\<^sub>4 = d\<^sub>2\<^sub>3 * d\<^sub>3\<^sub>4"
-
-    have "(p\<^sub>2, (w\<^sub>2\<^sub>4, d\<^sub>2\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-      using local.Cons monoid_rtrancl_into_rtrancl.hyps(2)  w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4_split d\<^sub>2\<^sub>4_def p\<^sub>2_d\<^sub>2\<^sub>3_d\<^sub>1\<^sub>2_p(3)
-        monoid_rtrancl.monoid_rtrancl_into_rtrancl[of p\<^sub>2 "(w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3)" p\<^sub>3 "wts_to_monoidLTS ts" "(w\<^sub>3\<^sub>4, d\<^sub>3\<^sub>4)" p\<^sub>4]
-      unfolding w\<^sub>1\<^sub>3_def[symmetric] w\<^sub>2\<^sub>4_def by simp
-    moreover
-    define d\<^sub>1\<^sub>4 where "d\<^sub>1\<^sub>4 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>4"
-    moreover
-    have "(p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2), p\<^sub>2) \<in> wts_to_monoidLTS ts"
-      using p\<^sub>2_d\<^sub>2\<^sub>3_d\<^sub>1\<^sub>2_p by fastforce
-    moreover
-    have "w\<^sub>1\<^sub>3d\<^sub>1\<^sub>3 * w\<^sub>3\<^sub>4d\<^sub>3\<^sub>4 = (\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>4, d\<^sub>1\<^sub>4)"
-      by (metis append_Cons d\<^sub>1\<^sub>3_def d\<^sub>1\<^sub>4_def d\<^sub>2\<^sub>4_def d\<^sub>3\<^sub>4_def local.Cons mult.assoc mult_prod_def
-          p\<^sub>2_d\<^sub>2\<^sub>3_d\<^sub>1\<^sub>2_p(4) times_list_def w\<^sub>2\<^sub>4_def w\<^sub>3\<^sub>4_def)
-    ultimately show ?thesis
-      by metis
-  next
-    case Nil
-    then show ?thesis
-      by (metis monoid_rtrancl.monoid_rtrancl_refl monoid_rtrancl_into_rtrancl.hyps(1)
-          monoid_rtrancl_into_rtrancl.hyps(2) monoid_rtrancl_into_rtrancl.prems monoid_star_w0
-          mstar_wts_empty_one mult.right_neutral mult_1 one_list_def one_prod_def prod.exhaust_sel
-          wts_label_exist)
-  qed
-qed
-
-lemma monoid_rtrancl_wts_to_monoidLTS_cases_rev:
-  assumes "(p, (\<gamma>#w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-  shows "\<exists>d' s d''.
-           (p, ([\<gamma>], d'), s) \<in> wts_to_monoidLTS ts \<and>
-           (s, (w, d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
-           d = d' * d''"
-  using assms monoid_rtrancl_wts_to_monoidLTS_cases_rev' by fastforce
-
-find_theorems name: monoid_rtrancl name: induct
-(*  *)
-thm monoid_rtrancl_pair_weight_induct[of p w d p' "wts_to_monoidLTS ts" P]
-
-lemma wts_to_monoidLTS_induct[consumes 1, case_names base step]:
-  assumes "(p, (w, d), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-  assumes "(\<And>p. P p [] 1 p)"
-  assumes "(\<And>p w d p' w' d' p''. 
-             (p, (w, d), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> 
-             P p w d p' \<Longrightarrow> 
-            (p', (w', d'), p'') \<in> wts_to_monoidLTS ts \<Longrightarrow> 
-            P p (w @ w') (d * d') p'')"
-  shows "P p w d p'"
-  using monoid_rtrancl_pair_weight_induct[of p w d p' "wts_to_monoidLTS ts" P] assms
-  by (simp add: one_list_def)
-
-lemma wts_to_monoidLTS_pair_induct[consumes 1, case_names base step]:
-  assumes "((p,q), (w, d), (p',q')) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-  assumes "(\<And>p q. P p q [] 1 p q)"
-  assumes "(\<And>p q w d p' q' w' d' p'' q''. 
-             ((p,q), (w, d), (p',q')) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> 
-             P p q w d p' q' \<Longrightarrow> 
-            ((p',q'), (w', d'), (p'',q'')) \<in> wts_to_monoidLTS ts \<Longrightarrow> 
-            P p q (w @ w') (d * d') p'' q'')"
-  shows "P p q w d p' q'"
-  using wts_to_monoidLTS_induct[of
-      "(p,q)" w d "(p',q')"
-      ts
-      "\<lambda>x y z a. P (fst x) (snd x) y z (fst a) (snd a)"]
-    assms by auto
-
-(* We are not using this induction. But it could be useful. *)
-lemma wts_to_monoidLTS_induct_reverse:
-  assumes "(p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-  assumes "(\<And>a. P a [] 1 a)"
-  assumes "(\<And>p w d p' l d' p''.
-             (p, (w,d), p') \<in> (wts_to_monoidLTS ts) \<Longrightarrow> 
-             P p' l d' p'' \<Longrightarrow>
-             (p', (l,d'), p'') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow>
-             P p (w @ l) (d*d') p'')"
-  shows "P p w d p'"
-  using assms monoid_rtrancl_induct_rev[of p "(w,d)" p' "(wts_to_monoidLTS ts)" "\<lambda>x y z. P x (fst y) (snd y) z"]
-  by (simp add: one_list_def one_prod_def)
-
-lemma monoid_star_nonempty:
-  assumes "(p, w, p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-  assumes "fst w \<noteq> []"
-  shows "\<exists>pi d1 d2. (snd w) = d1 * d2 \<and> 
-                    (pi, (tl (fst w), d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
-                    (p, ([hd (fst w)], d1), pi) \<in> wts_to_monoidLTS ts"
-  by (metis assms list.collapse monoid_rtrancl_wts_to_monoidLTS_cases_rev surjective_pairing)
 
 lemmas monoid_star_relp_induct [consumes 1, case_names monoid_star_refl monoid_star_into_rtrancl] = 
   MonoidClosure.monoid_rtranclp.induct[of l_step_relp ] (* "(_,_)" _ "(_,_)" *)
@@ -2922,9 +2781,6 @@ proof -
   then show ?thesis by (simp add: a_def)
 qed
 
-lemma d_mult_not_zero: assumes "(d::'weight) * d' \<noteq> 0" shows "d \<noteq> 0" and "d' \<noteq> 0"
-  using assms by auto
-
 lemma augmented_rules_2_split:
   assumes "((Init p, w), d, Init p', w') \<in> monoid_rtrancl (WPDS.transition_rel augmented_WPDS_rules)"
   assumes "((Init p', w'), d', Noninit p'', w'') \<in> WPDS.transition_rel augmented_WPDS_rules"
@@ -3145,15 +3001,60 @@ lemma pre_star_correctness:
   using assms augmented_rules_correct augmented_WPDS.correctness by simp
 
 
+
+section \<open>Code generation 2\<close>
+
+ 
+
+lemma pre_star_exec'_saturation: "saturation augmented_WPDS.pre_star_rule (K$ 0) pre_star_exec'"
+  unfolding pre_star_exec'_def using augmented_WPDS.saturation_pre_star_exec0 by simp
+
+lemma pre_star_exec_correctness: 
+  "accepts pre_star_exec' finals (Init p, w) = weight_pre_star (accepts_ts finals) (p,w)"
+  using pre_star_correctness pre_star_exec'_saturation by blast
+
+(*
+definition weight_reach' where 
+  "weight_reach' = augmented_dioidLTS.weight_reach"
+
+
+thm weight_reach_def
+
+lemma 
+  assumes "saturation (augmented_WPDS.pre_star_rule) (K$ 0) A"
+    and "binary_aut ts"
+    and "binary_aut ts'"
+  shows "dioidLTS.weight_reach (wts_to_weightLTS (intersff ts' A)) (\<lambda>p. if is_Init (fst p) \<and> is_Init (snd p) then 1 else 0) (\<lambda>p. if p \<in> finals'\<times>finals then 1 else 0) 
+       = weight_reach' (accepts ts' finals') (accepts ts finals)"
+  oops
+
+
+lemma 
+  assumes "saturation (augmented_WPDS.pre_star_rule) (K$ 0) A"
+    and "binary_aut ts"
+    and "binary_aut ts'"
+    and "accepts ts' finals' c = 1"
+  shows "accepts (intersff ts' A) (finals'\<times>finals) c = weight_pre_star (accepts_ts finals) c" (* \<^bold>\<Sum> {d. }"*)
+  oops
+*)
+
+end
+
+(* The path not taken...
+definition push_ts_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weight::bounded_idempotent_semiring) rule set" where 
+  "push_ts_rules = {((q,l), d, (p, push \<gamma> l)) | p \<gamma> d q l. ts $ (p,\<gamma>,q) = d \<and> l \<in> UNIV \<or> (q \<in> finals \<and> l = bottom_of_stack)}"
+*)
+
+
 section \<open>Intersection\<close>
 
-fun fst_trans :: "(('state \<times> 'state), 'label) transition \<Rightarrow> ('state, 'label) transition" where
+fun fst_trans :: "(('state \<times> 'state), 'label::finite) transition \<Rightarrow> ('state, 'label) transition" where
   "fst_trans ((p1,q1),l,(p2,q2)) = (p1,l,p2)"
 
-fun snd_trans :: "(('state \<times> 'state), 'label) transition \<Rightarrow> ('state, 'label) transition" where
+fun snd_trans :: "(('state \<times> 'state), 'label::finite) transition \<Rightarrow> ('state, 'label) transition" where
   "snd_trans ((p1,q1),l,(p2,q2)) = (q1,l,q2)"
 
-definition fst_weight :: "('state, 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions"
+definition fst_weight :: "('state, 'label::finite, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions"
   where "fst_weight = (\<lambda>ts. ts $\<circ> fst_trans)" 
 
 lemma fw:
@@ -3161,7 +3062,7 @@ lemma fw:
   shows "(fst_weight ts1) $ ((p1,q1),l,(p2,q2)) = ts1 $ (p1,l,p2)"
   unfolding fst_weight_def finfun_comp2_def Abs_finfun_inverse_finite_class by auto
 
-definition snd_weight :: "('state, 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions"
+definition snd_weight :: "('state, 'label::finite, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions"
   where "snd_weight = (\<lambda>ts. ts $\<circ> snd_trans)"
 
 lemma sw:
@@ -3169,7 +3070,7 @@ lemma sw:
   shows"(snd_weight ts2) $ ((p1,q1),l,(p2,q2)) = ts2 $ (q1,l,q2)"
   unfolding snd_weight_def finfun_comp2_def Abs_finfun_inverse_finite_class by auto
 
-definition pair_weight :: "('state, 'label, 'weight) w_transitions \<Rightarrow> ('state, 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, ('weight \<times>'weight)) w_transitions" where
+definition pair_weight :: "('state, 'label::finite, 'weight) w_transitions \<Rightarrow> ('state, 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, ('weight \<times>'weight)) w_transitions" where
   "pair_weight = (\<lambda>ts1 ts2. finfun_Diag (fst_weight ts1) (snd_weight ts2))"
 
 lemma finfun_apply_pair_weight':
@@ -3178,7 +3079,7 @@ lemma finfun_apply_pair_weight':
   unfolding pair_weight_def finfun_Diag_apply by (auto simp add: fw sw)
 
 lemma finfun_apply_pair_weight[code]:
-  fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight) w_transitions"
   shows "(($) (pair_weight ts1 ts2)) = (\<lambda>t. (ts1 $ (fst_trans t), ts2 $ (snd_trans t)))"
 proof (rule HOL.ext)
   fix t 
@@ -3186,7 +3087,7 @@ proof (rule HOL.ext)
     using finfun_apply_pair_weight' by (cases t) fastforce
 qed
 
-definition intersff :: "('state, 'label, 'weight) w_transitions \<Rightarrow> ('state, 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions" where
+definition intersff :: "('state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions" where
   "intersff = (\<lambda>ts1 ts2. (case_prod (*)) \<circ>$ (pair_weight ts1 ts2))"
 
 lemma finfun_apply_intersff':
@@ -3195,7 +3096,7 @@ lemma finfun_apply_intersff':
   by (auto simp add: fw sw finfun_apply_pair_weight' intersff_def)
 
 lemma finfun_apply_intersff[code]:
-  fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
   shows "(($) (intersff ts1 ts2)) = (\<lambda>t. (ts1 $ (fst_trans t) * ts2 $ (snd_trans t)))"
 proof (rule HOL.ext)
   fix t
@@ -3219,7 +3120,7 @@ lemma finfun_apply_intersff'2_wts_to_monoidLTS:
   unfolding wts_to_monoidLTS_def by auto
 
 lemma member_wts_to_monoidLTS_intersff:
-  fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
   assumes "((p2, q2), (w23, d23), p3, q3) \<in> wts_to_monoidLTS (intersff ts1 ts2)"
   obtains d23p d23q where
     "(p2, (w23, d23p), p3) \<in> wts_to_monoidLTS ts1"
@@ -3234,7 +3135,7 @@ proof -
     by (metis wts_to_monoidLTS_exists_iff assms list.sel(1) that wts_label_d)
 qed
 
-definition binary_aut :: "('state, 'label, 'weight) w_transitions \<Rightarrow> bool" where
+definition binary_aut :: "('state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> bool" where
   "binary_aut ts1 \<longleftrightarrow> (\<forall>p1 w p2. ts1 $ (p1, w, p2) = 1 \<or> ts1 $ (p1, w, p2) = 0)"
 
 lemma binary_aut_monoid_rtrancl_wts_to_monoidLTS_cases_rev:
@@ -3285,7 +3186,7 @@ next
 qed
 
 lemma monoid_rtrancl_intersff_if_monoid_rtrancl:
-  fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
   assumes "(p1, (w,dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
   assumes "(q1, (w,dq), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
   shows "\<exists>d. ((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
@@ -3352,7 +3253,7 @@ next
 qed
 
 lemma monoid_rtrancl_intersff_if_monoid_rtrancl_0:
-  fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
   assumes "(p1, (w,0), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
   assumes "(q1, (w,d), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
   assumes "binary_aut ts1"
@@ -3427,7 +3328,7 @@ next
 qed
 
 lemma monoid_rtrancl_fst_1_if_monoid_rtrancl_intersff:
-  fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   assumes "binary_aut ts1"
   assumes "d\<noteq>0"
@@ -3481,7 +3382,7 @@ next
 qed
 
 lemma monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero:
-  fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   assumes "binary_aut ts1"
   assumes "d\<noteq>0"
@@ -3519,7 +3420,7 @@ next
 qed
 
 lemma monoid_rtrancl_fst_or_snd_zero_if_monoid_rtrancl_intersff_zero:
-  fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   assumes "binary_aut ts1"
   assumes "d=0"
@@ -3631,7 +3532,7 @@ next
 qed
 
 lemma intersff_correct:
-  fixes ts1::"('state::finite, 'label, 'weight) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
   assumes "binary_aut ts1"
   shows "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2)) \<longleftrightarrow>
            (\<exists>dp dq. (p1, (w,dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1) \<and>
@@ -3682,60 +3583,32 @@ next
   qed
 qed
 
-section \<open>Code generation 2\<close>
 
- 
-
-lemma pre_star_exec'_saturation: "saturation augmented_WPDS.pre_star_rule (K$ 0) pre_star_exec'"
-  unfolding pre_star_exec'_def using augmented_WPDS.saturation_pre_star_exec0 by simp
-
-lemma pre_star_exec_correctness: 
-  "accepts pre_star_exec' finals (Init p, w) = weight_pre_star (accepts_ts finals) (p,w)"
-  using pre_star_correctness pre_star_exec'_saturation by blast
-
-(*
-definition weight_reach' where 
-  "weight_reach' = augmented_dioidLTS.weight_reach"
-
-
-thm weight_reach_def
-
-lemma 
-  assumes "saturation (augmented_WPDS.pre_star_rule) (K$ 0) A"
-    and "binary_aut ts"
-    and "binary_aut ts'"
-  shows "dioidLTS.weight_reach (wts_to_weightLTS (intersff ts' A)) (\<lambda>p. if is_Init (fst p) \<and> is_Init (snd p) then 1 else 0) (\<lambda>p. if p \<in> finals'\<times>finals then 1 else 0) 
-       = weight_reach' (accepts ts' finals') (accepts ts finals)"
-  oops
-
-
-lemma 
-  assumes "saturation (augmented_WPDS.pre_star_rule) (K$ 0) A"
-    and "binary_aut ts"
-    and "binary_aut ts'"
-    and "accepts ts' finals' c = 1"
-  shows "accepts (intersff ts' A) (finals'\<times>finals) c = weight_pre_star (accepts_ts finals) c" (* \<^bold>\<Sum> {d. }"*)
-  oops
-*)
-
-end
+section \<open>Weight reach code\<close>
 
 lemma 
 (*  assumes "saturation (WPDS_with_W_automata.augmented_WPDS.pre_star_rule) (K$ 0) A"*)
   assumes "binary_aut ts"
     and "binary_aut ts'"
   shows "WPDS.weight_reach' \<Delta> (dioidLTS.accepts ts' finals') (dioidLTS.accepts ts finals) = 
-        dioidLTS.weight_reach (wts_to_weightLTS (WPDS_with_W_automata.intersff ts' A)) (\<lambda>p. if is_Init (fst p) \<and> is_Init (snd p) then 1 else 0) (\<lambda>p. if p \<in> finals'\<times>finals then 1 else 0)"
+        dioidLTS.weight_reach (wts_to_weightLTS (intersff ts' A)) (\<lambda>p. if is_Init (fst p) \<and> is_Init (snd p) then 1 else 0) (\<lambda>p. if p \<in> finals'\<times>finals then 1 else 0)"
+  using assms
   oops
 
 term WPDS.pre_star_rule
 
-inductive weight_reach_rule :: "('state, 'weight) transition set \<Rightarrow> ('state \<Rightarrow>f 'weight::bounded_idempotent_semiring) saturation_rule"
+inductive weight_reach_rule :: "('state, 'weight) transition set \<Rightarrow> ('state::finite \<Rightarrow>f 'weight::bounded_idempotent_semiring) saturation_rule"
   for ts :: "('state, 'weight) transition set" where
       "(p,d,q) \<in> ts \<Longrightarrow> (state_weight $ p) * d + state_weight $ q \<noteq> state_weight $ q 
        \<Longrightarrow> weight_reach_rule ts state_weight state_weight(q $:= state_weight $ q + state_weight $ p * d)"
 
-lemma "saturation (weight_reach_rule ts) A = P" oops
+lemma weight_reach_rule_less: "weight_reach_rule ts state_weight state_weight' \<Longrightarrow> state_weight' < state_weight"
+  unfolding weight_reach_rule.simps
+  by (auto simp: add.commute finfun_add_update_less)
+
+lemma weight_reach_saturation_exi:
+  shows "\<exists>sw'. saturation (weight_reach_rule ts) sw sw'"
+  using wfp_class_saturation_exi[of "weight_reach_rule ts" sw] weight_reach_rule_less by fast
 
 
 definition weight_reach_step where "weight_reach_step ts state_weight = update_wts state_weight (\<Union>(p,d,q)\<in>ts. {(q,state_weight $ p * d)})"
@@ -3743,7 +3616,7 @@ definition weight_reach_step where "weight_reach_step ts state_weight = update_w
 definition "weight_reach_loop ts = while_option (\<lambda>s. weight_reach_step ts s \<noteq> s) (weight_reach_step ts)"
 definition "weight_reach_exec ts = the o weight_reach_loop ts"
 
-lemma
+lemma weight_reach_saturation_exec_correct:
   assumes "finite ts"
   assumes "saturation (weight_reach_rule ts) S1 S2"
   shows "weight_reach_exec ts S1 = S2"
@@ -3757,30 +3630,36 @@ definition finfun_sum :: "('a \<Rightarrow>f 'b::bounded_idempotent_semiring) \<
 
 definition "weight_reach_sum_exec ts inits finals = finfun_sum (weight_reach_exec ts (update_wts (K$ 0) {(p,1) |p. p \<in> inits})) finals"
 
+lemma weight_reach_saturation_correct:
+  assumes "saturation (weight_reach_rule ts) (update_wts (K$ 0) {(p,1) |p. p \<in> inits}) S2"
+  shows "dioidLTS.weight_reach ts (\<lambda>p. if p \<in> inits then 1 else 0) (\<lambda>p. if p \<in> finals then 1 else 0) = finfun_sum S2 finals"
+  oops
+
 lemma weight_reach_sum_exec_correct[code]:
   "dioidLTS.weight_reach ts (\<lambda>p. if p \<in> inits then 1 else 0) (\<lambda>p. if p \<in> finals then 1 else 0) = weight_reach_sum_exec ts inits finals"
   oops
 
-lemma "dioidLTS.weight_reach (wts_to_weightLTS (WPDS_with_W_automata.intersff ts' A)) (\<lambda>p. if is_Init (fst p) \<and> is_Init (snd p) then 1 else 0) (\<lambda>p. if p \<in> finals'\<times>finals then 1 else 0)
+lemma "dioidLTS.weight_reach (wts_to_weightLTS (intersff ts' A)) (\<lambda>p. if is_Init (fst p) \<and> is_Init (snd p) then 1 else 0) (\<lambda>p. if p \<in> finals'\<times>finals then 1 else 0)
   = weight_reach_sum_exec ts inits finals"
   oops
-(*
+
+(* definition ts_to_augmented_ts *)
+
 lemma big_good_correctness_code:
 assumes "binary_aut ts"
     and "binary_aut ts'"
-  shows "WPDS.weight_reach' \<Delta> (dioidLTS.accepts ts finals) (dioidLTS.accepts ts' finals') = 
-         weight_reach_sum_exec (WPDS_with_W_automata.intersff ts (WPDS_with_W_automata.pre_star_exec' \<Delta> ts')) inits (finals \<times> finals')"
+  shows "WPDS.weight_reach' \<Delta> (dioidLTS.accepts_full ts inits finals) (dioidLTS.accepts_full ts' inits' finals') = 
+         weight_reach_sum_exec (intersff ts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')) (inits\<times>inits') (finals \<times> finals')"
   oops
 
 lemma 
   assumes "binary_aut ts"
     and "binary_aut ts'"
-  shows "\<^bold>\<Sum> {d| c d. d = dioidLTS.accepts (WPDS_with_W_automata.intersff ts (WPDS_with_W_automata.pre_star_exec' \<Delta> ts')) (finals\<times>finals') c} = 
-         WPDS_with_W_automata.weight_reach' \<Delta> ts' (dioidLTS.accepts ts finals) (dioidLTS.accepts ts' finals')" 
+  shows "\<^bold>\<Sum> {d| c d. d = dioidLTS.accepts (intersff ts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')) (finals\<times>finals') c} = 
+         WPDS.weight_reach' \<Delta> ts' (dioidLTS.accepts ts finals) (dioidLTS.accepts ts' finals')" 
   oops
 (* TODO: Make executable version of "dioidLTS.SumInf {d | c d. d = dioidLTS.accepts ts finals c}" *)
   
-*)
 
 end
 
