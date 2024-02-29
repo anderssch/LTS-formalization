@@ -2,7 +2,10 @@ theory WPDS_Code
   imports WPDS2 "Deriving.Derive"
 begin
 
-lemma nisse:
+lemma countable_cong: "countable a \<Longrightarrow> a = b \<Longrightarrow> countable b"
+  using back_subst[of countable] by blast
+
+lemma accepts_step_distrib:
   fixes ts :: "('state :: enum \<times> 'label :: finite \<times> 'state) \<Rightarrow>f 'weight::bounded_idempotent_semiring"
   fixes finals :: "'state set"
   shows "\<^bold>\<Sum>{d * (dioidLTS.accepts ts finals (q1,w))| q1 d. (p,([a],d),q1) \<in> wts_to_monoidLTS ts} = dioidLTS.accepts ts finals (p,a#w)"
@@ -25,35 +28,31 @@ proof -
   (* then  *) have "finite {(q1, d) | q1 d p a. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
     using finite_imageI[of "{(p, ([a], d), q1) | q1 d p a. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}" "\<lambda> (p, (a, d), q1). (q1, d)", OF X]
     using Y by auto
-  then have sorry1: "finite {(q1, d) | q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
+  then have "finite {(q1, d) | q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
     using finite_imageI[of "wts_to_monoidLTS ts" ]
     by (smt (verit) Collect_cong finite_Collect_conjI)
-  then have sorry1: "countable {(q1, d) | q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
+  then have c1: "countable {(q1, d) | q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
     using countable_finite by auto
-  have sorry2:
+  have c2:
     "(\<And>q1 d.
          (p, ([a], d), q1) \<in> wts_to_monoidLTS ts \<Longrightarrow>
          countable {((a, b), (q1, d)) |a b. a \<in> finals \<and> ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))})"
   proof -
     fix q1 d
     assume "(p, ([a], d), q1) \<in> wts_to_monoidLTS ts"
-    have "countable (monoid_rtrancl (wts_to_monoidLTS ts))"
+    have C:"countable (monoid_rtrancl (wts_to_monoidLTS ts))"
       using countable_monoid_rtrancl countable_wts by blast
-    then have "countable {(q1, (w, b), a) |a b q1 w. (q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}"
-      sorry
+    have "countable {(q1, (w, b), a) |a b q1 w. (q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}"
+      by (rule countable_cong[OF C]) auto
     then have "countable {(q1, (w, b), a) |a b. ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
       using Collect_mono_iff countable_subset by fastforce
     then have A:"countable {(q1, (w, b), a) |a b. a \<in> finals \<and> ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
       by (smt (verit, best) countable_subset mem_Collect_eq subsetI)
     have "countable {((a, b)) |a b. a \<in> finals \<and> ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
-      using countable_f_on_set[OF A, of "\<lambda>x. (snd (snd x), snd (fst (snd x)))"]
-      apply simp
-      by (smt (verit) Collect_cong Pair_inject case_prodE case_prodI2)
+      by (rule countable_cong[OF countable_f_on_set[OF A, of "\<lambda>x. (snd (snd x), snd (fst (snd x)))"]]) auto
     then show "countable {((a, b), (q1, d)) |a b. a \<in> finals \<and> ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
-      using countable_image[of "{(a, b) |a b. a \<in> finals \<and> (q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}" "\<lambda>(a, b). ((a, b), q1, d)"] 
-      unfolding image_def
-      apply auto
-      by (smt (verit) Collect_cong)
+      by (rule countable_cong[OF countable_image[of "{(a, b) |a b. a \<in> finals \<and> (q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}" "\<lambda>(a, b). ((a, b), q1, d)"]]) 
+          auto
   qed
   have "\<^bold>\<Sum>{d * (dioidLTS.accepts ts finals (q,w))| q d. (p,([a],d),q) \<in> wts_to_monoidLTS ts} =
         \<^bold>\<Sum> {d * (\<^bold>\<Sum> {u | q u. q \<in> finals \<and> (q1, (w, u), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
@@ -64,7 +63,7 @@ proof -
   also
   have "... = \<^bold>\<Sum> {d * u | q u q1 d. q \<in> finals \<and> (q1, (w, u), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
     using SumInf_of_SumInf_left_distr[of "\<lambda>(q1,d). (p, ([a], d), q1) \<in> wts_to_monoidLTS ts" "\<lambda>(q,u) (q1,d). q \<in> finals \<and> (q1, (w, u), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-    "\<lambda>(q1,d). d" "\<lambda>(q,u) (q1,d). u",simplified] sorry1 sorry2 by auto
+    "\<lambda>(q1,d). d" "\<lambda>(q,u) (q1,d). u",simplified] c1 c2 by auto
   also
   have "... = \<^bold>\<Sum> {d * u | q u q1 d. q \<in> finals \<and> (p, ([a], d), q1) \<in> wts_to_monoidLTS ts \<and> (q1, (w, u), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}"
     by meson
@@ -129,7 +128,7 @@ next
                       \<Sum> {ts $ (p, a, q) * accepts_code ts finals (q, w) |q. True}"
     using sum_mult_not0_is_sum[OF f, of fst snd, simplified] by argo
   show ?case
-    unfolding accepts_code.simps(2) nisse[symmetric] using a b c by auto
+    unfolding accepts_code.simps(2) accepts_step_distrib[symmetric] using a b c by auto
 qed
 
 
