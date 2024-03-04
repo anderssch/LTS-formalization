@@ -50,7 +50,9 @@ lemma countable_star_f_p: "countable {f c l c' | c l c'. c \<Midarrow>l\<Rightar
   by (auto simp add: dissect_set countable_monoid_star_all)
 
 lemma countable_star_f_p3: "countable {f l c' | l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-   by (auto simp add: dissect_set countable_monoid_star_all)
+  by (auto simp add: dissect_set countable_monoid_star_all)
+lemma countable_star_f_c_l: "countable {f c l | c l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+  using countable_star_f_p[of "\<lambda>c l c'. f c l" "\<lambda>a b. b = c'"] by presburger
 
 lemma countable_star_f_p6:
   "countable {f c1 d1' c2 c3 d2' c4 |c1 d1' c2 c3 d2' c4. c1 \<Midarrow> d1' \<Rightarrow>\<^sup>* c2 \<and> c3 \<Midarrow> d2' \<Rightarrow>\<^sup>* c4}"
@@ -68,7 +70,19 @@ proof -
 qed
 
 lemma countable_star_f_p9: "countable {f l | l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-   by (auto simp add: dissect_set countable_monoid_star_all)
+  by (auto simp add: dissect_set countable_monoid_star_all)
+
+
+lemma countable_l_c_c': "countable {l |c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+  using countable_star_f_p[of "\<lambda>c l c'. l" "\<lambda>c c'. True"] by presburger
+lemma countable_l_c: "countable {l |c l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+  using countable_star_f_p[of "\<lambda>c l c'. l" "\<lambda>a b. b = c'"] by presburger
+lemma countable_l_c': "countable {l |l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+  using countable_star_f_p[of "\<lambda>c l c'. l" "\<lambda>a b. a = c"] by presburger
+lemma countable_l: "countable {l |l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+  using countable_star_f_p[of "\<lambda>c l c'. l" "\<lambda>a b. a = c \<and> b = c'"] by presburger
+
+
 end
 
 (*
@@ -95,6 +109,8 @@ definition weight_reach :: "('state \<Rightarrow> 'weight) \<Rightarrow> ('state
 end
 
 locale countable_dioidLTS = dioidLTS + countable_monoidLTS 
+
+
 
 
 end

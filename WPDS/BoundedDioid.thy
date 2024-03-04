@@ -72,7 +72,7 @@ lemma idem_sum_elem:
     by (cases "x = x'", simp_all add: ac_simps)
   done
 
-lemma idem_sum_insert:
+lemma idem_sum_insert[simp]:
   assumes "finite S"   
   shows "\<Sum>(insert x S) = x + \<Sum>S"
   using idem_sum_elem[OF assms] sum.insert_if[OF assms, of id x] by simp
@@ -353,16 +353,37 @@ qed
 
 lemma sum_not0_is_sum:
   assumes "finite {a. P a}"
-  shows "\<Sum>{a | a. P a \<and> a \<noteq> 0} = \<Sum>{a | a. P a}"
+  shows "\<Sum>{f a | a. P a \<and> f a \<noteq> 0} = \<Sum>{f a | a. P a}"
 proof -
-  have fnot0:"finite {a | a. P a \<and> a \<noteq> 0}" using assms by simp
-  have f0:"finite {a | a. P a \<and> a = 0}" using assms by simp
-  have is0: "\<Sum>{a | a. P a \<and> a = 0} = 0"
-    by (simp add: sum.neutral)
-  have "{a | a. P a \<and> a \<noteq> 0} \<union> {a | a. P a \<and> a = 0} = {a | a. P a}" by blast
-  then have "\<Sum>{a | a. P a} = \<Sum>{a | a. P a \<and> a \<noteq> 0} + \<Sum>{a | a. P a \<and> a = 0}"
-    using sum.union_inter_neutral[OF fnot0 f0, of id] by simp
+  have fnot0:"finite {f a | a. P a \<and> f a \<noteq> 0}" using assms by simp
+  have f0:"finite {f a | a. P a \<and> f a = 0}" using assms by simp
+  have is0: "\<Sum>{f a | a. P a \<and> f a = 0} = 0"
+    using sum.neutral[of "{f a |a. P a \<and> f a = 0}" "(\<lambda>x. x)"] by blast
+  have u:"{f a | a. P a \<and> f a \<noteq> 0} \<union> {f a | a. P a \<and> f a = 0} = {f a | a. P a}" by blast
+  have x0:"\<forall>x\<in>{f a |a. P a \<and> f a \<noteq> 0} \<inter> {f a |a. P a \<and> f a = 0}. x = 0" by blast
+  have "\<Sum>{f a | a. P a} = \<Sum>{f a | a. P a \<and> f a \<noteq> 0} + \<Sum>{f a | a. P a \<and> f a = 0}"
+    using sum.union_inter_neutral[OF fnot0 f0, of "(\<lambda>x. x)", OF x0]
+    unfolding u by argo
   then show ?thesis using is0 by simp
+qed
+
+lemma sum_if_1_0_is_sum:
+  assumes "finite {a. P a}"
+  shows "\<Sum>{f a * (if Q a then 1 else 0) | a. P a} = \<Sum>{f a | a. P a \<and> Q a}"
+proof -
+  thm sum.union_inter_neutral
+  have fnot0:"finite {f a * (if Q a then 1 else 0) |a. P a \<and> \<not> Q a}" using assms by simp
+  have f0:"finite {f a * (if Q a then 1 else 0) |a. P a \<and> Q a}" using assms by simp
+  have is0: "\<Sum> {f a * (if Q a then 1 else 0) |a. P a \<and> \<not> Q a} = 0"
+    using sum.neutral[of "{f a * (if Q a then 1 else 0) |a. P a \<and> \<not> Q a}" "(\<lambda>x. x)"] by fastforce
+  have u:"{f a * (if Q a then 1 else 0) |a. P a \<and> \<not> Q a} \<union> {f a * (if Q a then 1 else 0) |a. P a \<and> Q a} = {f a * (if Q a then 1 else 0) | a. P a}" by blast
+  have a:"\<forall>x\<in>{f a * (if Q a then 1 else 0) |a. P a \<and> \<not> Q a} \<inter> {f a * (if Q a then 1 else 0) |a. P a \<and> Q a}. x = 0"
+    by auto
+  have eq:"\<Sum>{f a * (if Q a then 1 else 0) | a. P a} = \<Sum> {f a * (if Q a then 1 else 0) |a. P a \<and> Q a}"
+    using sum.union_inter_neutral[OF fnot0 f0 a]
+    unfolding u is0 by auto
+  show ?thesis unfolding eq
+    by (rule arg_cong[of _ _ \<Sum>]) auto
 qed
 
 end

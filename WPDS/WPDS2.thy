@@ -1,5 +1,5 @@
 theory WPDS2
-  imports "LTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "WAutomaton"
+  imports "LTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "WAutomaton" "FiniteMonoidLTS"
 begin
 
 
@@ -3595,8 +3595,8 @@ lemma
   using assms
   oops
 
-term WPDS.pre_star_rule
 
+(*
 inductive weight_reach_rule :: "('state, 'weight) transition set \<Rightarrow> ('state::finite \<Rightarrow>f 'weight::bounded_idempotent_semiring) saturation_rule"
   for ts :: "('state, 'weight) transition set" where
       "(p,d,q) \<in> ts \<Longrightarrow> state_weight $ q + (state_weight $ p) * d \<noteq> state_weight $ q 
@@ -3614,7 +3614,7 @@ lemma weight_reach_rule_less: "weight_reach_rule ts state_weight state_weight' \
 lemma weight_reach_saturation_exi:
   shows "\<exists>sw'. saturation (weight_reach_rule ts) sw sw'"
   using wfp_class_saturation_exi[of "weight_reach_rule ts" sw] weight_reach_rule_less by fast
-
+*)
 
 definition weight_reach_step where "weight_reach_step ts state_weight = update_wts state_weight (\<Union>(p,d,q)\<in>ts. {(q,state_weight $ p * d)})"
 
@@ -3623,7 +3623,7 @@ definition "weight_reach_exec ts = the o weight_reach_loop ts"
 
 lemma weight_reach_saturation_exec_correct:
   assumes "finite ts"
-  assumes "saturation (weight_reach_rule ts) S1 S2"
+  assumes "saturation (finite_dioidLTS.weight_reach_rule ts) S1 S2"
   shows "weight_reach_exec ts S1 = S2"
   oops
 (* Finite number of states. *)
@@ -3635,7 +3635,17 @@ definition finfun_sum :: "('a \<Rightarrow>f 'b::bounded_idempotent_semiring) \<
 
 definition "weight_reach_sum_exec ts inits finals = finfun_sum (weight_reach_exec ts (update_wts (K$ 0) {(p,1) |p. p \<in> inits})) finals"
 
-
+(*
+lemma countable_l_1:
+  assumes "finite ts" 
+  shows "countable {l |c l c'. monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'}"
+  using countable_monoidLTS.countable_star_f_p[unfolded countable_monoidLTS_def, OF countable_finite[OF assms], of "\<lambda>c l c'. l" "\<lambda>c c'. True"]
+  by presburger
+lemma countable_l_2:
+  assumes "finite ts" 
+  shows "countable {l |c l. monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'}"
+  using countable_monoidLTS.countable_star_f_p[unfolded countable_monoidLTS_def, OF countable_finite[OF assms], of "\<lambda>c l c'. l" "\<lambda>a b. b = c'"]
+  by presburger
 
 lemma weight_reach_inits_single_final:
   assumes "finite ts"
@@ -3684,26 +3694,29 @@ proof -
   ultimately show ?thesis
     unfolding dioidLTS.weight_reach_def by argo
 qed
+*)
 
+lemma update_wts_inits_apply:
+  fixes inits :: "'state::finite set"
+  shows "(update_wts (K$ 0) {(p, 1) |p. p \<in> inits}) $ c = (if c \<in> inits then 1 else 0)"
+proof -
+  have f:"finite {(p, 1) |p. p \<in> inits}" by simp
+  show ?thesis
+    using update_wts_sum[OF f, of "K$ 0" c] by fastforce
+qed
 
-
-lemma weight_reach_saturation_correct_single_final:
-  assumes "finite ts"
-  assumes "saturation (weight_reach_rule ts) (update_wts (K$ 0) {(p,1) |p. p \<in> inits}) S"
-  shows "dioidLTS.weight_reach ts (\<lambda>p. if p \<in> inits then 1 else 0) (\<lambda>p. if p = f then 1 else 0) = S$f"
-  using assms
-  unfolding dioidLTS.weight_reach_def
-  apply simp
-  oops
+lemma sum_finals_1_0:
+  fixes S :: "('state::finite \<Rightarrow>f 'weight::bounded_idempotent_semiring)"
+  shows "\<Sum> {S $ s * (if s \<in> finals then 1 else 0) |s. True} = \<Sum> {S $ s |s. s \<in> finals}"
+  using sum_if_1_0_is_sum[of "\<lambda>c. True" "\<lambda>s. S $ s" "\<lambda>s. s \<in> finals"] by simp
 
 lemma weight_reach_saturation_correct:
   assumes "finite ts"
-  assumes "saturation (weight_reach_rule ts) (update_wts (K$ 0) {(p,1) |p. p \<in> inits}) S"
+  assumes "saturation (finite_dioidLTS.weight_reach_rule ts) (update_wts (K$ 0) {(p,1) |p. p \<in> inits}) S"
   shows "dioidLTS.weight_reach ts (\<lambda>p. if p \<in> inits then 1 else 0) (\<lambda>p. if p \<in> finals then 1 else 0) = finfun_sum S finals"
-  unfolding finfun_sum_def weight_reach_inits_finals_unfold[OF assms(1)]
-  using assms(2)
-  unfolding saturation_def saturated_def
-  oops
+  using finite_dioidLTS.weight_reach_saturation_sum_correct[unfolded finite_dioidLTS_def finite_monoidLTS_def, OF assms, of "\<lambda>p. if p \<in> finals then 1 else 0"]
+  unfolding update_wts_inits_apply finfun_sum_def sum_finals_1_0 
+  by blast
 
 lemma weight_reach_sum_exec_correct[code]:
   "dioidLTS.weight_reach ts (\<lambda>p. if p \<in> inits then 1 else 0) (\<lambda>p. if p \<in> finals then 1 else 0) = weight_reach_sum_exec ts inits finals"

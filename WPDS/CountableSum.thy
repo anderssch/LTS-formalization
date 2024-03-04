@@ -187,21 +187,6 @@ proof -
   then show ?thesis using eq by argo
 qed
 
-lemma sum_insert[simp]:
-  assumes "finite (D' ::'weight::bounded_idempotent_semiring set)"
-  shows "\<Sum> (insert d D') = d + \<Sum> D'"
-  using assms
-proof (induction)
-  case empty
-  then show ?case 
-    by auto
-next
-  case (insert d' D')
-  then show ?case
-    by (metis (no_types, lifting) comm_monoid_add_class.sum.insert_if 
-        comm_monoid_add_class.sum.insert_remove finite.insertI meet.inf_left_idem)
-qed
-
 lemma SumInf_left_distr: 
   assumes "countable D"
   shows "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
@@ -227,7 +212,7 @@ proof -
     have Sum_insert: "\<Sum> (insert d D') = d + \<Sum>D'"
       using insert.hyps(1) by simp
     have Sum_insert_img: "\<Sum> {d1 * d2 |d2. d2 \<in> insert d D'} = d1 * d + \<Sum>{d1 * d2 |d2. d2 \<in> D'}"
-      by (metis Setcompr_eq_image finite_imageI image_insert insert.hyps(1) sum_insert)
+      by (metis Setcompr_eq_image finite_imageI image_insert insert.hyps(1) idempotent_comm_monoid_add_class.idem_sum_insert)
     show ?case
       unfolding Sum_insert_img Sum_insert using insert by (simp add: meet.le_infI2 semiring_class.distrib_left)
   qed
@@ -269,7 +254,7 @@ proof -
     have Sum_insert: "\<Sum> (insert d D') = d + \<Sum>D'"
       using insert.hyps(1) by simp
     have Sum_insert_img: "\<Sum> {d2 * d1 |d2. d2 \<in> insert d D'} = d * d1 + \<Sum>{d2 * d1 |d2. d2 \<in> D'}"
-      by (metis Setcompr_eq_image finite_imageI image_insert insert.hyps(1) sum_insert)
+      by (metis Setcompr_eq_image finite_imageI image_insert insert.hyps(1) idempotent_comm_monoid_add_class.idem_sum_insert)
     show ?case
       unfolding Sum_insert_img Sum_insert using insert by (simp add: meet.le_infI2 semiring_class.distrib_right)
   qed
