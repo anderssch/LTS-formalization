@@ -26,6 +26,10 @@ lemma weight_reach_rule_elim2:
 lemma weight_reach_rule_less: "weight_reach_rule S S' \<Longrightarrow> S' < S"
   unfolding weight_reach_rule.simps by (auto simp: add.commute finfun_add_update_less)
 
+lemma weight_reach_star_less_eq: "weight_reach_rule\<^sup>*\<^sup>* S S' \<Longrightarrow> S' \<le> S"
+  apply (induct rule: rtranclp.induct, simp)
+  using weight_reach_rule_less by fastforce
+
 lemma weight_reach_saturation_exi: "\<exists>S'. saturation weight_reach_rule S S'"
   using wfp_class_saturation_exi[of weight_reach_rule S] weight_reach_rule_less by fast
 
@@ -57,10 +61,22 @@ lemma weight_reach_saturated_1:
 
 lemma weight_reach_saturated_le: 
   assumes "saturated weight_reach_rule S'"
-  shows "S'$c' \<le> \<^bold>\<Sum>{S'$c * l |c l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-  using weight_reach_saturated_1[OF assms, of _ _ c']
-        SumInf_bounded_if_set_bounded[OF countable_star_f_c_l[of "\<lambda>c l. S'$c * l" c'], of "S'$c'"]
-  by blast
+  assumes "S' \<le> S"
+  shows "S'$c' \<le> \<^bold>\<Sum>{S$c * l |c l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+proof -
+  have "\<And>c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<Longrightarrow> S' $ c' \<le> S $ c * l"
+    subgoal for c l
+      using weight_reach_saturated_1[OF assms(1), of c l c'] assms(2)[unfolded less_eq_finfun_def]
+            idempotent_semiring_ord_class.mult_isor[of "S' $ c" "S $ c" l]
+      by simp
+    done
+  then show ?thesis
+    using weight_reach_saturated_1[OF assms(1), of _ _ c']
+          SumInf_bounded_if_set_bounded[OF countable_star_f_c_l[of "\<lambda>c l. S$c * l" c'], of "S'$c'"]
+          assms(2)
+    by blast
+qed  
+
 
 lemma weight_reach_star_le: 
   assumes "weight_reach_rule\<^sup>*\<^sup>* S S'"
@@ -68,13 +84,16 @@ lemma weight_reach_star_le:
   using assms
   apply (induct)
   apply -
-  oops
+  sorry
 
 theorem weight_reach_saturation_correct: 
   assumes "saturation weight_reach_rule S S'"
   shows "S'$c' = \<^bold>\<Sum>{S $ c * l |c l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-  (* TODO! *)
-  sorry
+  using assms unfolding saturation_def
+  using weight_reach_saturated_le[of S' S c'] 
+        weight_reach_star_le[of S S' c'] 
+        weight_reach_star_less_eq[of S S']
+  by fastforce
 
 
 (*lemma weight_reach_saturation_correct':
