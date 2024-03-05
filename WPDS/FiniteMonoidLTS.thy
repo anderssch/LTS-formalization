@@ -111,16 +111,39 @@ proof (induction)
       case True
       have "countable {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
         using countable_star_f_c_l by fast
+      have cn: "countable {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+        by (simp add: countable_star_f_c_l)
+      have nissen: "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> \<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+      proof -
+        have " \<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<ge> \<^bold>\<Sum> {\<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c} * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+          using add_state(3) unfolding sound_wrt_def sorry
+        moreover
+        have "... \<ge> \<^bold>\<Sum> {\<^bold>\<Sum> {(S $ c\<^sub>a * l\<^sub>a) * l |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c} |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+          sorry
+        moreover
+        have "... = \<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a  * l |c\<^sub>a l\<^sub>a c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<and> c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c}"
+          sorry
+        moreover
+        have "... = \<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a  * l |c\<^sub>a l\<^sub>a c l. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c \<and>  c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+          by meson
+        moreover
+        have "... \<ge> \<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+          sorry
+        ultimately
+        show "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> \<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+          by auto
+      qed
+       
+      
       have "p \<Midarrow> d \<Rightarrow>\<^sup>* c'"
         using True add_state(1)
         by (metis l_step_relp_def monoid_rtranclp.monoid_rtrancl_into_rtrancl monoid_rtranclp.monoid_rtrancl_refl mult_1)
-      then have "\<^bold>\<Sum> {l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> d"
-        using countable_SumInf_elem countable_l_c by blast
-      
+       then have "\<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S' $ p * d"
+         using countable_SumInf_elem cn by blast
+
       then have "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S' $ p * d"
         using add_state unfolding True[symmetric] sound_wrt_def
-        
-        sorry
+        using nissen order_trans by blast
       then have "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S'$ c' + S' $ p * d"
         using z by auto
       from  this show ?thesis 
