@@ -77,14 +77,76 @@ proof -
     by blast
 qed  
 
+definition sound_wrt where
+  "sound_wrt S' S \<longleftrightarrow> (\<forall>c'. \<^bold>\<Sum>{S $ c * l |c l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'} \<le> S'$c')"
+
+lemma sound_wrt_relf: "sound_wrt S S"
+  sorry
+
+lemma sound_wrt_preserves_sound_wrt: 
+  assumes "sound_wrt S' S"
+  assumes "weight_reach_rule S' S''"
+  shows "sound_wrt S'' S"
+  using assms(2,1) 
+proof (induction)
+  case (add_state p d q S')
+
+  show ?case
+    unfolding sound_wrt_def
+  proof
+    fix c'
+    have z: "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S' $ c'"
+      using add_state unfolding sound_wrt_def by auto
+    then show "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S'(q $+= S' $ p * d) $ c'"
+    proof (cases "c' = q")
+      case True
+      have "countable {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+        sorry
+      have " p \<Midarrow> d \<Rightarrow>\<^sup>* c'"
+        sorry
+      then have "\<^bold>\<Sum> {l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> d"
+        using countable_SumInf_elem countable_l_c by blast
+      
+      then have "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S' $ p * d"
+        using add_state unfolding True[symmetric] 
+        sorry
+      then have "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S'$ c' + S' $ p * d"
+        unfolding True[symmetric]
+        using add_state(1,2)
+        using z 
+        by auto
+      from  this show ?thesis 
+        unfolding True[symmetric]
+        by auto
+       
+    next
+      case False
+      then show ?thesis
+        using add_state(1,2) using z by auto 
+    qed
+  qed
+qed
+
+lemma Anders: 
+  assumes "weight_reach_rule\<^sup>*\<^sup>* S S'"
+  shows "sound_wrt S' S"
+ using assms
+proof (induct)
+  case base
+  then show ?case
+    using sound_wrt_relf by auto
+next
+  case (step S' S'')
+  then show ?case
+    using sound_wrt_preserves_sound_wrt
+    by auto
+qed
 
 lemma weight_reach_star_le: 
   assumes "weight_reach_rule\<^sup>*\<^sup>* S S'"
   shows "\<^bold>\<Sum>{S $ c * l |c l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'} \<le> S'$c'"
-  using assms
-  apply (induct)
-  apply -
-  sorry
+  using Anders assms unfolding sound_wrt_def apply auto
+  done
 
 theorem weight_reach_saturation_correct: 
   assumes "saturation weight_reach_rule S S'"
