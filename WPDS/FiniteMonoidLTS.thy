@@ -92,102 +92,100 @@ proof
     using countable_SumInf_elem by blast
 qed
 
-lemma sound_wrt_preserves_sound_wrt: 
+lemma sound_wrt_Sum_leq:
+  assumes "sound_wrt S' S"
+  shows "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> \<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+proof -
+  have nisse2: "\<And>u. countable {S $ c\<^sub>a * l\<^sub>a |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* u}"
+    by (simp add: countable_star_f_c_l)
+
+  have nisse3': "\<And>d'. countable {(d, d') |d. (case d of (c\<^sub>a, l\<^sub>a) \<Rightarrow> \<lambda>(c, l). c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c) d'}"
+    by (auto simp add: countable_star_f_c_l)
+  then have nisse3: "(\<And>d'. case d' of (c, l) \<Rightarrow> c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<Longrightarrow>
+            countable {(d, d') |d. (case d of (c\<^sub>a, l\<^sub>a) \<Rightarrow> \<lambda>(c, l). c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c) d'})"
+    by auto
+
+  have "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} = \<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a  * l |c\<^sub>a l\<^sub>a c l. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c \<and> c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    apply (rule arg_cong[of _ _ " \<^bold>\<Sum> "])
+    apply (auto simp add: mult.assoc)
+    apply (metis monoid_rtranclp.monoid_rtrancl_refl mult.right_neutral)
+    apply (metis monoid_rtranclp_trans)
+    done
+  moreover
+  have "... = \<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a  * l |c\<^sub>a l\<^sub>a c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<and> c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c}"
+    by meson
+  moreover
+  have "... = \<^bold>\<Sum> {\<^bold>\<Sum> {(S $ c\<^sub>a * l\<^sub>a) * l |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c} |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    using SumInf_of_SumInf[of "\<lambda>(c, l). c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>(c\<^sub>a, l\<^sub>a) (c, l). c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c"
+        "\<lambda>(c\<^sub>a, l\<^sub>a) (c, l). S $ c\<^sub>a * l\<^sub>a * l"
+        ]
+    using countable_monoid_star_variant2 nisse3
+
+    apply auto
+    apply meson
+    done
+  moreover
+  have "... = \<^bold>\<Sum> {\<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c} * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    apply (rule arg_cong[of _ _ " \<^bold>\<Sum> "])
+    unfolding SumInf_right_distr[of "{S $ c\<^sub>a * l\<^sub>a |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* _}" ,OF nisse2]
+    apply auto
+     apply (smt (verit, ccfv_threshold) Collect_cong)
+    apply (smt (verit, ccfv_threshold) Collect_cong)
+    done
+  moreover
+  have "... \<le> \<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    using assms unfolding sound_wrt_def
+    using SumInf_mono_wrt_img_of_set[of "\<lambda>(c, l). c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>(c,l). \<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c} * l"
+        "\<lambda>(c, l). S' $ c * l"]
+    by (auto simp add: countable_monoid_star_variant2 idempotent_semiring_ord_class.mult_isol_var)
+  ultimately
+  show "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> \<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    by metis
+qed
+
+lemma weight_reach_rule_preserves_sound_wrt: 
   assumes "sound_wrt S' S"
   assumes "weight_reach_rule S' S''"
   shows "sound_wrt S'' S"
   using assms(2,1)
 proof (induction)
   case (add_state p d q S')
-
   show ?case
     unfolding sound_wrt_def
   proof
     fix c'
-    have z: "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S' $ c'"
-      using add_state unfolding sound_wrt_def by auto
-    then show "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S'(q $+= S' $ p * d) $ c'"
+    show "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S'(q $+= S' $ p * d) $ c'"
     proof (cases "c' = q")
       case True
       have "countable {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
         using countable_star_f_c_l by fast
       have cn: "countable {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
         by (simp add: countable_star_f_c_l)
-      have nissen: "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> \<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-      proof -
-        have nisse2: "\<And>u. countable {S $ c\<^sub>a * l\<^sub>a |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* u}"
-          by (simp add: countable_star_f_c_l)
-
-        have nisse3': "\<And>d'. countable {(d, d') |d. (case d of (c\<^sub>a, l\<^sub>a) \<Rightarrow> \<lambda>(c, l). c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c) d'}"
-          by (auto simp add: countable_star_f_c_l)
-        then have nisse3: "(\<And>d'. case d' of (c, l) \<Rightarrow> c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<Longrightarrow>
-            countable {(d, d') |d. (case d of (c\<^sub>a, l\<^sub>a) \<Rightarrow> \<lambda>(c, l). c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c) d'})"
-          by auto
-
-        have "\<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<ge> \<^bold>\<Sum> {\<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c} * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-          using add_state(3) unfolding sound_wrt_def
-          using SumInf_mono_wrt_img_of_set[of "\<lambda>(c, l). c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>(c,l). \<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c} * l"
-              "\<lambda>(c, l). S' $ c * l"]
-          by (auto simp add: countable_monoid_star_variant2 idempotent_semiring_ord_class.mult_isol_var)
-        moreover
-        have " \<^bold>\<Sum> {\<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c} * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} = \<^bold>\<Sum> {\<^bold>\<Sum> {(S $ c\<^sub>a * l\<^sub>a) * l |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c} |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-          apply (rule arg_cong[of _ _ " \<^bold>\<Sum> "])
-          apply auto
-          unfolding SumInf_right_distr[of "{S $ c\<^sub>a * l\<^sub>a |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* _}" ,OF nisse2]
-          apply auto
-           apply (smt (verit, ccfv_threshold) Collect_cong)
-          apply (smt (verit, ccfv_threshold) Collect_cong)
-          done
-        moreover
-        have " \<^bold>\<Sum> {\<^bold>\<Sum> {(S $ c\<^sub>a * l\<^sub>a) * l |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c} |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} = \<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a  * l |c\<^sub>a l\<^sub>a c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<and> c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c}"
-          using SumInf_of_SumInf[of "\<lambda>(c, l). c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>(c\<^sub>a, l\<^sub>a) (c, l). c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c"
-              "\<lambda>(c\<^sub>a, l\<^sub>a) (c, l). S $ c\<^sub>a * l\<^sub>a * l"
-              ]
-          using countable_monoid_star_variant2 nisse3
-
-          apply auto
-          apply meson
-          done
-        moreover
-        have " \<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a  * l |c\<^sub>a l\<^sub>a c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<and> c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c} = \<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a  * l |c\<^sub>a l\<^sub>a c l. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c \<and>  c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-          by meson
-        moreover
-        have " \<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a  * l |c\<^sub>a l\<^sub>a c l. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c \<and> c \<Midarrow> l \<Rightarrow>\<^sup>* c'} = \<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-          apply (rule arg_cong[of _ _ " \<^bold>\<Sum> "])
-          apply (auto simp add: mult.assoc)
-           apply (metis monoid_rtranclp_trans)
-          apply force
-          done
-        ultimately
-        show "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> \<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-          by auto
-      qed
-       
-      
+      have "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> \<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+        using sound_wrt_Sum_leq add_state by auto
+      moreover
       have "p \<Midarrow> d \<Rightarrow>\<^sup>* c'"
         using True add_state(1)
         by (metis l_step_relp_def monoid_rtranclp.monoid_rtrancl_into_rtrancl monoid_rtranclp.monoid_rtrancl_refl mult_1)
-       then have "\<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S' $ p * d"
-         using countable_SumInf_elem cn by blast
-
-      then have "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S' $ p * d"
-        using add_state unfolding True[symmetric] sound_wrt_def
-        using nissen order_trans by blast
+      then have "\<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S' $ p * d"
+        using countable_SumInf_elem cn by blast
+      ultimately
+      have "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S' $ p * d"
+        unfolding sound_wrt_def using order_trans by blast
       then have "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S'$ c' + S' $ p * d"
-        using z by auto
+        using add_state unfolding sound_wrt_def by auto
       from  this show ?thesis 
         unfolding True[symmetric]
         by auto
-       
     next
       case False
       then show ?thesis
-        using add_state(1,2) using z by auto 
+        using add_state(1,2) using add_state unfolding sound_wrt_def by auto
     qed
   qed
 qed
 
-lemma Anders: 
+lemma sound_wrt_weight_reach_rule: 
   assumes "weight_reach_rule\<^sup>*\<^sup>* S S'"
   shows "sound_wrt S' S"
  using assms
@@ -198,14 +196,14 @@ proof (induct)
 next
   case (step S' S'')
   then show ?case
-    using sound_wrt_preserves_sound_wrt
+    using weight_reach_rule_preserves_sound_wrt
     by auto
 qed
 
 lemma weight_reach_star_le: 
   assumes "weight_reach_rule\<^sup>*\<^sup>* S S'"
   shows "\<^bold>\<Sum>{S $ c * l |c l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'} \<le> S'$c'"
-  using Anders assms unfolding sound_wrt_def apply auto
+  using sound_wrt_weight_reach_rule assms unfolding sound_wrt_def apply auto
   done
 
 theorem weight_reach_saturation_correct: 
