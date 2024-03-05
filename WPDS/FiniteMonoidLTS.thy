@@ -81,13 +81,22 @@ definition sound_wrt where
   "sound_wrt S' S \<longleftrightarrow> (\<forall>c'. \<^bold>\<Sum>{S $ c * l |c l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'} \<le> S'$c')"
 
 lemma sound_wrt_relf: "sound_wrt S S"
-  sorry
+unfolding sound_wrt_def
+proof
+  fix c'
+  have "countable {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" 
+    using countable_star_f_c_l by fast
+  moreover have "S $ c' \<in> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    by force
+  ultimately show "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S $ c'" 
+    using countable_SumInf_elem by blast
+qed
 
 lemma sound_wrt_preserves_sound_wrt: 
   assumes "sound_wrt S' S"
   assumes "weight_reach_rule S' S''"
   shows "sound_wrt S'' S"
-  using assms(2,1) 
+  using assms(2,1)
 proof (induction)
   case (add_state p d q S')
 
@@ -101,20 +110,19 @@ proof (induction)
     proof (cases "c' = q")
       case True
       have "countable {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-        sorry
-      have " p \<Midarrow> d \<Rightarrow>\<^sup>* c'"
-        sorry
+        using countable_star_f_c_l by fast
+      have "p \<Midarrow> d \<Rightarrow>\<^sup>* c'"
+        using True add_state(1)
+        by (metis l_step_relp_def monoid_rtranclp.monoid_rtrancl_into_rtrancl monoid_rtranclp.monoid_rtrancl_refl mult_1)
       then have "\<^bold>\<Sum> {l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> d"
         using countable_SumInf_elem countable_l_c by blast
       
       then have "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S' $ p * d"
-        using add_state unfolding True[symmetric] 
+        using add_state unfolding True[symmetric] sound_wrt_def
+        
         sorry
       then have "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S'$ c' + S' $ p * d"
-        unfolding True[symmetric]
-        using add_state(1,2)
-        using z 
-        by auto
+        using z by auto
       from  this show ?thesis 
         unfolding True[symmetric]
         by auto
