@@ -111,22 +111,21 @@ proof -
   then have nisse3: "(\<And>d'. case d' of (c, l) \<Rightarrow> c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<Longrightarrow>
             countable {(d, d') |d. (case d of (c\<^sub>a, l\<^sub>a) \<Rightarrow> \<lambda>(c, l). c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c) d'})"
     by auto
-
   have "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} = \<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a  * l |c\<^sub>a l\<^sub>a c l. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c \<and> c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
     apply (rule arg_cong[of _ _ " \<^bold>\<Sum> "])
-    apply (auto simp add: mult.assoc)
-    apply (metis monoid_rtranclp.monoid_rtrancl_refl mult.right_neutral)
-    apply (metis monoid_rtranclp_trans)
-    done
+    using monoid_rtranclp.monoid_rtrancl_refl[of  l_step_relp] monoid_rtranclp_trans[of l_step_relp]
+    by (force simp add: mult.assoc)
   moreover
   have "... = \<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a  * l |c\<^sub>a l\<^sub>a c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<and> c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c}"
     by meson
   moreover
   have "... = \<^bold>\<Sum> {\<^bold>\<Sum> {(S $ c\<^sub>a * l\<^sub>a) * l |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c} |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+
+
     using SumInf_of_SumInf[of "\<lambda>(c, l). c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>(c\<^sub>a, l\<^sub>a) (c, l). c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c"
         "\<lambda>(c\<^sub>a, l\<^sub>a) (c, l). S $ c\<^sub>a * l\<^sub>a * l"
         ]
-    using countable_monoid_star_variant2 nisse3
+    using countable_monoid_star_variant2 nisse3 
 
     apply auto
     apply meson
@@ -134,10 +133,8 @@ proof -
   moreover
   have "... = \<^bold>\<Sum> {\<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c} * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
     apply (rule arg_cong[of _ _ " \<^bold>\<Sum> "])
-    unfolding SumInf_right_distr[of "{S $ c\<^sub>a * l\<^sub>a |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* _}" ,OF nisse2]
+    unfolding SumInf_right_distr2[of "\<lambda>c\<^sub>a l\<^sub>a. S $ c\<^sub>a * l\<^sub>a " ,OF nisse2]
     apply auto
-     apply (smt (verit, ccfv_threshold) Collect_cong)
-    apply (smt (verit, ccfv_threshold) Collect_cong)
     done
   moreover
   have "... \<le> \<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"

@@ -171,233 +171,285 @@ proof -
 qed
 
 lemma SumInf_bounded_if_set_bounded:
-  assumes countableX: "countable X"
-  assumes inf_d: "\<forall>x \<in> X. x \<ge> d"
-  shows "\<^bold>\<Sum> X \<ge> d"
+  assumes countableX: "countable W"
+  assumes inf_d: "\<forall>w \<in> W. w \<ge> d"
+  shows "\<^bold>\<Sum> W \<ge> d"
 proof -
-  obtain W' where subset:"W' \<subseteq> X" and fin:"finite W'" and eq:"\<^bold>\<Sum> X = \<Sum> W'"
+  obtain W' where subset:"W' \<subseteq> W" and fin:"finite W'" and eq:"\<^bold>\<Sum> W = \<Sum> W'"
     by (fact SumInf_obtains_finite_subset[OF countableX])
-  have "\<forall>x \<in> W'. x \<ge> d" using subset inf_d by blast
+  have "\<forall>w \<in> W'. w \<ge> d" using subset inf_d by blast
   then have "\<Sum> W' \<ge> d" using fin
     unfolding BoundedDioid.less_eq_def
     apply (induct rule: finite_induct[OF fin], simp_all)
-    subgoal for x F
-      using add.assoc[of d x "\<Sum> F"] by simp
+    subgoal for w F
+      using add.assoc[of d w "\<Sum> F"] by simp
     done
   then show ?thesis using eq by argo
 qed
 
 lemma SumInf_left_distr: 
-  assumes "countable D"
-  shows "d1 * \<^bold>\<Sum> D = \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
+  assumes "countable W"
+  shows "w1 * \<^bold>\<Sum> W = \<^bold>\<Sum> {w1 * w2 | w2. w2 \<in> W}"
 proof -
-  have sumInf_left_distr1: "d1 * \<^bold>\<Sum> D \<le> \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
-    using SumInf_bounded_if_set_bounded countable_f_on_set[of D "\<lambda>d2. d1 * d2"] assms
+  have sumInf_left_distr1: "w1 * \<^bold>\<Sum> W \<le> \<^bold>\<Sum> {w1 * w2 | w2. w2 \<in> W}"
+    using SumInf_bounded_if_set_bounded countable_f_on_set[of W "\<lambda>w2. w1 * w2"] assms
     by (force simp add: countable_SumInf_elem idempotent_semiring_ord_class.mult_isol)
-  have countable_D_img: "countable {d1 * d2 | d2. d2 \<in> D}"
+  have countable_D_img: "countable {w1 * w2 | w2. w2 \<in> W}"
     using assms countable_f_on_set by blast
-  obtain D' where subset:"D' \<subseteq> D" and fin:"finite D'" and eq:"\<^bold>\<Sum> D = \<Sum> D'"
+  obtain W' where subset:"W' \<subseteq> W" and fin:"finite W'" and eq:"\<^bold>\<Sum> W = \<Sum> W'"
     by (fact SumInf_obtains_finite_subset[OF assms(1)])
 
-  have finite_D'_img: "finite {d1 * d2 | d2. d2 \<in> D'}"
+  have finite_D'_img: "finite {w1 * w2 | w2. w2 \<in> W'}"
     by (simp add: fin)
 
-  from fin have sumInf_left_distr2: "d1 * \<Sum> D' \<ge> \<Sum> {d1 * d2 | d2. d2 \<in> D'}" (* extract lemma? *)
+  from fin have sumInf_left_distr2: "w1 * \<Sum> W' \<ge> \<Sum> {w1 * w2 | w2. w2 \<in> W'}" (* extract lemma? *)
   proof (induction)
     case empty
     then show ?case
       by force
   next
-    case (insert d D')
-    have Sum_insert: "\<Sum> (insert d D') = d + \<Sum>D'"
+    case (insert w W')
+    have Sum_insert: "\<Sum> (insert w W') = w + \<Sum>W'"
       using insert.hyps(1) by simp
-    have Sum_insert_img: "\<Sum> {d1 * d2 |d2. d2 \<in> insert d D'} = d1 * d + \<Sum>{d1 * d2 |d2. d2 \<in> D'}"
+    have Sum_insert_img: "\<Sum> {w1 * w2 |w2. w2 \<in> insert w W'} = w1 * w + \<Sum>{w1 * w2 |w2. w2 \<in> W'}"
       by (metis Setcompr_eq_image finite_imageI image_insert insert.hyps(1) idempotent_comm_monoid_add_class.idem_sum_insert)
     show ?case
       unfolding Sum_insert_img Sum_insert using insert by (simp add: meet.le_infI2 semiring_class.distrib_left)
   qed
 
-  have "\<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D} \<le> \<Sum> {d1 * d2 | d2. d2 \<in> D'}"
-    using Collect_mono[of "\<lambda>d2d1. \<exists>d2. d2d1 = d1 * d2 \<and> d2 \<in> D'" "\<lambda>d2d1. \<exists>d2. d2d1 = d1 * d2 \<and> d2 \<in> D"] 
-      SumInf_mono[of "{d1 * d2 | d2. d2 \<in> D'}" "{d1 * d2 | d2. d2 \<in> D}"] subset 
+  have "\<^bold>\<Sum> {w1 * w2 | w2. w2 \<in> W} \<le> \<Sum> {w1 * w2 | w2. w2 \<in> W'}"
+    using Collect_mono[of "\<lambda>w2w1. \<exists>w2. w2w1 = w1 * w2 \<and> w2 \<in> W'" "\<lambda>w2w1. \<exists>w2. w2w1 = w1 * w2 \<and> w2 \<in> W"] 
+      SumInf_mono[of "{w1 * w2 | w2. w2 \<in> W'}" "{w1 * w2 | w2. w2 \<in> W}"] subset 
       countable_D_img unfolding finite_SumInf_is_sum[OF finite_D'_img,symmetric] by fastforce
 
-  then have "d1 * \<^bold>\<Sum> D \<ge> \<^bold>\<Sum> {d1 * d2 | d2. d2 \<in> D}"
+  then have "w1 * \<^bold>\<Sum> W \<ge> \<^bold>\<Sum> {w1 * w2 | w2. w2 \<in> W}"
     using sumInf_left_distr2 eq by auto 
   then show ?thesis
     using sumInf_left_distr1 by auto
 qed
 
-lemma SumInf_right_distr: 
-  assumes "countable D"
-  shows "\<^bold>\<Sum> D * d1 = \<^bold>\<Sum> {d2 * d1 | d2. d2 \<in> D}"
+lemma SumInf_left_distr1:
+  assumes "countable {f x |x. P x}"
+  shows  "w * \<^bold>\<Sum> {f x |x. P x} = \<^bold>\<Sum> {w * f x |x. P x}"
 proof -
-  have sumInf_right_distr1: "\<^bold>\<Sum> D * d1 \<le> \<^bold>\<Sum> {d2 * d1 | d2. d2 \<in> D}"
-    using SumInf_bounded_if_set_bounded countable_f_on_set[of D "\<lambda>d2. d2 * d1"] assms
+  have "w * \<^bold>\<Sum> {f x |x. P x} = \<^bold>\<Sum> {w * fx |fx. fx \<in> {f x|x. P x}}"
+    using assms SumInf_left_distr[of "{f x|x y. P x}" w] by auto
+  also
+  have "... = \<^bold>\<Sum> {w * f x |x. P x}"
+    by (rule arg_cong[of _ _ "\<^bold>\<Sum>"]) auto
+  finally show ?thesis
+    by auto
+qed
+
+lemma SumInf_left_distr2:
+  assumes "countable {f x y |x y. P x y}"
+  shows  "w * \<^bold>\<Sum> {f x y |x y. P x y } = \<^bold>\<Sum> {w * f x y |x y. P x y}"
+proof -
+  have "w * \<^bold>\<Sum> {f x y |x y. P x y } = \<^bold>\<Sum> {w * fxy |fxy. fxy \<in> {f x y |x y. P x y }}"
+    using assms SumInf_left_distr[of "{f x y |x y. P x y}" w] by auto
+  also
+  have "... = \<^bold>\<Sum> {w * f x y |x y. P x y}"
+    by (rule arg_cong[of _ _ "\<^bold>\<Sum>"]) auto
+  finally show ?thesis
+    by auto
+qed
+
+lemma SumInf_right_distr: 
+  assumes "countable W"
+  shows "\<^bold>\<Sum> W * w1 = \<^bold>\<Sum> {w2 * w1 | w2. w2 \<in> W}"
+proof -
+  have sumInf_right_distr1: "\<^bold>\<Sum> W * w1 \<le> \<^bold>\<Sum> {w2 * w1 | w2. w2 \<in> W}"
+    using SumInf_bounded_if_set_bounded countable_f_on_set[of W "\<lambda>w2. w2 * w1"] assms
     by (force simp add: countable_SumInf_elem idempotent_semiring_ord_class.mult_isor)
 
-  have countable_D_img: "countable {d2 * d1 | d2. d2 \<in> D}"
+  have countable_D_img: "countable {w2 * w1 | w2. w2 \<in> W}"
     using assms countable_f_on_set by fastforce 
-  obtain D' where subset:"D' \<subseteq> D" and fin:"finite D'" and eq:"\<^bold>\<Sum> D = \<Sum> D'"
+  obtain W' where subset:"W' \<subseteq> W" and fin:"finite W'" and eq:"\<^bold>\<Sum> W = \<Sum> W'"
     by (fact SumInf_obtains_finite_subset[OF assms(1)])
 
-  have finite_D'_img: "finite {d2 * d1 | d2. d2 \<in> D'}"
+  have finite_D'_img: "finite {w2 * w1 | w2. w2 \<in> W'}"
     by (simp add: fin)
 
-  from fin have sumInf_right_distr2: "\<Sum> D' * d1 \<ge> \<Sum> {d2 * d1 | d2. d2 \<in> D'}" (* extract lemma? *)
+  from fin have sumInf_right_distr2: "\<Sum> W' * w1 \<ge> \<Sum> {w2 * w1 | w2. w2 \<in> W'}" (* extract lemma? *)
   proof (induction)
     case empty
     then show ?case
       by force
   next
-    case (insert d D')
-    have Sum_insert: "\<Sum> (insert d D') = d + \<Sum>D'"
+    case (insert w W')
+    have Sum_insert: "\<Sum> (insert w W') = w + \<Sum>W'"
       using insert.hyps(1) by simp
-    have Sum_insert_img: "\<Sum> {d2 * d1 |d2. d2 \<in> insert d D'} = d * d1 + \<Sum>{d2 * d1 |d2. d2 \<in> D'}"
+    have Sum_insert_img: "\<Sum> {w2 * w1 |w2. w2 \<in> insert w W'} = w * w1 + \<Sum>{w2 * w1 |w2. w2 \<in> W'}"
       by (metis Setcompr_eq_image finite_imageI image_insert insert.hyps(1) idempotent_comm_monoid_add_class.idem_sum_insert)
     show ?case
       unfolding Sum_insert_img Sum_insert using insert by (simp add: meet.le_infI2 semiring_class.distrib_right)
   qed
 
-  have "\<^bold>\<Sum> {d2 * d1 | d2. d2 \<in> D} \<le> \<Sum> {d2 * d1 | d2. d2 \<in> D'}"
-    using Collect_mono[of "\<lambda>d2d1. \<exists>d2. d2d1 = d2 * d1 \<and> d2 \<in> D'" "\<lambda>d2d1. \<exists>d2. d2d1 = d2 * d1 \<and> d2 \<in> D"] 
-      SumInf_mono[of "{d2 * d1 | d2. d2 \<in> D'}" "{d2 * d1 | d2. d2 \<in> D}"] subset 
+  have "\<^bold>\<Sum> {w2 * w1 | w2. w2 \<in> W} \<le> \<Sum> {w2 * w1 | w2. w2 \<in> W'}"
+    using Collect_mono[of "\<lambda>w2w1. \<exists>w2. w2w1 = w2 * w1 \<and> w2 \<in> W'" "\<lambda>w2w1. \<exists>w2. w2w1 = w2 * w1 \<and> w2 \<in> W"] 
+      SumInf_mono[of "{w2 * w1 | w2. w2 \<in> W'}" "{w2 * w1 | w2. w2 \<in> W}"] subset 
       countable_D_img unfolding finite_SumInf_is_sum[OF finite_D'_img,symmetric] by fastforce
 
-  then have "\<^bold>\<Sum> D * d1 \<ge> \<^bold>\<Sum> {d2 * d1 | d2. d2 \<in> D}"
+  then have "\<^bold>\<Sum> W * w1 \<ge> \<^bold>\<Sum> {w2 * w1 | w2. w2 \<in> W}"
     using sumInf_right_distr2 eq by auto 
   then show ?thesis
     using sumInf_right_distr1 by auto
 qed
 
+lemma SumInf_right_distr1:
+  assumes "countable {f x |x. P x}"
+  shows  "\<^bold>\<Sum> {f x|x y. P x} * w = \<^bold>\<Sum> {f x * w |x. P x}"
+proof -
+  have "\<^bold>\<Sum> {f x |x. P x} * w = \<^bold>\<Sum> {z * w |z. z \<in> {f x|x. P x}}"
+    using assms SumInf_right_distr[of "{f x |x . P x}" w] by auto
+  also
+  have "... = \<^bold>\<Sum> {f x * w |x. P x}"
+    by (rule arg_cong[of _ _ "\<^bold>\<Sum>"]) auto
+  finally show ?thesis
+    by auto
+qed
+
+lemma SumInf_right_distr2:
+  assumes "countable {f x y |x y. P x y }"
+  shows  "\<^bold>\<Sum> {f x y |x y. P x y } * w = \<^bold>\<Sum> {f x y * w |x y. P x y}"
+proof -
+  have "\<^bold>\<Sum> {f x y |x y. P x y } * w = \<^bold>\<Sum> {fxy * w |fxy. fxy \<in> {f x y |x y. P x y }}"
+    using assms SumInf_right_distr[of "{f x y |x y. P x y}" w] by auto
+  also
+  have "... = \<^bold>\<Sum> {f x y * w |x y. P x y}"
+    by (rule arg_cong[of _ _ "\<^bold>\<Sum>"]) auto
+  finally show ?thesis
+    by auto
+qed
+
 lemma SumInf_of_SumInf_countable1:
-  assumes "countable {d'. Q d'}"
-  assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'}"
-  shows "countable {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'}"
-  using countable_image[of "{d'. Q d'}" "\<lambda>d'. \<^bold>\<Sum> {f d d' |d. P d d'}", OF assms(1)]
+  assumes "countable {y. Q y}"
+  assumes "\<And>y. Q y \<Longrightarrow> countable {(x, y)| x. P x y}"
+  shows "countable {\<^bold>\<Sum> {f x y |x. P x y} |y. Q y}"
+  using countable_image[of "{y. Q y}" "\<lambda>y. \<^bold>\<Sum> {f x y |x. P x y}", OF assms(1)]
   by (simp add: image_Collect)
 
 lemma SumInf_of_SumInf_countable2:
-  assumes "countable {d'. Q d'}"
-  assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'}"
-  shows "countable {f d d' |d d'. P d d' \<and> Q d'}"
+  assumes "countable {y. Q y}"
+  assumes "\<And>y. Q y \<Longrightarrow> countable {(x, y)| x. P x y}"
+  shows "countable {f x y |x y. P x y \<and> Q y}"
 proof -
-  have "countable (\<Union>((\<lambda>d'. {(d,d')|d. P d d'}) ` {d'. Q d'}))"
+  have "countable (\<Union>((\<lambda>y. {(x,y)|x. P x y}) ` {y. Q y}))"
     using assms(1) assms(2) by blast
   moreover
-  have "(\<Union>d'\<in>{d'. Q d'}. {(d, d') |d. P d d'}) = {(d, d') |d d'. P d d' \<and> Q d'}"
+  have "(\<Union>y\<in>{y. Q y}. {(x, y) |x. P x y}) = {(x, y) |x y. P x y \<and> Q y}"
     by auto
   ultimately
-  have "countable {(d, d') |d d'. P d d' \<and> Q d'}"
+  have "countable {(x, y) |x y. P x y \<and> Q y}"
     by auto
-  then show "countable {f d d' |d d'. P d d' \<and> Q d'}"
-    using countable_image[of "{(d, d') |d d'. P d d' \<and> Q d'}" "\<lambda>(d, d'). f d d'"]
-      Collect_cong[of "\<lambda>fdd'. \<exists>d d'. P d d' \<and> Q d' \<and> fdd' = f d d'" "\<lambda>fdd'. \<exists>d d'. fdd' = f d d' \<and> P d d' \<and> Q d' "]
+  then show "countable {f x y |x y. P x y \<and> Q y}"
+    using countable_image[of "{(x, y) |x y. P x y \<and> Q y}" "\<lambda>(x, y). f x y"]
+      Collect_cong[of "\<lambda>fxy. \<exists>x y. P x y \<and> Q y \<and> fxy = f x y" "\<lambda>fxy. \<exists>x y. fxy = f x y \<and> P x y \<and> Q y "]
     unfolding image_def by fastforce
 qed
 
 lemma countable_image_prod:
-  assumes "countable {(d, d')| d. P d d'}"
-  shows "countable {f d d' |d. P d d'}"
-  using assms countable_image[of "{(d, d') |d . P d d'}" "\<lambda>(d, d'). f d d'"]
-    Collect_cong[of "\<lambda>fdd'. \<exists>d. P d d' \<and> fdd' = f d d'" "\<lambda>fdd'. \<exists>d. fdd' = f d d' \<and> P d d'"]
+  assumes "countable {(x, y)| x. P x y}"
+  shows "countable {f x y |x. P x y}"
+  using assms countable_image[of "{(x, y) |x . P x y}" "\<lambda>(x, y). f x y"]
+    Collect_cong[of "\<lambda>fxy. \<exists>x. P x y \<and> fxy = f x y" "\<lambda>fxy. \<exists>x. fxy = f x y \<and> P x y"]
   unfolding image_def by fastforce
 
 lemma SumInf_of_SumInf_geq: (* Are the assumptions reasonable? *)
-  assumes "countable {d'. Q d'}"
-  assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'}"
-  shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} \<ge> \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
+  assumes "countable {y. Q y}"
+  assumes "\<And>y. Q y \<Longrightarrow> countable {(x, y)| x. P x y}"
+  shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f x y| x. P x y} |y. Q y} \<ge> \<^bold>\<Sum> {f x y | x y. P x y \<and> Q y}"
 proof (rule SumInf_bounded_if_set_bounded)
-  show "countable {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'}"
+  show "countable {\<^bold>\<Sum> {f x y |x. P x y} |y. Q y}"
     using SumInf_of_SumInf_countable1 assms by blast
-  have count: "countable {f d d' |d d'. P d d' \<and> Q d'}"
+  have count: "countable {f x y |x y. P x y \<and> Q y}"
     using  SumInf_of_SumInf_countable2 assms by auto
 
-  have "\<And>d'. Q d' \<Longrightarrow> \<^bold>\<Sum> {f d d' |d d'. P d d' \<and> Q d'} \<le> \<^bold>\<Sum> {f d d' |d. P d d'}"
+  have "\<And>y. Q y \<Longrightarrow> \<^bold>\<Sum> {f x y |x y. P x y \<and> Q y} \<le> \<^bold>\<Sum> {f x y |x. P x y}"
   proof -
-    fix d'
-    assume Qd': "Q d'"
-    show "\<^bold>\<Sum> {f d d' |d d'. P d d' \<and> Q d'} \<le> \<^bold>\<Sum> {f d d' |d. P d d'}"
-      using count Collect_mono_iff[of "\<lambda>fdd'. \<exists>d. fdd' = f d d' \<and> P d d'" "\<lambda>fdd'. \<exists>d d'. fdd' = f d d' \<and> P d d' \<and> Q d'"]
-            SumInf_mono Qd' by auto
+    fix y
+    assume Qy: "Q y"
+    show "\<^bold>\<Sum> {f x y |x y. P x y \<and> Q y} \<le> \<^bold>\<Sum> {f x y |x. P x y}"
+      using count Collect_mono_iff[of "\<lambda>fxy. \<exists>x. fxy = f x y \<and> P x y" "\<lambda>fxy. \<exists>x y. fxy = f x y \<and> P x y \<and> Q y"]
+            SumInf_mono Qy by auto
   qed
-  then show "\<forall>fdd'\<in>{\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'}. \<^bold>\<Sum> {f d d' |d d'. P d d' \<and> Q d'} \<le> fdd'"
+  then show "\<forall>fxy\<in>{\<^bold>\<Sum> {f x y |x. P x y} |y. Q y}. \<^bold>\<Sum> {f x y |x y. P x y \<and> Q y} \<le> fxy"
     by auto
 qed
 
 lemma SumInf_of_SumInf_leq: (* Are the assumptions reasonable? *)
-  assumes "countable {d'. Q d'}"
-  assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'} "
-  shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} \<le> \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
+  assumes "countable {y. Q y}"
+  assumes "\<And>y. Q y \<Longrightarrow> countable {(x, y)| x. P x y} "
+  shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f x y| x. P x y} |y. Q y} \<le> \<^bold>\<Sum> {f x y | x y. P x y \<and> Q y}"
 proof (rule SumInf_bounded_if_set_bounded)
-  show count: "countable {f d d' |d d'. P d d' \<and> Q d'}"
+  show count: "countable {f x y |x y. P x y \<and> Q y}"
     using SumInf_of_SumInf_countable2 assms by blast
 
-  have count2: "countable {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'}"
+  have count2: "countable {\<^bold>\<Sum> {f x y |x. P x y} |y. Q y}"
     using SumInf_of_SumInf_countable1 assms by blast
 
-  have "\<And>d d'. P d d' \<Longrightarrow> Q d' \<Longrightarrow> \<^bold>\<Sum> {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'} \<le> f d d'"
+  have "\<And>x y. P x y \<Longrightarrow> Q y \<Longrightarrow> \<^bold>\<Sum> {\<^bold>\<Sum> {f x y |x. P x y} |y. Q y} \<le> f x y"
   proof -
-    fix d d' 
-    assume Pdd': "P d d'"
-    assume Qd': "Q d'"
-    have "countable {f d d' |d. P d d'}"
-      using Qd' assms(2)[of d'] countable_image_prod by fastforce
-    then have "\<^bold>\<Sum> {f d d' |d. P d d'} \<le> f d d'"
-      using Pdd' countable_SumInf_elem by auto
-    then show "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'} \<le> f d d'"
-      using countable_SumInf_elem dual_order.trans Qd' count2 by blast
+    fix x y 
+    assume Pxy: "P x y"
+    assume Qy: "Q y"
+    have "countable {f x y |x. P x y}"
+      using Qy assms(2)[of y] countable_image_prod by fastforce
+    then have "\<^bold>\<Sum> {f x y |x. P x y} \<le> f x y"
+      using Pxy countable_SumInf_elem by auto
+    then show "\<^bold>\<Sum> {\<^bold>\<Sum> {f x y |x. P x y} |y. Q y} \<le> f x y"
+      using countable_SumInf_elem dual_order.trans Qy count2 by blast
   qed
-  then show "\<forall>fdd'\<in>{f d d' |d d'. P d d' \<and> Q d'}. \<^bold>\<Sum> {\<^bold>\<Sum> {f d d' |d. P d d'} |d'. Q d'} \<le> fdd'"
+  then show "\<forall>fxy\<in>{f x y |x y. P x y \<and> Q y}. \<^bold>\<Sum> {\<^bold>\<Sum> {f x y |x. P x y} |y. Q y} \<le> fxy"
     by auto
 qed
 
 lemma SumInf_of_SumInf: (* Are the assumptions reasonable? *)
-  assumes "countable {d'. Q d'}"
-  assumes "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'} "
-  shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {f d d' | d d'. P d d' \<and> Q d'}"
+  assumes "countable {y. Q y}"
+  assumes "\<And>y. Q y \<Longrightarrow> countable {(x, y)| x. P x y} "
+  shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f x y| x. P x y} |y. Q y} = \<^bold>\<Sum> {f x y | x y. P x y \<and> Q y}"
   using SumInf_of_SumInf_geq[of Q P f] SumInf_of_SumInf_leq[of Q P f] assms(1,2) by auto
 
 
 lemma SumInf_of_SumInf_fst_arg: (* not used... *)
-  assumes "countable {d'. Q d'}"
-      and "\<And>d'. Q d' \<Longrightarrow> countable {(d, d')| d. P d d'} "
-    shows "\<^bold>\<Sum> {\<^bold>\<Sum> {d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {d | d d'. P d d' \<and> Q d'}"
+  assumes "countable {y. Q y}"
+      and "\<And>y. Q y \<Longrightarrow> countable {(w, y)| w. P w y} "
+    shows "\<^bold>\<Sum> {\<^bold>\<Sum> {w. P w y} |y. Q y} = \<^bold>\<Sum> {w | w y. P w y \<and> Q y}"
   using SumInf_of_SumInf[of _ _ "\<lambda>x y. x"] assms by auto
 
 lemma SumInf_of_SumInf_right_distr:
-  assumes "countable {d'. Q d'}"
-      and "\<And>d'. Q d' \<Longrightarrow> countable {(d, d') |d. P d d'}"
-    shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} * g d' |d'. Q d'} = \<^bold>\<Sum> {f d d' * g d' | d d'. P d d' \<and> Q d'}"
+  assumes "countable {y. Q y}"
+      and "\<And>y. Q y \<Longrightarrow> countable {(x, y) |x. P x y}"
+    shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f x y| x. P x y} * g y |y. Q y} = \<^bold>\<Sum> {f x y * g y | x y. P x y \<and> Q y}"
 proof -
-  have eql: "\<forall>d'. {f d d' * g d' |d. P d d'} = {d1 * g d' |d1. \<exists>d. d1 = f d d' \<and> P d d'}"
+  have eql: "\<forall>y. {f x y * g y |x. P x y} = {fxy * g y |fxy. \<exists>x. fxy = f x y \<and> P x y}"
     by auto
-  have "\<And>d'. Q d' \<Longrightarrow> countable {f d d' |d. P d d'}"
+  have "\<And>y. Q y \<Longrightarrow> countable {f x y |x. P x y}"
     using assms(2) countable_f_on_P_Q_set2[of P f "\<lambda>x y. True", simplified] countable_image_prod setcompr_eq_image by fast
-  then have "\<And>d'. Q d' \<Longrightarrow> \<^bold>\<Sum> {f d d' |d. P d d'} * g d' = \<^bold>\<Sum> {d2 * g d' |d2. d2 \<in> {f d d' |d. P d d'}}"
-    using SumInf_right_distr[of "{f d _ |d. P d _}" "g _"] by simp
-  then have "\<^bold>\<Sum> {\<^bold>\<Sum> {f d d'| d. P d d'} * g d' |d'. Q d'} = \<^bold>\<Sum> {\<^bold>\<Sum> {d1 * g d' |d1. d1 \<in> {f d d' |d. P d d'}} |d'. Q d'}"
+  then have "\<And>y. Q y \<Longrightarrow> \<^bold>\<Sum> {f x y |x. P x y} * g y = \<^bold>\<Sum> {fxy * g y |fxy. fxy \<in> {f x y |x. P x y}}"
+    using SumInf_right_distr[of "{f x _ |x. P x _}" "g _"] by simp
+  then have "\<^bold>\<Sum> {\<^bold>\<Sum> {f x y| x. P x y} * g y |y. Q y} = \<^bold>\<Sum> {\<^bold>\<Sum> {fxy * g y |fxy. fxy \<in> {f x y |x. P x y}} |y. Q y}"
     by (simp add: setcompr_eq_image)
-  also have "... =  \<^bold>\<Sum> {f d d' * g d' | d d'. P d d' \<and> Q d'}"
-    using eql SumInf_of_SumInf[of Q P "\<lambda>d d'. f d d' * g d'"] assms by auto
+  also have "... =  \<^bold>\<Sum> {f x y * g y | x y. P x y \<and> Q y}"
+    using eql SumInf_of_SumInf[of Q P "\<lambda>x y. f x y * g y"] assms by auto
   finally show ?thesis .
 qed
 
 lemma SumInf_of_SumInf_left_distr:
-  assumes "countable {d'. Q d'}"
-      and "\<And>d'. Q d' \<Longrightarrow> countable {(d, d') |d. P d d'}"
-    shows "\<^bold>\<Sum> {g d' * \<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {g d' * f d d' | d d'. P d d' \<and> Q d'}"
+  assumes "countable {y. Q y}"
+      and "\<And>y. Q y \<Longrightarrow> countable {(x, y) |x. P x y}"
+    shows "\<^bold>\<Sum> {g y * \<^bold>\<Sum> {f x y| x. P x y} |y. Q y} = \<^bold>\<Sum> {g y * f x y | x y. P x y \<and> Q y}"
 proof -
-  have eql: "\<forall>d'. {g d' * f d d' |d. P d d'} = {g d' * d1 |d1. \<exists>d. d1 = f d d' \<and> P d d'}"
+  have eql: "\<forall>y. {g y * f x y |x. P x y} = {g y * fxy |fxy. \<exists>x. fxy = f x y \<and> P x y}"
     by auto
-  have "\<And>d'. Q d' \<Longrightarrow> countable {f d d' |d. P d d'}"
+  have "\<And>y. Q y \<Longrightarrow> countable {f x y |x. P x y}"
     using assms(2) countable_f_on_P_Q_set2[of P f "\<lambda>x y. True", simplified] countable_image_prod setcompr_eq_image by fast
-  then have "\<And>d'. Q d' \<Longrightarrow> g d' * \<^bold>\<Sum> {f d d' |d. P d d'} = \<^bold>\<Sum> {g d' * d2 |d2. d2 \<in> {f d d' |d. P d d'}}"
-    using SumInf_left_distr[of "{f d _ |d. P d _}" "g _"] by simp
-  then have "\<^bold>\<Sum> {g d' * \<^bold>\<Sum> {f d d'| d. P d d'} |d'. Q d'} = \<^bold>\<Sum> {\<^bold>\<Sum> {g d' * d1 |d1. d1 \<in> {f d d' |d. P d d'}} |d'. Q d'}"
+  then have "\<And>y. Q y \<Longrightarrow> g y * \<^bold>\<Sum> {f x y |x. P x y} = \<^bold>\<Sum> {g y * fxy |fxy. fxy \<in> {f x y |x. P x y}}"
+    using SumInf_left_distr[of "{f x _ |x. P x _}" "g _"] by simp
+  then have "\<^bold>\<Sum> {g y * \<^bold>\<Sum> {f x y| x. P x y} |y. Q y} = \<^bold>\<Sum> {\<^bold>\<Sum> {g y * fxy |fxy. fxy \<in> {f x y |x. P x y}} |y. Q y}"
     by (simp add: setcompr_eq_image)
-  also have "... =  \<^bold>\<Sum> {g d' * f d d' | d d'. P d d' \<and> Q d'}"
-    using eql SumInf_of_SumInf[of Q P "\<lambda>d d'. g d' * f d d'"] assms by auto
+  also have "... =  \<^bold>\<Sum> {g y * f x y | x y. P x y \<and> Q y}"
+    using eql SumInf_of_SumInf[of Q P "\<lambda>x y. g y * f x y"] assms by auto
   finally show ?thesis .
 qed
 
@@ -416,32 +468,32 @@ lemma SumInf_bounded_by_SumInf_if_members_bounded:
   by (meson assms SumInf_bounded_if_set_bounded assms dual_order.trans countable_SumInf_elem)
 
 lemma SumInf_mult_isor:
-  assumes "countable {d . X d}"
-  assumes "d \<le> (d' :: 'weight::bounded_idempotent_semiring)"
-  shows "\<^bold>\<Sum> {d * d''| d''. X d''} \<le> \<^bold>\<Sum> {d' * d''| d''. X d''}"
+  assumes "countable {w . X w}"
+  assumes "w \<le> w'"
+  shows "\<^bold>\<Sum> {w * w''| w''. X w''} \<le> \<^bold>\<Sum> {w' * w''| w''. X w''}"
   by (rule SumInf_bounded_by_SumInf_if_members_bounded)
      (use assms idempotent_semiring_ord_class.mult_isor countable_setcompr[of X] in auto)
 
 lemma SumInf_mono_wrt_img_of_set: 
-  assumes "countable {x. X x}"
-  assumes "\<forall>t. X t \<longrightarrow> f t \<le> g t"
-  shows "\<^bold>\<Sum> {f t| t. X t} \<le> \<^bold>\<Sum> {g t| t. X t}"
+  assumes "countable {x. P x}"
+  assumes "\<forall>x. P x \<longrightarrow> f x \<le> g x"
+  shows "\<^bold>\<Sum> {f x| x. P x} \<le> \<^bold>\<Sum> {g x| x. P x}"
   by (rule SumInf_bounded_by_SumInf_if_members_bounded)
-     (use assms countable_setcompr[of X] in auto)
+     (use assms countable_setcompr[of P] in auto)
 
 lemma SumInf_insert_0:
-  assumes "countable X"
-  shows "\<^bold>\<Sum> X = \<^bold>\<Sum> (insert 0 X)"
-proof (cases "X = {}")
+  assumes "countable W"
+  shows "\<^bold>\<Sum> W = \<^bold>\<Sum> (insert 0 W)"
+proof (cases "W = {}")
   case True
   then show ?thesis by simp
 next
   case False
-  have "countable (insert 0 X)" using assms by blast
-  then have "\<^bold>\<Sum> X \<le> \<^bold>\<Sum> (insert 0 X)"
+  have "countable (insert 0 W)" using assms by blast
+  then have "\<^bold>\<Sum> W \<le> \<^bold>\<Sum> (insert 0 W)"
     using SumInf_bounded_by_SumInf_if_members_bounded[OF assms] False by fastforce
-  moreover have "\<^bold>\<Sum> X \<ge> \<^bold>\<Sum> (insert 0 X)"
-    using SumInf_mono[of X "insert 0 X"] assms by auto
+  moreover have "\<^bold>\<Sum> W \<ge> \<^bold>\<Sum> (insert 0 W)"
+    using SumInf_mono[of W "insert 0 W"] assms by auto
   ultimately show ?thesis by simp
 qed
 
@@ -456,12 +508,12 @@ proof -
 qed
 
 lemma SumInf_split_Qor0:
-  assumes "countable {d. P d}"
-  assumes "(\<And>t. \<not> Q t \<Longrightarrow> f t = 0)"
-  assumes "(\<And>t. Q t \<Longrightarrow> f t = g t)"
-  shows "\<^bold>\<Sum> {f t| t. P t} = \<^bold>\<Sum> {g t| t. P t \<and> Q t}"
+  assumes "countable {x. P x}"
+  assumes "(\<And>x. \<not> Q x \<Longrightarrow> f x = 0)"
+  assumes "(\<And>x. Q x \<Longrightarrow> f x = g x)"
+  shows "\<^bold>\<Sum> {f x| x. P x} = \<^bold>\<Sum> {g x| x. P x \<and> Q x}"
 proof -
-  have "{f t| t. P t} \<union> {0} = {g t| t. P t \<and> Q t} \<union> {0}" using assms by force
+  have "{f x| x. P x} \<union> {0} = {g x| x. P x \<and> Q x} \<union> {0}" using assms by force
   then show ?thesis 
     using SumInf_equal_with_0[OF countable_setcompr[OF assms(1), of f]] by simp
 qed
