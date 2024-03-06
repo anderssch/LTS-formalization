@@ -76,6 +76,15 @@ lemma idem_sum_insert[simp]:
   shows "\<Sum>(insert x S) = x + \<Sum>S"
   using idem_sum_elem[OF assms] sum.insert_if[OF assms, of id x] by simp
 
+lemma idem_sum_image:
+  assumes "finite S"
+  shows "\<Sum> (f ` S) = sum f S"
+  apply (induct rule: finite_induct[OF assms], simp)
+  subgoal for x F
+    using idem_sum_insert[of "(f ` F)" "f x"] 
+    by fastforce
+  done
+
 lemma idem_sum_const:
   assumes "finite S"
       and "S \<noteq> {}"
@@ -86,14 +95,13 @@ lemma idem_sum_const:
     by (cases "F = {}", simp_all)
   done
 
-lemma idem_sum_image:
+lemma idem_sum_const':
   assumes "finite S"
-  shows "\<Sum> (f ` S) = sum f S"
-  apply (induct rule: finite_induct[OF assms], simp)
-  subgoal for x F
-    using idem_sum_insert[of "(f ` F)" "f x"] 
-    by fastforce
-  done
+      and "S \<noteq> {}"
+    shows "\<Sum>{y |x. x\<in>S} = y"
+  using idem_sum_const[OF assms, of y] 
+  unfolding idem_sum_image[OF assms(1), of "\<lambda>i. y", symmetric] image_def 
+  by simp
 
 lemma idem_sum_distrib:
   assumes "finite S"
@@ -120,6 +128,28 @@ proof -
   ultimately show ?thesis 
     using sum.union_disjoint[of "{x. P x \<and> Q x}" "{x. P x \<and> \<not> Q x}" id, simplified] assms by simp
 qed
+
+lemma idem_sum_subset:
+  assumes "X \<subseteq> Y"
+  assumes "finite Y"
+  shows "\<Sum>Y + \<Sum>X = \<Sum>Y"
+  using sum.subset_diff[OF assms, of id] add_assoc add_idem by simp
+
+lemma idem_sum_union:
+  assumes "finite (A \<union> B)"
+  shows "\<Sum>(A \<union> B) = \<Sum>A + \<Sum>B"
+  using assms sum.union_inter[of A B "\<lambda>x. x"] idem_sum_subset[OF _ assms(1), of "A \<inter> B"]
+  by fastforce
+
+lemma sum_split_f_P:
+  assumes "finite {f x |x. P x}"
+  shows  "\<Sum> {f x |x. P x} = \<Sum> {f x |x. P x \<and> Q x} + \<Sum> {f x |x. P x \<and> \<not> Q x}"
+proof -
+  have "{f x |x. P x \<and> Q x} \<union> {f x |x. P x \<and> \<not> Q x} = {f x| x. P x}" by blast
+  then show ?thesis 
+    using idem_sum_union[of "{f x |x. P x \<and> Q x}" "{f x |x. P x \<and> \<not> Q x}"] assms by argo
+qed
+
 
 abbreviation sum_seq :: "(nat \<Rightarrow> 'a) \<Rightarrow> nat \<Rightarrow> 'a" where
   "sum_seq f i \<equiv> sum f {x. x < i}"

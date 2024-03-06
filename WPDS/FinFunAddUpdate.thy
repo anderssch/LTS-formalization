@@ -221,18 +221,18 @@ qed
 lemma update_wts_insert_unfold:
   fixes S::"('a \<times> 'b::idempotent_comm_monoid_add) set"
   assumes "finite S"
-  shows "update_wts f (insert (x,y) S) = update_wts f(x $:= f $ x + y) S"
+  shows "update_wts f (insert (x,y) S) = update_wts f(x $+= y) S"
   apply (rule finfun_ext)
   subgoal for a
-    unfolding update_wts_sum[OF assms, of "f(x $:= f $ x + y)" a] 
+    unfolding update_wts_sum[OF assms, of "f(x $+= y)" a] 
               update_wts_sum[of "(insert (x,y) S)" f a, simplified, OF assms]
 proof (cases "a = x")
   case True
-  show "f $ a + \<Sum> {b. a = x \<and> b = y \<or> (a, b) \<in> S} = f(x $:= f $ x + y) $ a + \<Sum> {b. (a, b) \<in> S}" 
+  show "f $ a + \<Sum> {b. a = x \<and> b = y \<or> (a, b) \<in> S} = f(x $+= y) $ a + \<Sum> {b. (a, b) \<in> S}" 
     using sum_snd_insert[OF assms] True by (simp add: ac_simps(1))
 next
   case False
-  then show "f $ a + \<Sum> {b. a = x \<and> b = y \<or> (a, b) \<in> S} = f(x $:= f $ x + y) $ a + \<Sum> {b. (a, b) \<in> S}"
+  then show "f $ a + \<Sum> {b. a = x \<and> b = y \<or> (a, b) \<in> S} = f(x $+= y) $ a + \<Sum> {b. (a, b) \<in> S}"
     by simp
 qed done
 
@@ -267,6 +267,49 @@ proof -
     then show ?thesis by argo
   qed
   then show ?thesis using BAC by presburger
+qed
+
+
+lemma update_wts_sum_finfun:
+  assumes "finite S"
+  shows "update_wts f S = f + \<Sum>{f(a $+= b) |a b. (a,b) \<in> S}"
+proof (rule finfun_ext)
+  fix a
+  have f0:"finite {b. (a, b) \<in> S}" 
+    using finite_f_P_on_set[OF assms, of "\<lambda>ab. snd ab" "\<lambda>ab. fst ab = a"] by simp
+  have f1:"finite {f(a $+= b) |b. (a, b) \<in> S}" 
+    using finite_f_P_on_set[OF assms, of "\<lambda>ab. f(a $+= snd ab)" "\<lambda>ab. fst ab = a"] by simp
+  have f2: "finite {f(a $+= b) |a b. (a, b) \<in> S}" 
+    using finite_f_P_on_set[OF assms, of "\<lambda>ab. f(fst ab $+= snd ab)" "\<lambda>ab. True"] by simp
+  have f3:"finite {f(aa $+= b) $ a |aa b. (aa, b) \<in> S \<and> aa \<noteq> a}" 
+    using finite_f_P_on_set[OF assms, of "\<lambda>ab. f(fst ab $+= snd ab) $ a" "\<lambda>ab. fst ab \<noteq> a"]
+    by (rule back_subst[of finite]) auto
+  have f4:"finite {f(aa $+= b) |aa b. (aa, b) \<in> S \<and> aa \<noteq> a}"
+    using finite_f_P_on_set[OF assms, of "\<lambda>ab. f(fst ab $+= snd ab)" "\<lambda>ab. fst ab \<noteq> a"]
+    by (rule back_subst[of finite]) auto
+
+  have "update_wts f S $ a = f $ a + \<Sum> {f(a $+= b) |b. (a, b) \<in> S} $ a"
+    unfolding update_wts_sum[OF assms, of f a] idem_sum_distrib'[OF f0, of "f $ a"] sum_finfun_apply_f_P[OF f1]
+    by fastforce
+  moreover have "... = f $ a + \<Sum> {f(aa $+= b) |aa b. (aa, b) \<in> S \<and> aa \<noteq> a} $ a + \<Sum> {f(a $+= b) |b. (a, b) \<in> S} $ a"
+  proof (cases "{f(aa $+= b) $ a |aa b. (aa, b) \<in> S \<and> aa \<noteq> a} = {}")
+    case True
+    show ?thesis
+      unfolding sum_finfun_apply_f_P[of "\<lambda>ab. f(fst ab $+= snd ab)" "\<lambda>ab. ab\<in>S \<and> fst ab \<noteq> a" a, simplified, OF f4] True
+      by auto
+  next
+    case False
+    have "\<Sum> {f(aa $+= b) $ a |aa b. (aa, b) \<in> S \<and> aa \<noteq> a} = \<Sum> {f $ a |aa b. (aa, b) \<in> S \<and> aa \<noteq> a}"
+      by (rule arg_cong[of _ _ \<Sum>]) force
+    then show ?thesis 
+      unfolding sum_finfun_apply_f_P[of "\<lambda>ab. f(fst ab $+= snd ab)" "\<lambda>ab. ab\<in>S \<and> fst ab \<noteq> a" a, simplified, OF f4]
+      using idem_sum_const'[OF f3 False, of "f $ a"] by auto
+  qed
+  moreover have "... = f $ a + \<Sum> {f(a $+= b) |a b. (a, b) \<in> S} $ a"
+    unfolding sum_split_f_P[of "\<lambda>ab. f(fst ab $+= snd ab)" "\<lambda>ab. ab\<in>S" "\<lambda>ab. fst ab \<noteq> a", simplified, OF f2]
+    by (simp add: add.assoc)
+  ultimately show "update_wts f S $ a = (f + \<Sum> {f(a $+= b) |a b. (a, b) \<in> S}) $ a"
+    by fastforce
 qed
 
 
