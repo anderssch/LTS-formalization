@@ -18,6 +18,12 @@ inductive weight_reach_rule :: "('state::finite \<Rightarrow>f 'weight::bounded_
     add_state: "(p,d,q) \<in> transition_relation \<Longrightarrow> S $ q + (S $ p * d) \<noteq> S $ q 
                 \<Longrightarrow> weight_reach_rule S S(q $+= S $ p * d)"
 
+lemma finite_weight_reach_rule_set: "finite {S'. weight_reach_rule S S'}"
+  unfolding weight_reach_rule.simps
+  using finite_f_P_on_set[OF ts_finite, of "\<lambda>pdq. S(snd(snd pdq) $+= S $ (fst pdq) * (fst (snd pdq)))" "\<lambda>(p,d,q). S $ q + S $ p * d \<noteq> S $ q"]
+  apply simp
+  by (smt (verit) Collect_cong)
+
 lemma weight_reach_rule_elim2:
   assumes "weight_reach_rule S S'"
   shows "\<exists>p d q. S' = S(q $+= (S$p * d)) \<and> (p,d,q) \<in> transition_relation \<and> S $ q + (S$p * d) \<noteq> S $ q"
@@ -25,7 +31,8 @@ lemma weight_reach_rule_elim2:
 
 lemma weight_reach_rule_less: "weight_reach_rule S S' \<Longrightarrow> S' < S"
   unfolding weight_reach_rule.simps by (auto simp: add.commute finfun_add_update_less)
-
+lemma weight_reach_rule_less_eq: "weight_reach_rule S S' \<Longrightarrow> S' \<le> S"
+  using weight_reach_rule_less by fastforce
 lemma weight_reach_star_less_eq: "weight_reach_rule\<^sup>*\<^sup>* S S' \<Longrightarrow> S' \<le> S"
   apply (induct rule: rtranclp.induct, simp)
   using weight_reach_rule_less by fastforce
@@ -216,29 +223,7 @@ theorem weight_reach_saturation_correct:
   by fastforce
 
 
-(*lemma weight_reach_saturation_correct':
-  assumes "saturation (weight_reach_rule ts) S S'"
-  shows "weight_reach (\<lambda>c. S $ c) (\<lambda>c. S $ c) = \<Sum>{S'$c|c. True} "
-
-lemma weight_reach_saturated_1:
-  assumes "saturated (weight_reach_rule ts) S"
-  assumes "c \<Midarrow>l\<Rightarrow>\<^sup>* c'"
-  shows "S $ c' \<le> l"
-  using assms 
-  sorry
-(* accepts_if_saturated_monoid_star_relp_final[OF assms(1)]
-    accepts_K0_iff[of finals "fst c'" "snd c'"] by simp (metis prod.collapse)*)
-
-lemma weight_reach_saturated_sum_le:
-  assumes "saturated (weight_reach_rule ts) S"
-  shows "S $ c' \<le> \<^bold>\<Sum>{l |c l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
-  using weight_reach_saturated_1[OF assms, of _ _ c']
-  using SumInf_bounded_if_set_bounded[of "{l |c l. monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'}" "S$c'", OF countable_l_c]
-  by blast
-*)
-
-
-lemma weight_reach_distrib: 
+lemma weight_reach_distrib:
   "\<Sum>{\<^bold>\<Sum>{S $ c * l |c l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'} * C' c' |c'. c' \<in> X} = \<^bold>\<Sum>{S $ c * l * C' c' |c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<and> c' \<in> X}"
 proof -
   have "countable {c'. c' \<in> X}" by blast
@@ -258,5 +243,133 @@ theorem weight_reach_saturation_sum_correct:
   by simp
 
 end
+
+section \<open>Weight reach code\<close>
+
+definition weight_reach_step where "weight_reach_step ts S = update_wts S (\<Union>(p,d,q)\<in>ts. {(q,S $ p * d)})"
+
+definition "weight_reach_loop ts = while_option (\<lambda>s. weight_reach_step ts s \<noteq> s) (weight_reach_step ts)"
+definition "weight_reach_exec ts = the o weight_reach_loop ts"
+
+context finite_dioidLTS begin
+
+lemma weight_reach_step_decreasing: "weight_reach_step transition_relation S \<le> S"
+  unfolding weight_reach_step_def 
+  using update_wts_less_eq[of "\<Union>(p,d,q)\<in>transition_relation. {(q,S $ p * d)}" S] ts_finite
+  by fast
+
+lemma weight_reach_exec_terminates: 
+  fixes ts :: "('ctr_loc \<times> 'label \<times> 'ctr_loc) \<Rightarrow>f 'weight"
+  shows "\<exists>t. weight_reach_loop transition_relation S = Some t"
+  unfolding weight_reach_loop_def 
+  using wf_rel_while_option_Some[OF wf_less_finfun, 
+                                 of "\<lambda>S. weight_reach_step transition_relation S \<le> S" 
+                                    "(\<lambda>S. weight_reach_step transition_relation S \<noteq> S)" "weight_reach_step transition_relation" S]
+        weight_reach_step_decreasing 
+  by fastforce
+
+
+lemma aux2: "S $ a + \<Sum> {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q} $ a =
+       \<Sum> {f $ a |f. f \<in> insert S {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q}}" (is "?A = ?B")
+proof - 
+  have f1: "finite {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q}" 
+    using finite_weight_reach_rule_set[unfolded weight_reach_rule.simps] by force
+  have f2: "finite (insert S {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q})" 
+    using finite_weight_reach_rule_set[unfolded weight_reach_rule.simps] by force
+  have "?A = \<Sum> (insert S {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q}) $ a"
+    unfolding add_finfun_apply[symmetric] idem_sum_insert[OF f1, of S, symmetric]
+    apply (rule arg_cong[of _ _ "\<lambda>s. \<Sum>s $ a"])
+    by blast
+  moreover have "... = ?B"
+    using sum_finfun_apply[OF f2, of a] by blast
+  ultimately show ?thesis by argo
+qed
+lemma aux3: "S $ a + \<Sum> {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q} $ a =
+       \<Sum> {f $ a |f. f \<in> insert S {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation}}" (is "?A = ?B")
+proof - 
+  have f1: "finite {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q}" 
+    using finite_weight_reach_rule_set[unfolded weight_reach_rule.simps] by force
+  have f2: "finite (insert S {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation})" 
+    using finite_f_P_on_set[OF ts_finite, of "\<lambda>pdq. S(snd (snd pdq) $+= S $ (fst pdq) * (fst (snd pdq)))" "\<lambda>x. True"] by simp
+  have "?A = \<Sum> (insert S {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation}) $ a"
+    unfolding add_finfun_apply[symmetric] idem_sum_insert[OF f1, of S, symmetric]
+    apply (rule arg_cong[of _ _ "\<lambda>s. \<Sum>s $ a"])
+    by fastforce
+  moreover have "... = ?B"
+    using sum_finfun_apply[OF f2, of a] by blast
+  ultimately show ?thesis by argo
+qed
+
+lemma aux: "S $ a + \<Sum> {b. (a, b) \<in> (\<Union>(p, d, q)\<in>transition_relation. {(q, S $ p * d)})} = 
+            S $ a + \<Sum> {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q} $ a" (is "?A = ?B")
+  sorry
+
+lemma weight_reach_step_to_weight_reach_rule: "weight_reach_step transition_relation S = S + \<Sum> {S'. weight_reach_rule S S'}"
+  apply (rule finfun_ext, simp)
+  subgoal for a
+    unfolding weight_reach_step_def 
+    using update_wts_sum[of "\<Union>(p,d,q)\<in>transition_relation. {(q,S $ p * d)}" S a] ts_finite aux
+    unfolding weight_reach_rule.simps by force
+  done
+
+lemma weight_reach_rule_exists_t_d:
+  assumes "weight_reach_rule S S'"
+  shows "\<exists>t d. S' = S(t $+= d) \<and> S $ t + d \<noteq> S $ t"
+  using assms weight_reach_rule.simps by fast
+
+lemma weight_reach_rule_sum_not_eq:
+  assumes "weight_reach_rule S S'"
+  shows "S + \<Sum> {S'. weight_reach_rule S S'} \<noteq> S"
+proof (cases "{S'. weight_reach_rule S S'} = {}")
+  case True
+  then show ?thesis using assms by blast
+next
+  case False
+  have le:"\<Sum> {S'. weight_reach_rule S S'} \<le> S" 
+    using sum_smaller_elem[of "{S'. weight_reach_rule S S'}" S, OF _ finite_weight_reach_rule_set[of S] False]
+    using weight_reach_rule_less_eq[of S] by blast
+  have le':"\<Sum> {S'. weight_reach_rule S S'} \<le> S'"
+    unfolding BoundedDioid.idempotent_ab_semigroup_add_ord_class.less_eq_def 
+    using idem_sum_elem[OF finite_weight_reach_rule_set[of S], of S'] assms by (simp add: add.commute)
+  obtain t d where "S' = S(t $+= d)" and "S' $ t \<noteq> S $ t"
+    using assms finfun_upd_apply_same  weight_reach_rule_exists_t_d by force
+  then have "S + S' \<noteq> S" using add_finfun_add_update_idem by metis
+  then show ?thesis 
+    using le le' unfolding BoundedDioid.idempotent_ab_semigroup_add_ord_class.less_eq_def
+    using add.commute by metis
+qed
+
+lemma weight_reach_rule_weight_reach_step: "weight_reach_rule\<^sup>*\<^sup>* S (weight_reach_step transition_relation S)"
+  
+  sorry
+(*  unfolding pre_star_step_to_pre_star_rule_sum using pre_star_rule_sum.intros[of ts] by fastforce*)
+lemma weight_reach_rule_weight_reach_step_k: "weight_reach_rule\<^sup>*\<^sup>* S ((weight_reach_step transition_relation ^^ k) S)"
+  by (induct k) (auto elim!: rtranclp_trans intro: weight_reach_rule_weight_reach_step)
+
+lemma saturation_weight_reach_exec: "saturation weight_reach_rule S (weight_reach_exec transition_relation S)"
+proof -
+  from weight_reach_exec_terminates obtain t where t: "weight_reach_loop transition_relation S = Some t" by blast
+  obtain k where k: "t = (weight_reach_step transition_relation ^^ k) S" and eq: "weight_reach_step transition_relation  t = t"
+    using while_option_stop2[OF t[unfolded weight_reach_loop_def]] by auto
+  have "t = t + \<Sum> {ts. weight_reach_rule t ts}" 
+    using eq weight_reach_step_to_weight_reach_rule by force
+  then have "\<And>ts. \<not> weight_reach_rule t ts" 
+    using weight_reach_rule_sum_not_eq by metis
+  then show ?thesis
+    unfolding saturation_def saturated_def weight_reach_exec_def o_apply t
+    by (simp_all add: weight_reach_rule_weight_reach_step_k k)
+qed
+
+lemma weight_reach_saturation_exec_correct:
+  assumes "saturation weight_reach_rule S1 S2"
+  shows "weight_reach_exec transition_relation S1 = S2"
+  using assms
+  
+  unfolding weight_reach_rule.simps
+  apply simp
+  oops
+
+end
+
 
 end

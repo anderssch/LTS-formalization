@@ -1119,8 +1119,7 @@ lemma finite_update_weight: "finite {d. (t, d) \<in> pre_star_updates \<Delta> t
 
 lemma pre_star_step_decreasing: "pre_star_step \<Delta> s \<le> s"
   unfolding pre_star_step_def using update_wts_less_eq[OF finite_pre_star_updates] by simp
-lemma wf_less_finfun: "wf ({(x, y). x < y}::(('ctr_loc \<times> 'label \<times> 'ctr_loc) \<Rightarrow>f 'weight \<times> ('ctr_loc \<times> 'label \<times> 'ctr_loc) \<Rightarrow>f 'weight) set)"
-  unfolding less_finfun_def using wfp_on_class[of UNIV] wfp_on_UNIV[of "strict (\<le>)"] wfP_def[of "strict (\<le>)"] by blast
+
 
 \<comment> \<open>Faster version that does not include 0 weights.\<close>
 
@@ -3742,7 +3741,7 @@ lemma
          WPDS.weight_reach' \<Delta> ts' (dioidLTS.accepts ts finals) (dioidLTS.accepts ts' finals')" 
   oops
 (* TODO: Make executable version of "dioidLTS.SumInf {d | c d. d = dioidLTS.accepts ts finals c}" *)
-  
+
 
 end
 

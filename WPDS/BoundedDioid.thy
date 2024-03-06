@@ -54,7 +54,6 @@ lemma neq_mono_less: "a \<le> b \<Longrightarrow> c + b \<noteq> c \<Longrightar
 lemma add_less_mono: "a \<le> b \<Longrightarrow> c + b < c \<Longrightarrow> c + a < c"
   unfolding less_def using neq_mono by simp
 
-
 end
 
 \<comment> \<open>Many lemmas and proofs in these classes are heavily inspired from AFP theory Kleene_Algebra.Dioid, 

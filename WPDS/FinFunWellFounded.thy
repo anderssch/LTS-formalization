@@ -78,7 +78,7 @@ instantiation finfun :: (type, idempotent_ab_semigroup_add) idempotent_ab_semigr
   qed
 end
 instantiation finfun :: (type, idempotent_ab_semigroup_add_ord) idempotent_ab_semigroup_add_ord begin
-instance proof fix a b :: "('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add_ord)"
+  instance proof fix a b :: "('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add_ord)"
     have "(a \<le> b) = (\<forall>x. (a + b) $ x = a $ x)"
       unfolding less_eq_finfun_def add_finfun_def less_eq_def by simp
     then show "(a \<le> b) = (a + b = a)" using finfun_ext[of "a + b" a] by fastforce
@@ -87,6 +87,23 @@ instance proof fix a b :: "('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add_or
 end
 instantiation finfun :: (type, idempotent_comm_monoid_add) idempotent_comm_monoid_add begin instance .. end
 instantiation finfun :: (type, idempotent_comm_monoid_add_ord) idempotent_comm_monoid_add_ord begin instance .. end
+
+lemma sum_finfun_apply:
+  fixes S :: "('a \<Rightarrow>f 'b::idempotent_comm_monoid_add) set"
+  assumes "finite S"
+  shows "\<Sum> S $ a = \<Sum> {f $ a |f. f\<in>S}"
+proof (induct rule: finite_induct[OF assms])
+  case 1
+  then show ?case by (simp add: zero_finfun_def)
+next
+  case (2 x F)
+  then have f:"finite {f $ a |f. f \<in> F}" by simp
+  have "x $ a + \<Sum> {f $ a |f. f \<in> F} = \<Sum> {f $ a |f. f = x \<or> f \<in> F}"
+    unfolding idem_sum_insert[OF f, of "x $ a", symmetric]
+    by (rule arg_cong[of _ _ "\<Sum>"]) blast
+  then show ?case by (simp add: 2(1,3))
+qed
+
 
 \<comment> \<open>The proof of wqo goes by induction on the (finite) input domain, 
    so we need to define the set of \<open>finfuns\<close> over a given input domain.\<close>
@@ -426,5 +443,8 @@ lemma less_eq_finfun_not_zero:
   shows "y $ c \<noteq> bot"
   using less_eq_finfun_elem[OF assms(1)] assms(2) bot.extremum_unique
   by metis                                                      
+
+lemma wf_less_finfun: "wf ({(x, y). x < y}::('a::finite \<Rightarrow>f 'weight::bounded_idempotent_semiring \<times> 'a \<Rightarrow>f 'weight) set)"
+  unfolding less_finfun_def using wfp_on_class[of UNIV] unfolding wfp_on_UNIV[of "strict (\<le>)"] wfP_def[of "strict (\<le>)"] by blast
 
 end
