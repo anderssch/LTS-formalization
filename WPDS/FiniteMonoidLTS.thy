@@ -317,10 +317,60 @@ next
     using add.commute by metis
 qed
 
+
+
+lemma "finite (Collect (weight_reach_rule S))" by (fact finite_weight_reach_rule_set)
+
+lemma
+  assumes "weight_reach_rule A B" 
+  shows "weight_reach_rule\<^sup>*\<^sup>* A (A + B)"
+  using assms
+  using converse_rtranclp_into_rtranclp
+  oops
+
+lemma 
+  assumes "weight_reach_rule\<^sup>*\<^sup>* S (S + \<Sum> F)" 
+  assumes "weight_reach_rule S x"
+  shows "weight_reach_rule\<^sup>*\<^sup>* S (S + (x + \<Sum> F))"
+  using assms
+  apply (induct rule: converse_rtranclp_induct)
+  apply (simp add: ac_simps(3))
+  using converse_rtranclp_into_rtranclp rtranclp.rtrancl_into_rtrancl
+  oops
+
+lemma temp1:
+  assumes "finite F" 
+          "x \<notin> F"
+          "F \<subseteq> Collect (weight_reach_rule S)"
+          "weight_reach_rule\<^sup>*\<^sup>* S (S + \<Sum> F)" 
+          "weight_reach_rule S x"
+  shows "weight_reach_rule\<^sup>*\<^sup>* S (S + (x + \<Sum> F))"
+  using assms(4) assms(5)[unfolded weight_reach_rule.simps]
+  apply auto
+  subgoal for p d q
+    sorry
+  done
+
+lemma weight_reach_rule_weight_reach_step': 
+  assumes "finite X"
+  assumes "X \<subseteq> {S'. weight_reach_rule S S'}"
+  shows "weight_reach_rule\<^sup>*\<^sup>* S (S + \<Sum>X)"
+  using assms
+  apply (induct rule: finite_induct, simp)
+  subgoal for x F
+    apply simp
+    using temp1 by simp
+(*    apply simp
+    apply safe
+    unfolding weight_reach_rule.simps
+    apply auto
+    sorry*)
+  done
+
 lemma weight_reach_rule_weight_reach_step: "weight_reach_rule\<^sup>*\<^sup>* S (weight_reach_step transition_relation S)"
-  
-  sorry
-(*  unfolding pre_star_step_to_pre_star_rule_sum using pre_star_rule_sum.intros[of ts] by fastforce*)
+  unfolding weight_reach_step_to_weight_reach_rule
+  using weight_reach_rule_weight_reach_step'[OF finite_weight_reach_rule_set]
+  by blast
 lemma weight_reach_rule_weight_reach_step_k: "weight_reach_rule\<^sup>*\<^sup>* S ((weight_reach_step transition_relation ^^ k) S)"
   by (induct k) (auto elim!: rtranclp_trans intro: weight_reach_rule_weight_reach_step)
 
@@ -338,11 +388,10 @@ proof -
     by (simp_all add: weight_reach_rule_weight_reach_step_k k)
 qed
 
-lemma weight_reach_saturation_exec_correct:
+lemma weight_reach_saturation_exec_correct: (* Maybe not needed...*)
   assumes "saturation weight_reach_rule S1 S2"
   shows "weight_reach_exec transition_relation S1 = S2"
-  using assms
-  
+  using assms saturation_weight_reach_exec[of S1]
   unfolding weight_reach_rule.simps
   apply simp
   oops

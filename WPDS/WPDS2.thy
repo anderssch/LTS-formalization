@@ -3595,36 +3595,11 @@ lemma
   oops
 
 
-(*
-inductive weight_reach_rule :: "('state, 'weight) transition set \<Rightarrow> ('state::finite \<Rightarrow>f 'weight::bounded_idempotent_semiring) saturation_rule"
-  for ts :: "('state, 'weight) transition set" where
-      "(p,d,q) \<in> ts \<Longrightarrow> state_weight $ q + (state_weight $ p) * d \<noteq> state_weight $ q 
-       \<Longrightarrow> weight_reach_rule ts state_weight state_weight(q $+= state_weight $ p * d)"
-
-lemma weight_reach_rule_elim2:
-  assumes "weight_reach_rule ts S S'"
-  shows "\<exists>p d q. S' = S(q $+= (S$p * d)) \<and> (p,d,q) \<in> ts \<and> S $ q + (S$p * d) \<noteq> S $ q"
-  using assms unfolding weight_reach_rule.simps[of ts S S'] by presburger
-
-lemma weight_reach_rule_less: "weight_reach_rule ts state_weight state_weight' \<Longrightarrow> state_weight' < state_weight"
-  unfolding weight_reach_rule.simps
-  by (auto simp: add.commute finfun_add_update_less)
-
-lemma weight_reach_saturation_exi:
-  shows "\<exists>sw'. saturation (weight_reach_rule ts) sw sw'"
-  using wfp_class_saturation_exi[of "weight_reach_rule ts" sw] weight_reach_rule_less by fast
-*)
-
-definition weight_reach_step where "weight_reach_step ts state_weight = update_wts state_weight (\<Union>(p,d,q)\<in>ts. {(q,state_weight $ p * d)})"
-
-definition "weight_reach_loop ts = while_option (\<lambda>s. weight_reach_step ts s \<noteq> s) (weight_reach_step ts)"
-definition "weight_reach_exec ts = the o weight_reach_loop ts"
-
 lemma weight_reach_saturation_exec_correct:
   assumes "finite ts"
-  assumes "saturation (finite_dioidLTS.weight_reach_rule ts) S1 S2"
-  shows "weight_reach_exec ts S1 = S2"
-  oops
+  shows "saturation (finite_dioidLTS.weight_reach_rule ts) S (weight_reach_exec ts S)"
+  using finite_dioidLTS.saturation_weight_reach_exec[unfolded finite_dioidLTS_def finite_monoidLTS_def, OF assms] 
+  by simp
 (* Finite number of states. *)
 (* inductive weight_reach_rule *)
 (* while_option  *)
@@ -3634,66 +3609,6 @@ definition finfun_sum :: "('a \<Rightarrow>f 'b::bounded_idempotent_semiring) \<
 
 definition "weight_reach_sum_exec ts inits finals = finfun_sum (weight_reach_exec ts (update_wts (K$ 0) {(p,1) |p. p \<in> inits})) finals"
 
-(*
-lemma countable_l_1:
-  assumes "finite ts" 
-  shows "countable {l |c l c'. monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'}"
-  using countable_monoidLTS.countable_star_f_p[unfolded countable_monoidLTS_def, OF countable_finite[OF assms], of "\<lambda>c l c'. l" "\<lambda>c c'. True"]
-  by presburger
-lemma countable_l_2:
-  assumes "finite ts" 
-  shows "countable {l |c l. monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'}"
-  using countable_monoidLTS.countable_star_f_p[unfolded countable_monoidLTS_def, OF countable_finite[OF assms], of "\<lambda>c l c'. l" "\<lambda>a b. b = c'"]
-  by presburger
-
-lemma weight_reach_inits_single_final:
-  assumes "finite ts"
-  shows "dioidLTS.weight_reach ts (\<lambda>p. if p \<in> inits then 1 else 0) (\<lambda>p. if p = f then 1 else 0) =
-         \<^bold>\<Sum>{l |c l. c \<in> inits \<and> monoid_rtranclp (monoidLTS.l_step_relp ts) c l f}"
-proof -
-  have c:"countable {d. case d of (c, l, c') \<Rightarrow> monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'}"
-    by (simp add: assms countable_finite countable_monoidLTS.countable_monoid_star_all(2) countable_monoidLTS_def)
-  have "\<^bold>\<Sum> {case t of (c, l, c') \<Rightarrow> (if c \<in> inits then 1 else 0) * l * (if c' = f then 1 else 0) |t. case t of (c, l, c') \<Rightarrow> monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'} =
-        \<^bold>\<Sum> {case t of (c, l, c') \<Rightarrow> l |t. (case t of (c, l, c') \<Rightarrow> monoid_rtranclp (monoidLTS.l_step_relp ts) c l c') \<and> (case t of (c, l, c') \<Rightarrow> c \<in> inits \<and> c' = f)}"
-    using SumInf_split_Qor0[of "\<lambda>(c,l,c'). monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'" 
-                               "\<lambda>(c,l,c'). c \<in> inits \<and> c' = f" 
-                               "\<lambda>(c,l,c'). (if c \<in> inits then 1 else 0) * l * (if c' = f then 1 else 0)"
-                               "\<lambda>(c,l,c'). l", OF c]
-    by force
-  moreover have "{case t of (c, l, c') \<Rightarrow> (if c \<in> inits then 1 else 0) * l * (if c' = f then 1 else 0) |t. case t of (c, l, c') \<Rightarrow> monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'} = 
-        {(if c \<in> inits then 1 else 0) * l * (if c' = f then 1 else 0) |c l c'. monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'}"
-    by simp
-  moreover have "{case t of (c, l, c') \<Rightarrow> l |t. (case t of (c, l, c') \<Rightarrow> monoid_rtranclp (monoidLTS.l_step_relp ts) c l c') \<and> (case t of (c, l, c') \<Rightarrow> c \<in> inits \<and> c' = f)} =
-        {l |c l. c \<in> inits \<and> monoid_rtranclp (monoidLTS.l_step_relp ts) c l f}"
-    by force
-  ultimately show ?thesis
-    unfolding dioidLTS.weight_reach_def by argo
-qed
-
-lemma weight_reach_inits_finals_unfold:
-  assumes "finite ts"
-  shows "dioidLTS.weight_reach ts (\<lambda>p. if p \<in> inits then 1 else 0) (\<lambda>p. if p \<in> finals then 1 else 0) =
-         \<^bold>\<Sum>{l |c l c'. c \<in> inits \<and> c' \<in> finals \<and> monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'}"
-proof -
-  have c:"countable {d. case d of (c, l, c') \<Rightarrow> monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'}"
-    by (simp add: assms countable_finite countable_monoidLTS.countable_monoid_star_all(2) countable_monoidLTS_def)
-  have "\<^bold>\<Sum> {case t of (c, l, c') \<Rightarrow> (if c \<in> inits then 1 else 0) * l * (if c' \<in> finals then 1 else 0) |t. case t of (c, l, c') \<Rightarrow> monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'} =
-        \<^bold>\<Sum> {case t of (c, l, c') \<Rightarrow> l |t. (case t of (c, l, c') \<Rightarrow> monoid_rtranclp (monoidLTS.l_step_relp ts) c l c') \<and> (case t of (c, l, c') \<Rightarrow> c \<in> inits \<and> c'\<in> finals)}"
-    using SumInf_split_Qor0[of "\<lambda>(c,l,c'). monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'" 
-                               "\<lambda>(c,l,c'). c \<in> inits \<and> c' \<in> finals" 
-                               "\<lambda>(c,l,c'). (if c \<in> inits then 1 else 0) * l * (if c' \<in> finals then 1 else 0)"
-                               "\<lambda>(c,l,c'). l", OF c]
-    by force
-  moreover have "{case t of (c, l, c') \<Rightarrow> (if c \<in> inits then 1 else 0) * l * (if c' \<in> finals then 1 else 0) |t. case t of (c, l, c') \<Rightarrow> monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'} = 
-        {(if c \<in> inits then 1 else 0) * l * (if c' \<in> finals then 1 else 0) |c l c'. monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'}"
-    by simp
-  moreover have "{case t of (c, l, c') \<Rightarrow> l |t. (case t of (c, l, c') \<Rightarrow> monoid_rtranclp (monoidLTS.l_step_relp ts) c l c') \<and> (case t of (c, l, c') \<Rightarrow> c \<in> inits \<and> c' \<in> finals)} =
-        {l |c l c'. c \<in> inits \<and> c' \<in> finals \<and> monoid_rtranclp (monoidLTS.l_step_relp ts) c l c'}"
-    by force
-  ultimately show ?thesis
-    unfolding dioidLTS.weight_reach_def by argo
-qed
-*)
 
 lemma update_wts_inits_apply:
   fixes inits :: "'state::finite set"
@@ -3717,9 +3632,16 @@ lemma weight_reach_saturation_correct:
   unfolding update_wts_inits_apply finfun_sum_def sum_finals_1_0 
   by blast
 
-lemma weight_reach_sum_exec_correct[code]:
-  "dioidLTS.weight_reach ts (\<lambda>p. if p \<in> inits then 1 else 0) (\<lambda>p. if p \<in> finals then 1 else 0) = weight_reach_sum_exec ts inits finals"
-  oops
+lemma weight_reach_sum_exec_correct:
+  fixes ts :: "('state::finite \<times> 'weight::bounded_idempotent_semiring \<times> 'state) set"
+  assumes "finite ts"
+  shows "dioidLTS.weight_reach ts (\<lambda>p. if p \<in> inits then 1 else 0) (\<lambda>p. if p \<in> finals then 1 else 0) = weight_reach_sum_exec ts inits finals"
+  unfolding weight_reach_sum_exec_def
+  using weight_reach_saturation_correct[OF assms 
+          finite_dioidLTS.saturation_weight_reach_exec[unfolded finite_dioidLTS_def finite_monoidLTS_def, OF assms, of "update_wts (K$ 0) {(p, 1) |p. p \<in> inits}"]
+        ]
+  by blast
+  
 
 lemma "dioidLTS.weight_reach (wts_to_weightLTS (intersff ts' A)) (\<lambda>p. if is_Init (fst p) \<and> is_Init (snd p) then 1 else 0) (\<lambda>p. if p \<in> finals'\<times>finals then 1 else 0)
   = weight_reach_sum_exec ts inits finals"
