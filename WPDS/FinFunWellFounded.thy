@@ -104,9 +104,17 @@ next
   then show ?case by (simp add: 2(1,3))
 qed
 
+lemma sum_finfun_apply_f_P:
+  fixes f :: "'c \<Rightarrow> ('a \<Rightarrow>f 'b::idempotent_comm_monoid_add)"
+  assumes "finite {f x |x. P x}"
+  shows "\<Sum> {f x |x. P x} $ a = \<Sum> {(f x) $ a |x. P x}"
+  unfolding sum_finfun_apply[OF assms, of a]
+  by (rule arg_cong[of _ _ \<Sum>]) blast
+
 
 \<comment> \<open>The proof of wqo goes by induction on the (finite) input domain, 
    so we need to define the set of \<open>finfuns\<close> over a given input domain.\<close>
+  
 
 inductive_set finfuns :: "'a set \<Rightarrow> ('a \<Rightarrow>f ('b::zero)) set"
   for A :: "'a set"

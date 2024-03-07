@@ -268,49 +268,30 @@ lemma weight_reach_exec_terminates:
         weight_reach_step_decreasing 
   by fastforce
 
-
-lemma aux2: "S $ a + \<Sum> {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q} $ a =
-       \<Sum> {f $ a |f. f \<in> insert S {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q}}" (is "?A = ?B")
-proof - 
-  have f1: "finite {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q}" 
-    using finite_weight_reach_rule_set[unfolded weight_reach_rule.simps] by force
-  have f2: "finite (insert S {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q})" 
-    using finite_weight_reach_rule_set[unfolded weight_reach_rule.simps] by force
-  have "?A = \<Sum> (insert S {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q}) $ a"
-    unfolding add_finfun_apply[symmetric] idem_sum_insert[OF f1, of S, symmetric]
-    apply (rule arg_cong[of _ _ "\<lambda>s. \<Sum>s $ a"])
-    by blast
-  moreover have "... = ?B"
-    using sum_finfun_apply[OF f2, of a] by blast
-  ultimately show ?thesis by argo
+lemma weight_reach_step_to_weight_reach_rule: "weight_reach_step transition_relation S = S + \<Sum> {S'. weight_reach_rule S S'}" (is "?A = ?B")
+proof -
+  have f1:"finite (\<Union>(p, d, q)\<in>transition_relation. {(q, S $ p * d)})" using ts_finite by fast
+  have "?A = S + \<Sum> {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation}"
+    unfolding weight_reach_step_def update_wts_sum_finfun[OF f1, of S] 
+    by (rule arg_cong[of _ _ "\<lambda>X. S + \<Sum> X"]) blast
+  moreover have "... = S + \<Sum> {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q}" (is "S + \<Sum>?X = S + \<Sum>?Y")
+  proof -
+    have f1: "finite ?X"
+      using finite_f_P_on_set[OF ts_finite, of "\<lambda>pdq. S(snd (snd pdq) $+= S $ (fst pdq) * (fst (snd pdq)))" "\<lambda>x. True"] by simp
+    have f2: "finite ?Y" 
+      using finite_weight_reach_rule_set[unfolded weight_reach_rule.simps] by force
+    have f3: "finite (insert S ?X)" using f1 by fastforce
+    have f4: "finite (insert S ?Y)" using f2 by fastforce
+    show ?thesis
+      unfolding idem_sum_insert[OF f1, of S, symmetric] idem_sum_insert[OF f2, of S, symmetric]
+      apply (rule finfun_ext)
+      subgoal for a
+        unfolding sum_finfun_apply[OF f3, of a] sum_finfun_apply[OF f4, of a]
+        by (rule arg_cong[of _ _ \<Sum>]) fastforce
+      done
+  qed
+  ultimately show ?thesis unfolding weight_reach_rule.simps by presburger
 qed
-lemma aux3: "S $ a + \<Sum> {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q} $ a =
-       \<Sum> {f $ a |f. f \<in> insert S {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation}}" (is "?A = ?B")
-proof - 
-  have f1: "finite {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q}" 
-    using finite_weight_reach_rule_set[unfolded weight_reach_rule.simps] by force
-  have f2: "finite (insert S {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation})" 
-    using finite_f_P_on_set[OF ts_finite, of "\<lambda>pdq. S(snd (snd pdq) $+= S $ (fst pdq) * (fst (snd pdq)))" "\<lambda>x. True"] by simp
-  have "?A = \<Sum> (insert S {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation}) $ a"
-    unfolding add_finfun_apply[symmetric] idem_sum_insert[OF f1, of S, symmetric]
-    apply (rule arg_cong[of _ _ "\<lambda>s. \<Sum>s $ a"])
-    by fastforce
-  moreover have "... = ?B"
-    using sum_finfun_apply[OF f2, of a] by blast
-  ultimately show ?thesis by argo
-qed
-
-lemma aux: "S $ a + \<Sum> {b. (a, b) \<in> (\<Union>(p, d, q)\<in>transition_relation. {(q, S $ p * d)})} = 
-            S $ a + \<Sum> {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q} $ a" (is "?A = ?B")
-  sorry
-
-lemma weight_reach_step_to_weight_reach_rule: "weight_reach_step transition_relation S = S + \<Sum> {S'. weight_reach_rule S S'}"
-  apply (rule finfun_ext, simp)
-  subgoal for a
-    unfolding weight_reach_step_def 
-    using update_wts_sum[of "\<Union>(p,d,q)\<in>transition_relation. {(q,S $ p * d)}" S a] ts_finite aux
-    unfolding weight_reach_rule.simps by force
-  done
 
 lemma weight_reach_rule_exists_t_d:
   assumes "weight_reach_rule S S'"
