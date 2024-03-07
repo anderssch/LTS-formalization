@@ -82,7 +82,6 @@ lemma countable_l_c': "countable {l |l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c
 lemma countable_l: "countable {l |l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
   using countable_star_f_p[of "\<lambda>c l c'. l" "\<lambda>a b. a = c \<and> b = c'"] by presburger
 
-
 end
 
 (*
@@ -109,6 +108,31 @@ definition weight_reach :: "('state \<Rightarrow> 'weight) \<Rightarrow> ('state
 end
 
 locale countable_dioidLTS = dioidLTS + countable_monoidLTS 
+begin 
+
+lemma weight_reach_to_pre_star: "weight_reach C C' = \<^bold>\<Sum> {(C c) * weight_pre_star C' c |c. True}"
+proof -
+  have c:"\<And>y. True \<Longrightarrow> countable {(x, y) |x. y \<Midarrow> fst x \<Rightarrow>\<^sup>* snd x}" using countable_star_f_p3 by fastforce
+  have "\<^bold>\<Sum> {C y * (a * C' b) |a b y. y \<Midarrow> a \<Rightarrow>\<^sup>* b} = \<^bold>\<Sum> {C c * l * C' c' |c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" 
+    by (rule arg_cong[of _ _ "\<^bold>\<Sum>"]) (simp add: ac_simps(4), blast)
+  then show ?thesis
+    unfolding weight_reach_def weight_pre_star_def
+    using SumInf_of_SumInf_left_distr[of "\<lambda>c. True" "\<lambda>lc' c. c \<Midarrow> fst lc' \<Rightarrow>\<^sup>* snd lc'" "\<lambda>c. C c" "\<lambda>lc' c. fst lc' * C' (snd lc')", OF countableI_type c, symmetric]
+    by simp
+qed
+
+lemma weight_reach_to_post_star: "weight_reach C C' = \<^bold>\<Sum> {weight_post_star C c' * (C' c') |c'. True}"
+proof -
+  have c:"\<And>y. True \<Longrightarrow> countable {(x, y) |x. fst x \<Midarrow> snd x \<Rightarrow>\<^sup>* y}" using countable_star_f_c_l by fastforce
+  have "\<^bold>\<Sum> {C y * (a * C' b) |a b y. y \<Midarrow> a \<Rightarrow>\<^sup>* b} = \<^bold>\<Sum> {C c * l * C' c' |c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}" 
+    by (rule arg_cong[of _ _ "\<^bold>\<Sum>"]) (simp add: ac_simps(4), blast)
+  then show ?thesis
+    unfolding weight_reach_def weight_post_star_def
+    using SumInf_of_SumInf_right_distr[of "\<lambda>c. True" "\<lambda>cl c'. fst cl \<Midarrow> snd cl \<Rightarrow>\<^sup>* c'" "\<lambda>cl c'. C (fst cl) * snd cl" "\<lambda>c'. C' c'", OF countableI_type c]
+    by simp
+qed
+
+end
 
 
 
