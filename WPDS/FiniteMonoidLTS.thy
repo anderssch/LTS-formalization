@@ -19,10 +19,16 @@ inductive weight_reach_rule :: "('state::finite \<Rightarrow>f 'weight::bounded_
                 \<Longrightarrow> weight_reach_rule S S(q $+= S $ p * d)"
 
 lemma finite_weight_reach_rule_set: "finite {S'. weight_reach_rule S S'}"
-  unfolding weight_reach_rule.simps
-  using finite_f_P_on_set[OF ts_finite, of "\<lambda>pdq. S(snd(snd pdq) $+= S $ (fst pdq) * (fst (snd pdq)))" "\<lambda>(p,d,q). S $ q + S $ p * d \<noteq> S $ q"]
-  apply simp
-  by (smt (verit) Collect_cong)
+proof -
+  have "finite {S(q $+= S $ p * d) |p d q. S $ q + S $ p * d \<noteq> S $ q \<and> (p, d, q) \<in> transition_relation}"
+    unfolding weight_reach_rule.simps
+    using finite_f_P_on_set[OF ts_finite, of "\<lambda>pdq. S(snd(snd pdq) $+= S $ (fst pdq) * (fst (snd pdq)))" "\<lambda>(p,d,q). S $ q + S $ p * d \<noteq> S $ q"]
+    by simp
+  then have "finite {S(q $+= S $ p * d) |p d q. (p, d, q) \<in> transition_relation \<and> S $ q + S $ p * d \<noteq> S $ q}"
+    by (rule back_subst[of finite]) auto
+  then show ?thesis
+    by (auto simp add: weight_reach_rule.simps)
+qed
 
 lemma weight_reach_rule_elim2:
   assumes "weight_reach_rule S S'"
@@ -34,8 +40,7 @@ lemma weight_reach_rule_less: "weight_reach_rule S S' \<Longrightarrow> S' < S"
 lemma weight_reach_rule_less_eq: "weight_reach_rule S S' \<Longrightarrow> S' \<le> S"
   using weight_reach_rule_less by fastforce
 lemma weight_reach_star_less_eq: "weight_reach_rule\<^sup>*\<^sup>* S S' \<Longrightarrow> S' \<le> S"
-  apply (induct rule: rtranclp.induct, simp)
-  using weight_reach_rule_less by fastforce
+  by (induct rule: rtranclp.induct) (use weight_reach_rule_less in fastforce)+ 
 
 lemma weight_reach_saturation_exi: "\<exists>S'. saturation weight_reach_rule S S'"
   using wfp_class_saturation_exi[of weight_reach_rule S] weight_reach_rule_less by fast
@@ -103,38 +108,21 @@ lemma sound_wrt_Sum_leq:
   assumes "sound_wrt S' S"
   shows "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> \<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
 proof -
-  have nisse2: "\<And>u. countable {S $ c\<^sub>a * l\<^sub>a |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* u}"
-    by (simp add: countable_star_f_c_l)
-
-  have nisse3': "\<And>d'. countable {(d, d') |d. (case d of (c\<^sub>a, l\<^sub>a) \<Rightarrow> \<lambda>(c, l). c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c) d'}"
-    by (auto simp add: countable_star_f_c_l)
-  then have nisse3: "(\<And>d'. case d' of (c, l) \<Rightarrow> c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<Longrightarrow>
-            countable {(d, d') |d. (case d of (c\<^sub>a, l\<^sub>a) \<Rightarrow> \<lambda>(c, l). c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c) d'})"
-    by auto
   have "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} = \<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a  * l |c\<^sub>a l\<^sub>a c l. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c \<and> c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
     apply (rule arg_cong[of _ _ " \<^bold>\<Sum> "])
     using monoid_rtranclp.monoid_rtrancl_refl[of  l_step_relp] monoid_rtranclp_trans[of l_step_relp]
     by (force simp add: mult.assoc)
   moreover
-  have "... = \<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a  * l |c\<^sub>a l\<^sub>a c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<and> c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c}"
-    by meson
-  moreover
   have "... = \<^bold>\<Sum> {\<^bold>\<Sum> {(S $ c\<^sub>a * l\<^sub>a) * l |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c} |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-
-
     using SumInf_of_SumInf[of "\<lambda>(c, l). c \<Midarrow> l \<Rightarrow>\<^sup>* c'" "\<lambda>(c\<^sub>a, l\<^sub>a) (c, l). c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c"
         "\<lambda>(c\<^sub>a, l\<^sub>a) (c, l). S $ c\<^sub>a * l\<^sub>a * l"
         ]
-    using countable_monoid_star_variant2 nisse3 
-
-    apply auto
-    apply meson
-    done
+    using countable_monoid_star_variant2 countable_star_f_c_l by force
   moreover
   have "... = \<^bold>\<Sum> {\<^bold>\<Sum> {S $ c\<^sub>a * l\<^sub>a |c\<^sub>a l\<^sub>a. c\<^sub>a \<Midarrow> l\<^sub>a \<Rightarrow>\<^sup>* c} * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
     apply (rule arg_cong[of _ _ " \<^bold>\<Sum> "])
-    unfolding SumInf_right_distr2[of "\<lambda>c\<^sub>a l\<^sub>a. S $ c\<^sub>a * l\<^sub>a " ,OF nisse2]
-    apply auto
+    using SumInf_right_distr2[of "\<lambda>c\<^sub>a l\<^sub>a. S $ c\<^sub>a * l\<^sub>a "]
+    apply (auto simp add: countable_star_f_c_l)
     done
   moreover
   have "... \<le> \<^bold>\<Sum> {S' $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
@@ -207,8 +195,7 @@ qed
 lemma weight_reach_star_le: 
   assumes "weight_reach_rule\<^sup>*\<^sup>* S S'"
   shows "\<^bold>\<Sum>{S $ c * l |c l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'} \<le> S'$c'"
-  using sound_wrt_weight_reach_rule assms unfolding sound_wrt_def apply auto
-  done
+  using sound_wrt_weight_reach_rule assms unfolding sound_wrt_def by auto
 
 theorem weight_reach_saturation_correct: 
   assumes "saturation weight_reach_rule S S'"
