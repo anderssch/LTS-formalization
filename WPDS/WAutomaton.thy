@@ -307,6 +307,12 @@ lemma mstar_wts_cons:
     unfolding wts_to_monoidLTS_def by force
   done
 
+lemma monoid_rtrancl_intros_Cons:
+  assumes "(p, ([a], d), q1) \<in> wts_to_monoidLTS ts"
+  assumes "(q1, (w, u), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  shows "(p, (a # w, d*u), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  using append_Nil assms(1) assms(2) fst_conv monoid_rtrancl_simps_rev by fastforce
+
 lemma finite_mstar_wts_weights:
   assumes "finite (wts_to_monoidLTS ts)"
   shows   "finite {d. \<exists>p q. (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}"
@@ -476,6 +482,7 @@ lemma monoid_star_nonempty:
                     (pi, (tl (fst w), d2), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> 
                     (p, ([hd (fst w)], d1), pi) \<in> wts_to_monoidLTS ts"
   by (metis assms list.collapse monoid_rtrancl_wts_to_monoidLTS_cases_rev surjective_pairing)
+
 
 
 

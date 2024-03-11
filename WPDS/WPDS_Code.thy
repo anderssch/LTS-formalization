@@ -5,61 +5,51 @@ begin
 lemma countable_cong: "countable a \<Longrightarrow> a = b \<Longrightarrow> countable b"
   using back_subst[of countable] by blast
 
+lemma rev_countable_subset: "countable B \<Longrightarrow> A \<subseteq> B \<Longrightarrow> countable A"
+  using countable_subset .
+
+find_theorems monoid_rtrancl wts_to_monoidLTS
+
 lemma accepts_step_distrib:
   fixes ts :: "('state :: enum \<times> 'label :: finite \<times> 'state) \<Rightarrow>f 'weight::bounded_idempotent_semiring"
   fixes finals :: "'state set"
   shows "\<^bold>\<Sum>{d * (dioidLTS.accepts ts finals (q1,w))| q1 d. (p,([a],d),q1) \<in> wts_to_monoidLTS ts} = dioidLTS.accepts ts finals (p,a#w)"
 proof -
-  have Y:
-    "finite ((\<lambda>(p, (a, d), q1). (q1, d)) ` {uu. \<exists>q1 d p a. uu = (p, ([a], d), q1) \<and> (p, ([a], d), q1) \<in> wts_to_monoidLTS ts})
-     = finite {uu. \<exists>q1 d p a. uu = (q1, d) \<and> (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
-    apply (rule arg_cong[of _ _ "finite"])
-    apply auto
-    by (smt (verit, del_insts) case_prod_conv mem_Collect_eq pair_imageI)
-
-  have Z: "wts_to_monoidLTS ts = {(p, (a, d), q1) | q1 d p a. (p, (a, d), q1) \<in> wts_to_monoidLTS ts}"
-    by auto
   have "finite (wts_to_monoidLTS ts)"
-    using WPDS.finite_wts[of ts] by auto
-  then have "finite {(p, (a, d), q1) | q1 d p a. (p, (a, d), q1) \<in> wts_to_monoidLTS ts}"
-    using Z by auto
-  then have X: "finite {(p, ([a], d), q1) | q1 d p a. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
-    by (smt (verit) Collect_cong fst_conv wts_label_exist)
-  (* then  *) have "finite {(q1, d) | q1 d p a. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
-    using finite_imageI[of "{(p, ([a], d), q1) | q1 d p a. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}" "\<lambda> (p, (a, d), q1). (q1, d)", OF X]
-    using Y by auto
+    by (simp add: WPDS.finite_wts)
+  then have "finite {(p, ([a], d), q1) | d q1. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
+    apply (rule rev_finite_subset)
+    apply auto
+    done
+  then have "finite ((\<lambda>(p, (a, d), q1). (q1, d)) ` {(p, ([a], d), q1) |d q1. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts})"
+    using finite_imageI by auto
   then have "finite {(q1, d) | q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
-    using finite_imageI[of "wts_to_monoidLTS ts" ]
-    by (smt (verit) Collect_cong finite_Collect_conjI)
+    apply (rule back_subst[of finite])
+    unfolding image_def by auto
   then have c1: "countable {(q1, d) | q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
     using countable_finite by auto
+
   have c2:
-    "(\<And>q1 d.
-         (p, ([a], d), q1) \<in> wts_to_monoidLTS ts \<Longrightarrow>
+    "(\<And>q1 :: 'state. \<And>d :: 'weight.
          countable {((a, b), (q1, d)) |a b. a \<in> finals \<and> ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))})"
   proof -
-    fix q1 d
-    assume "(p, ([a], d), q1) \<in> wts_to_monoidLTS ts"
-    have C:"countable (monoid_rtrancl (wts_to_monoidLTS ts))"
+    fix q1 :: 'state
+    fix d :: 'weight
+    have "countable (monoid_rtrancl (wts_to_monoidLTS ts))"
       using countable_monoid_rtrancl countable_wts by blast
-    have "countable {(q1, (w, b), a) |a b q1 w. (q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}"
-      by (rule countable_cong[OF C]) auto
-    then have "countable {(q1, (w, b), a) |a b. ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
-      using Collect_mono_iff countable_subset by fastforce
-    then have A:"countable {(q1, (w, b), a) |a b. a \<in> finals \<and> ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
-      by (smt (verit, best) countable_subset mem_Collect_eq subsetI)
+    then have "countable {(q1, (w, b), a) |a b q1 w. (q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}"
+      by (rule countable_cong) auto
+    then have count:"countable {(q1, (w, b), a) |a b. a \<in> finals \<and> ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
+      by (rule rev_countable_subset) auto
     have "countable {((a, b)) |a b. a \<in> finals \<and> ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
-      by (rule countable_cong[OF countable_f_on_set[OF A, of "\<lambda>x. (snd (snd x), snd (fst (snd x)))"]]) auto
+      by (rule countable_cong[OF countable_f_on_set[OF count, of "\<lambda>x. (snd (snd x), snd (fst (snd x)))"]]) auto
     then show "countable {((a, b), (q1, d)) |a b. a \<in> finals \<and> ((q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
       by (rule countable_cong[OF countable_image[of "{(a, b) |a b. a \<in> finals \<and> (q1, (w, b), a) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}" "\<lambda>(a, b). ((a, b), q1, d)"]]) 
-          auto
+        auto
   qed
   have "\<^bold>\<Sum>{d * (dioidLTS.accepts ts finals (q,w))| q d. (p,([a],d),q) \<in> wts_to_monoidLTS ts} =
         \<^bold>\<Sum> {d * (\<^bold>\<Sum> {u | q u. q \<in> finals \<and> (q1, (w, u), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
     unfolding dioidLTS.accepts_def by auto
- (* have "... = \<^bold>\<Sum> {\<^bold>\<Sum> {d * u | q u. q \<in> finals \<and> (q1, (w, u), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)} |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
-    using SumInf_left_distr
-    sorry *)
   also
   have "... = \<^bold>\<Sum> {d * u | q u q1 d. q \<in> finals \<and> (q1, (w, u), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
     using SumInf_of_SumInf_left_distr[of "\<lambda>(q1,d). (p, ([a], d), q1) \<in> wts_to_monoidLTS ts" "\<lambda>(q,u) (q1,d). q \<in> finals \<and> (q1, (w, u), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
@@ -70,10 +60,7 @@ proof -
   also
   have "... = (\<^bold>\<Sum> {d' | d' q. q \<in> finals \<and> (p, (a # w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)})"
     apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
-    apply (rule Collect_cong)
-    apply rule
-     apply (smt (verit, del_insts) append_Cons append_Nil fst_conv monoid_rtrancl_simps_rev mult_prod_def snd_conv times_list_def)
-    using mstar_wts_cons apply fastforce
+    using monoid_rtrancl_intros_Cons mstar_wts_cons apply fastforce
     done
   also
   have "... = dioidLTS.accepts ts finals (p,a#w)"
@@ -100,35 +87,27 @@ proof (induction w arbitrary: p)
     unfolding finite_WPDS_def by auto
 next
   case (Cons a w)
-
   have "finite ({d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts})"
     unfolding wts_to_monoidLTS_def
     using finite_f_on_set[of UNIV "\<lambda>q. ts $ (p, a, q) * dioidLTS.accepts ts finals (q, w)"]
     by simp
-  then have a:
+  then have
     "\<Sum> {d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts} = 
      \<^bold>\<Sum> {d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
     using finite_SumInf_is_sum[of "{d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"]
     by auto
-
-  have b: "\<Sum> {d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts} =
+  moreover
+  have "\<Sum> {d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts} =
         \<Sum> {ts $ (p, a, q) * accepts_code ts finals (q, w) |q. True}"
     by (metis (no_types, opaque_lifting) local.Cons wts_label_d wts_to_monoidLTS_exists)
-
-  have f:"finite {(ts $ (p, a, q), accepts_code ts finals (q, w)) |q. True}" 
-    using finite_f_on_set[of UNIV "\<lambda>q. ts $ (p, a, q)"]
-          finite_f_on_set[of UNIV "\<lambda>q. accepts_code ts finals (q, w)"]
-          finite_prod_f_g by fastforce
-  have "{aa * b |aa b. \<exists>q. aa = ts $ (p, a, q) \<and> b = accepts_code ts finals (q, w)} = {ts $ (p, a, q) * accepts_code ts finals (q, w) |q. True}"
-    by blast
-  moreover have "{aa * b |aa b. (\<exists>q. aa = ts $ (p, a, q) \<and> b = accepts_code ts finals (q, w)) \<and> aa \<noteq> 0} = 
-        {ts $ (p, a, q) * accepts_code ts finals (q, w) |q. ts $ (p, a, q) \<noteq> 0}"
-    by blast
-  ultimately have c: "\<Sum> {ts $ (p, a, q) * accepts_code ts finals (q, w) |q. ts $ (p, a, q) \<noteq> 0} = 
+  moreover
+  have "\<Sum> {ts $ (p, a, q) * accepts_code ts finals (q, w) |q. ts $ (p, a, q) \<noteq> 0} = 
                       \<Sum> {ts $ (p, a, q) * accepts_code ts finals (q, w) |q. True}"
-    using sum_mult_not0_is_sum[OF f, of fst snd, simplified] by argo
+    using sum_mult_not0_is_sum[of "\<lambda>q. True" "\<lambda>q. ts $ (p, a, q)" "\<lambda>q. accepts_code ts finals (q, w)"]
+    by auto
+  ultimately
   show ?case
-    unfolding accepts_code.simps(2) accepts_step_distrib[symmetric] using a b c by auto
+    unfolding accepts_step_distrib by auto
 qed
 
 

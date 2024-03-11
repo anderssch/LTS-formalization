@@ -404,12 +404,11 @@ proof (rule SumInf_bounded_if_set_bounded)
     by auto
 qed
 
-lemma SumInf_of_SumInf: (* Are the assumptions reasonable? *)
+lemma SumInf_of_SumInf:
   assumes "countable {y. Q y}"
   assumes "\<And>y. Q y \<Longrightarrow> countable {(x, y)| x. P x y} "
   shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f x y| x. P x y} |y. Q y} = \<^bold>\<Sum> {f x y | x y. P x y \<and> Q y}"
   using SumInf_of_SumInf_geq[of Q P f] SumInf_of_SumInf_leq[of Q P f] assms(1,2) by auto
-
 
 lemma SumInf_of_SumInf_fst_arg: (* not used... *)
   assumes "countable {y. Q y}"
