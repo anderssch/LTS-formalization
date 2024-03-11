@@ -396,11 +396,10 @@ proof -
   then show ?thesis using is0 by simp
 qed
 
-lemma sum_if_1_0_is_sum:
+lemma sum_if_1_0_right_is_sum:
   assumes "finite {a. P a}"
   shows "\<Sum>{f a * (if Q a then 1 else 0) | a. P a} = \<Sum>{f a | a. P a \<and> Q a}"
 proof -
-  thm sum.union_inter_neutral
   have fnot0:"finite {f a * (if Q a then 1 else 0) |a. P a \<and> \<not> Q a}" using assms by simp
   have f0:"finite {f a * (if Q a then 1 else 0) |a. P a \<and> Q a}" using assms by simp
   have is0: "\<Sum> {f a * (if Q a then 1 else 0) |a. P a \<and> \<not> Q a} = 0"
@@ -414,6 +413,26 @@ proof -
   show ?thesis unfolding eq
     by (rule arg_cong[of _ _ \<Sum>]) auto
 qed
+
+lemma sum_if_1_0_left_is_sum:
+  assumes "finite {a. P a}"
+  shows "\<Sum>{(if Q a then 1 else 0) * f a | a. P a} = \<Sum>{f a | a. P a \<and> Q a}"
+proof -
+  thm sum.union_inter_neutral
+  have fnot0:"finite {(if Q a then 1 else 0) * f a |a. P a \<and> \<not> Q a}" using assms by simp
+  have f0:"finite {(if Q a then 1 else 0) * f a |a. P a \<and> Q a}" using assms by simp
+  have is0: "\<Sum> {(if Q a then 1 else 0) * f a |a. P a \<and> \<not> Q a} = 0"
+    using sum.neutral[of "{(if Q a then 1 else 0) * f a |a. P a \<and> \<not> Q a}" "(\<lambda>x. x)"] by fastforce
+  have u:"{(if Q a then 1 else 0) * f a |a. P a \<and> \<not> Q a} \<union> {(if Q a then 1 else 0) * f a |a. P a \<and> Q a} = {(if Q a then 1 else 0) * f a | a. P a}" by blast
+  have a:"\<forall>x\<in>{(if Q a then 1 else 0) * f a |a. P a \<and> \<not> Q a} \<inter> {(if Q a then 1 else 0) * f a |a. P a \<and> Q a}. x = 0"
+    by auto
+  have eq:"\<Sum>{(if Q a then 1 else 0) * f a | a. P a} = \<Sum> {(if Q a then 1 else 0) * f a |a. P a \<and> Q a}"
+    using sum.union_inter_neutral[OF fnot0 f0 a]
+    unfolding u is0 by auto
+  show ?thesis unfolding eq
+    by (rule arg_cong[of _ _ \<Sum>]) auto
+qed
+
 
 end
 

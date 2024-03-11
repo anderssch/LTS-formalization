@@ -518,6 +518,29 @@ proof -
     using SumInf_equal_with_0[OF countable_setcompr[OF assms(1), of f]] by simp
 qed
 
+lemma SumInf_if_1_0_right_is_sum:
+  assumes "countable {a. P a}"
+  shows "\<^bold>\<Sum>{f a * (if Q a then 1 else 0) | a. P a} = \<^bold>\<Sum>{f a | a. P a \<and> Q a}"
+  using SumInf_split_Qor0[OF assms, of Q "\<lambda>a. f a * (if Q a then 1 else 0)" "\<lambda>a. f a"]
+  by force
+lemma SumInf_if_1_0_left_is_sum:
+  assumes "countable {a. P a}"
+  shows "\<^bold>\<Sum>{(if Q a then 1 else 0) * f a | a. P a} = \<^bold>\<Sum>{f a | a. P a \<and> Q a}"
+  using SumInf_split_Qor0[OF assms, of Q "\<lambda>a. (if Q a then 1 else 0) * f a" "\<lambda>a. f a"]
+  by force
+
+lemma SumInf_if_1_0_both_is_sum:
+  assumes "countable {a. P a}"
+  shows "\<^bold>\<Sum>{(if Q1 a then 1 else 0) * f a * (if Q2 a then 1 else 0) | a. P a} = \<^bold>\<Sum>{f a | a. P a \<and> Q1 a \<and> Q2 a}" (is "?A = ?B")
+proof -
+  have c:"countable {a. P a \<and> Q1 a}" using countable_subset[OF _ assms, of "{a. P a \<and> Q1 a}"] by blast
+  have "?A = \<^bold>\<Sum> {f a * (if Q2 a then 1 else 0) |a. P a \<and> Q1 a}"
+    using SumInf_if_1_0_left_is_sum[OF assms, of Q1 "\<lambda>a. f a * (if Q2 a then 1 else 0)"]
+    unfolding mult.assoc by blast
+  then show ?thesis
+    using SumInf_if_1_0_right_is_sum[OF c, of f Q2] by presburger
+qed
+  
 
 
 end
