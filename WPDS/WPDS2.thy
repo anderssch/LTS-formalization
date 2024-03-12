@@ -2183,13 +2183,14 @@ end
 
 section \<open>Pre* on WAutomata\<close>
 
-datatype ('ctr_loc, 'noninit) state =
+datatype ('ctr_loc::enum, 'noninit::enum) state =
   is_Init: Init (the_Ctr_Loc: 'ctr_loc) (* p \<in> P *)
   | is_Noninit: Noninit (the_St: 'noninit) (* q \<in> Q \<and> q \<notin> P *)
 
-definition inits_set :: "('ctr_loc, 'noninit) state set" where 
+definition inits_set :: "('ctr_loc::enum, 'noninit::enum) state set" where 
   "inits_set = {q. is_Init q}"
 
+(*
 lemma finitely_many_states:
   assumes "finite (UNIV :: 'ctr_loc set)"
   assumes "finite (UNIV :: 'noninit set)"
@@ -2363,6 +2364,7 @@ qed
 instantiation state :: (finite, finite) finite begin
   instance by standard (simp add: finitely_many_states)
 end
+*)
 
 lemma UNIV_state: "UNIV = Init ` UNIV \<union> Noninit ` UNIV"
 proof -
@@ -3595,6 +3597,43 @@ next
 qed
 
 
+lemma intersff_correct':
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts2::"('state'::finite, 'label, 'weight) w_transitions"
+  assumes "binary_aut ts1"
+  shows "((p1,q1), d, (p2,q2)) \<in> monoid_rtrancl (wts_to_weightLTS (intersff ts1 ts2)) \<Longrightarrow>
+           (\<exists>dp dq. (p1, dp, p2) \<in> monoid_rtrancl (wts_to_weightLTS ts1) \<and>
+                     (q1, dq, q2) \<in> monoid_rtrancl (wts_to_weightLTS ts2) \<and> dp * dq = d)"  
+  using wts_weightLTS_star_to_monoidLTS_star[of "(p1,q1)" d "(p2,q2)" "intersff ts1 ts2"]
+        intersff_correct[OF assms, of p1 q1 _ d p2 q2 ts2] wts_monoidLTS_star_to_weightLTS_star
+  by meson
+
+lemma intersff_correct'':
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts2::"('state'::finite, 'label, 'weight) w_transitions"
+  assumes "binary_aut ts1"
+  shows "((p1,q1), d, (p2,q2)) \<in> monoid_rtrancl (wts_to_weightLTS (intersff ts1 ts2)) \<Longrightarrow>
+           (\<exists>w dp dq. (p1, (w,dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1) \<and>
+                      (q1, (w,dq), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2) \<and> dp * dq = d)"  
+  using wts_weightLTS_star_to_monoidLTS_star[of "(p1,q1)" d "(p2,q2)" "intersff ts1 ts2"]
+        intersff_correct[OF assms, of p1 q1 _ d p2 q2 ts2]
+  by meson
+
+lemma intersff_correct''':
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts2::"('state'::finite, 'label, 'weight) w_transitions"
+  assumes "binary_aut ts1"
+  assumes "(p1, (w, dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
+  assumes "(q1, (w, dq), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
+  shows "((p1, q1), dp * dq, (p2, q2)) \<in> monoid_rtrancl (wts_to_weightLTS (intersff ts1 ts2))"
+  using intersff_correct[OF assms(1), of p1 q1 w "dp * dq" p2 q2 ts2] assms(2,3)
+        wts_monoidLTS_star_to_weightLTS_star[of "(p1,q1)" w "dp * dq" "(p2,q2)" "intersff ts1 ts2"]
+  by fast
+
+lemma monoid_rtranclp_unfold: "monoid_rtranclp (monoidLTS.l_step_relp ts) c l c' \<longleftrightarrow> (c, l, c') \<in> monoid_rtrancl ts"
+  unfolding monoidLTS.l_step_relp_def monoid_rtranclp_monoid_rtrancl_eq by simp
+
+
 section \<open>Weight reach code\<close>
 
 lemma 
@@ -3634,7 +3673,7 @@ qed
 lemma sum_finals_1_0:
   fixes S :: "('state::finite \<Rightarrow>f 'weight::bounded_idempotent_semiring)"
   shows "\<Sum> {S $ s * (if s \<in> finals then 1 else 0) |s. True} = \<Sum> {S $ s |s. s \<in> finals}"
-  using sum_if_1_0_is_sum[of "\<lambda>c. True" "\<lambda>s. S $ s" "\<lambda>s. s \<in> finals"] by simp
+  using sum_if_1_0_right_is_sum[of "\<lambda>c. True" "\<lambda>s. S $ s" "\<lambda>s. s \<in> finals"] by simp
 
 lemma weight_reach_saturation_correct:
   assumes "finite ts"
@@ -3662,13 +3701,9 @@ lemma "dioidLTS.weight_reach (wts_to_weightLTS (intersff ts' A)) (\<lambda>p. if
 (* definition ts_to_augmented_ts *)
 
 
-definition accepts_full :: "(('ctr_loc, 'noninit) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('ctr_loc, 'noninit) state set \<Rightarrow> ('ctr_loc, 'noninit) state set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
+definition accepts_full :: "(('ctr_loc::enum, 'noninit::enum) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('ctr_loc, 'noninit) state set \<Rightarrow> ('ctr_loc, 'noninit) state set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
   "accepts_full ts inits finals \<equiv> \<lambda>(p, w). if Init p \<in> inits then dioidLTS.accepts ts finals (Init p, w) else 0"
 
-
-term "\<lambda>ts ts'. WPDS.weight_reach' \<Delta> (accepts_full ts inits finals) (accepts_full ts' inits' finals')"
-term "\<lambda>ts ts'. intersff ts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')"
-term "\<lambda>ts ts'. weight_reach_sum_exec (wts_to_weightLTS (intersff ts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')))"
 
 lemma finite_weightLTS:
   fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
@@ -3677,45 +3712,132 @@ lemma finite_weightLTS:
   unfolding wts_to_weightLTS_def
   sorry
 
-lemma big_good_correctness_code:
+lemma temp2:
   fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
   fixes ts':: "(('ctr_loc, 'noninit) state, 'label, 'weight) w_transitions"
+  shows "countable {t|t. t \<in> monoid_rtrancl (wts_to_weightLTS (intersff ts ts'))}"
+  using countable_monoidLTS.countable_monoid_star[unfolded countable_monoidLTS_def, OF countable_finite[OF finite_weightLTS[of ts ts']]]
+  unfolding monoidLTS.monoid_star_is_monoid_rtrancl by simp
+
+
+lemma weight_reach_intersection_correct:
+  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
   assumes "binary_aut ts"
-      and "binary_aut ts'"
-      and "finite \<Delta> \<and> (\<forall>q p \<gamma>. is_Init q \<longrightarrow> ts $ (p, \<gamma>, q) = 0)"
-      and "finite \<Delta>"
-  shows "WPDS.weight_reach' \<Delta> (accepts_full ts inits finals) (accepts_full ts' inits' finals') = 
-         weight_reach_sum_exec (wts_to_weightLTS (intersff ts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts'))) (inits\<times>inits') (finals \<times> finals')"
-  unfolding weight_reach_sum_exec_correct[OF finite_weightLTS, of ts "WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts'" "inits\<times>inits'" "finals \<times> finals'"]
-  using WPDS_with_W_automata.pre_star_exec_correctness[unfolded WPDS_with_W_automata_def finite_WPDS_def WPDS_with_W_automata_axioms_def, OF assms(3)]
-  unfolding WPDS.weight_reach'_def
-  unfolding countable_dioidLTS.weight_reach_to_pre_star[
-              unfolded countable_dioidLTS_def countable_monoidLTS_def, 
-              OF finite_WPDS.countable_transition_rel[unfolded finite_WPDS_def, OF assms(4)],
-              of "accepts_full ts inits finals" "accepts_full ts' inits' finals'"
-            ]
+  shows "dioidLTS.weight_reach (wts_to_weightLTS (intersff ts ts')) (\<lambda>p. if p \<in> {(q,q)|q. q\<in>inits} then 1 else 0) (\<lambda>p. if p \<in> finals \<times> finals' then 1 else 0) =  
+         \<^bold>\<Sum> {dioidLTS.accepts ts finals (p, w) * dioidLTS.accepts ts' finals' (p, w) |p w. p \<in> inits}" (is "?A = ?B")
+proof -
+  have c1:"countable {y. fst y \<in> inits}" 
+    sorry
+  have c2:"\<And>y. fst y \<in> inits \<Longrightarrow> countable {(x, y) |x. snd x \<in> finals' \<and> (fst y, (snd y, fst x), snd x) \<in> monoid_rtrancl (wts_to_monoidLTS ts')}" 
+    apply simp
+    sorry
+  have c3:"countable {y. fst (snd y) \<in> finals' \<and> (fst (snd (snd y)), (snd (snd (snd y)), fst y), fst (snd y)) \<in> monoid_rtrancl (wts_to_monoidLTS ts') \<and> fst (snd (snd y)) \<in> inits}" 
+    sorry
+  have c4:"\<And>y. fst (snd y) \<in> finals' \<and> (fst (snd (snd y)), (snd (snd (snd y)), fst y), fst (snd y)) \<in> monoid_rtrancl (wts_to_monoidLTS ts') \<and> fst (snd (snd y)) \<in> inits \<Longrightarrow>
+               countable {(x, y) |x. snd x \<in> finals \<and> (fst (snd (snd y)), (snd (snd (snd y)), fst x), snd x) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}" 
+    sorry
 
-  unfolding accepts_full_def
-  
-(*  using countable_dioidLTS.weight_reach_to_pre_star[
-          unfolded countable_dioidLTS_def countable_monoidLTS_def, 
-          OF countable_finite[OF finite_weightLTS], 
-          of ts "WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts'" "\<lambda>p. if p \<in> inits \<times> inits' then 1 else 0" "\<lambda>p. if p \<in> finals \<times> finals' then 1 else 0"
-        ]*)
+  have "?A = \<^bold>\<Sum> {l |c l c'. (c, l, c') \<in> monoid_rtrancl (wts_to_weightLTS (intersff ts ts')) \<and> c \<in> {(p,p)|p. p\<in>inits} \<and> c' \<in> finals \<times> finals'}"
+    unfolding dioidLTS.weight_reach_def monoid_rtranclp_unfold
+    using SumInf_if_1_0_both_is_sum[OF temp2[of ts ts'], of "\<lambda>clc'. fst clc' \<in> {(p,p)|p. p\<in>inits}" "\<lambda>clc'. fst (snd clc')" "\<lambda>clc'. snd (snd clc') \<in> finals \<times> finals'"]
+    by simp
+  moreover have "... =  \<^bold>\<Sum>{d * d' |d q d' q' p w. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and> q' \<in> finals' \<and> (p,(w,d'),q') \<in> monoid_rtrancl (wts_to_monoidLTS ts') \<and> p \<in> inits}"
+    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
+    using intersff_correct''[OF assms(1)] intersff_correct'''[OF assms(1)]
+    by blast
+  moreover have B:"... = ?B"
+    unfolding dioidLTS.accepts_def
+    using SumInf_of_SumInf_left_distr[OF c1 c2, of "\<lambda>pw. \<^bold>\<Sum>{d | d q. q \<in> finals \<and> (fst pw,(snd pw,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}" "\<lambda>dq pw. fst dq"]
+    using SumInf_of_SumInf_right_distr[OF c3 c4, of  "\<lambda>dq pw. fst dq" "\<lambda>d'q'pw. fst d'q'pw"]
+    by simp
+  ultimately show ?thesis by argo
+qed
 
-  unfolding WPDS.weight_reach'_def wts_to_weightLTS_def
-  unfolding dioidLTS.weight_reach_def unfolding monoidLTS.l_step_relp_def 
-  apply simp
-  unfolding accepts_full_def
-  using intersff_correct[OF assms(1), of _ _ _ _ _ _ "WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts'"]
-  apply simp
-  oops
+
+lemma 
+  assumes "Init p \<in> inits"
+  shows "dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (accepts_full ts' inits finals') (p, w) =
+         dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (\<lambda>(p, w). dioidLTS.accepts ts' finals' (Init p, w)) (p, w)"
+proof -
+  have a1:"countable {x. monoid_rtranclp (monoidLTS.l_step_relp (WPDS.transition_rel \<Delta>)) (p, w) (fst x) (snd x)}" sorry
+  have a2:"\<And>x. \<not> (Init (fst (snd x)) \<in> inits) \<Longrightarrow> fst x * (case snd x of (p, w) \<Rightarrow> if Init p \<in> inits then dioidLTS.accepts ts' finals' (Init p, w) else 0) = 0"
+    using assms by force
+  have a3:"\<And>x. Init (fst (snd x)) \<in> inits \<Longrightarrow> fst x * (case snd x of (p, w) \<Rightarrow> if Init p \<in> inits then dioidLTS.accepts ts' finals' (Init p, w) else 0) = fst x * (case snd x of (p, w) \<Rightarrow> dioidLTS.accepts ts' finals' (Init p, w))"
+    using assms by force
+  show ?thesis 
+    unfolding accepts_full_def dioidLTS.weight_pre_star_def
+    using SumInf_split_Qor0[OF a1 a2 a3, of "\<lambda>lc'. Init (fst (snd lc')) \<in> inits" "\<lambda>x. x"] assms
+    apply simp
+    oops
+
+lemma temp3:
+  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  assumes "\<And>p. is_Init p \<longleftrightarrow> p \<in> inits"
+  shows "\<^bold>\<Sum> {dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (accepts_full ts' inits finals') (p, w) |p w. Init p \<in> inits} =
+         \<^bold>\<Sum> {dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (\<lambda>(p, w). dioidLTS.accepts ts' finals' (Init p, w)) (p, w) |p w. Init p \<in> inits}"
+proof -
+  show ?thesis 
+    unfolding accepts_full_def dioidLTS.weight_pre_star_def
+    using SumInf_split_Qor0
+    using SumInf_split_Qor0[OF a1 a2 a3, of "\<lambda>lc'. Init (fst (snd lc')) \<in> inits" "\<lambda>x. x"] assms
+    apply simp
+    sorry
+qed
+
+
+lemma big_good_correctness_code:
+  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  assumes "binary_aut ts"
+      and "finite \<Delta> \<and> (\<forall>q p \<gamma>. is_Init q \<longrightarrow> ts' $ (p, \<gamma>, q) = 0)"
+      and "\<And>p. is_Init p \<longleftrightarrow> p \<in> inits"
+  shows "WPDS.weight_reach' \<Delta> (accepts_full ts inits finals) (accepts_full ts' inits finals') = 
+         weight_reach_sum_exec (wts_to_weightLTS (intersff ts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts'))) {(p, p) |p. p \<in> inits} (finals \<times> finals')" (is "?A = ?B")
+proof -
+  have f:"finite \<Delta>" using assms(2) by simp
+  have W:"WPDS_with_W_automata \<Delta> ts'" unfolding WPDS_with_W_automata_def finite_WPDS_def WPDS_with_W_automata_axioms_def using assms(2) by blast
+  have "?A = \<^bold>\<Sum>{dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (accepts_full ts' inits finals') (p, w) |p w. Init p \<in> inits} " 
+    unfolding WPDS.weight_reach'_def
+    unfolding countable_dioidLTS.weight_reach_to_pre_star[
+                unfolded countable_dioidLTS_def countable_monoidLTS_def, 
+                OF finite_WPDS.countable_transition_rel[unfolded finite_WPDS_def, OF f],
+                of "accepts_full ts inits finals" "accepts_full ts' inits finals'"
+              ]
+    using SumInf_split_Qor0[
+            of "\<lambda>c. True" "\<lambda>pw. Init (fst pw) \<in> inits" 
+               "\<lambda>c. accepts_full ts inits finals c * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (accepts_full ts' inits finals') c"
+               "\<lambda>pw. dioidLTS.accepts ts finals (Init (fst pw), snd pw) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (accepts_full ts' inits finals') pw"
+          ]
+    unfolding accepts_full_def[of ts]
+    by force
+  moreover have "... = \<^bold>\<Sum>{dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (\<lambda>(p, w). dioidLTS.accepts ts' finals' (Init p, w)) (p, w) |p w. Init p \<in> inits}"
+    using temp3[of inits ts finals \<Delta> ts' finals', OF assms(3)] by blast
+  moreover have "... = \<^bold>\<Sum> {dioidLTS.accepts ts finals (p, w) * dioidLTS.accepts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts') finals' (p, w) |p w. p \<in> inits}" 
+    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
+    apply safe
+     apply simp
+    subgoal for p w
+      using WPDS_with_W_automata.pre_star_exec_correctness[OF W]
+      by metis
+    apply simp
+    subgoal for p w
+      apply (rule exI[of _ "the_Ctr_Loc p"])
+      using WPDS_with_W_automata.pre_star_exec_correctness[OF W, of finals' "the_Ctr_Loc p"]
+      apply (simp add: assms(3)[of p])
+      by metis
+    done
+  moreover have "... = dioidLTS.weight_reach (wts_to_weightLTS (intersff ts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')))
+                        (\<lambda>p. if p \<in> {(q, q) |q. q \<in> inits} then 1 else 0) (\<lambda>p. if p \<in> finals \<times> finals' then 1 else 0)"
+    using weight_reach_intersection_correct[OF assms(1), of "WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts'" inits finals finals'] by presburger
+  moreover have "... = ?B"
+    using weight_reach_sum_exec_correct[OF finite_weightLTS, of ts "WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts'" "{(p, p) |p. p \<in> inits}" "finals \<times> finals'"] by argo
+  ultimately show ?thesis by argo
+qed
 
 lemma 
   assumes "binary_aut ts"
     and "binary_aut ts'"
   shows "\<^bold>\<Sum> {d| c d. d = dioidLTS.accepts (intersff ts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')) (finals\<times>finals') c} = 
-         WPDS.weight_reach' \<Delta> ts' (dioidLTS.accepts ts finals) (dioidLTS.accepts ts' finals')" 
+         WPDS.weight_reach' \<Delta> (accepts_full ts inits finals) (accepts_full ts' inits' finals')" 
   oops
 (* TODO: Make executable version of "dioidLTS.SumInf {d | c d. d = dioidLTS.accepts ts finals c}" *)
 

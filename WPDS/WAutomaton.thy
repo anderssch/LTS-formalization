@@ -18,8 +18,37 @@ type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list
 definition wts_to_monoidLTS :: "('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
   "wts_to_monoidLTS ts = {(p, ([l],d), q) | p l d q. ts $ (p,l,q) = d}"
 
-definition wts_to_weightLTS :: "('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, 'weight) transition set" where
+definition wts_to_weightLTS :: "('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, 'weight) transition set" where
   "wts_to_weightLTS ts = {(p, d, q) | p l d q. ts $ (p,l,q) = d}"
+
+lemma wts_monoidLTS_to_weightLTS: "(p, (w, d), p') \<in> wts_to_monoidLTS ts \<Longrightarrow> (p, d, p') \<in> wts_to_weightLTS ts"
+  unfolding wts_to_monoidLTS_def wts_to_weightLTS_def by blast
+
+lemma wts_monoidLTS_star_to_weightLTS_star:
+  "(p, (w,d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> (p, d, q) \<in> monoid_rtrancl (wts_to_weightLTS ts)"
+  apply (induct rule: monoid_rtrancl_pair_weight_induct, simp)
+  subgoal for p w d p' w' d' p''
+    using monoid_rtrancl_into_rtrancl[of p d p' "wts_to_weightLTS ts" d' p''] wts_monoidLTS_to_weightLTS[of p' w' d' p'' ts]
+    by blast
+  done
+lemma wts_weightLTS_to_monoidLTS: "(p, d, p') \<in> wts_to_weightLTS ts \<Longrightarrow> \<exists>w. (p, (w,d), p') \<in> wts_to_monoidLTS ts"
+  unfolding wts_to_monoidLTS_def wts_to_weightLTS_def by blast
+lemma wts_weightLTS_star_to_monoidLTS_star:
+  "(p, d, q) \<in> monoid_rtrancl (wts_to_weightLTS ts) \<Longrightarrow> \<exists>w. (p, (w,d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  apply (induct rule: monoid_rtrancl.induct)
+   apply (rule exI[of _ 1])
+   apply (metis one_prod_def monoid_rtrancl_refl)
+  apply safe
+  subgoal for p d p' d' p'' w
+    using wts_weightLTS_to_monoidLTS[of p' d' p'' ts]
+    apply simp
+    apply safe
+    subgoal for w'
+      using monoid_rtrancl_into_rtrancl[of p "(w,d)" p' "wts_to_monoidLTS ts" "(w',d')" p'']
+      by auto
+    done
+  done
+
 
 lemma "finite (wts_to_weightLTS ts)" oops (* THIS should be true!! *)
 
