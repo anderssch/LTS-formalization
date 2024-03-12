@@ -137,4 +137,10 @@ proof -
 qed
 
 
+lemma countable_cong: "countable a \<Longrightarrow> a = b \<Longrightarrow> countable b"
+  using back_subst[of countable] by blast
+
+lemma rev_countable_subset: "countable B \<Longrightarrow> A \<subseteq> B \<Longrightarrow> countable A"
+  using countable_subset .
+
 end

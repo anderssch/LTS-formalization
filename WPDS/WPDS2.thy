@@ -3720,19 +3720,37 @@ lemma temp2:
   unfolding monoidLTS.monoid_star_is_monoid_rtrancl by simp
 
 
-lemma weight_reach_intersection_correct:
+lemma weight_reach_intersection_correct:    
   fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
   assumes "binary_aut ts"
   shows "dioidLTS.weight_reach (wts_to_weightLTS (intersff ts ts')) (\<lambda>p. if p \<in> {(q,q)|q. q\<in>inits} then 1 else 0) (\<lambda>p. if p \<in> finals \<times> finals' then 1 else 0) =  
          \<^bold>\<Sum> {dioidLTS.accepts ts finals (p, w) * dioidLTS.accepts ts' finals' (p, w) |p w. p \<in> inits}" (is "?A = ?B")
 proof -
-  have c1:"countable {y. fst y \<in> inits}" 
-    sorry
-  have c2:"\<And>y. fst y \<in> inits \<Longrightarrow> countable {(x, y) |x. snd x \<in> finals' \<and> (fst y, (snd y, fst x), snd x) \<in> monoid_rtrancl (wts_to_monoidLTS ts')}" 
-    apply simp
-    sorry
-  have c3:"countable {y. fst (snd y) \<in> finals' \<and> (fst (snd (snd y)), (snd (snd (snd y)), fst y), fst (snd y)) \<in> monoid_rtrancl (wts_to_monoidLTS ts') \<and> fst (snd (snd y)) \<in> inits}" 
-    sorry
+  have c1: "countable {y:: ('ctr_loc, 'noninit) state \<times> 'label list. fst y \<in> inits}" 
+    by auto
+  have c2:"\<And>y:: ('ctr_loc, 'noninit) state \<times> 'label list. fst y \<in> inits \<Longrightarrow> countable {(x, y) |x. snd x \<in> finals' \<and> (fst y, (snd y, fst x), snd x) \<in> monoid_rtrancl (wts_to_monoidLTS ts')}" 
+  proof -
+    fix y :: "('ctr_loc, 'noninit) state \<times> 'label list"
+    have "countable (monoid_rtrancl (wts_to_monoidLTS ts'))"
+      by (simp add: countable_monoid_rtrancl countable_wts)
+    then have "countable {(y1, (y2, x1), x2) |x1 x2 y1 y2. (y1, (y2, x1), x2) \<in> monoid_rtrancl (wts_to_monoidLTS ts')}"
+      by (rule rev_countable_subset) auto
+    then have "countable ((\<lambda>(y1, (y2, x1), x2). ((x1,x2), (y1,y2))) ` {(y1, (y2, x1), x2) |x1 x2 y1 y2. (y1, (y2, x1), x2) \<in> monoid_rtrancl (wts_to_monoidLTS ts')})"
+      using countable_image by fastforce
+    then  show "countable {(x, y) |x. snd x \<in> finals' \<and> (fst y, (snd y, fst x), snd x) \<in> monoid_rtrancl (wts_to_monoidLTS ts')}"
+      by (rule rev_countable_subset) (auto simp add: image_def)
+  qed
+  have c3: "countable {y . fst (snd y) \<in> finals' \<and> (fst (snd (snd y)), (snd (snd (snd y)), fst y), fst (snd y)) \<in> monoid_rtrancl (wts_to_monoidLTS ts') \<and> fst (snd (snd y)) \<in> inits}" 
+  proof -
+    have "countable (monoid_rtrancl (wts_to_monoidLTS ts'))"
+      by (simp add: countable_monoid_rtrancl countable_wts)
+    then have "countable {(y31, (y32, y1), y2) | y1 y2 y31 y32 . (y31, (y32, y1), y2) \<in> monoid_rtrancl (wts_to_monoidLTS ts')}"
+      by (rule rev_countable_subset) auto
+    then have "countable ((\<lambda>(y31, (y32, y1), y2). (y1, y2, (y31,y32))) ` {(y31, (y32, y1), y2) | y1 y2 y31 y32 . (y31, (y32, y1), y2) \<in> monoid_rtrancl (wts_to_monoidLTS ts')})"
+      using countable_image by fastforce
+    then show "countable {y . fst (snd y) \<in> finals' \<and> (fst (snd (snd y)), (snd (snd (snd y)), fst y), fst (snd y)) \<in> monoid_rtrancl (wts_to_monoidLTS ts') \<and> fst (snd (snd y)) \<in> inits}" 
+       by (rule rev_countable_subset) (auto simp add: image_def)
+  qed
   have c4:"\<And>y. fst (snd y) \<in> finals' \<and> (fst (snd (snd y)), (snd (snd (snd y)), fst y), fst (snd y)) \<in> monoid_rtrancl (wts_to_monoidLTS ts') \<and> fst (snd (snd y)) \<in> inits \<Longrightarrow>
                countable {(x, y) |x. snd x \<in> finals \<and> (fst (snd (snd y)), (snd (snd (snd y)), fst x), snd x) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}" 
     sorry
@@ -3777,11 +3795,21 @@ lemma temp3:
          \<^bold>\<Sum> {dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (\<lambda>(p, w). dioidLTS.accepts ts' finals' (Init p, w)) (p, w) |p w. Init p \<in> inits}"
 proof -
   show ?thesis 
-    unfolding accepts_full_def dioidLTS.weight_pre_star_def
-    using SumInf_split_Qor0
-    using SumInf_split_Qor0[OF a1 a2 a3, of "\<lambda>lc'. Init (fst (snd lc')) \<in> inits" "\<lambda>x. x"] assms
-    apply simp
-    sorry
+    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
+    apply auto
+    subgoal for p w
+      apply (rule exI[of _ p])
+      apply auto
+      apply (rule exI[of _ w])
+      apply (smt (verit, best) Collect_cong accepts_full_def assms dioidLTS.weight_pre_star_def split_cong state.disc(1))
+      done
+    subgoal for p w
+      apply (rule exI[of _ p])
+      apply auto
+      apply (rule exI[of _ w])
+      apply (smt (verit, best) Collect_cong accepts_full_def assms dioidLTS.weight_pre_star_def split_cong state.disc(1))
+      done
+    done
 qed
 
 
