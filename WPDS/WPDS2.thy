@@ -3704,13 +3704,24 @@ lemma "dioidLTS.weight_reach (wts_to_weightLTS (intersff ts' A)) (\<lambda>p. if
 definition accepts_full :: "(('ctr_loc::enum, 'noninit::enum) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('ctr_loc, 'noninit) state set \<Rightarrow> ('ctr_loc, 'noninit) state set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
   "accepts_full ts inits finals \<equiv> \<lambda>(p, w). if Init p \<in> inits then dioidLTS.accepts ts finals (Init p, w) else 0"
 
+lemma finite_weightLTS':
+  fixes ts :: "('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  shows "finite (wts_to_weightLTS ts)"
+proof -
+  have "finite ((\<lambda>(p, l, q). (p, ts $ (p, l, q), q)) ` UNIV)"
+    using finite_imageI by auto
+  then have "finite {uu. \<exists>p l q. uu = (p, ts $ (p, l, q), q)}"
+    unfolding image_def by (rule rev_finite_subset) auto
+  then show ?thesis
+    unfolding wts_to_weightLTS_def
+    by auto
+qed
 
 lemma finite_weightLTS:
   fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
   fixes ts':: "(('ctr_loc, 'noninit) state, 'label, 'weight) w_transitions"
   shows "finite (wts_to_weightLTS (intersff ts ts'))"
-  unfolding wts_to_weightLTS_def
-  sorry
+  using finite_weightLTS' by auto
 
 lemma temp2:
   fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
@@ -3853,6 +3864,7 @@ proof -
       apply (simp add: assms(3)[of p])
       by metis
     done
+  find_theorems ts
   moreover have "... = dioidLTS.weight_reach (wts_to_weightLTS (intersff ts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')))
                         (\<lambda>p. if p \<in> {(q, q) |q. q \<in> inits} then 1 else 0) (\<lambda>p. if p \<in> finals \<times> finals' then 1 else 0)"
     using weight_reach_intersection_correct[OF assms(1), of "WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts'" inits finals finals'] by presburger
