@@ -3764,7 +3764,17 @@ proof -
   qed
   have c4:"\<And>y. fst (snd y) \<in> finals' \<and> (fst (snd (snd y)), (snd (snd (snd y)), fst y), fst (snd y)) \<in> monoid_rtrancl (wts_to_monoidLTS ts') \<and> fst (snd (snd y)) \<in> inits \<Longrightarrow>
                countable {(x, y) |x. snd x \<in> finals \<and> (fst (snd (snd y)), (snd (snd (snd y)), fst x), snd x) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}" 
-    sorry
+  proof -
+    fix y :: "'weight \<times> ('ctr_loc, 'noninit) state \<times> ('ctr_loc, 'noninit) state \<times> 'label list"
+    have "countable (monoid_rtrancl (wts_to_monoidLTS ts))"
+      by (simp add: countable_monoid_rtrancl countable_wts)
+    then have "countable {(z1, (z2, x1), x2) |z1 z2 x1 x2. (z1, (z2, x1), x2) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}"
+      by (rule rev_countable_subset) auto
+    then have "countable ((\<lambda>(z1, (z2, x1), x2). ((x1, x2), y)) ` {(z1, (z2, x1), x2) |z1 z2 x1 x2. (z1, (z2, x1), x2) \<in> monoid_rtrancl (wts_to_monoidLTS ts)})"
+      using countable_image by auto
+    then show "countable {(x, y) |x. snd x \<in> finals \<and> (fst (snd (snd y)), (snd (snd (snd y)), fst x), snd x) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}"
+      by (rule rev_countable_subset) (auto simp add: image_def)
+  qed
 
   have "?A = \<^bold>\<Sum> {l |c l c'. (c, l, c') \<in> monoid_rtrancl (wts_to_weightLTS (intersff ts ts')) \<and> c \<in> {(p,p)|p. p\<in>inits} \<and> c' \<in> finals \<times> finals'}"
     unfolding dioidLTS.weight_reach_def monoid_rtranclp_unfold
@@ -3777,7 +3787,7 @@ proof -
   moreover have B:"... = ?B"
     unfolding dioidLTS.accepts_def
     using SumInf_of_SumInf_left_distr[OF c1 c2, of "\<lambda>pw. \<^bold>\<Sum>{d | d q. q \<in> finals \<and> (fst pw,(snd pw,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)}" "\<lambda>dq pw. fst dq"]
-    using SumInf_of_SumInf_right_distr[OF c3 c4, of  "\<lambda>dq pw. fst dq" "\<lambda>d'q'pw. fst d'q'pw"]
+    using SumInf_of_SumInf_right_distr[OF c3 c4, of "\<lambda>dq pw. fst dq" "\<lambda>d'q'pw. fst d'q'pw"]
     by simp
   ultimately show ?thesis by argo
 qed
