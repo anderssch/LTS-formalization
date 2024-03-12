@@ -223,7 +223,7 @@ thm WPDS_Code.accept_pre_star_exec0'_def
   by simp  
 *)
 
-instantiation state :: (finite_UNIV,finite_UNIV) finite_UNIV begin
+instantiation state :: ("{enum,finite_UNIV}","{enum,finite_UNIV}") finite_UNIV begin
 
 definition finite_UNIV_a :: "('a,bool) phantom" where "finite_UNIV_a == finite_UNIV"
 definition finite_UNIV_b :: "('b,bool) phantom" where "finite_UNIV_b == finite_UNIV"
@@ -235,13 +235,10 @@ definition finite_UNIV_state :: "(('a, 'b) state, bool) phantom" where
   "finite_UNIV_state  == Phantom(('a, 'b) state) (finite UNIV_a \<and> finite UNIV_b)"
 
 instance
-  by standard 
-    (auto simp add: UNIV_a_def UNIV_b_def finitely_many_states finite_UNIV_state_def
-      finitely_many_states_iff)
-
+  by standard (simp add: UNIV_a_def UNIV_b_def finite_UNIV_state_def)
 end
 
-instantiation state :: (card_UNIV,card_UNIV) card_UNIV begin
+instantiation state :: ("{enum,card_UNIV}","{enum,card_UNIV}") card_UNIV begin
 
 definition card_UNIV_a :: "'a card_UNIV" where "card_UNIV_a == card_UNIV"
 definition card_UNIV_b :: "'b card_UNIV" where "card_UNIV_b == card_UNIV"
@@ -252,10 +249,8 @@ definition UNIV_b' :: "'b set" where "UNIV_b' == UNIV"
 definition card_UNIV_state :: "(('a, 'b) state) card_UNIV" where
   "card_UNIV_state == Phantom(('a, 'b) state) (if (finite UNIV_a' \<and> finite UNIV_b') then CARD('a) + CARD('b) else 0)"
 
-instance
-  by standard
-    (auto simp add: card_UNIV_state_def UNIV_a'_def UNIV_b'_def finite_card_states 
-      finitely_many_states_iff)
+instance 
+  by standard (simp add: card_UNIV_state_def UNIV_a'_def UNIV_b'_def finite_card_states)
 end
 
 instantiation operation :: (enum) enum begin

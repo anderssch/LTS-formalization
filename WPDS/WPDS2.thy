@@ -2192,8 +2192,8 @@ definition inits_set :: "('ctr_loc::enum, 'noninit::enum) state set" where
 
 (*
 lemma finitely_many_states:
-  assumes "finite (UNIV :: 'ctr_loc set)"
-  assumes "finite (UNIV :: 'noninit set)"
+  assumes "finite (UNIV :: 'ctr_loc::enum set)"
+  assumes "finite (UNIV :: 'noninit::enum set)"
   shows "finite (UNIV :: ('ctr_loc, 'noninit) state set)"
 proof -
   define Init' :: "'ctr_loc \<Rightarrow> ('ctr_loc, 'noninit) state" where
@@ -2221,7 +2221,7 @@ proof -
 qed
 
 lemma finitely_many_states2:
-  assumes "finite (UNIV :: ('ctr_loc, 'noninit) state set)"
+  assumes "finite (UNIV :: ('ctr_loc::enum, 'noninit::enum) state set)"
   shows "finite (UNIV :: 'ctr_loc set)"
 proof -
   define Init' :: "'ctr_loc \<Rightarrow> ('ctr_loc, 'noninit) state" where
@@ -2240,7 +2240,7 @@ proof -
 qed
 
 lemma finitely_many_states3:
-  assumes "finite (UNIV :: ('ctr_loc, 'noninit) state set)"
+  assumes "finite (UNIV :: ('ctr_loc::enum, 'noninit::enum) state set)"
   shows "finite (UNIV :: 'noninit set)"
 proof -
   define Init' :: "'ctr_loc \<Rightarrow> ('ctr_loc, 'noninit) state" where
@@ -2259,12 +2259,18 @@ proof -
 qed
 
 lemma finitely_many_states_iff:
-  "finite (UNIV :: ('ctr_loc, 'noninit) state set) \<longleftrightarrow> finite (UNIV :: 'ctr_loc set) \<and> finite (UNIV :: 'noninit set)"
+  "finite (UNIV :: ('ctr_loc::enum, 'noninit::enum) state set) \<longleftrightarrow> finite (UNIV :: 'ctr_loc set) \<and> finite (UNIV :: 'noninit set)"
   using finitely_many_states finitely_many_states2 finitely_many_states3 by blast
 
+instantiation state :: (finite, finite) finite begin
+instance 
+  by standard (simp add: finitely_many_states)
+end
+*)
+
 lemma finite_card_states':
-  assumes "finite (X :: 'ctr_loc set)"
-  assumes "finite (Y :: 'noninit set)"
+  assumes "finite (X :: 'ctr_loc::enum set)"
+  assumes "finite (Y :: 'noninit::enum set)"
   shows "card (Init ` X \<union> Noninit ` Y) = card X + card Y"
   using assms
 proof (induction "card X + card Y" arbitrary: X Y)
@@ -2332,8 +2338,8 @@ next
 qed
 
 lemma finite_card_states:
-  assumes "finite (UNIV :: 'ctr_loc set)"
-  assumes "finite (UNIV :: 'noninit set)"
+  assumes "finite (UNIV :: 'ctr_loc::enum set)"
+  assumes "finite (UNIV :: 'noninit::enum set)"
   shows "card (UNIV :: ('ctr_loc, 'noninit) state set) = card (UNIV :: 'ctr_loc set) + card (UNIV :: 'noninit set)"
 proof -
   define Init' :: "'ctr_loc \<Rightarrow> ('ctr_loc, 'noninit) state" where
@@ -2361,10 +2367,6 @@ proof -
     .
 qed
 
-instantiation state :: (finite, finite) finite begin
-  instance by standard (simp add: finitely_many_states)
-end
-*)
 
 lemma UNIV_state: "UNIV = Init ` UNIV \<union> Noninit ` UNIV"
 proof -
