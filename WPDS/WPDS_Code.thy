@@ -2,12 +2,6 @@ theory WPDS_Code
   imports WPDS2 "Deriving.Derive"
 begin
 
-lemma countable_cong: "countable a \<Longrightarrow> a = b \<Longrightarrow> countable b"
-  using back_subst[of countable] by blast
-
-lemma rev_countable_subset: "countable B \<Longrightarrow> A \<subseteq> B \<Longrightarrow> countable A"
-  using countable_subset .
-
 lemma accepts_step_distrib:
   fixes ts :: "('state :: enum \<times> 'label :: finite \<times> 'state) \<Rightarrow>f 'weight::bounded_idempotent_semiring"
   fixes finals :: "'state set"
