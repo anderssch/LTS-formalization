@@ -683,6 +683,132 @@ end
 lemma d_mult_not_zero: assumes "(d::'weight::bounded_idempotent_semiring) * d' \<noteq> 0" shows "d \<noteq> 0" and "d' \<noteq> 0"
   using assms by auto
 
+(*
+interpretation min_plus_nat: bounded_idempotent_semiring min "(\<le>)" "(<)" infinity "\<lambda>S. True" "0::nat" "(+)"
+proof
+  fix a b c :: nat
+  fix K :: "nat set set"
+  show "min (min a b) c = min a (min b c)" by presburger
+  show "min a b = min b a" by presburger
+  show "min a a = a" by fastforce
+  show "(a \<le> b) = (min a b = a)" by linarith
+  show "(a < b) = (a \<le> b \<and> a \<noteq> b)" by fastforce
+  show "min infinity a = a" sorry
+  show "\<nexists>f::nat\<Rightarrow>nat. \<forall>i. f (Suc i) < f i"
+  proof safe
+    fix f :: "nat \<Rightarrow> nat"
+    assume "\<forall>i. f (Suc i) < f i"      
+    then show "False"
+      by (induct "f a" arbitrary: a rule: nat_less_induct) blast
+  qed
+  show "True" by blast
+  show "True \<Longrightarrow> True \<Longrightarrow> True" by blast
+  show "\<forall>S\<in>K. True \<Longrightarrow> True" by blast
+  show "True" by blast
+  show "a + b + c = a + (b + c)" by force
+  show "0 + a = a" by auto
+  show "a + 0 = a" by fastforce
+  show "infinity + a = infinity" sorry
+  show "a + infinity = infinity" sorry
+  show "min a b + c = min (a + c) (b + c)" by fastforce
+  show "a + min b c = min (a + b) (a + c)" by linarith
+qed*)
+
+datatype nat_inf = fin nat | infinity
+
+fun min_inf :: "nat_inf \<Rightarrow> nat_inf \<Rightarrow> nat_inf" where
+  "min_inf infinity b = b"
+| "min_inf a infinity = a"
+| "min_inf (fin a) (fin b) = fin (min a b)"
+
+fun plus_inf :: "nat_inf \<Rightarrow> nat_inf \<Rightarrow> nat_inf" where
+  "plus_inf infinity _ = infinity"
+| "plus_inf _ infinity = infinity"
+| "plus_inf (fin a) (fin b) = fin (a + b)"
+print_theorems
+
+fun less_eq_inf :: "nat_inf \<Rightarrow> nat_inf \<Rightarrow> bool" where
+  "less_eq_inf _ infinity = True"
+| "less_eq_inf infinity _ = False"
+| "less_eq_inf (fin a) (fin b) = (a \<le> b)"
+
+fun less_inf :: "nat_inf \<Rightarrow> nat_inf \<Rightarrow> bool" where
+  "less_inf infinity _ = False"
+| "less_inf _ infinity = True"
+| "less_inf (fin a) (fin b) = (a < b)"
+
+
+interpretation min_plus_nat_inf: bounded_idempotent_semiring min_inf less_eq_inf less_inf infinity "\<lambda>S. True" "fin 0" "plus_inf"
+proof
+  fix i :: nat
+  fix a b c :: nat_inf
+  fix K :: "nat_inf set set"
+  show "min_inf (min_inf a b) c = min_inf a (min_inf b c)"
+    by (smt (verit) min.assoc min_inf.elims nat_inf.distinct(1) nat_inf.inject)
+  show "min_inf a b = min_inf b a"
+    by (smt (verit) min.commute min_inf.elims min_inf.simps(1) min_inf.simps(2) nat_inf.inject)
+  show "min_inf a a = a"
+    by (metis min.idem min_inf.simps(1) min_inf.simps(3) nat_inf.exhaust)
+  show "less_eq_inf a b = (min_inf a b = a)" 
+    by (smt (verit) less_eq_inf.elims(1) min.absorb1 min.orderI min_inf.elims nat_inf.distinct(1) nat_inf.inject)
+  show "less_inf a b = (less_eq_inf a b \<and> a \<noteq> b)"
+    by (smt (verit) less_eq_inf.elims(1) less_inf.elims(1) less_inf.simps(1) less_inf.simps(2) nat_inf.inject nat_less_le)
+  show "min_inf infinity a = a" by simp
+  show "less_inf a b = strict less_eq_inf a b" 
+    by (metis \<open>less_inf a b = (less_eq_inf a b \<and> a \<noteq> b)\<close> less_eq_inf.elims(2) less_inf.simps(3) linorder_not_less nat_inf.distinct(1))
+  show "less_eq_inf a a"
+    using less_eq_inf.elims(3) by blast
+  show "less_eq_inf a b \<Longrightarrow> less_eq_inf b c \<Longrightarrow> less_eq_inf a c" 
+    by (metis (no_types, lifting) le_trans less_eq_inf.elims(1) less_eq_inf.elims(2) less_eq_inf.simps(1) nat_inf.distinct(1) nat_inf.inject)
+  show "less_eq_inf a b \<Longrightarrow> less_eq_inf b a \<Longrightarrow> a = b"
+    using \<open>less_inf a b = (less_eq_inf a b \<and> a \<noteq> b)\<close> \<open>less_inf a b = strict less_eq_inf a b\<close> by blast
+  show "\<nexists>f::nat\<Rightarrow>nat_inf. \<forall>i. less_inf (f (Suc i)) (f i)"
+  proof safe
+    fix f :: "nat \<Rightarrow> nat_inf"
+    assume A:"\<forall>i. less_inf (f (Suc i)) (f i)"
+    then have "\<And>i. f (Suc i) \<noteq> infinity" by (metis less_inf.simps(1))
+    then have "\<And>i. \<exists>n. f (Suc i) = fin n" by (meson nat_inf.exhaust)
+    then obtain f' :: "nat \<Rightarrow> nat" where "\<And>i. fin (f' i) = f (Suc i)" by metis
+    then have "\<forall>i. f' (Suc i) < f' i" using A by (metis less_inf.simps(3))
+    then show "False" by (induct "f' i" arbitrary: i rule: nat_less_induct) blast
+  qed
+  show "True" by blast
+  show "True \<Longrightarrow> True \<Longrightarrow> True" by blast
+  show "\<forall>S\<in>K. True \<Longrightarrow> True" by blast
+  show "True" by blast
+  show "plus_inf (plus_inf a b) c = plus_inf a (plus_inf b c)"
+    by (smt (verit) add.assoc nat_inf.distinct(1) nat_inf.inject plus_inf.elims)
+  show "plus_inf (fin 0) a = a" 
+    by (metis add_0 nat_inf.exhaust plus_inf.simps(2) plus_inf.simps(3))
+  show "plus_inf a (fin 0) = a" 
+    by (metis add.commute add_0 nat_inf.exhaust plus_inf.simps(1) plus_inf.simps(3))
+  show "plus_inf infinity a = infinity" by simp
+  show "plus_inf a infinity = infinity" using plus_inf.elims by blast
+  show "plus_inf (min_inf a b) c = min_inf (plus_inf a c) (plus_inf b c)"
+  proof (cases "a \<noteq> infinity \<and> b \<noteq> infinity \<and> c \<noteq> infinity")
+    case True
+    then obtain a' b' c' where "a = fin a'" "b = fin b'" "c = fin c'" using nat_inf.exhaust by metis
+    then show ?thesis by force
+  next
+    case False
+    then show ?thesis 
+      by (metis min_inf.simps(1) min_inf.simps(2) nat_inf.exhaust plus_inf.simps(1) plus_inf.simps(2))
+  qed
+  show "plus_inf a (min_inf b c) = min_inf (plus_inf a b) (plus_inf a c)" 
+  proof (cases "a \<noteq> infinity \<and> b \<noteq> infinity \<and> c \<noteq> infinity")
+    case True
+    then obtain a' b' c' where "a = fin a'" "b = fin b'" "c = fin c'" using nat_inf.exhaust by metis
+    then show ?thesis by force
+  next
+    case False
+    then show ?thesis 
+      by (metis min_inf.simps(1) min_inf.simps(2) nat_inf.exhaust plus_inf.simps(1) plus_inf.simps(2))
+  qed
+qed
+
+
+
+
 (* TODO *)
 lemma Suminf_lower: "x \<in> A \<Longrightarrow> \<Sum>A \<le> x" oops
 lemma Suminf_greatest: "(\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> \<Sum>A" oops
@@ -694,6 +820,5 @@ begin
 (* lemma "(\<Sqinter>x\<in>A. x) = b" *)
 
 end
-
 
 end
