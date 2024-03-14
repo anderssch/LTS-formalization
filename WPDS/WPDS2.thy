@@ -38,6 +38,8 @@ notation monoid_star_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [9
 definition weight_reach' where 
   "weight_reach' = dioidLTS.weight_reach transition_rel"
 
+definition weight_reach_set' where
+  "weight_reach_set' = dioidLTS.weight_reach_set transition_rel"
 
 \<comment> \<open>Weighted pre-star rule updates the finfun of transition weights.\<close>
 inductive pre_star_rule :: "('ctr_loc, 'label, 'weight) w_transitions saturation_rule" where
@@ -3795,47 +3797,6 @@ proof -
 qed
 
 
-lemma 
-  assumes "Init p \<in> inits"
-  shows "dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (accepts_full ts' inits finals') (p, w) =
-         dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (\<lambda>(p, w). dioidLTS.accepts ts' finals' (Init p, w)) (p, w)"
-proof -
-  have a1:"countable {x. monoid_rtranclp (monoidLTS.l_step_relp (WPDS.transition_rel \<Delta>)) (p, w) (fst x) (snd x)}" sorry
-  have a2:"\<And>x. \<not> (Init (fst (snd x)) \<in> inits) \<Longrightarrow> fst x * (case snd x of (p, w) \<Rightarrow> if Init p \<in> inits then dioidLTS.accepts ts' finals' (Init p, w) else 0) = 0"
-    using assms by force
-  have a3:"\<And>x. Init (fst (snd x)) \<in> inits \<Longrightarrow> fst x * (case snd x of (p, w) \<Rightarrow> if Init p \<in> inits then dioidLTS.accepts ts' finals' (Init p, w) else 0) = fst x * (case snd x of (p, w) \<Rightarrow> dioidLTS.accepts ts' finals' (Init p, w))"
-    using assms by force
-  show ?thesis 
-    unfolding accepts_full_def dioidLTS.weight_pre_star_def
-    using SumInf_split_Qor0[OF a1 a2 a3, of "\<lambda>lc'. Init (fst (snd lc')) \<in> inits" "\<lambda>x. x"] assms
-    apply simp
-    oops
-
-lemma temp3:
-  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
-  assumes "\<And>p. is_Init p \<longleftrightarrow> p \<in> inits"
-  shows "\<^bold>\<Sum> {dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (accepts_full ts' inits finals') (p, w) |p w. Init p \<in> inits} =
-         \<^bold>\<Sum> {dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (\<lambda>(p, w). dioidLTS.accepts ts' finals' (Init p, w)) (p, w) |p w. Init p \<in> inits}"
-proof -
-  show ?thesis 
-    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
-    apply auto
-    subgoal for p w
-      apply (rule exI[of _ p])
-      apply auto
-      apply (rule exI[of _ w])
-      apply (smt (verit, best) Collect_cong accepts_full_def assms dioidLTS.weight_pre_star_def split_cong state.disc(1))
-      done
-    subgoal for p w
-      apply (rule exI[of _ p])
-      apply auto
-      apply (rule exI[of _ w])
-      apply (smt (verit, best) Collect_cong accepts_full_def assms dioidLTS.weight_pre_star_def split_cong state.disc(1))
-      done
-    done
-qed
-
-
 lemma big_good_correctness_code:
   fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
   assumes "binary_aut ts"
@@ -3846,6 +3807,11 @@ lemma big_good_correctness_code:
 proof -
   have f:"finite \<Delta>" using assms(2) by simp
   have W:"WPDS_with_W_automata \<Delta> ts'" unfolding WPDS_with_W_automata_def finite_WPDS_def WPDS_with_W_automata_axioms_def using assms(2) by blast
+  have aux:"\<And>p w. Init p \<in> inits \<Longrightarrow>
+    dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (accepts_full ts' inits finals') (p, w) =
+    dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (\<lambda>(p, w). dioidLTS.accepts ts' finals' (Init p, w)) (p, w)"
+    unfolding accepts_full_def
+    by (smt (verit, best) Collect_cong assms(3) dioidLTS.weight_pre_star_def split_cong state.disc(1))
   have "?A = \<^bold>\<Sum>{dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (accepts_full ts' inits finals') (p, w) |p w. Init p \<in> inits} " 
     unfolding WPDS.weight_reach'_def
     unfolding countable_dioidLTS.weight_reach_to_pre_star[
@@ -3861,7 +3827,11 @@ proof -
     unfolding accepts_full_def[of ts]
     by force
   moreover have "... = \<^bold>\<Sum>{dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (\<lambda>(p, w). dioidLTS.accepts ts' finals' (Init p, w)) (p, w) |p w. Init p \<in> inits}"
-    using temp3[of inits ts finals \<Delta> ts' finals', OF assms(3)] by blast
+    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
+    using aux
+    apply safe
+     apply blast
+    by metis
   moreover have "... = \<^bold>\<Sum> {dioidLTS.accepts ts finals (p, w) * dioidLTS.accepts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts') finals' (p, w) |p w. p \<in> inits}" 
     apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
     apply safe
@@ -3876,7 +3846,6 @@ proof -
       apply (simp add: assms(3)[of p])
       by metis
     done
-  find_theorems ts
   moreover have "... = dioidLTS.weight_reach (wts_to_weightLTS (intersff ts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')))
                         (\<lambda>p. if p \<in> {(q, q) |q. q \<in> inits} then 1 else 0) (\<lambda>p. if p \<in> finals \<times> finals' then 1 else 0)"
     using weight_reach_intersection_correct[OF assms(1), of "WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts'" inits finals finals'] by presburger
@@ -3884,6 +3853,14 @@ proof -
     using weight_reach_sum_exec_correct[OF finite_weightLTS, of ts "WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts'" "{(p, p) |p. p \<in> inits}" "finals \<times> finals'"] by argo
   ultimately show ?thesis by argo
 qed
+
+lemma "binary_aut (ts_to_wts ts)"
+  unfolding ts_to_wts_def
+  apply simp
+    (* TODO *)
+  oops
+
+thm big_good_correctness_code[of _ _ _ inits_set, unfolded inits_set_def, simplified]
 
 lemma 
   assumes "binary_aut ts"

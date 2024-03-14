@@ -725,7 +725,6 @@ fun plus_inf :: "nat_inf \<Rightarrow> nat_inf \<Rightarrow> nat_inf" where
   "plus_inf infinity _ = infinity"
 | "plus_inf _ infinity = infinity"
 | "plus_inf (fin a) (fin b) = fin (a + b)"
-print_theorems
 
 fun less_eq_inf :: "nat_inf \<Rightarrow> nat_inf \<Rightarrow> bool" where
   "less_eq_inf _ infinity = True"

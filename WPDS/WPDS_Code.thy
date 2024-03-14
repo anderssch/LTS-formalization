@@ -1,5 +1,5 @@
 theory WPDS_Code
-  imports WPDS2 "Deriving.Derive"
+  imports WPDS2 "Deriving.Derive" "P_Automata"
 begin
 
 lemma accepts_step_distrib:
@@ -201,11 +201,17 @@ defines pre_star = "WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta>"
     * Configuration
     * Weight
 *)
+
+  and do_the_thing = "\<lambda>ts' finals finals'. if WPDS_Code.checking \<Delta> ts 
+            then Some (weight_reach_sum_exec (wts_to_weightLTS (intersff ts' (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts))) {(p, p) |p. p \<in> inits_set} (finals \<times> finals')) 
+            else None"
+
   .
 
 
 declare accepts_def[code]
 declare accepts_pre_star_check_def[code]
+declare do_the_thing_def[code]
 
 thm WPDS_Code.accept_pre_star_exec0'_def
 
@@ -334,6 +340,29 @@ declare WPDS.accept_pre_star_exec0_def[code]
 
 export_code accepts_pre_star_check in Haskell (*SML gives depency cycle.*)
 
+export_code do_the_thing in Haskell
+
+
+definition thing2 where
+  "thing2 \<Delta> ts ts' finals finals' = do_the_thing \<Delta> (ts_to_wts ts') (ts_to_wts ts) finals finals'"
+
+export_code thing2 in Haskell
+
+lemma 
+  assumes "thing2 \<Delta> ts ts' finals finals' = Some w"
+  shows "w = (WPDS.weight_reach_set' \<Delta> (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
+(* \<^bold>\<Sum>{l |c l c'. monoidLTS.monoid_star_relp (WPDS.transition_rel \<Delta>) c l c' \<and> c \<in> (lang ts finals) \<and> c' \<in> (lang ts' finals')}"*)
+  using assms
+  unfolding thing2_def do_the_thing_def
+  using big_good_correctness_code
+(* TODO: *)
+  oops
+
+
+
+
+
+(*
 
 (* TODO: ADAPT THE FOLLOWING TO DO WEIGHTED INTERSECTION:  *)
 global_interpretation inter: Intersection_P_Automaton
@@ -373,5 +402,7 @@ lemma check_Some: "check \<Delta> I IF IF_st F FF FF_st = Some b \<longleftright
 declare P_Automaton.mark.simps[code]
 
 export_code check in SML
+
+*)
 
 end
