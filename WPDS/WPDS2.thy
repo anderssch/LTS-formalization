@@ -2185,7 +2185,7 @@ end
 
 section \<open>Pre* on WAutomata\<close>
 
-datatype ('ctr_loc::enum, 'noninit::enum) state =
+datatype ('ctr_loc, 'noninit) state =
   is_Init: Init (the_Ctr_Loc: 'ctr_loc) (* p \<in> P *)
   | is_Noninit: Noninit (the_St: 'noninit) (* q \<in> Q \<and> q \<notin> P *)
 
