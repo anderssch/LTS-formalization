@@ -736,6 +736,8 @@ fun less_inf :: "nat_inf \<Rightarrow> nat_inf \<Rightarrow> bool" where
 | "less_inf _ infinity = True"
 | "less_inf (fin a) (fin b) = (a < b)"
 
+find_consts name: bounded_idempotent_semiring
+find_theorems BoundedDioid.class.bounded_idempotent_semiring
 
 interpretation min_plus_nat_inf: bounded_idempotent_semiring min_inf less_eq_inf less_inf infinity "\<lambda>S. True" "fin 0" "plus_inf"
 proof
@@ -805,7 +807,18 @@ proof
   qed
 qed
 
+instantiation nat_inf :: bounded_idempotent_semiring begin
+definition "one_nat_inf == undefined :: nat_inf" (* TODO: Define this. You can reuse from "interpretation min_plus_nat_inf" above *)
+definition "times_nat_inf == undefined :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> nat_inf" (* TODO: Define this. You can reuse from "interpretation min_plus_nat_inf" above *)
+definition "open_nat_inf == undefined :: nat_inf set \<Rightarrow> bool" (* TODO: Define this. You can reuse from "interpretation min_plus_nat_inf" above *)
+definition "zero_nat_inf == undefined :: nat_inf" (* TODO: Define this. You can reuse from "interpretation min_plus_nat_inf" above *)
+definition "less_eq_nat_inf == undefined :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> bool" (* TODO: Define this. You can reuse from "interpretation min_plus_nat_inf" above *)
+definition "less_nat_inf == undefined :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> bool" (* TODO: Define this. You can reuse from "interpretation min_plus_nat_inf" above *)
+definition "plus_nat_inf == undefined :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> nat_inf" (* TODO: Define this. You can reuse from "interpretation min_plus_nat_inf" above *)
 
+instance apply standard
+  sorry
+end
 
 
 (* TODO *)

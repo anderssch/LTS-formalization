@@ -84,9 +84,14 @@ instance by (standard; transfer) auto
 end
 
 instantiation ctr_loc :: card_UNIV begin
-definition "(card_UNIV_ctr_loc :: (ctr_loc, nat) phantom) = undefined"
-definition "(finite_UNIV_ctr_loc :: (ctr_loc, bool) phantom) = undefined"
+definition "card_UNIV_ctr_loc = Phantom(ctr_loc) ctr_locN"
+definition "finite_UNIV_ctr_loc = Phantom(ctr_loc) True"
 instance apply standard
+   apply auto
+   apply (simp add: finite_UNIV_ctr_loc_def)
+  apply (simp add: card_UNIV_ctr_loc_def)
+  find_theorems "CARD('a)"
+
   sorry
 end
 
@@ -111,31 +116,51 @@ lift_definition equal_label :: "label \<Rightarrow> label \<Rightarrow> bool" is
 instance by (standard; transfer) auto
 end
 
+instantiation label :: card_UNIV begin
+definition "card_UNIV_label == undefined :: (WEx.state, nat) phantom" (* TODO: define this. Maybe you need "lift_definition" as above *)
+definition "finite_UNIV_label == undefined :: (WEx.state, bool) phantom" (* TODO: define this. Maybe you need "lift_definition" as above *)
+
+instance apply standard sorry
+end 
+
 instantiation state :: equal begin
 lift_definition equal_state :: "state \<Rightarrow> state \<Rightarrow> bool" is "(=)" .
 instance by (standard; transfer) auto
 end
 
+instantiation state :: card_UNIV begin
+
+instance apply standard sorry
+end 
+
+instantiation WEx.state :: enum begin
+definition "enum_state == undefined :: WEx.state list"
+definition "enum_all_state == undefined :: (WEx.state \<Rightarrow> bool) \<Rightarrow> bool"
+definition "enum_ex_state == undefined :: (WEx.state \<Rightarrow> bool) \<Rightarrow> bool"
+
+instance apply standard sorry
+end 
 
 
-term "thing2 pds_rules"
- (* ANDERS SAYS:
-      I think the problem is that we need to have 
-         "instantiation nat_inf :: bounded_idempotent_semiring"
-      instead of
-         "interpretation min_plus_nat_inf: bounded_idempotent_semiring"
-      in the file BoundedDioid.
- *)
 
+term "thing2 pds_rules initial_automaton final_automaton final_ctr_loc initial_ctr_loc"
 
 
 
 
 (* The check function agrees with the encoded answer (Some True) 
    and therefore the proof succeeds as expected. *)
+
+definition "thing3 == thing2 pds_rules initial_automaton final_automaton initial_ctr_loc final_ctr_loc = Some (fin 20)"
+
+export_code thing3 in Haskell (* nat_inf :: enum is not a reasonable requirement *)
+
 lemma
-  "check pds_rules initial_automaton initial_ctr_loc initial_ctr_loc_st
-                   final_automaton   final_ctr_loc   final_ctr_loc_st   = Some True"
-  by eval
+  "thing2 pds_rules initial_automaton final_automaton initial_ctr_loc final_ctr_loc = Some (fin 20)"
+  by code_simp
+
+lemma
+  "thing2 pds_rules initial_automaton final_automaton initial_ctr_loc final_ctr_loc = Some (fin 20)"
+  by eval (* nat_inf :: enum is not a reasonable requirement *)
 
 end
