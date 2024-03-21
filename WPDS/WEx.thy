@@ -155,7 +155,9 @@ definition "enum_state == state_list"
 definition "enum_all_state P == list_all P state_list"
 definition "enum_ex_state P == list_ex P state_list"
 
-instance apply standard sorry
+instance by (standard, auto simp: enum_state_def enum_all_state_def enum_ex_state_def
+       state_list_def image_iff distinct_map inj_on_def Abs_state_inject
+       list.pred_map list.pred_set list_ex_iff) (metis Abs_state_cases)+
 end 
 
 
