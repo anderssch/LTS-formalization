@@ -63,8 +63,6 @@ instance by (standard, rule finite_surj[of "{0 ..< stateN}" _ Abs_state])
 end
 
 lift_definition (code_dt) ctr_loc_list :: "ctr_loc list" is "[0 ..< ctr_locN]" by (auto simp: list.pred_set)
-lift_definition (code_dt) state_list :: "state list" is "[0 ..< stateN]" by (auto simp: list.pred_set)
-
 instantiation ctr_loc :: enum begin
 definition "enum_ctr_loc = ctr_loc_list"
 definition "enum_all_ctr_loc P = list_all P ctr_loc_list"
@@ -72,42 +70,6 @@ definition "enum_ex_ctr_loc P = list_ex P ctr_loc_list"
 instance by (standard, auto simp: enum_ctr_loc_def enum_all_ctr_loc_def enum_ex_ctr_loc_def
        ctr_loc_list_def image_iff distinct_map inj_on_def Abs_ctr_loc_inject
        list.pred_map list.pred_set list_ex_iff) (metis Abs_ctr_loc_cases)+
-end
-
-instantiation ctr_loc :: linorder begin
-lift_definition less_ctr_loc :: "ctr_loc \<Rightarrow> ctr_loc \<Rightarrow> bool" is "(<)" .
-lift_definition less_eq_ctr_loc :: "ctr_loc \<Rightarrow> ctr_loc \<Rightarrow> bool" is "(\<le>)" .
-instance by (standard; transfer) auto
-end
-
-instantiation ctr_loc :: equal begin
-lift_definition equal_ctr_loc :: "ctr_loc \<Rightarrow> ctr_loc \<Rightarrow> bool" is "(=)" .
-instance by (standard; transfer) auto
-end
-
-
-lemma UNIV_members: "UNIV = {p1,p2,p3}"
-  apply auto
-  subgoal for x
-    apply (cases x)
-    apply auto
-    apply (metis One_nat_def Suc_leI less_2_cases linorder_neqE_nat linorder_not_less numeral_3_eq_3 numerals(2) p1_def p2_def p3.abs_eq)
-    done
-  done
-
-lemma UNIV_3: "card {p1,p2,p3} = 3"
-  by (metis Suc_1 card.empty card_2_iff card_3_iff eval_nat_numeral(3) insert_absorb2 insert_not_empty numeral_1_eq_Suc_0 numerals(1) p1.rep_eq p2.rep_eq p3.rep_eq)
-
-instantiation ctr_loc :: card_UNIV begin
-definition "card_UNIV_ctr_loc = Phantom(ctr_loc) ctr_locN"
-definition "finite_UNIV_ctr_loc = Phantom(ctr_loc) True"
-instance apply standard
-   apply auto
-   apply (simp add: finite_UNIV_ctr_loc_def)
-  apply (simp add: card_UNIV_ctr_loc_def)
-  using UNIV_3 UNIV_members
-  apply auto
-  done
 end
 
 lift_definition (code_dt) label_list :: "label list" is "[0 ..< labelN]" by (auto simp: list.pred_set)
@@ -120,36 +82,7 @@ instance by (standard, auto simp: enum_label_def enum_all_label_def enum_ex_labe
        list.pred_map list.pred_set list_ex_iff) (metis Abs_label_cases)+
 end
 
-instantiation label :: linorder begin
-lift_definition less_label :: "label \<Rightarrow> label \<Rightarrow> bool" is "(<)" .
-lift_definition less_eq_label :: "label \<Rightarrow> label \<Rightarrow> bool" is "(\<le>)" .
-instance by (standard; transfer) auto
-end
-
-instantiation label :: equal begin
-lift_definition equal_label :: "label \<Rightarrow> label \<Rightarrow> bool" is "(=)" .
-instance by (standard; transfer) auto
-end
-
-instantiation label :: card_UNIV begin
-definition "card_UNIV_label == Phantom(label) labelN"
-definition "finite_UNIV_label == Phantom(label) True"
-
-instance apply standard sorry
-end 
-
-instantiation state :: equal begin
-lift_definition equal_state :: "state \<Rightarrow> state \<Rightarrow> bool" is "(=)" .
-instance by (standard; transfer) auto
-end
-
-instantiation state :: card_UNIV begin
-definition "card_UNIV_state == Phantom(state) stateN"
-definition "finite_UNIV_state == Phantom(state) True"
-
-instance apply standard sorry
-end 
-
+lift_definition (code_dt) state_list :: "state list" is "[0 ..< stateN]" by (auto simp: list.pred_set)
 instantiation WEx.state :: enum begin
 definition "enum_state == state_list"
 definition "enum_all_state P == list_all P state_list"
@@ -159,6 +92,69 @@ instance by (standard, auto simp: enum_state_def enum_all_state_def enum_ex_stat
        state_list_def image_iff distinct_map inj_on_def Abs_state_inject
        list.pred_map list.pred_set list_ex_iff) (metis Abs_state_cases)+
 end 
+
+instantiation ctr_loc :: linorder begin
+lift_definition less_ctr_loc :: "ctr_loc \<Rightarrow> ctr_loc \<Rightarrow> bool" is "(<)" .
+lift_definition less_eq_ctr_loc :: "ctr_loc \<Rightarrow> ctr_loc \<Rightarrow> bool" is "(\<le>)" .
+instance by (standard; transfer) auto
+end
+
+
+instantiation label :: linorder begin
+lift_definition less_label :: "label \<Rightarrow> label \<Rightarrow> bool" is "(<)" .
+lift_definition less_eq_label :: "label \<Rightarrow> label \<Rightarrow> bool" is "(\<le>)" .
+instance by (standard; transfer) auto
+end
+
+instantiation ctr_loc :: equal begin
+lift_definition equal_ctr_loc :: "ctr_loc \<Rightarrow> ctr_loc \<Rightarrow> bool" is "(=)" .
+instance by (standard; transfer) auto
+end
+
+instantiation label :: equal begin
+lift_definition equal_label :: "label \<Rightarrow> label \<Rightarrow> bool" is "(=)" .
+instance by (standard; transfer) auto
+end
+
+instantiation state :: equal begin
+lift_definition equal_state :: "state \<Rightarrow> state \<Rightarrow> bool" is "(=)" .
+instance by (standard; transfer) auto
+end
+
+lemma length_ctr_loc_list_ctr_locN: "length ctr_loc_list = ctr_locN"
+  unfolding ctr_loc_list_def by auto
+lemma card_UNIV_ctr_loc: "card (UNIV::ctr_loc set) = ctr_locN"
+  by (metis distinct_card Abs_ctr_loc_cases UNIV_eq_I ctr_loc_list.abs_eq image_eqI list.set_map 
+      set_upt length_ctr_loc_list_ctr_locN ctr_loc_list.rep_eq distinct_map distinct_upt)
+instantiation ctr_loc :: card_UNIV begin
+definition "card_UNIV_ctr_loc = Phantom(ctr_loc) ctr_locN"
+definition "finite_UNIV_ctr_loc = Phantom(ctr_loc) True"
+instance by standard (auto simp add: finite_UNIV_ctr_loc_def card_UNIV_ctr_loc card_UNIV_ctr_loc_def)
+end
+
+lemma length_label_list_labelN: "length label_list = labelN"
+  unfolding label_list_def by auto
+lemma card_UNIV_label: "card (UNIV::label set) = labelN"
+  by (metis distinct_card Abs_label_cases UNIV_eq_I label_list.abs_eq image_eqI list.set_map 
+      set_upt length_label_list_labelN label_list.rep_eq distinct_map distinct_upt)
+instantiation label :: card_UNIV begin
+definition "card_UNIV_label = Phantom(label) labelN"
+definition "finite_UNIV_label = Phantom(label) True"
+instance by standard (auto simp add: finite_UNIV_label_def card_UNIV_label card_UNIV_label_def)
+end
+
+lemma length_state_list_stateN: "length state_list = stateN"
+  unfolding state_list_def by auto
+lemma card_UNIV_state: "card (UNIV::state set) = stateN"
+  by (metis distinct_card Abs_state_cases UNIV_eq_I state_list.abs_eq image_eqI list.set_map 
+      set_upt length_state_list_stateN state_list.rep_eq distinct_map distinct_upt)
+instantiation state :: card_UNIV begin
+definition "card_UNIV_state = Phantom(state) stateN"
+definition "finite_UNIV_state = Phantom(state) True"
+instance by standard (auto simp add: finite_UNIV_state_def card_UNIV_state card_UNIV_state_def)
+end
+
+
 
 
 
