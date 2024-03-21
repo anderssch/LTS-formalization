@@ -63,6 +63,8 @@ instance by (standard, rule finite_surj[of "{0 ..< stateN}" _ Abs_state])
 end
 
 lift_definition (code_dt) ctr_loc_list :: "ctr_loc list" is "[0 ..< ctr_locN]" by (auto simp: list.pred_set)
+lift_definition (code_dt) state_list :: "state list" is "[0 ..< stateN]" by (auto simp: list.pred_set)
+
 instantiation ctr_loc :: enum begin
 definition "enum_ctr_loc = ctr_loc_list"
 definition "enum_all_ctr_loc P = list_all P ctr_loc_list"
@@ -83,6 +85,19 @@ lift_definition equal_ctr_loc :: "ctr_loc \<Rightarrow> ctr_loc \<Rightarrow> bo
 instance by (standard; transfer) auto
 end
 
+
+lemma UNIV_members: "UNIV = {p1,p2,p3}"
+  apply auto
+  subgoal for x
+    apply (cases x)
+    apply auto
+    apply (metis One_nat_def Suc_leI less_2_cases linorder_neqE_nat linorder_not_less numeral_3_eq_3 numerals(2) p1_def p2_def p3.abs_eq)
+    done
+  done
+
+lemma UNIV_3: "card {p1,p2,p3} = 3"
+  by (metis Suc_1 card.empty card_2_iff card_3_iff eval_nat_numeral(3) insert_absorb2 insert_not_empty numeral_1_eq_Suc_0 numerals(1) p1.rep_eq p2.rep_eq p3.rep_eq)
+
 instantiation ctr_loc :: card_UNIV begin
 definition "card_UNIV_ctr_loc = Phantom(ctr_loc) ctr_locN"
 definition "finite_UNIV_ctr_loc = Phantom(ctr_loc) True"
@@ -90,9 +105,9 @@ instance apply standard
    apply auto
    apply (simp add: finite_UNIV_ctr_loc_def)
   apply (simp add: card_UNIV_ctr_loc_def)
-  find_theorems "CARD('a)"
-
-  sorry
+  using UNIV_3 UNIV_members
+  apply auto
+  done
 end
 
 lift_definition (code_dt) label_list :: "label list" is "[0 ..< labelN]" by (auto simp: list.pred_set)
@@ -117,8 +132,8 @@ instance by (standard; transfer) auto
 end
 
 instantiation label :: card_UNIV begin
-definition "card_UNIV_label == undefined :: (WEx.state, nat) phantom" (* TODO: define this. Maybe you need "lift_definition" as above *)
-definition "finite_UNIV_label == undefined :: (WEx.state, bool) phantom" (* TODO: define this. Maybe you need "lift_definition" as above *)
+definition "card_UNIV_label == Phantom(label) labelN"
+definition "finite_UNIV_label == Phantom(label) True"
 
 instance apply standard sorry
 end 
@@ -129,14 +144,16 @@ instance by (standard; transfer) auto
 end
 
 instantiation state :: card_UNIV begin
+definition "card_UNIV_state == Phantom(state) stateN"
+definition "finite_UNIV_state == Phantom(state) True"
 
 instance apply standard sorry
 end 
 
 instantiation WEx.state :: enum begin
-definition "enum_state == undefined :: WEx.state list"
-definition "enum_all_state == undefined :: (WEx.state \<Rightarrow> bool) \<Rightarrow> bool"
-definition "enum_ex_state == undefined :: (WEx.state \<Rightarrow> bool) \<Rightarrow> bool"
+definition "enum_state == state_list"
+definition "enum_all_state P == list_all P state_list"
+definition "enum_ex_state P == list_ex P state_list"
 
 instance apply standard sorry
 end 
