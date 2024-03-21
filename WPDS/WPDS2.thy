@@ -2400,15 +2400,11 @@ definition pop_ts_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weight
 
 definition augmented_WPDS_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weight::bounded_idempotent_semiring) rule set" where 
  "augmented_WPDS_rules = init_rules \<union> pop_ts_rules"
-declare augmented_WPDS_rules_def[code]
-declare init_rules_def[code]
-declare pop_ts_rules_def[code]
 
-lemma init_rules_def2[code]: "init_rules = (\<Union>((p, \<gamma>), d, (p', w)) \<in> \<Delta>. {((Init p, \<gamma>), d, (Init p', w))})"
-  unfolding init_rules_def by fast
-lemma augmented_WPDS_rules_def2[code]: "augmented_WPDS_rules = (\<Union>((p, \<gamma>), d, (p', w)) \<in> \<Delta>. {((Init p, \<gamma>), d, (Init p', w))}) \<union> {((p,\<gamma>), d, (q, pop)) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
-  unfolding augmented_WPDS_rules_def init_rules_def2 pop_ts_rules_def by blast
-
+lemma init_rules_def2: "init_rules = (\<Union>((p, \<gamma>), d, (p', w)) \<in> \<Delta>. {((Init p, \<gamma>), d, (Init p', w))})"
+  unfolding WPDS_with_W_automata_no_assms.init_rules_def by fast
+lemma pop_ts_rules_def2: "pop_ts_rules = (\<Union>(p, \<gamma>, q). {((p,\<gamma>), ts $ (p,\<gamma>,q), (q, pop))})"
+  unfolding pop_ts_rules_def by blast
 
 interpretation augmented_WPDS: WPDS augmented_WPDS_rules .
 interpretation augmented_dioidLTS: dioidLTS augmented_WPDS.transition_rel .
@@ -2428,6 +2424,9 @@ definition accept_pre_star_exec0' where
 
 end
 
+declare WPDS_with_W_automata_no_assms.init_rules_def2[code]
+declare WPDS_with_W_automata_no_assms.pop_ts_rules_def2[code]
+declare WPDS_with_W_automata_no_assms.augmented_WPDS_rules_def[code]
 declare WPDS_with_W_automata_no_assms.pre_star_exec'_def[code]
 declare WPDS_with_W_automata_no_assms.accept_pre_star_exec0'_def[code]
 

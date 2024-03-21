@@ -18,8 +18,14 @@ type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list
 definition wts_to_monoidLTS :: "('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
   "wts_to_monoidLTS ts = {(p, ([l],d), q) | p l d q. ts $ (p,l,q) = d}"
 
+lemma wts_to_monoidLTS_code[code]: "wts_to_monoidLTS ts = (\<Union>(p,l,q). {(p, ([l], ts $ (p,l,q)), q)})"
+  unfolding wts_to_monoidLTS_def by blast
+
 definition wts_to_weightLTS :: "('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, 'weight) transition set" where
   "wts_to_weightLTS ts = {(p, d, q) | p l d q. ts $ (p,l,q) = d}"
+
+lemma wts_to_weightLTS_code[code]: "wts_to_weightLTS ts = (\<Union>(p,l,q). {(p, (ts $ (p,l,q)), q)})"
+  unfolding wts_to_weightLTS_def by blast
 
 lemma wts_monoidLTS_to_weightLTS: "(p, (w, d), p') \<in> wts_to_monoidLTS ts \<Longrightarrow> (p, d, p') \<in> wts_to_weightLTS ts"
   unfolding wts_to_monoidLTS_def wts_to_weightLTS_def by blast
@@ -84,8 +90,7 @@ lemma monoid_rtrancl_wts_to_monoidLTS_refl:
   by (metis monoid_rtrancl_refl one_list_def one_prod_def)
 
 locale W_automaton = monoidLTS "wts_to_monoidLTS transition_relation"
-  for transition_relation :: "('state::finite, 'label, 'weight::bounded_idempotent_semiring) w_transitions" +
-  fixes initials :: "'state set" and finals :: "'state set"
+  for transition_relation :: "('state::finite, 'label, 'weight::bounded_idempotent_semiring) w_transitions"
 begin
 interpretation monoidLTS "wts_to_monoidLTS transition_relation" .
 end

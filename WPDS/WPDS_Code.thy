@@ -333,9 +333,6 @@ qed
 end
 
 declare WPDS.lbl.simps[code]
-declare WPDS_with_W_automata_no_assms.augmented_WPDS_rules_def[code]
-declare WPDS_with_W_automata_no_assms.init_rules_def[code]
-declare WPDS_with_W_automata_no_assms.pop_ts_rules_def[code]
 declare WPDS.accept_pre_star_exec0_def[code]
 
 export_code accepts_pre_star_check in Haskell (*SML gives depency cycle.*)
@@ -354,7 +351,7 @@ lemma
 (* \<^bold>\<Sum>{l |c l c'. monoidLTS.monoid_star_relp (WPDS.transition_rel \<Delta>) c l c' \<and> c \<in> (lang ts finals) \<and> c' \<in> (lang ts' finals')}"*)
   using assms
   unfolding thing2_def do_the_thing_def
-  using big_good_correctness_code
+  using big_good_correctness_code[of "ts_to_wts ts" \<Delta> "ts_to_wts ts'" inits_set finals finals']
 (* TODO: *)
   oops
 
