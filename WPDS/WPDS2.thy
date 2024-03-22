@@ -5,8 +5,14 @@ begin
 
 datatype 'label operation = pop | swap 'label | push 'label 'label
 \<comment> \<open>WPDS has a @{typ "'weight::bounded_idempotent_semiring"} on the rule.\<close>
-type_synonym ('ctr_loc, 'label, 'weight) rule = "('ctr_loc \<times> 'label) \<times> 'weight \<times> ('ctr_loc \<times> 'label operation)"
+type_synonym ('ctr_loc, 'label) rule = "('ctr_loc \<times> 'label) \<times> ('ctr_loc \<times> 'label operation)"
+type_synonym ('ctr_loc, 'label, 'weight) w_rule = "('ctr_loc \<times> 'label) \<times> 'weight \<times> ('ctr_loc \<times> 'label operation)"
 type_synonym ('ctr_loc, 'label) conf = "'ctr_loc \<times> 'label list"
+
+definition w_rules :: "('ctr_loc, 'label) rule set \<Rightarrow> (('ctr_loc, 'label) rule \<Rightarrow> 'weight) \<Rightarrow> ('ctr_loc, 'label, 'weight) w_rule set" where
+  "w_rules rules W = (\<Union>((p,\<gamma>),(p',w))\<in>rules. {((p,\<gamma>),W ((p,\<gamma>),(p',w)),(p',w))})"
+lemma finite_w_rules: "finite rules \<Longrightarrow> finite (w_rules rules W)"
+  unfolding w_rules_def by fast
 
 
 \<comment> \<open>Generalization of PDS_with_P_automata.accepts that computes the meet-over-all-paths in the W-automaton.\<close>
@@ -14,7 +20,7 @@ definition (in dioidLTS) accepts :: "('ctr_loc, 'label, 'weight) w_transitions \
   "accepts ts finals \<equiv> \<lambda>(p,w). (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)})"
 
 locale WPDS =
-  fixes \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
+  fixes \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set"
 begin
 
 primrec lbl :: "'label operation \<Rightarrow> 'label list" where
@@ -52,13 +58,13 @@ end
 
 
 \<comment> \<open>Definition of executable pre_star\<close>
-definition pre_star_updates :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> (('ctr_loc, 'label) transition \<times> 'weight) set" where
+definition pre_star_updates :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> (('ctr_loc, 'label) transition \<times> 'weight) set" where
   "pre_star_updates \<Delta> wts =
     (\<Union>((p, \<gamma>), d, (p', w)) \<in> \<Delta>.
         \<Union>(q,d') \<in> monoidLTS_reach (wts_to_monoidLTS wts) p' (WPDS.lbl w).
             {((p, \<gamma>, q), d * d')})"
 
-definition pre_star_step :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions" where
+definition pre_star_step :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions" where
   "pre_star_step \<Delta> wts = update_wts wts (pre_star_updates \<Delta> wts)"
 
 
@@ -443,7 +449,7 @@ lemma WPDS_LTS_mono:
 
 
 locale finite_WPDS = WPDS \<Delta>
-  for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) rule set" +
+  for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set" +
   assumes finite_rules: "finite \<Delta>"
 begin
 
@@ -2388,17 +2394,17 @@ end
 
 
 locale WPDS_with_W_automata_no_assms = WPDS \<Delta>
-  for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
+  for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set"
   and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions"
 begin 
 
-definition init_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weight::bounded_idempotent_semiring) rule set" where 
+definition init_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set" where 
   "init_rules = {((Init p, \<gamma>), d, (Init p', w)) | p \<gamma> d p' w. (p,\<gamma>) \<midarrow>d\<hookrightarrow> (p',w)}"
 
-definition pop_ts_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weight::bounded_idempotent_semiring) rule set" where 
+definition pop_ts_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set" where 
   "pop_ts_rules = {((p,\<gamma>), d, (q, pop)) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
 
-definition augmented_WPDS_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weight::bounded_idempotent_semiring) rule set" where 
+definition augmented_WPDS_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set" where 
  "augmented_WPDS_rules = init_rules \<union> pop_ts_rules"
 
 lemma init_rules_def2: "init_rules = (\<Union>((p, \<gamma>), d, (p', w)) \<in> \<Delta>. {((Init p, \<gamma>), d, (Init p', w))})"
@@ -2432,7 +2438,7 @@ declare WPDS_with_W_automata_no_assms.accept_pre_star_exec0'_def[code]
 
 
 locale WPDS_with_W_automata = WPDS_with_W_automata_no_assms \<Delta> ts + finite_WPDS \<Delta>
-  for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
+  for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set"
   and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions" +
   assumes no_transition_to_init: "is_Init q \<Longrightarrow> ts $ (p, \<gamma>, q) = 0"
 begin
