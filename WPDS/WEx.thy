@@ -188,6 +188,12 @@ value "finite pds_rules"*)
 (* The check function agrees with the encoded answer (Some True) 
    and therefore the proof succeeds as expected. *)
 
+
+term "($\<circ>)"
+thm finfun_comp2_const
+
+
+
 definition "thing3 == thing2 pds_rules W initial_automaton final_automaton initial_finals final_finals"
 
 lemma [code]: "(UNIV::'a::enum set) = set Enum.enum"
@@ -195,12 +201,13 @@ lemma [code]: "(UNIV::'a::enum set) = set Enum.enum"
 
 export_code thing3 in SML module_name WPDS_Example
 
-(*
+
 value "thing3"
 
+
 lemma                                                            
-  "thing3 = Some (fin 5)"
-  by code_simp
+  "thing3 = Some (fin 3)"
+  by eval
 
 lemma
   "thing3 = Some (fin 5)"

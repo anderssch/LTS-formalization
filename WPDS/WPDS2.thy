@@ -3054,42 +3054,44 @@ definition push_ts_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weigh
 
 section \<open>Intersection\<close>
 
-fun fst_trans :: "(('state \<times> 'state'), 'label::finite) transition \<Rightarrow> ('state, 'label) transition" where
+fun fst_trans :: "(('state \<times> 'state), 'label::finite) transition \<Rightarrow> ('state, 'label) transition" where
   "fst_trans ((p1,q1),l,(p2,q2)) = (p1,l,p2)"
 
-fun snd_trans :: "(('state \<times> 'state'), 'label::finite) transition \<Rightarrow> ('state', 'label) transition" where
+fun snd_trans :: "(('state \<times> 'state), 'label::finite) transition \<Rightarrow> ('state, 'label) transition" where
   "snd_trans ((p1,q1),l,(p2,q2)) = (q1,l,q2)"
 
-definition fst_weight :: "('state, 'label::finite, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state'), 'label, 'weight) w_transitions"
+definition fst_weight :: "('state, 'label::finite, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions"
   where "fst_weight = (\<lambda>ts. ts $\<circ> fst_trans)" 
 
 lemma fw:
-  fixes p1::"'a::finite"
-  fixes q1::"'b::finite"
+  fixes p1::"'state::finite"
+  fixes q1::"'state::finite"
   shows "(fst_weight ts1) $ ((p1,q1),l,(p2,q2)) = ts1 $ (p1,l,p2)"
   unfolding fst_weight_def finfun_comp2_def Abs_finfun_inverse_finite_class by auto
 
-definition snd_weight :: "('state', 'label::finite, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state'), 'label, 'weight) w_transitions"
+definition snd_weight :: "('state, 'label::finite, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions"
   where "snd_weight = (\<lambda>ts. ts $\<circ> snd_trans)"
 
 lemma sw:
   fixes p1::"'state::finite"
-  fixes q1::"'state'::finite"
-  shows"(snd_weight ts2) $ ((p1,q1),l,(p2,q2)) = ts2 $ (q1,l,q2)"
+  fixes q1::"'state::finite"
+  shows "(snd_weight ts2) $ ((p1,q1),l,(p2,q2)) = ts2 $ (q1,l,q2)"
   unfolding snd_weight_def finfun_comp2_def Abs_finfun_inverse_finite_class by auto
 
-definition pair_weight :: "('state, 'label::finite, 'weight) w_transitions \<Rightarrow> ('state', 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state'), 'label, ('weight \<times>'weight)) w_transitions" where
+definition pair_weight :: "('state, 'label::finite, 'weight) w_transitions \<Rightarrow> ('state, 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, ('weight \<times>'weight)) w_transitions" where
   "pair_weight = (\<lambda>ts1 ts2. finfun_Diag (fst_weight ts1) (snd_weight ts2))"
 
+term pair_weight
+                                            
 lemma finfun_apply_pair_weight':
   fixes p1::"'state::finite" 
-  fixes q1::"'state'::finite"
+  fixes q1::"'state::finite"
   shows "pair_weight ts1 ts2 $ ((p1,q1),l,(p2,q2)) = (ts1 $ (p1,l,p2),ts2 $ (q1,l,q2))"
   unfolding pair_weight_def finfun_Diag_apply by (auto simp add: fw sw)
 
 lemma finfun_apply_pair_weight[code]:
   fixes ts1::"('state::finite, 'label::finite, 'weight) w_transitions"
-  fixes ts2::"('state'::finite, 'label, 'weight) w_transitions"
+  fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   shows "(($) (pair_weight ts1 ts2)) = (\<lambda>t. (ts1 $ (fst_trans t), ts2 $ (snd_trans t)))"
 proof (rule HOL.ext)
   fix t 
@@ -3097,18 +3099,18 @@ proof (rule HOL.ext)
     using finfun_apply_pair_weight' by (cases t) fastforce
 qed
 
-definition intersff :: "('state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state', 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state'), 'label, 'weight) w_transitions" where
+definition intersff :: "('state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions" where
   "intersff = (\<lambda>ts1 ts2. (case_prod (*)) \<circ>$ (pair_weight ts1 ts2))"
 
 lemma finfun_apply_intersff':
   fixes p1::"'state::finite"
-  fixes q1::"'state'::finite"
+  fixes q1::"'state::finite"
   shows "intersff ts1 ts2 $ ((p1,q1),l,(p2,q2)) = (ts1 $ (p1,l,p2)*ts2 $ (q1,l,q2))"
   by (auto simp add: fw sw finfun_apply_pair_weight' intersff_def)
 
 lemma finfun_apply_intersff[code]:
   fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
-  fixes ts2::"('state'::finite, 'label, 'weight) w_transitions"
+  fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   shows "(($) (intersff ts1 ts2)) = (\<lambda>t. (ts1 $ (fst_trans t) * ts2 $ (snd_trans t)))"
 proof (rule HOL.ext)
   fix t
@@ -3118,7 +3120,7 @@ qed
 
 lemma finfun_apply_intersff'2:
   fixes p::"'state::finite"
-  fixes p'::"'state'::finite"
+  fixes p'::"'state::finite"
   assumes "A $ (p, y, q) = d"
   assumes "A' $ (p', y, q') = d'"
   shows "(intersff A A') $ ((p,p'), y, (q,q')) = d * d'"
@@ -3126,7 +3128,7 @@ lemma finfun_apply_intersff'2:
 
 lemma finfun_apply_intersff'2_wts_to_monoidLTS:
   fixes p1::"'state::finite"
-  fixes q1::"'state'::finite"
+  fixes q1::"'state::finite"
   assumes "(p1, ([\<alpha>], dp), p') \<in> wts_to_monoidLTS ts1"
   assumes "(q1, ([\<alpha>], dq), q') \<in> wts_to_monoidLTS ts2"
   shows "((p1, q1), ([\<alpha>], dp * dq), (p', q')) \<in> wts_to_monoidLTS (intersff ts1 ts2)"
@@ -3135,7 +3137,7 @@ lemma finfun_apply_intersff'2_wts_to_monoidLTS:
 
 lemma member_wts_to_monoidLTS_intersff:
   fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
-  fixes ts2::"('state'::finite, 'label, 'weight) w_transitions"
+  fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "((p2, q2), (w23, d23), p3, q3) \<in> wts_to_monoidLTS (intersff ts1 ts2)"
   obtains d23p d23q where
     "(p2, (w23, d23p), p3) \<in> wts_to_monoidLTS ts1"
@@ -3202,7 +3204,7 @@ qed
 
 lemma monoid_rtrancl_intersff_if_monoid_rtrancl:
   fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
-  fixes ts2::"('state'::finite, 'label, 'weight) w_transitions"
+  fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "(p1, (w,dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
   assumes "(q1, (w,dq), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
   shows "\<exists>d. ((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
@@ -3235,7 +3237,7 @@ qed
 
 lemma monoid_rtrancl_intersff_if_monoid_rtrancl_1:
   fixes p1::"'state::finite"
-  fixes q1::"'state'::finite"
+  fixes q1::"'state::finite"
   assumes "(p1, (w,1), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
   assumes "(q1, (w,d), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
   assumes "binary_aut ts1"
@@ -3271,7 +3273,7 @@ qed
 
 lemma monoid_rtrancl_intersff_if_monoid_rtrancl_0:
   fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
-  fixes ts2::"('state'::finite, 'label, 'weight) w_transitions"
+  fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "(p1, (w,0), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
   assumes "(q1, (w,d), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
   assumes "binary_aut ts1"
@@ -3347,7 +3349,7 @@ qed
 
 lemma monoid_rtrancl_fst_1_if_monoid_rtrancl_intersff:
   fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
-  fixes ts2::"('state'::finite, 'label, 'weight) w_transitions"
+  fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   assumes "binary_aut ts1"
   assumes "d\<noteq>0"
@@ -3402,7 +3404,7 @@ qed
 
 lemma monoid_rtrancl_snd_if_monoid_rtrancl_intersff_non_zero:
   fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
-  fixes ts2::"('state'::finite, 'label, 'weight) w_transitions"
+  fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   assumes "binary_aut ts1"
   assumes "d\<noteq>0"
@@ -3441,7 +3443,7 @@ qed
 
 lemma monoid_rtrancl_fst_or_snd_zero_if_monoid_rtrancl_intersff_zero:
   fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
-  fixes ts2::"('state'::finite, 'label, 'weight) w_transitions"
+  fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   assumes "binary_aut ts1"
   assumes "d=0"
@@ -3554,7 +3556,7 @@ qed
 
 lemma intersff_correct:
   fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
-  fixes ts2::"('state'::finite, 'label, 'weight) w_transitions"
+  fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "binary_aut ts1"
   shows "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2)) \<longleftrightarrow>
            (\<exists>dp dq. (p1, (w,dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1) \<and>
@@ -3608,7 +3610,7 @@ qed
 
 lemma intersff_correct':
   fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
-  fixes ts2::"('state'::finite, 'label, 'weight) w_transitions"
+  fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "binary_aut ts1"
   shows "((p1,q1), d, (p2,q2)) \<in> monoid_rtrancl (wts_to_weightLTS (intersff ts1 ts2)) \<Longrightarrow>
            (\<exists>dp dq. (p1, dp, p2) \<in> monoid_rtrancl (wts_to_weightLTS ts1) \<and>
@@ -3619,7 +3621,7 @@ lemma intersff_correct':
 
 lemma intersff_correct'':
   fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
-  fixes ts2::"('state'::finite, 'label, 'weight) w_transitions"
+  fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "binary_aut ts1"
   shows "((p1,q1), d, (p2,q2)) \<in> monoid_rtrancl (wts_to_weightLTS (intersff ts1 ts2)) \<Longrightarrow>
            (\<exists>w dp dq. (p1, (w,dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1) \<and>
@@ -3630,7 +3632,7 @@ lemma intersff_correct'':
 
 lemma intersff_correct''':
   fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
-  fixes ts2::"('state'::finite, 'label, 'weight) w_transitions"
+  fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "binary_aut ts1"
   assumes "(p1, (w, dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
   assumes "(q1, (w, dq), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
@@ -3641,6 +3643,22 @@ lemma intersff_correct''':
 
 lemma monoid_rtranclp_unfold: "monoid_rtranclp (monoidLTS.l_step_relp ts) c l c' \<longleftrightarrow> (c, l, c') \<in> monoid_rtrancl ts"
   unfolding monoidLTS.l_step_relp_def monoid_rtranclp_monoid_rtrancl_eq by simp
+
+fun fin_fun_of_list :: "('a * 'b) list \<Rightarrow> 'b \<Rightarrow> 'a \<Rightarrow>f 'b" where
+  "fin_fun_of_list [] c = (K$ c)"
+| "fin_fun_of_list ((a,b)#f) c = finfun_update_code (fin_fun_of_list f c) a b"
+
+definition "fst_trans_all_list = map (\<lambda>x. (x, fst_trans x)) Enum.enum"
+definition "snd_trans_all_list = map (\<lambda>x. (x, snd_trans x)) Enum.enum"
+definition "fst_trans_all = fin_fun_of_list fst_trans_all_list (snd (hd fst_trans_all_list))"
+definition "snd_trans_all = fin_fun_of_list snd_trans_all_list (snd (hd snd_trans_all_list))"
+
+term "(\<circ>$)"
+term "(ts1 :: ('state::enum, 'label::enum, 'weight::bounded_idempotent_semiring) w_transitions) = undefined
+      \<Longrightarrow> finfun_Diag ((($) ts1) \<circ>$ fst_trans_all) ((($) ts2) \<circ>$ snd_trans_all) = undefined"
+
+lemma codeX[code]: "pair_weight ts1 ts2 = finfun_Diag ((($) ts1) \<circ>$ fst_trans_all) ((($) ts2) \<circ>$ snd_trans_all)"
+  sorry
 
 
 section \<open>Weight reach code\<close>

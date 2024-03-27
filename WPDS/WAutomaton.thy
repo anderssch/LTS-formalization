@@ -9,7 +9,7 @@ type_synonym ('label, 'weight) wautomaton_label = "('label list \<times> 'weight
 
 \<comment> \<open>Weighted automata transitions are modelled as a @{term finfun} from transitions to their weight, 
     where @{term "0::('weight::bounded_idempotent_semiring)"} is the default value, indicating no transition.\<close>
-type_synonym ('state, 'label, 'weight) w_transitions = "('state, 'label) transition \<Rightarrow>f 'weight" 
+type_synonym ('state, 'label, 'weight) w_transitions = "('state, 'label) transition \<Rightarrow>f 'weight"
 
 type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list \<times> 'weight)) transition set"
 
