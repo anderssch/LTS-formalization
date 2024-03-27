@@ -1,5 +1,5 @@
 theory WPDS2
-  imports "LTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "WAutomaton" "FiniteMonoidLTS" "FinFunList"
+  imports "LTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "WAutomaton" "FiniteMonoidLTS" "FinFunOf"
 begin
 
 
@@ -3648,10 +3648,10 @@ definition "fst_trans_all = fin_fun_of_fun fst_trans"
 definition "snd_trans_all = fin_fun_of_fun snd_trans"
 
 lemma ababa_fst: "fst_trans_all $ a = fst_trans a"
-  by (simp add: fin_fun_of_fun fst_trans_all_def)
+  by (simp add: app_fin_fun_of_fun fst_trans_all_def)
 
 lemma ababa_snd: "snd_trans_all $ a = snd_trans a"
-  by (simp add: fin_fun_of_fun snd_trans_all_def)
+  by (simp add: app_fin_fun_of_fun snd_trans_all_def)
 
 lemma pair_weight_code': "(pair_weight ts1 ts2) $ a = finfun_Diag ((($) ts1) \<circ>$ fst_trans_all) ((($) ts2) \<circ>$ snd_trans_all) $ a"
   by (simp add: ababa_fst ababa_snd finfun_apply_pair_weight)
@@ -3894,4 +3894,3 @@ lemma
 
 
 end
-
