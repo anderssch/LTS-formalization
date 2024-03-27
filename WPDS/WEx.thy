@@ -196,8 +196,7 @@ thm finfun_comp2_const
 
 definition "thing3 == thing2 pds_rules W initial_automaton final_automaton initial_finals final_finals"
 
-lemma [code]: "(UNIV::'a::enum set) = set Enum.enum"
-  sorry
+declare Enum.enum_class.UNIV_enum[code]
 
 export_code thing3 in SML module_name WPDS_Example
 
@@ -212,5 +211,5 @@ lemma
 lemma
   "thing3 = Some (fin 5)"
   by eval (* nat_inf :: enum is not a reasonable requirement *)
-*)
+
 end
