@@ -190,16 +190,20 @@ value "finite pds_rules"*)
 
 definition "thing3 == thing2 pds_rules W initial_automaton final_automaton initial_finals final_finals"
 
-export_code thing3 in Haskell module_name WPDS_Example
+lemma [code]: "(UNIV::'a::enum set) = set Enum.enum"
+  sorry
 
+export_code thing3 in SML module_name WPDS_Example
+
+(*
 value "thing3"
 
-lemma
+lemma                                                            
   "thing3 = Some (fin 5)"
   by code_simp
 
 lemma
   "thing3 = Some (fin 5)"
   by eval (* nat_inf :: enum is not a reasonable requirement *)
-
+*)
 end

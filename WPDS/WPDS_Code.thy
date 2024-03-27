@@ -99,7 +99,7 @@ qed
 
 
 locale WPDS_Code =
-  fixes \<Delta> :: "('ctr_loc::enum, 'label::finite) rule set"
+  fixes \<Delta> :: "('ctr_loc::enum, 'label::enum) rule set"
     and W :: "('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_idempotent_semiring"
     and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions"
 begin
@@ -144,7 +144,7 @@ end
 
 global_interpretation wpds: WPDS_Code \<Delta> W ts
   (*for \<Delta> :: "('ctr_loc::{enum,card_UNIV}, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set"*)
-  for \<Delta> :: "('ctr_loc::{enum,card_UNIV}, 'label::finite) rule set"
+  for \<Delta> :: "('ctr_loc::{enum,card_UNIV}, 'label::enum) rule set"
   and W :: "('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_idempotent_semiring"
   and ts :: "(('ctr_loc, 'noninit::{enum,card_UNIV}) state, 'label) transition \<Rightarrow>f 'weight"
 defines pre_star = "WPDS_with_W_automata_no_assms.pre_star_exec' (w_rules \<Delta> W)"

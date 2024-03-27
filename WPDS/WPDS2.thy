@@ -2394,23 +2394,23 @@ end
 
 
 locale WPDS_with_W_automata_no_assms = WPDS \<Delta>
-  for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set"
+  for \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_idempotent_semiring) w_rule set"
   and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions"
 begin 
 
-definition init_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set" where 
+definition init_rules :: "(('ctr_loc, 'noninit) state, 'label::enum, 'weight::bounded_idempotent_semiring) w_rule set" where 
   "init_rules = {((Init p, \<gamma>), d, (Init p', w)) | p \<gamma> d p' w. (p,\<gamma>) \<midarrow>d\<hookrightarrow> (p',w)}"
 
-definition pop_ts_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set" where 
+definition pop_ts_rules :: "(('ctr_loc, 'noninit) state, 'label::enum, 'weight::bounded_idempotent_semiring) w_rule set" where 
   "pop_ts_rules = {((p,\<gamma>), d, (q, pop)) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
 
-definition augmented_WPDS_rules :: "(('ctr_loc, 'noninit) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set" where 
+definition augmented_WPDS_rules :: "(('ctr_loc, 'noninit) state, 'label::enum, 'weight::bounded_idempotent_semiring) w_rule set" where 
  "augmented_WPDS_rules = init_rules \<union> pop_ts_rules"
 
 lemma init_rules_def2: "init_rules = (\<Union>((p, \<gamma>), d, (p', w)) \<in> \<Delta>. {((Init p, \<gamma>), d, (Init p', w))})"
   unfolding WPDS_with_W_automata_no_assms.init_rules_def by fast
-lemma pop_ts_rules_def2: "pop_ts_rules = (\<Union>(p, \<gamma>, q). {((p,\<gamma>), ts $ (p,\<gamma>,q), (q, pop))})"
-  unfolding pop_ts_rules_def by blast
+lemma pop_ts_rules_def2: "pop_ts_rules = (\<Union>(p, \<gamma>, q) \<in> set Enum.enum. {((p,\<gamma>), ts $ (p,\<gamma>,q), (q, pop))})"
+  unfolding pop_ts_rules_def using Enum.enum_class.UNIV_enum by blast
 
 interpretation augmented_WPDS: WPDS augmented_WPDS_rules .
 interpretation augmented_dioidLTS: dioidLTS augmented_WPDS.transition_rel .
@@ -2435,10 +2435,10 @@ declare WPDS_with_W_automata_no_assms.pop_ts_rules_def2[code]
 declare WPDS_with_W_automata_no_assms.augmented_WPDS_rules_def[code]
 declare WPDS_with_W_automata_no_assms.pre_star_exec'_def[code]
 declare WPDS_with_W_automata_no_assms.accept_pre_star_exec0'_def[code]
-
+thm WPDS_with_W_automata_no_assms.augmented_WPDS_rules_def
 
 locale WPDS_with_W_automata = WPDS_with_W_automata_no_assms \<Delta> ts + finite_WPDS \<Delta>
-  for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set"
+  for \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_idempotent_semiring) w_rule set"
   and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions" +
   assumes no_transition_to_init: "is_Init q \<Longrightarrow> ts $ (p, \<gamma>, q) = 0"
 begin
@@ -3803,7 +3803,7 @@ qed
 
 
 lemma big_good_correctness_code:
-  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::enum, 'weight::bounded_idempotent_semiring) w_transitions"
   assumes "binary_aut ts"
       and "finite \<Delta> \<and> (\<forall>q p \<gamma>. is_Init q \<longrightarrow> ts' $ (p, \<gamma>, q) = 0)"
       and "\<And>p. is_Init p \<longleftrightarrow> p \<in> inits"

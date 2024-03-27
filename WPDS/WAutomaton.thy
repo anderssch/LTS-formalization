@@ -1,5 +1,5 @@
 theory WAutomaton
-  imports "LTS" "Saturation" "ReverseWellQuasiOrder" "FinFunWellFounded" "FinFunAddUpdate" "MonoidLTS" "Kleene_Algebra.Dioid_models" "Set_More"
+  imports "LTS" "Saturation" "ReverseWellQuasiOrder" "FinFunWellFounded" "FinFunAddUpdate" "MonoidLTS" "Kleene_Algebra.Dioid_Models" "Set_More"
 begin
 
 declare times_list_def[simp]

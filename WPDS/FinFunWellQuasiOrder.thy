@@ -177,7 +177,7 @@ next
   case (insertI A a)
   then show ?case using finfuns_insert_almost_full by fast
 qed
-
+(*
 \<comment> \<open>Transitivity of the @{term finfun_emb} on @{term finfuns}.\<close>
 lemma finfuns_transp_on:
   assumes "transp_on P B"
@@ -218,7 +218,7 @@ begin
     then show "good (\<ge>) f" unfolding wqo_on_def almost_full_on_def less_eq_finfun_def by simp
   qed
 end
-
+*)
 \<comment> \<open>Extra lemmas\<close>
 lemma finfun_update_less:
   assumes "f $ a < f' $ a"
