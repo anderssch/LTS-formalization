@@ -1,5 +1,5 @@
 theory WPDS2
-  imports "LTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "WAutomaton" "FiniteMonoidLTS" "HOL-Library.AList"
+  imports "LTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "WAutomaton" "FiniteMonoidLTS" "FinFunList"
 begin
 
 
@@ -3644,136 +3644,20 @@ lemma intersff_correct''':
 lemma monoid_rtranclp_unfold: "monoid_rtranclp (monoidLTS.l_step_relp ts) c l c' \<longleftrightarrow> (c, l, c') \<in> monoid_rtrancl ts"
   unfolding monoidLTS.l_step_relp_def monoid_rtranclp_monoid_rtrancl_eq by simp
 
-fun fin_fun_of_list :: "('a * 'b) list \<Rightarrow> 'b \<Rightarrow> 'a \<Rightarrow>f 'b" where
-  "fin_fun_of_list [] c = (K$ c)"
-| "fin_fun_of_list ((a,b)#f) c = finfun_update_code (fin_fun_of_list f c) a b"
-
-definition "fst_trans_all_list = map (\<lambda>x. (x, fst_trans x)) Enum.enum"
-definition "snd_trans_all_list = map (\<lambda>x. (x, snd_trans x)) Enum.enum"
-definition "fst_trans_all = fin_fun_of_list fst_trans_all_list (snd (hd fst_trans_all_list))"
-definition "snd_trans_all = fin_fun_of_list snd_trans_all_list (snd (hd snd_trans_all_list))"
-
-term "(\<circ>$)"
-term "(ts1 :: ('state::enum, 'label::enum, 'weight::bounded_idempotent_semiring) w_transitions) = undefined
-      \<Longrightarrow> finfun_Diag ((($) ts1) \<circ>$ fst_trans_all) ((($) ts2) \<circ>$ snd_trans_all) = undefined"
-
-lemma fin_fun_of_list: "x \<in> dom (map_of l) \<Longrightarrow> (fin_fun_of_list l c) $ x = the ((map_of l) x)"
-  apply (induction l)
-   apply auto
-  by (simp add: domIff)
-
-lemma fin_fun_of_list': "x \<notin> dom (map_of l) \<Longrightarrow> (fin_fun_of_list l c) $ x = c"
-  apply (induction l)
-  by auto
-
-lemma yessss_fst:
-  assumes "((p1, p2), l, q1, q2) \<in> set ts"
-  shows "map_of (map (\<lambda>x. (x, fst_trans x)) ts) ((p1, p2), l, q1, q2) = Some (p1, l, q1)"
-  using assms apply (induction ts)
-   apply auto
-  done
-
-lemma yessss_snd:
-  assumes "((p1, p2), l, q1, q2) \<in> set ts"
-  shows "map_of (map (\<lambda>x. (x, snd_trans x)) ts) ((p1, p2), l, q1, q2) = Some (p2, l, q2)"
-  using assms apply (induction ts)
-   apply auto
-  done
-
-lemma uuu1_fst: "dom (map_of fst_trans_all_list) = UNIV"
-  apply auto
-  unfolding fst_trans_all_list_def
-  subgoal for p1 p2 l q1 q2
-    apply (rule exI[of _ p1])
-    apply (rule exI[of _ l])
-    apply (rule exI[of _ q1])
-    apply (subgoal_tac "((p1, p2), l, q1, q2) \<in> set enum_class.enum")
-    subgoal
-      using yessss_fst[of p1 p2 l q1 q2 enum_class.enum] apply metis
-      done
-    subgoal
-      using Enum.enum_class.UNIV_enum
-      apply auto
-      done
-    done
-  done
-
-lemma uuu1_snd: "dom (map_of snd_trans_all_list) = UNIV"
-  apply auto
-  unfolding snd_trans_all_list_def
-  subgoal for p1 p2 l q1 q2
-    apply (rule exI[of _ p2])
-    apply (rule exI[of _ l])
-    apply (rule exI[of _ q2])
-    apply (subgoal_tac "((p1, p2), l, q1, q2) \<in> set enum_class.enum")
-    subgoal
-      using yessss_snd[of p1 p2 l q1 q2 enum_class.enum] apply metis
-      done
-    subgoal
-      using Enum.enum_class.UNIV_enum
-      apply auto
-      done
-    done
-  done
-
-lemma xxx2_fst: "map_of fst_trans_all_list ((p1, p2), l, q1, q2) = Some (p1, l, q1)"
-  using  yessss_fst[of p1 p2 l q1 q2 Enum.enum] unfolding fst_trans_all_list_def
-  apply -
-  apply (subgoal_tac "((p1, p2), l, q1, q2) \<in> set enum_class.enum")
-  subgoal
-    apply auto
-    done
-  subgoal
-    using Enum.enum_class.UNIV_enum
-    apply auto
-    done
-  done
-
-lemma xxx2_snd: "map_of snd_trans_all_list ((p1, p2), l, q1, q2) = Some (p2, l, q2)"
-  using  yessss_snd[of p1 p2 l q1 q2 Enum.enum] unfolding snd_trans_all_list_def
-  apply -
-  apply (subgoal_tac "((p1, p2), l, q1, q2) \<in> set enum_class.enum")
-  subgoal
-    apply auto
-    done
-  subgoal
-    using Enum.enum_class.UNIV_enum
-    apply auto
-    done
-  done
-
-lemma uuu23_fst: "x \<in> dom (map_of fst_trans_all_list)"
-  by (simp add: uuu1_fst)
-
-lemma uuu23_snd: "x \<in> dom (map_of snd_trans_all_list)"
-  by (simp add: uuu1_snd)
+definition "fst_trans_all = fin_fun_of_fun fst_trans"
+definition "snd_trans_all = fin_fun_of_fun snd_trans"
 
 lemma ababa_fst: "fst_trans_all $ a = fst_trans a"
-  unfolding fst_trans_all_def
-  using fin_fun_of_list[of a fst_trans_all_list "(snd (hd fst_trans_all_list))", OF uuu23_fst]
-  apply auto
-  by (smt (verit, del_insts) fst_trans.elims option.sel xxx2_fst)
+  by (simp add: fin_fun_of_fun fst_trans_all_def)
 
 lemma ababa_snd: "snd_trans_all $ a = snd_trans a"
-  unfolding snd_trans_all_def
-  using fin_fun_of_list[of a snd_trans_all_list "(snd (hd snd_trans_all_list))", OF uuu23_snd]
-  apply auto
-  by (smt (verit, del_insts) snd_trans.elims option.sel xxx2_snd)
+  by (simp add: fin_fun_of_fun snd_trans_all_def)
 
-lemma codeddd: "(pair_weight ts1 ts2) $ a = finfun_Diag ((($) ts1) \<circ>$ fst_trans_all) ((($) ts2) \<circ>$ snd_trans_all) $ a"
-  unfolding pair_weight_def
-  apply auto
-  subgoal
-    apply (simp add: Abs_finfun_inverse_finite_class ababa_fst finfun_comp2_def fst_weight_def)
-    done
-  subgoal
-    apply (simp add: Abs_finfun_inverse_finite_class ababa_snd finfun_comp2_def snd_weight_def)
-    done
-  done
-  
+lemma pair_weight_code': "(pair_weight ts1 ts2) $ a = finfun_Diag ((($) ts1) \<circ>$ fst_trans_all) ((($) ts2) \<circ>$ snd_trans_all) $ a"
+  by (simp add: ababa_fst ababa_snd finfun_apply_pair_weight)
 
-lemma codeX[code]: "pair_weight ts1 ts2 = finfun_Diag ((($) ts1) \<circ>$ fst_trans_all) ((($) ts2) \<circ>$ snd_trans_all)"
-  using codeddd by (metis finfun_ext)
+lemma pair_weight_code[code]: "pair_weight ts1 ts2 = finfun_Diag ((($) ts1) \<circ>$ fst_trans_all) ((($) ts2) \<circ>$ snd_trans_all)"
+  using pair_weight_code' by (metis finfun_ext)
 
 
 section \<open>Weight reach code\<close>
