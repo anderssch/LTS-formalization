@@ -1,0 +1,36 @@
+chapter AFP
+
+session Weighted_Pushdown_Systems = Main +
+  options [timeout = 300]
+  sessions
+    "Kleene_Algebra"
+    "Well_Quasi_Orders"
+    "Deriving"
+    "FinFun"
+  theories
+    BoundedDioid
+    CountableSum
+    FinFunAddUpdate
+    FinFunWellFounded
+    FinFunWellQuasiOrder
+    FiniteMonoidLTS
+    LTS
+    MonoidClosure
+    MonoidLTS
+    PDS
+    PDS_Code
+    P_Automata
+    ProdDioid
+    ReverseWellQuasiOrder
+    Saturation
+    Set_More
+    WAutomaton
+    WPDS2
+    WPDS_Code
+  theories [document = false]
+    Ex
+    WEx
+  document_files
+    "root.bib"
+    "root.tex"
+
