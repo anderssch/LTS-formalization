@@ -281,9 +281,9 @@ proof -
   } then show ?thesis by presburger
 qed
 
-lemma rule_less_eq: "pure_weight_reach_rule ts ts' \<Longrightarrow> ts' \<le> ts"
+lemma pure_weight_reach_rule_less_eq: "pure_weight_reach_rule ts ts' \<Longrightarrow> ts' \<le> ts"
   unfolding pure_weight_reach_rule.simps using finfun_add_update_less_eq by fast
-lemma rule_mono: "ts\<^sub>3 \<le> ts\<^sub>1 \<Longrightarrow> pure_weight_reach_rule ts\<^sub>1 ts\<^sub>2 \<Longrightarrow> \<exists>ts'. pure_weight_reach_rule ts\<^sub>3 ts' \<and> ts' \<le> ts\<^sub>2"
+lemma pure_weight_reach_rule_mono: "ts\<^sub>3 \<le> ts\<^sub>1 \<Longrightarrow> pure_weight_reach_rule ts\<^sub>1 ts\<^sub>2 \<Longrightarrow> \<exists>ts'. pure_weight_reach_rule ts\<^sub>3 ts' \<and> ts' \<le> ts\<^sub>2"
   unfolding pure_weight_reach_rule.simps 
   by simp (metis add_finfun_apply finfun_add_update_same_mono idempotent_ab_semigroup_add_ord_class.order_prop idempotent_semiring_ord_class.mult_isor)
 
@@ -293,18 +293,13 @@ lemma weight_reach_exec_is_step_exec:
             weight_reach_loop_def step_saturation.step_loop_def 
   by auto
 
-lemma weight_reach_sum_saturation_instance: 
-  "sum_saturation (weight_reach_step transition_relation) pure_weight_reach_rule" 
-  unfolding sum_saturation_def sum_saturation_axioms_def rule_saturation_def decreasing_step_saturation_def
-  using rule_less_eq rule_mono weight_reach_step_decreasing weight_reach_step_to_weight_reach_rule
-        finite_weight_reach_rule_set unfolding weight_reach_rule_is_non_equal_pure
-  by fastforce
-
 lemma saturation_weight_reach_exec:
   "saturation weight_reach_rule S (weight_reach_exec transition_relation S)"
   unfolding weight_reach_rule_is_non_equal_pure weight_reach_exec_is_step_exec
-  using sum_saturation.saturation_step_exec[OF weight_reach_sum_saturation_instance]
-  by simp
+  using sum_saturation_step_exec[of pure_weight_reach_rule "weight_reach_step transition_relation" S]
+        pure_weight_reach_rule_less_eq pure_weight_reach_rule_mono weight_reach_step_decreasing 
+        weight_reach_step_to_weight_reach_rule finite_weight_reach_rule_set 
+  unfolding weight_reach_rule_is_non_equal_pure by fast
 
 end
 

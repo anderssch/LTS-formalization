@@ -348,5 +348,16 @@ lemma saturation_step_exec: "saturation (non_equal_rule rule) S (step_exec S)"
 
 end
 
+lemma sum_saturation_step_exec:
+  assumes "\<And>ts ts'. rule ts ts' \<Longrightarrow> ts' \<le> ts"
+  assumes "\<And>ts\<^sub>3 ts\<^sub>1 ts\<^sub>2. ts\<^sub>3 \<le> ts\<^sub>1 \<Longrightarrow> rule ts\<^sub>1 ts\<^sub>2 \<Longrightarrow> \<exists>ts'. rule ts\<^sub>3 ts' \<and> ts' \<le> ts\<^sub>2"
+  assumes "\<And>s. step ts \<le> ts"
+  assumes "\<And>ts. step ts = ts + \<Sum>{ts'. non_equal_rule rule ts ts'}"
+  assumes "\<And>ts. finite {ts'. non_equal_rule rule ts ts'}"
+  shows "saturation (non_equal_rule rule) ts (step_saturation.step_exec step ts)"
+  using sum_saturation.saturation_step_exec[of step rule ts]
+  unfolding sum_saturation_def decreasing_step_saturation_def rule_saturation_def sum_saturation_axioms_def
+  using assms by auto
+
 
 end

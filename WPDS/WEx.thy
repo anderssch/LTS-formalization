@@ -210,6 +210,6 @@ lemma
 
 lemma
   "thing3 = Some (fin 5)"
-  by eval (* nat_inf :: enum is not a reasonable requirement *)
+  by eval
 
 end
