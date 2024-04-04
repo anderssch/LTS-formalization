@@ -683,36 +683,6 @@ end
 lemma d_mult_not_zero: assumes "(d::'weight::bounded_idempotent_semiring) * d' \<noteq> 0" shows "d \<noteq> 0" and "d' \<noteq> 0"
   using assms by auto
 
-(*
-interpretation min_plus_nat: bounded_idempotent_semiring min "(\<le>)" "(<)" infinity "\<lambda>S. True" "0::nat" "(+)"
-proof
-  fix a b c :: nat
-  fix K :: "nat set set"
-  show "min (min a b) c = min a (min b c)" by presburger
-  show "min a b = min b a" by presburger
-  show "min a a = a" by fastforce
-  show "(a \<le> b) = (min a b = a)" by linarith
-  show "(a < b) = (a \<le> b \<and> a \<noteq> b)" by fastforce
-  show "min infinity a = a" sorry
-  show "\<nexists>f::nat\<Rightarrow>nat. \<forall>i. f (Suc i) < f i"
-  proof safe
-    fix f :: "nat \<Rightarrow> nat"
-    assume "\<forall>i. f (Suc i) < f i"      
-    then show "False"
-      by (induct "f a" arbitrary: a rule: nat_less_induct) blast
-  qed
-  show "True" by blast
-  show "True \<Longrightarrow> True \<Longrightarrow> True" by blast
-  show "\<forall>S\<in>K. True \<Longrightarrow> True" by blast
-  show "True" by blast
-  show "a + b + c = a + (b + c)" by force
-  show "0 + a = a" by auto
-  show "a + 0 = a" by fastforce
-  show "infinity + a = infinity" sorry
-  show "a + infinity = infinity" sorry
-  show "min a b + c = min (a + c) (b + c)" by fastforce
-  show "a + min b c = min (a + b) (a + c)" by linarith
-qed*)
 
 datatype nat_inf = fin nat | infinity
 
@@ -735,9 +705,6 @@ fun less_inf :: "nat_inf \<Rightarrow> nat_inf \<Rightarrow> bool" where
   "less_inf infinity _ = False"
 | "less_inf _ infinity = True"
 | "less_inf (fin a) (fin b) = (a < b)"
-
-find_consts name: bounded_idempotent_semiring
-find_theorems BoundedDioid.class.bounded_idempotent_semiring
 
 interpretation min_plus_nat_inf: bounded_idempotent_semiring min_inf less_eq_inf less_inf infinity "\<lambda>S. True" "fin 0" "plus_inf"
 proof
@@ -808,13 +775,13 @@ proof
 qed
 
 instantiation nat_inf :: bounded_idempotent_semiring begin
-definition "one_nat_inf == fin 0 :: nat_inf" (* TODO: Define this. You can reuse from "interpretation min_plus_nat_inf" above *)
-definition "times_nat_inf == plus_inf :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> nat_inf" (* TODO: Define this. You can reuse from "interpretation min_plus_nat_inf" above *)
-definition "open_nat_inf == (\<lambda>S. True) :: nat_inf set \<Rightarrow> bool" (* TODO: Define this. You can reuse from "interpretation min_plus_nat_inf" above *)
-definition "zero_nat_inf == infinity :: nat_inf" (* TODO: Define this. You can reuse from "interpretation min_plus_nat_inf" above *)
-definition "less_eq_nat_inf == less_eq_inf :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> bool" (* TODO: Define this. You can reuse from "interpretation min_plus_nat_inf" above *)
-definition "less_nat_inf == less_inf :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> bool" (* TODO: Define this. You can reuse from "interpretation min_plus_nat_inf" above *)
-definition "plus_nat_inf == min_inf :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> nat_inf" (* TODO: Define this. You can reuse from "interpretation min_plus_nat_inf" above *)
+definition "one_nat_inf == fin 0 :: nat_inf"
+definition "times_nat_inf == plus_inf :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> nat_inf"
+definition "open_nat_inf == (\<lambda>S. True) :: nat_inf set \<Rightarrow> bool"
+definition "zero_nat_inf == infinity :: nat_inf"
+definition "less_eq_nat_inf == less_eq_inf :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> bool"
+definition "less_nat_inf == less_inf :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> bool"
+definition "plus_nat_inf == min_inf :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> nat_inf"
 
 instance proof
   fix i :: nat
