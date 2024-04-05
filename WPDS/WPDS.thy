@@ -188,31 +188,6 @@ qed
 
 end
 
-lemma WPDS_transition_rel_mono:
-  assumes "finite Y"
-  assumes "X \<subseteq> Y"
-  assumes "((a,b),c,(d,e)) \<in> WPDS.transition_rel X"
-  shows "((a,b),c,(d,e)) \<in> WPDS.transition_rel Y"
-proof -
-  have "\<And>a b c d e. WPDS.is_rule X (a, b) c (d, e) \<Longrightarrow> WPDS.is_rule Y (a, b) c (d, e)"
-    using assms(2) by blast
-  then show ?thesis 
-    using assms(3) WPDS.transition_rel.intros
-    by (cases rule: WPDS.transition_rel.cases[OF assms(3)]) fast
-qed
-
-lemma WPDS_LTS_mono:
-  assumes "finite Y"
-  assumes "X \<subseteq> Y"
-  shows "monoid_rtrancl (WPDS.transition_rel X) \<subseteq> monoid_rtrancl (WPDS.transition_rel Y)"
-  using WPDS_transition_rel_mono[OF assms] 
-  apply safe
-  subgoal for a b c d e
-    using mono_monoid_rtrancl[of "WPDS.transition_rel X" "WPDS.transition_rel Y" "(a,b)" c "(d,e)"]
-    by fast
-  done
-
-
 locale finite_WPDS = WPDS \<Delta>
   for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set" +
   assumes finite_rules: "finite \<Delta>"
@@ -1205,11 +1180,17 @@ definition pre_star_step_not0 :: "('ctr_loc::enum, 'label::finite, 'weight::boun
   "pre_star_step_not0 \<Delta> wts = update_wts wts (pre_star_updates_not0 \<Delta> wts)"
 
 context WPDS begin
+\<comment> \<open>Executable version\<close>
 definition "pre_star_loop = while_option (\<lambda>s. pre_star_step \<Delta> s \<noteq> s) (pre_star_step \<Delta>)"
 definition "pre_star_loop0 = pre_star_loop (ts_to_wts {})"
 definition "pre_star_exec = the o pre_star_loop"
 definition "pre_star_exec0 = the pre_star_loop0"
-definition "accept_pre_star_exec0 c = dioidLTS.accepts pre_star_exec0 c"
+
+
+\<comment> \<open>Faster executable version (but needs \<^term>\<open>finite \<Delta>\<close> to prove equivalence)\<close>
+definition "pre_star_exec_fast = the o while_option (\<lambda>s. pre_star_step_not0 \<Delta> s \<noteq> s) (pre_star_step_not0 \<Delta>)"
+definition "pre_star_exec_fast0 = pre_star_exec_fast (ts_to_wts {})"
+definition "accept_pre_star_exec0 c = dioidLTS.accepts pre_star_exec_fast0 c"
 end
 
 lemma pre_star_exec_code[code]:
@@ -1221,6 +1202,12 @@ lemma pre_star_exec0_code[code]:
   "WPDS.pre_star_exec0 \<Delta> = WPDS.pre_star_exec \<Delta> (ts_to_wts {})"
   unfolding WPDS.pre_star_exec0_def WPDS.pre_star_exec_def WPDS.pre_star_loop0_def
   by simp
+
+lemma pre_star_exec_code_not0[code]:
+  "WPDS.pre_star_exec_fast \<Delta> s = (let s' = pre_star_step_not0 \<Delta> s in if s' = s then s else WPDS.pre_star_exec_fast \<Delta> s')"
+  unfolding WPDS.pre_star_exec_fast_def o_apply Let_def
+  by (subst while_option_unfold) simp
+declare WPDS.pre_star_exec_fast0_def[code]
 
 subsection \<open>Pre* code proofs\<close>
 context finite_WPDS
@@ -1256,8 +1243,13 @@ proof -
     using sum_snd_with_zeros[OF 1 2 finite_pre_star_updates_not0] by presburger
 qed
 
-lemma pre_star_step_not0_correct[code_unfold]: "pre_star_step \<Delta> = pre_star_step_not0 \<Delta>"
+lemma pre_star_step_not0_correct: "pre_star_step \<Delta> = pre_star_step_not0 \<Delta>"
   using pre_star_step_not0_correct' by presburger
+lemma pre_star_exec_fast_correct: "pre_star_exec s = pre_star_exec_fast s"
+  unfolding pre_star_exec_def pre_star_loop_def pre_star_exec_fast_def pre_star_step_not0_correct
+  by simp
+lemma pre_star_exec_fast0_correct: "pre_star_exec0 = pre_star_exec_fast0"
+  unfolding pre_star_exec0_code pre_star_exec_fast0_def pre_star_exec_fast_correct by simp
 
 
 \<comment> \<open>Next we show the correspondence between \<^term>\<open>pre_star_step ts\<close> and the sum \<^term>\<open>\<Sum> {ts'. pre_star_rule ts ts'}\<close>\<close>
@@ -1583,7 +1575,7 @@ interpretation augmented_dioidLTS: dioidLTS augmented_WPDS.transition_rel .
 
 
 definition pre_star_exec' where
-  "pre_star_exec' = augmented_WPDS.pre_star_exec0"
+  "pre_star_exec' = augmented_WPDS.pre_star_exec_fast0"
 
 
 definition accept_pre_star_exec0' where
@@ -1601,7 +1593,7 @@ declare WPDS_with_W_automata_no_assms.pop_ts_rules_def2[code]
 declare WPDS_with_W_automata_no_assms.augmented_WPDS_rules_def[code]
 declare WPDS_with_W_automata_no_assms.pre_star_exec'_def[code]
 declare WPDS_with_W_automata_no_assms.accept_pre_star_exec0'_def[code]
-thm WPDS_with_W_automata_no_assms.augmented_WPDS_rules_def
+
 
 locale WPDS_with_W_automata = WPDS_with_W_automata_no_assms \<Delta> ts + finite_WPDS \<Delta>
   for \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_idempotent_semiring) w_rule set"
@@ -1656,6 +1648,9 @@ lemma dioidLTS_instance[simp]: "countable_dioidLTS (WPDS.transition_rel augmente
 interpretation augmented_WPDS: finite_WPDS augmented_WPDS_rules by simp
 interpretation augmented_dioidLTS: countable_dioidLTS augmented_WPDS.transition_rel by simp
 
+lemma pre_star_exec'_def2: "pre_star_exec' = augmented_WPDS.pre_star_exec0" 
+  unfolding pre_star_exec'_def using augmented_WPDS.pre_star_exec_fast0_correct by presburger
+
 definition augmented_rules_reach_empty where
   "augmented_rules_reach_empty finals p w d = (\<exists>p' \<in> finals. ((Init p, w), d, (p',[])) \<in> monoidLTS.monoid_star (WPDS.transition_rel augmented_WPDS_rules))"
 
@@ -1688,6 +1683,27 @@ proof -
     by (auto simp add: countable_monoid_star_variant1 c) meson
   ultimately show ?thesis by argo
 qed
+
+lemma WPDS_transition_rel_mono:
+  assumes "finite Y" and "X \<subseteq> Y" and "((a,b),c,(d,e)) \<in> WPDS.transition_rel X"
+  shows "((a,b),c,(d,e)) \<in> WPDS.transition_rel Y"
+proof -
+  have "\<And>a b c d e. WPDS.is_rule X (a, b) c (d, e) \<Longrightarrow> WPDS.is_rule Y (a, b) c (d, e)"
+    using assms(2) by blast
+  then show ?thesis 
+    using assms(3) WPDS.transition_rel.intros
+    by (cases rule: WPDS.transition_rel.cases[OF assms(3)]) fast
+qed
+
+lemma WPDS_LTS_mono:
+  assumes "finite Y" and "X \<subseteq> Y"
+  shows "monoid_rtrancl (WPDS.transition_rel X) \<subseteq> monoid_rtrancl (WPDS.transition_rel Y)"
+  using WPDS_transition_rel_mono[OF assms] 
+  apply safe
+  subgoal for a b c d e
+    using mono_monoid_rtrancl[of "WPDS.transition_rel X" "WPDS.transition_rel Y" "(a,b)" c "(d,e)"]
+    by fast
+  done
 
 lemma ts_subset_aug_rules: 
   "monoid_rtrancl (WPDS.transition_rel pop_ts_rules) 
@@ -2177,7 +2193,7 @@ lemma pre_star_correctness:
 section \<open>Code generation 2\<close>
 
 lemma pre_star_exec'_saturation: "saturation augmented_WPDS.pre_star_rule (K$ 0) pre_star_exec'"
-  unfolding pre_star_exec'_def using augmented_WPDS.saturation_pre_star_exec0 by simp
+  unfolding pre_star_exec'_def2 using augmented_WPDS.saturation_pre_star_exec0 by simp
 
 lemma pre_star_exec_correctness: 
   "accepts pre_star_exec' finals (Init p, w) = weight_pre_star (accepts_ts finals) (p,w)"

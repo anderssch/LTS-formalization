@@ -219,8 +219,6 @@ declare accepts_def[code]
 declare accepts_pre_star_check_def[code]
 declare do_the_thing_def[code]
 
-thm WPDS_Code.accept_pre_star_exec0'_def
-
 (*lemma accepts_pre_star_check_code[code]: 
   "accepts_pre_star_check \<Delta> ts finals (p, w) = (if wpds.checking \<Delta> ts then Some (accepts_code (WPDS_Code.pre_star_exec' \<Delta> ts) finals (p, w)) else None)"
   unfolding accepts_pre_star_check_def accepts_code_correct[of "(wpds.pre_star_exec' \<Delta> ts)" finals p w, symmetric]
@@ -341,16 +339,10 @@ end
 declare WPDS.lbl.simps[code]
 declare WPDS.accept_pre_star_exec0_def[code]
 
-
-export_code accepts_pre_star_check in Haskell (*SML gives depency cycle.*)
-
-export_code do_the_thing in Haskell
-
-
 definition thing2 where
   "thing2 \<Delta> W ts ts' finals finals' = do_the_thing \<Delta> W (ts_to_wts ts') (ts_to_wts ts) finals finals'"
 
-export_code thing2 in Haskell
+export_code accepts_pre_star_check thing2 in Haskell
 
 lemma 
   assumes "thing2 \<Delta> W ts ts' finals finals' = Some w"
