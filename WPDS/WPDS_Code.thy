@@ -1,5 +1,5 @@
 theory WPDS_Code
-  imports WPDS2 "Deriving.Derive" "P_Automata"
+  imports WPDS "Deriving.Derive" "P_Automata"
 begin
 
 lemma accepts_step_distrib:
@@ -70,7 +70,7 @@ lemma accepts_code_correct[code]:
 proof (induction w arbitrary: p)
   case Nil
   then show ?case
-    unfolding accepts_code.simps using WPDS2.finite_WPDS.accepts_empty_iff[of "{}" ts]
+    unfolding accepts_code.simps using finite_WPDS.accepts_empty_iff[of "{}" ts]
     unfolding finite_WPDS_def by auto
 next
   case (Cons a w)

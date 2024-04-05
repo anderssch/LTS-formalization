@@ -1,4 +1,4 @@
-theory FinFunWeakSaturation
+theory FinFunSumSaturation
   imports "Saturation" "FinFunAddUpdate"
 begin
 

@@ -42,14 +42,14 @@ definition W :: "(ctr_loc, label) rule \<Rightarrow> nat_inf" where
     (((p2, x), (p3, pop))      $:= fin 3)
     (((p3, y), (p2, swap x))   $:= fin 4) $ rule"
 
-definition initial_automaton :: "((ctr_loc, state) WPDS2.state, label) transition set" where
+definition initial_automaton :: "((ctr_loc, state) WPDS.state, label) transition set" where
   "initial_automaton = {
   ((Init p1, y, Noninit qf)),
   ((Init p2, y, Noninit qf)),
   ((Init p2, x, Init p2)),
   ((Init p3, x, Noninit qf))}"
 
-definition final_automaton :: "((ctr_loc, state) WPDS2.state, label) transition set" where
+definition final_automaton :: "((ctr_loc, state) WPDS.state, label) transition set" where
   "final_automaton = {
   ((Init p2, y, Noninit q1)),
   ((Init p3, x, Noninit q1)),

@@ -1,5 +1,5 @@
 theory FiniteMonoidLTS 
-  imports "MonoidLTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "FinFunWeakSaturation"
+  imports "MonoidLTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "FinFunSumSaturation"
 begin
 
 locale finite_monoidLTS = monoidLTS transition_relation 
