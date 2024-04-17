@@ -338,6 +338,7 @@ end
 
 declare WPDS.lbl.simps[code]
 declare WPDS.accept_pre_star_exec0_def[code]
+declare Enum.enum_class.UNIV_enum[code]
 
 definition thing2 where
   "thing2 \<Delta> W ts ts' finals finals' = do_the_thing \<Delta> W (ts_to_wts ts') (ts_to_wts ts) finals finals'"
