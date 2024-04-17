@@ -344,13 +344,19 @@ definition thing2 where
 
 export_code accepts_pre_star_check thing2 in Haskell
 
-lemma 
+lemma "P_Automaton.lang_aut ts Init finals = accepts_full (ts_to_wts ts) inits_set finals"
+  oops
+lemma "WPDS.weight_reach_set' (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals') =
+       WPDS.weight_reach' (w_rules \<Delta> W) (accepts_full (ts_to_wts ts) inits_set finals) (accepts_full (ts_to_wts ts') inits_set finals')"
+  oops
+lemma WPDS_reach_exec_correct:
   assumes "thing2 \<Delta> W ts ts' finals finals' = Some w"
   shows "w = (WPDS.weight_reach_set' (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
 (* \<^bold>\<Sum>{l |c l c'. monoidLTS.monoid_star_relp (WPDS.transition_rel \<Delta>) c l c' \<and> c \<in> (lang ts finals) \<and> c' \<in> (lang ts' finals')}"*)
   using assms
   unfolding thing2_def do_the_thing_def
-  using big_good_correctness_code[of "ts_to_wts ts" "w_rules \<Delta> W" "ts_to_wts ts'" inits_set finals finals']
+  using big_good_correctness_code[of "ts_to_wts ts" "w_rules \<Delta> W" "ts_to_wts ts'" inits_set finals finals', OF binary_aut_ts_to_wts[of ts]]
+  
 (* TODO: *)
   oops
 
