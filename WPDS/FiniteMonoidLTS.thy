@@ -267,24 +267,24 @@ proof -
   ultimately show ?thesis unfolding weight_reach_rule.simps by presburger
 qed
 
-inductive pure_weight_reach_rule :: "('state::finite \<Rightarrow>f 'weight::bounded_idempotent_semiring) saturation_rule" where
-    "(p,d,q) \<in> transition_relation \<Longrightarrow> pure_weight_reach_rule S S(q $+= S $ p * d)"
+inductive non_strict_weight_reach_rule :: "('state::finite \<Rightarrow>f 'weight::bounded_idempotent_semiring) saturation_rule" where
+    "(p,d,q) \<in> transition_relation \<Longrightarrow> non_strict_weight_reach_rule S S(q $+= S $ p * d)"
 
-lemma weight_reach_rule_is_non_equal_pure: "weight_reach_rule = non_equal_rule pure_weight_reach_rule"
+lemma weight_reach_rule_is_non_equal_pure: "weight_reach_rule = strict_rule non_strict_weight_reach_rule"
 proof -
   { fix S S'
-    have "(non_equal_rule pure_weight_reach_rule) S S' = weight_reach_rule S S'"
-      unfolding non_equal_rule.simps pure_weight_reach_rule.simps weight_reach_rule.simps
+    have "(strict_rule non_strict_weight_reach_rule) S S' = weight_reach_rule S S'"
+      unfolding strict_rule.simps non_strict_weight_reach_rule.simps weight_reach_rule.simps
       apply safe
        apply fastforce
       by (metis finfun_upd_apply_same)
   } then show ?thesis by presburger
 qed
 
-lemma pure_weight_reach_rule_less_eq: "pure_weight_reach_rule ts ts' \<Longrightarrow> ts' \<le> ts"
-  unfolding pure_weight_reach_rule.simps using finfun_add_update_less_eq by fast
-lemma pure_weight_reach_rule_mono: "ts\<^sub>3 \<le> ts\<^sub>1 \<Longrightarrow> pure_weight_reach_rule ts\<^sub>1 ts\<^sub>2 \<Longrightarrow> \<exists>ts'. pure_weight_reach_rule ts\<^sub>3 ts' \<and> ts' \<le> ts\<^sub>2"
-  unfolding pure_weight_reach_rule.simps 
+lemma pure_weight_reach_rule_less_eq: "non_strict_weight_reach_rule ts ts' \<Longrightarrow> ts' \<le> ts"
+  unfolding non_strict_weight_reach_rule.simps using finfun_add_update_less_eq by fast
+lemma pure_weight_reach_rule_mono: "ts\<^sub>3 \<le> ts\<^sub>1 \<Longrightarrow> non_strict_weight_reach_rule ts\<^sub>1 ts\<^sub>2 \<Longrightarrow> \<exists>ts'. non_strict_weight_reach_rule ts\<^sub>3 ts' \<and> ts' \<le> ts\<^sub>2"
+  unfolding non_strict_weight_reach_rule.simps 
   by simp (metis add_finfun_apply finfun_add_update_same_mono idempotent_ab_semigroup_add_ord_class.order_prop idempotent_semiring_ord_class.mult_isor)
 
 lemma weight_reach_exec_is_step_exec: 
@@ -296,7 +296,7 @@ lemma weight_reach_exec_is_step_exec:
 lemma saturation_weight_reach_exec:
   "saturation weight_reach_rule S (weight_reach_exec transition_relation S)"
   unfolding weight_reach_rule_is_non_equal_pure weight_reach_exec_is_step_exec
-  using sum_saturation_step_exec[of pure_weight_reach_rule "weight_reach_step transition_relation" S]
+  using sum_saturation_step_exec[of non_strict_weight_reach_rule "weight_reach_step transition_relation" S]
         pure_weight_reach_rule_less_eq pure_weight_reach_rule_mono weight_reach_step_decreasing 
         weight_reach_step_to_weight_reach_rule finite_weight_reach_rule_set 
   unfolding weight_reach_rule_is_non_equal_pure by fast
