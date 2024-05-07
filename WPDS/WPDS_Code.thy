@@ -345,11 +345,612 @@ definition thing2 where
 
 export_code accepts_pre_star_check thing2 in Haskell
 
-lemma "P_Automaton.lang_aut ts Init finals = accepts_full (ts_to_wts ts) inits_set finals"
-  oops
-lemma "WPDS.weight_reach_set' (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals') =
-       WPDS.weight_reach' (w_rules \<Delta> W) (accepts_full (ts_to_wts ts) inits_set finals) (accepts_full (ts_to_wts ts') inits_set finals')"
-  oops
+find_theorems monoid_rtrancl wts_to_monoidLTS name: induct
+
+lemma trans_star_append: (* TODO: Put this in LTS ? ? ? ? *)
+  assumes "(p2, w2, q') \<in> LTS.trans_star ts"
+  assumes "(q', v,  q) \<in> LTS.trans_star ts"
+  shows "(p2, w2 @ v, q) \<in> LTS.trans_star ts"
+  using assms
+  using LTS.trans_star_states_append[of p2 w2 _ q' ts v _ q]
+  by (meson LTS.trans_star_states_trans_star LTS.trans_star_trans_star_states)
+
+lemma update_wts_apply_is_1_if_member:
+  assumes "finite ts"
+  assumes "t' \<in> ts"
+  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  using assms
+proof (induction rule: finite_induct)
+  case empty
+  then show ?case
+    by auto
+next
+  case (insert t'' F)
+  show ?case
+  proof (cases "t' = t''")
+    assume a: "t' = t''"
+    have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring}) + ((update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t')"
+      by (simp add: a add.commute finfun_update_plus_pair_apply)
+    then have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+      by (smt Collect_cong Groups.add_0 a empty_iff finfun_const_apply finite.emptyI fold_infinite insert.hyps(2) mem_Collect_eq prod.inject update_wts_def update_wts_empty update_wts_sum)
+    then have "update_wts (K$ 0) (insert (t'',1) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+      by (simp add: insert.hyps(1) update_wts_insert)
+    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+      by (smt (verit, del_insts) Collect_cong insert_Collect insert_iff)
+  next
+    assume a: "t' \<noteq> t''"
+    then have "t' \<in> F"
+      using insert by auto
+    then have "update_wts (K$ 0) {(t, 1) |t. t \<in> F} $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+      using insert a by metis
+    then have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+      by (simp add: a finfun_update_plus_pair_apply_other)
+    then have "update_wts (K$ 0) (insert (t'',1) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+      by (metis (no_types, lifting) insert(3) \<open>t' \<in> F\<close> finite_insert fold_infinite update_wts_def update_wts_insert)
+    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+      by (smt (verit, ccfv_SIG) Collect_cong insert_Collect insert_iff)
+  qed
+qed
+
+lemma update_wts_apply_is_0_if_not_member:
+  assumes "finite ts"
+  assumes "t' \<notin> ts"
+  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (0 ::'c::{one,zero,bounded_idempotent_semiring})"
+  using assms
+proof (induction rule: finite_induct)
+  case empty
+  then show ?case
+    by (simp add: update_wts_empty)
+next
+  case (insert t'' F)
+  show ?case
+  proof (cases "t' = t''")
+    assume a: "t' = t''"
+    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (0 ::'c::{one,zero,bounded_idempotent_semiring})"
+      using insert.prems by force
+  next
+    assume a: "t' \<noteq> t''"
+    then have "update_wts (K$ 0) {(t, 1) |t. t \<in> F} $ t' = (0 ::'c::{one,zero,bounded_idempotent_semiring})"
+      using insert a by blast
+    then have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (0 ::'c::{one,zero,bounded_idempotent_semiring})"
+      by (simp add: a finfun_update_plus_pair_apply_other)
+    then have "update_wts (K$ 0) (insert (t'',1) {(t, 1) |t. t \<in> F}) $ t' = (0 ::'c::{one,zero,bounded_idempotent_semiring})"
+      by (simp add: insert.hyps(1) update_wts_insert)
+    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (0 ::'c::{one,zero,bounded_idempotent_semiring})"
+      by (smt (verit, ccfv_SIG) Collect_cong insert_Collect insert_iff)
+  qed
+qed
+
+lemma member_if_update_wts_apply_is_1:
+  assumes "finite ts"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  assumes "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  shows "t' \<in> ts"
+  using assms
+proof (induction rule: finite_induct)
+  case empty
+  then have "update_wts (K$ 0) {} $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+    by auto
+  then have "(K$ 0) $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+    using FinFunAddUpdate.update_wts_empty by metis
+  then have "0 = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+    by auto
+  then have "False"
+    using empty by auto
+  then show ?case
+    by auto
+next
+  case (insert t'' F)
+  then show ?case
+  proof (cases "t' = t''")
+    case True
+    then show ?thesis by simp
+  next
+    case False
+    then have "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+      using insert.prems(2) by blast
+    then have "update_wts (K$ 0) (insert (t'',1) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+      by (smt (verit, best) Collect_cong insert_Collect insert_iff)
+    then have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+      by (metis (no_types, lifting) False finfun_update_plus_pair_apply_other finite_insert fold_infinite update_wts_def update_wts_insert)
+    then have "update_wts (K$ 0) {(t, 1) |t. t \<in> F} $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+      by (simp add: False finfun_update_plus_pair_apply_other)
+    then have "t' \<in> F"
+      using insert.IH insert.prems(1) by blast
+    then show ?thesis
+      by auto
+  qed
+qed
+
+lemma not_member_if_update_wts_apply_is_0:
+  assumes "finite ts"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  assumes "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (0 ::'c::{one,zero,bounded_idempotent_semiring})"
+  shows "t' \<notin> ts"
+  using assms
+proof (induction rule: finite_induct)
+  case empty
+  then have "update_wts (K$ 0) {} $ t' = (0 ::'c::{one,zero,bounded_idempotent_semiring})"
+    by auto
+  then have "(K$ 0) $ t' = (0 ::'c::{one,zero,bounded_idempotent_semiring})"
+    using FinFunAddUpdate.update_wts_empty by metis
+  then show ?case
+    by auto
+next
+  case (insert t'' F)
+  then show ?case
+  proof (cases "t' = t''")
+    case True
+    then show ?thesis
+      by (smt (verit, ccfv_SIG) Collect_cong finite.insertI insert.hyps(1) insert.prems(1) insert.prems(2) update_wts_apply_is_1_if_member)
+  next
+    case False
+    then have "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (0 ::'c::{one,zero,bounded_idempotent_semiring})"
+      using insert.prems(2) by blast
+    then have "update_wts (K$ 0) (insert (t'',1) {(t, 1) |t. t \<in> F}) $ t' = (0 ::'c::{one,zero,bounded_idempotent_semiring})"
+      by (smt (verit, best) Collect_cong insert_Collect insert_iff)
+    then have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (0 ::'c::{one,zero,bounded_idempotent_semiring})"
+      by (metis (no_types, lifting) False finfun_update_plus_pair_apply_other finite_insert fold_infinite update_wts_def update_wts_insert)
+    then have "update_wts (K$ 0) {(t, 1) |t. t \<in> F} $ t' = (0 ::'c::{one,zero,bounded_idempotent_semiring})"
+      by (simp add: False finfun_update_plus_pair_apply_other)
+    then have "t' \<notin> F"
+      using insert.IH insert.prems(1) by blast
+    then show ?thesis using False
+      by auto
+  qed
+qed
+
+lemma update_wts_is_1_iff_member:
+  assumes "finite ts"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (1 ::'c::{one,zero,bounded_idempotent_semiring}) \<longleftrightarrow> t' \<in> ts"
+  using assms(1) assms(2) member_if_update_wts_apply_is_1 update_wts_apply_is_1_if_member by fastforce
+
+lemma update_wts_is_0_iff_not_member:
+  assumes "finite ts"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (0 ::'c::{one,zero,bounded_idempotent_semiring}) \<longleftrightarrow> t' \<notin> ts"
+  by (metis (mono_tags, lifting) assms(1) assms(2) update_wts_apply_is_0_if_not_member update_wts_is_1_iff_member)
+
+lemma XXxxXXxxXX_LEFT_TO_RIGHT:
+  assumes "finite ts"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  assumes "update_wts (K$ 0) {(t, (1 ::'c::{one,zero,bounded_idempotent_semiring})) |t. t \<in> insert PLP ts} $ (p', l, p'') = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  shows "update_wts (K$ 0) {(t, (1 ::'c::{one,zero,bounded_idempotent_semiring})) |t. t \<in> ts} $ (p', l, p'') = (1 ::'c::{one,zero,bounded_idempotent_semiring}) \<or> (p', l, p'') = PLP"
+  by (smt (verit) Collect_cong assms(1) assms(2) assms(3) finite_insert insert_iff member_if_update_wts_apply_is_1 update_wts_apply_is_1_if_member)
+
+lemma XXxxXXxxXX':
+  assumes "finite ts"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> insert PLP ts} $ (p', l, p'') = (1 ::'c::{one,zero,bounded_idempotent_semiring}) \<longleftrightarrow> 
+         update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ (p', l, p'') = (1 ::'c::{one,zero,bounded_idempotent_semiring}) \<or> (p', l, p'') = PLP"
+proof -
+  have "finite (insert PLP ts)"
+    by (simp add: assms(1))
+  then show ?thesis
+    by (smt (verit, ccfv_SIG) Collect_cong assms(1) assms(2) insert_iff update_wts_is_1_iff_member)
+qed
+
+lemma XXxxXXxxXX:
+  assumes "finite ts"
+  assumes "PLP \<notin> ts"
+  assumes "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ (p', l, p'') = (1 ::'c::{one,zero,bounded_idempotent_semiring}) \<Longrightarrow> 0 \<noteq> 1 \<Longrightarrow> (p', l, p'') \<in> ts"
+  assumes "update_wts (K$ 0) {(t, 1) |t. t \<in> insert PLP ts} $ (p', l, p'') = 1"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  assumes "PLP \<noteq> (p', l, p'')"
+  assumes "PLP = (P', L, P'')"
+  assumes "p' \<noteq> P'"
+  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> insert PLP ts} $ (p', l, p'') = (1 ::'c::{one,zero,bounded_idempotent_semiring}) \<longleftrightarrow> 
+         update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ (p', l, p'') = (1 ::'c::{one,zero,bounded_idempotent_semiring}) \<or> (p', l, p'') = PLP"
+  using  assms XXxxXXxxXX'[of ts PLP p' l p'']
+  apply auto
+  done
+
+lemma asdjfklasjdflksa:
+  assumes "finite ts"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  shows "ts_to_wts ts $ (p', l, p'') = (1::'c::{one,zero,bounded_idempotent_semiring}) \<Longrightarrow> (p', l, p'') \<in> ts"
+  by (metis (mono_tags, lifting) assms(1) assms(2) member_if_update_wts_apply_is_1 ts_to_wts_def)
+
+lemma asdjfklasjdflksa2: (* Useful? *)
+  assumes "finite ts"
+  shows "(p', l, p'') \<in> ts \<Longrightarrow> ts_to_wts ts $ (p', l, p'') = 1"
+  by (metis (mono_tags, lifting) assms(1) ts_to_wts_def update_wts_apply_is_1_if_member)
+
+lemma asdjfklasjdflksa_iff:
+  assumes "finite ts"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  shows "ts_to_wts ts $ (p', l, p'') = (1 :: 'c) \<longleftrightarrow> (p', l, p'') \<in> ts"
+  by (meson asdjfklasjdflksa asdjfklasjdflksa2 assms(1) assms(2))
+
+lemma auauaua:
+  assumes "finite ts"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  assumes "(p', ([l], 1 :: 'c), p'') \<in> wts_to_monoidLTS (ts_to_wts ts)"
+  shows "(p', l, p'') \<in> ts"
+proof -
+  from assms have "ts_to_wts ts $ (p', l, p'') = (1:: 'c)"
+    unfolding wts_to_monoidLTS_def by auto
+  then show "(p', l, p'') \<in> ts"
+    using asdjfklasjdflksa[of ts p' l p''] assms by auto
+qed
+
+lemma bibibibibi:
+  assumes "finite ts"
+  shows "ts_to_wts ts $ (p1, w, p2) = (1 :: 'c::{one,zero,bounded_idempotent_semiring}) \<or> ts_to_wts ts $ (p1, w, p2) = 0"
+ using assms
+proof (induction rule: finite_induct)
+  case empty
+  then show ?case
+    by auto
+next
+  case (insert x F)
+  then show ?case
+    apply (cases "x =  (p1, w, p2)")
+    apply (simp add: asdjfklasjdflksa2)
+    by (smt (verit, ccfv_SIG) asdjfklasjdflksa2 finite.insertI ts_to_wts_def update_wts_apply_is_0_if_not_member)
+qed
+
+lemma ts_to_wts_binASDFSADF:
+  assumes "finite ts"
+  shows "binary_aut (ts_to_wts ts)"
+  unfolding binary_aut_def using assms bibibibibi by metis
+
+lemma trans_star_if_monoid_rtrancl_one1:
+  assumes "(p, (v::'label ::finite list, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+  assumes "finite ts"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  assumes "d = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  shows "(p, v, q) \<in> LTS.trans_star ts"
+  using assms
+proof (induction rule: wts_to_monoidLTS_induct)
+  case (base p)
+  then show ?case
+    by (simp add: LTS.trans_star.trans_star_refl)
+next
+  case (step p w d p' w' d' p'')
+  have "binary_aut (ts_to_wts ts)"
+    using ts_to_wts_binASDFSADF using assms by auto
+  have "d = 1"
+    by (metis \<open>binary_aut (ts_to_wts ts)\<close> binary_aut_transition_binary mult.right_neutral mult_zero_right step.hyps(2) step.prems(3))
+  have "d' = 1"
+    using \<open>d = 1\<close> step.prems by auto
+
+  have "(p, w, p') \<in> LTS.trans_star ts"
+    using \<open>d = 1\<close> step.IH step.prems(1) step.prems(2) by fastforce
+  moreover
+  have u: "(p', (w', 1 :: 'c), p'') \<in> wts_to_monoidLTS (ts_to_wts ts)"
+    using step(2) unfolding \<open>d' = 1\<close> .
+  have "length w' = 1"
+    using local.step(2) wts_label_exist by fastforce
+  have f: "w' = [hd w']"
+    using \<open>(p', (w', 1), p'') \<in> wts_to_monoidLTS (ts_to_wts ts)\<close> wts_label_exist by fastforce
+ 
+  have "(p', hd w', p'') \<in> ts"
+    using \<open>d' = 1\<close> auauaua f step.hyps(2) step.prems(1) step.prems(2) by fastforce
+
+  have "(p', w', p'') \<in> LTS.trans_star ts"
+    by (metis LTS.trans_star.simps \<open>(p', hd w', p'') \<in> ts\<close> \<open>w' = [hd w']\<close>)
+    
+  ultimately
+  show ?case
+    using trans_star_append by metis
+qed
+
+(* lemma weight_is_one_if_monoid_rtrancl_one1:
+  assumes "(p, (v::'label ::finite list, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+  assumes "finite ts"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  shows "d = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  using assms
+proof (induction rule: wts_to_monoidLTS_induct)
+  case (base p)
+  then show ?case
+    by auto
+next
+  case (step p w d p' w' d' p'')
+  have "binary_aut (ts_to_wts ts)"
+    using ts_to_wts_binASDFSADF using assms by auto
+
+  have "d  \<noteq> 0 "
+
+  have "d' \<noteq> 0"
+    sorry
+
+  from step(2) have "d' = (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+    using step
+    sorry
+  then show ?case
+    using step.IH step.prems(1) step.prems(2) by fastforce
+qed *)
+
+lemma trans_star_if_monoid_rtrancl_one:
+  assumes "finite ts"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  assumes "(p, (v ::'label::finite list, 1 :: 'c), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+  shows "(p, v, q) \<in> LTS.trans_star ts"
+  using assms trans_star_if_monoid_rtrancl_one1[of p v 1 q ts] by auto
+
+find_theorems LTS.trans_star name: induct
+
+lemma monoid_rtrancl_one_if_trans_star:
+  assumes "(p, v ::'label::finite list, q) \<in> LTS.trans_star ts"
+  assumes "finite ts"
+  shows "(p, (v, 1), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+  apply (induction rule: LTS.trans_star.induct[OF assms(1)])
+  subgoal
+    apply (simp add: monoid_rtrancl_wts_to_monoidLTS_refl)
+    done
+  subgoal
+    apply (metis asdjfklasjdflksa2 assms(2) monoid_rtrancl_intros_Cons mult.right_neutral wts_label_d wts_to_monoidLTS_exists)
+    done
+  done
+
+lemma AAA:
+  assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::finite \<times> ('a, 'b) state) set)"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  assumes "(p, (v, 1 :: 'c), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+  assumes "q \<in> finals"
+  shows "dioidLTS.accepts (ts_to_wts ts) finals (p, v) = (1::'c)"
+proof -
+  have "\<And>q d. q \<in> finals \<Longrightarrow> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts)) \<Longrightarrow> d = (1::'c) \<or> d = 0"
+    by (simp add: binary_aut_path_binary ts_to_wts_binASDFSADF)
+  then have "{d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} \<subseteq> {1 :: 'c, 0}"
+    by blast
+  moreover
+  have "(p, (v, 1 :: 'c), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+    using assms(3) by auto
+  then have "(1 :: 'c) \<in> {d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))}"
+    using assms by auto
+  ultimately
+  have "\<^bold>\<Sum> {d. \<exists>q.  q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} = (1::'c)"
+    apply (subgoal_tac "{d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} = {1 :: 'c, 0} \<or> {d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} = {1 :: 'c}")
+     apply auto
+    apply (subgoal_tac "finite {1::'c, 0}")
+    subgoal for q
+      subgoal
+        apply (subgoal_tac "\<Sum> {1::'c, 0} = (1::'c)")
+        subgoal
+          apply (simp add: finite_SumInf_is_sum)
+          done
+        subgoal
+          apply simp
+          done
+        done
+      done
+    subgoal
+      apply auto
+      done
+    done
+  then show ?thesis
+    by (simp add: WPDS.accepts_def2)
+qed
+
+find_theorems dioidLTS.accepts
+thm monoid_rtrancl_induct_rev[of p w q r P]
+
+(*
+lemma dioidLTS_accepts_induct_rev [consumes 1, case_names monoid_rtrancl_refl monoid_rtrancl_into_rtrancl]:
+  assumes "dioidLTS.accepts (ts_to_wts ts) finals (p, v) = (1::'c::{one,zero,bounded_idempotent_semiring})"
+  assumes "(\<And>p. p \<in> finals \<Longrightarrow> P p [])"
+  assumes "(\<And>p v a q. (p,(v,a),q) \<in> wts_to_monoidLTS (ts_to_wts ts) \<Longrightarrow> dioidLTS.accepts (ts_to_wts ts) finals (q, v) = (1::'c) \<Longrightarrow> P q v \<Longrightarrow> P p (a#v))"
+  shows "P p v"
+proof -
+*)
+
+find_theorems dioidLTS.accepts binary_aut
+
+lemma bin_zero_one_accept: (* Can be generalized to any binary automaton *)
+  assumes "finite (ts :: (('a::enum)  \<times> 'd::enum \<times> 'a) set)"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  shows "dioidLTS.accepts (ts_to_wts ts) finals (p, v) \<in> {0,(1::'c)}"
+using assms proof (induction v arbitrary: p)
+  case Nil
+  then show ?case
+    by (simp add: accepts_code_correct)
+next
+  case (Cons a v)
+  have "\<And>q1 d. dioidLTS.accepts (ts_to_wts ts) finals (q1, v) \<in> {0,1::'c}"
+    using Cons by auto
+  have "\<And>q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS (ts_to_wts ts) \<Longrightarrow> d * dioidLTS.accepts (ts_to_wts ts) finals (q1, v) \<in> {0,1::'c}"
+    using Cons.IH assms(1) binary_aut_transition_binary insert_iff mult.right_neutral mult_zero_right singletonD ts_to_wts_binASDFSADF
+    by (metis (mono_tags, lifting))
+  then have "{d * dioidLTS.accepts (ts_to_wts ts) finals (q1, v) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS (ts_to_wts ts)} \<subseteq> {0,1::'c}"
+    by auto
+  then have "\<^bold>\<Sum> {d * dioidLTS.accepts (ts_to_wts ts) finals (q1, v) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS (ts_to_wts ts)} \<in> {0,1::'c}"
+    by (smt (verit) Groups.add_0 comm_monoid_add_class.sum.not_neutral_contains_not_neutral 
+        finite.emptyI finite.insertI finite_SumInf_is_sum idem_sum_insert insert_iff set_eq_subset 
+        singletonD singleton_SumInf subset_eq subset_insert)
+
+  then show ?case
+    using WPDS_Code.accepts_step_distrib[of "((ts_to_wts :: _ \<Rightarrow> (_, _, 'c) w_transitions) ts)" finals v p a] by auto
+     
+qed
+
+lemma dioidLTS_accepts_Cons:
+  assumes "dioidLTS.accepts (ts_to_wts ts) (finals::('a::enum) set ) (p, (a::'b::enum) # v) = (1 :: 'c::{one,zero,bounded_idempotent_semiring})"
+  assumes "finite ts"
+  assumes "0 \<noteq> (1 :: 'c)"
+  shows "\<exists>p'. dioidLTS.accepts (ts_to_wts ts) finals (p', v) = (1 ::'c) \<and> (p, ([a], (1 :: 'c)), p') \<in> wts_to_monoidLTS (ts_to_wts ts)"
+proof -
+  have "binary_aut (ts_to_wts ts)"
+    using assms(2) ts_to_wts_binASDFSADF by blast
+
+  have "\<And>q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS (ts_to_wts ts) \<Longrightarrow> d \<in> {1,0 :: 'c}"
+    by (simp add: binary_aut_transition_binary ts_to_wts_binASDFSADF)
+  moreover
+  have "\<And>q1 d. dioidLTS.accepts (ts_to_wts ts) finals (q1, v) \<in> {1,0 :: 'c}"
+    using bin_zero_one_accept[of ts] assms by auto
+  ultimately
+  have "\<And>q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS (ts_to_wts ts) \<Longrightarrow> d * dioidLTS.accepts (ts_to_wts ts) finals (q1, v) \<in> {1,0 :: 'c}"
+    by fastforce
+  then have "{d * dioidLTS.accepts (ts_to_wts ts) finals (q1, v) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS (ts_to_wts ts)} \<subseteq> {1,0 :: 'c}"
+    by auto
+
+  have "\<^bold>\<Sum> {d * dioidLTS.accepts (ts_to_wts ts) finals (q1, v) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS (ts_to_wts ts)} = ((dioidLTS.accepts (ts_to_wts ts) finals (p, a # v)) ::'c)"
+    using WPDS_Code.accepts_step_distrib[of "(ts_to_wts ts)" finals v p a] by auto
+  then have "\<^bold>\<Sum> {d * dioidLTS.accepts (ts_to_wts ts) finals (q1, v) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS (ts_to_wts ts)} = (1 ::'c)"
+    using assms by auto
+  then have "(1 ::'c) \<in> {d * dioidLTS.accepts (ts_to_wts ts) finals (q1, v) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS (ts_to_wts ts)}"
+    by (metis (no_types, lifting) SumInf_empty assms(3) singleton_SumInf subset_insert subset_singletonD
+        \<open>{d * dioidLTS.accepts (ts_to_wts ts) finals (q1, v) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS (ts_to_wts ts)} \<subseteq> {1, 0}\<close>)
+  then obtain q1 d where
+    "d * dioidLTS.accepts (ts_to_wts ts) finals (q1, v) = (1 ::'c)" "(p, ([a], d), q1) \<in> wts_to_monoidLTS (ts_to_wts ts)"
+    by force
+
+  have "dioidLTS.accepts (ts_to_wts ts) finals (q1, v) = (1 ::'c)"
+    by (metis \<open>(p, ([a], d), q1) \<in> wts_to_monoidLTS (ts_to_wts ts)\<close>
+        \<open>d * dioidLTS.accepts (ts_to_wts ts) finals (q1, v) = 1\<close> assms(2) 
+        binary_aut_transition_binary mult_1 mult_not_zero ts_to_wts_binASDFSADF)
+
+  have "d = (1 ::'c)"
+    using \<open>d * dioidLTS.accepts (ts_to_wts ts) finals (q1, v) = 1\<close> \<open>dioidLTS.accepts (ts_to_wts ts) finals (q1, v) = 1\<close> by fastforce
+
+  have "dioidLTS.accepts (ts_to_wts ts) finals (q1, v) = (1 ::'c)"
+    by (simp add: \<open>dioidLTS.accepts (ts_to_wts ts) finals (q1, v) = 1\<close>)
+  moreover
+  have "(p, ([a],(1 ::'c)), q1) \<in> wts_to_monoidLTS (ts_to_wts ts)"
+    using \<open>(p, ([a], d), q1) \<in> wts_to_monoidLTS (ts_to_wts ts)\<close> \<open>d = 1\<close> by blast
+  ultimately
+  show ?thesis
+    by auto
+qed
+
+
+find_theorems dioidLTS.accepts "(#)"
+lemma AAA_rev:
+  assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  assumes "dioidLTS.accepts (ts_to_wts ts) finals (p, v) = (1::'c)"
+  shows "\<exists>q \<in> finals. (p, (v, 1 :: 'c), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+using assms proof (induction v arbitrary: p)
+  case Nil
+  have "p\<in>finals"
+    by (metis Nil.prems(3) accepts_code.simps(1) accepts_code_correct assms(2))
+  moreover
+  have "(p, ([], 1), p) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+    by (simp add: monoid_rtrancl_wts_to_monoidLTS_refl)
+  ultimately
+  show ?case
+    by auto
+next
+  case (Cons a v)
+  obtain p' where p'_p: "dioidLTS.accepts (ts_to_wts ts) finals (p', v) = (1::'c)" "(p, ([a], (1::'c) :: 'c), p') \<in> (wts_to_monoidLTS (ts_to_wts ts))"
+    using Cons dioidLTS_accepts_Cons[of ts  finals p a v, OF Cons(4,2,3)] by auto
+  then have "\<exists>q\<in>finals. (p', (v, (1::'c)), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+    using Cons(1) assms(1,2) by blast
+  then obtain q where q_p: "q\<in>finals" "(p', (v, (1::'c)), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+    by auto
+  have "(p, (a # v, (1::'c)), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+    using p'_p(2) q_p(2)
+    by (metis monoid_rtrancl_intros_Cons mult.right_neutral)
+  then show ?case
+    using q_p by auto
+qed
+
+lemma AAAAAA:
+  assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::finite \<times> ('a, 'b) state) set)"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  assumes "(Init p, (v, 1::'c), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+  assumes "q \<in> finals"
+  shows "accepts_full (ts_to_wts ts) inits_set finals (p,v) = (1::'c)"
+  using AAA[OF assms(1,2,3,4)] unfolding accepts_full_def unfolding inits_set_def by auto
+
+lemma AAAAAA_rev:
+  assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  assumes "accepts_full (ts_to_wts ts) inits_set finals (p,v) = (1::'c)"
+  shows "\<exists>q \<in> finals. (Init p, (v, 1::'c), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+proof -
+  have assms_3: "dioidLTS.accepts (ts_to_wts ts) finals (Init p, v) = (1 :: 'c)"
+    using assms(3) unfolding accepts_full_def inits_set_def by auto
+  show ?thesis
+    using AAA_rev[OF assms(1,2) assms_3] by auto
+qed
+
+lemma BBB:
+  assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  shows "P_Automaton.lang_aut ts Init finals = {pv. accepts_full (ts_to_wts ts) inits_set finals pv = (1::'c)}"
+    (* or should it be \<le> 1 *)
+  apply auto
+  subgoal for p v
+    unfolding P_Automaton.lang_aut_def
+    apply auto
+    unfolding P_Automaton.accepts_aut_def
+    apply auto
+    subgoal for q
+      unfolding accepts_full_def inits_set_def
+      apply auto
+      unfolding WPDS.dioidLTS.accepts_def
+      apply auto
+      apply (subgoal_tac "(Init p, (v, 1 :: 'c), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))")
+      subgoal
+        using AAA[of ts _ v q finals] unfolding dioidLTS.accepts_def
+        apply auto
+        using assms apply auto
+        done
+      subgoal
+        using monoid_rtrancl_one_if_trans_star[of "Init p" v q ts] 
+        apply auto
+        done
+      done
+    done
+  subgoal for p v
+    unfolding P_Automaton.lang_aut_def
+    apply auto
+    unfolding P_Automaton.accepts_aut_def
+    unfolding accepts_full_def inits_set_def
+    apply auto
+    apply (subgoal_tac "\<exists>q \<in> finals. (Init p, (v, 1 :: 'c), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))")
+    subgoal (* *)
+      apply auto
+      subgoal for q
+        apply (subgoal_tac "(Init p, v, q) \<in> LTS.trans_star ts")
+        subgoal
+        using trans_star_if_monoid_rtrancl_one[of ts "Init p" v q]  
+        apply force
+        done
+      subgoal
+        apply (rule trans_star_if_monoid_rtrancl_one[OF assms(1,2)])
+        apply auto
+        done
+      done
+    done
+    subgoal
+      using AAA_rev assms(1) assms(2) apply blast
+      done
+    done
+  done
+
+lemma True
+  using dioidLTS.weight_reach_def dioidLTS.weight_reach_set_def[of  ] sorry
+
+lemma True
+  using WPDS.weight_reach'_def WPDS.weight_reach_set'_def sorry
+
+lemma TTT':
+  fixes C :: "'s::enum * ('l::enum) list \<Rightarrow> ('c :: bounded_idempotent_semiring)"
+  fixes C' :: "'s::enum * ('l::enum) list \<Rightarrow> ('c :: bounded_idempotent_semiring)"
+  shows
+  "dioidLTS.weight_reach_set R {pv. C pv = (1 :: 'c)} {pv. C' pv = 1} = dioidLTS.weight_reach R C C'"
+  sorry
+
+lemma TTT:
+  fixes C :: "'s::enum * ('l::enum) list \<Rightarrow> ('c :: bounded_idempotent_semiring)"
+  fixes C' :: "'s::enum * ('l::enum) list \<Rightarrow> ('c :: bounded_idempotent_semiring)"
+  shows "WPDS.weight_reach_set' R {pv. C pv = 1} {pv. C' pv = 1} = WPDS.weight_reach' R C C'"
+  unfolding WPDS.weight_reach_set'_def WPDS.weight_reach'_def using TTT' by auto
+
+lemma YES:
+  assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
+  assumes "finite (ts' :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
+  assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+  shows "(WPDS.weight_reach_set' :: _ \<Rightarrow> _ \<Rightarrow> _ \<Rightarrow> 'c) (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals') =
+         WPDS.weight_reach' (w_rules \<Delta> W) (accepts_full (ts_to_wts ts) inits_set finals) (accepts_full (ts_to_wts ts') inits_set finals')"
+  unfolding BBB[OF assms(1,3)] BBB[OF assms(2,3)]
+  sorry
+
 lemma WPDS_reach_exec_correct:
   assumes "thing2 \<Delta> W ts ts' finals finals' = Some w"
   shows "w = (WPDS.weight_reach_set' (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
