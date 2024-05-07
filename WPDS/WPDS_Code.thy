@@ -687,7 +687,7 @@ lemma monoid_rtrancl_one_if_trans_star:
   done
 
 lemma AAA:
-  assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::finite \<times> ('a, 'b) state) set)"
+  assumes "finite (ts :: ('s :: enum \<times> 'd::finite \<times> 's) set)"
   assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
   assumes "(p, (v, 1 :: 'c), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
   assumes "q \<in> finals"
@@ -768,7 +768,7 @@ next
 qed
 
 lemma dioidLTS_accepts_Cons:
-  assumes "dioidLTS.accepts (ts_to_wts ts) (finals::('a::enum) set ) (p, (a::'b::enum) # v) = (1 :: 'c::{one,zero,bounded_idempotent_semiring})"
+  assumes "dioidLTS.accepts (ts_to_wts ts) (finals::('a::enum) set) (p, (a::'b::enum) # v) = (1 :: 'c::{one,zero,bounded_idempotent_semiring})"
   assumes "finite ts"
   assumes "0 \<noteq> (1 :: 'c)"
   shows "\<exists>p'. dioidLTS.accepts (ts_to_wts ts) finals (p', v) = (1 ::'c) \<and> (p, ([a], (1 :: 'c)), p') \<in> wts_to_monoidLTS (ts_to_wts ts)"
@@ -819,7 +819,7 @@ qed
 
 find_theorems dioidLTS.accepts "(#)"
 lemma AAA_rev:
-  assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
+  assumes "finite (ts :: ('s :: enum \<times> 'd::enum \<times> 's) set)"
   assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
   assumes "dioidLTS.accepts (ts_to_wts ts) finals (p, v) = (1::'c)"
   shows "\<exists>q \<in> finals. (p, (v, 1 :: 'c), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
@@ -929,18 +929,80 @@ lemma True
 lemma True
   using WPDS.weight_reach'_def WPDS.weight_reach_set'_def sorry
 
+find_theorems monoid_rtranclp countable
+
 lemma TTT':
   fixes C :: "'s::enum * ('l::enum) list \<Rightarrow> ('c :: bounded_idempotent_semiring)"
   fixes C' :: "'s::enum * ('l::enum) list \<Rightarrow> ('c :: bounded_idempotent_semiring)"
-  shows
-  "dioidLTS.weight_reach_set R {pv. C pv = (1 :: 'c)} {pv. C' pv = 1} = dioidLTS.weight_reach R C C'"
-  sorry
+  assumes "\<forall>c. C c \<in> {0,1}"
+  assumes "\<forall>c. C' c \<in> {0,1}"
+  assumes "(0 :: 'c) \<noteq> 1"
+  assumes "countable R"
+  shows "(dioidLTS.weight_reach_set R {pv. C pv = (1 :: 'c)} {pv. C' pv = 1}) = dioidLTS.weight_reach R C C'"
+proof -
+  have "countable_monoidLTS R" (* Isn't this very wrong? Rather this theorem should be put in that locale... *)
+    unfolding countable_monoidLTS_def using assms by auto
+  have "countable ({l | l c c'. monoid_rtranclp (monoidLTS.l_step_relp R) c l c'})"
+    using \<open>countable_monoidLTS R\<close> countable_monoidLTS.countable_l_c_c' by fastforce
+  then have c: "countable ({l | l c c'. monoid_rtranclp (monoidLTS.l_step_relp R) c l c' \<and> c \<in> {pv. C pv = 1} \<and> c' \<in> {pv. C' pv = 1}})"
+    using Collect_mono_iff countable_subset by fastforce
+  have "{(pb, c, pc) |pb c pc. monoid_rtranclp (monoidLTS.l_step_relp R) pb c pc} = {(pa, x, y). monoid_rtranclp (monoidLTS.l_step_relp R) pa x y}"
+    using dissect_set(6) by auto
+  then have "countable ({(c, l, c') |c l c'. monoid_rtranclp (monoidLTS.l_step_relp R) c l c'})"
+    by (metis (no_types) \<open>countable_monoidLTS R\<close> countable_monoidLTS.countable_monoid_star_all(1) monoidLTS.monoid_star_def)
+  have "countable ((\<lambda>(pa, c, p). C pa * c * C' p) ` {(p, x, y). monoid_rtranclp (monoidLTS.l_step_relp R) p x y})"
+    using \<open>countable_monoidLTS R\<close> countable_monoidLTS.countable_monoid_star_all(2) by blast
+  then have d: "countable ({C c * l * C' c' |c l c'. monoid_rtranclp (monoidLTS.l_step_relp R) c l c'})"
+    by (metis setcompr_eq_image3)
+
+  have "{l | l c c'. monoid_rtranclp (monoidLTS.l_step_relp R) c l c' \<and> c \<in> {pv. C pv = 1} \<and> c' \<in> {pv. C' pv = 1}} \<union> {0} =
+        {C c * l * C' c' |c l c'. monoid_rtranclp (monoidLTS.l_step_relp R) c l c'} \<union> {0}"
+    apply rule
+    subgoal
+      apply auto
+      subgoal for d p v q w
+        apply force
+        done
+      done
+    apply clarsimp
+    subgoal for p v d q w
+      apply (subgoal_tac "C (p, v) = 1 \<and> C' (q,w) = 1")
+      subgoal
+        apply force
+        done
+      subgoal
+        using assms
+        apply force
+        done
+      done
+    done
+      (* We need an assumption that C and C' are binary.
+     We probably also need that 0 and 1 are different. *)
+  then have "\<^bold>\<Sum> ({l | l c c'. monoid_rtranclp (monoidLTS.l_step_relp R) c l c' \<and> c \<in> {pv. C pv = 1} \<and> c' \<in> {pv. C' pv = 1}} \<union> {0}) =
+             \<^bold>\<Sum> ({C c * l * C' c' |c l c'. monoid_rtranclp (monoidLTS.l_step_relp R) c l c'} \<union> {0})"
+    by auto
+  then have "\<^bold>\<Sum> ({l | l c c'. monoid_rtranclp (monoidLTS.l_step_relp R) c l c' \<and> c \<in> {pv. C pv = 1} \<and> c' \<in> {pv. C' pv = 1}}) =
+             \<^bold>\<Sum> ({C c * l * C' c' |c l c'. monoid_rtranclp (monoidLTS.l_step_relp R) c l c'})"
+    by (smt (verit, best) SumInf_insert_0 c d insert_def singleton_conv sup.commute)
+
+  then show ?thesis
+    unfolding dioidLTS.weight_reach_def dioidLTS.weight_reach_set_def by auto
+qed
 
 lemma TTT:
   fixes C :: "'s::enum * ('l::enum) list \<Rightarrow> ('c :: bounded_idempotent_semiring)"
   fixes C' :: "'s::enum * ('l::enum) list \<Rightarrow> ('c :: bounded_idempotent_semiring)"
+  assumes "\<forall>c. C c \<in> {0,1}"
+  assumes "\<forall>c. C' c \<in> {0,1}"
+  assumes "(0 :: 'c) \<noteq> 1"
+  assumes "countable (WPDS.transition_rel R)"
   shows "WPDS.weight_reach_set' R {pv. C pv = 1} {pv. C' pv = 1} = WPDS.weight_reach' R C C'"
-  unfolding WPDS.weight_reach_set'_def WPDS.weight_reach'_def using TTT' by auto
+proof -
+  have "countable (WPDS.transition_rel R)"
+    using assms by auto
+  then show ?thesis
+    unfolding WPDS.weight_reach_set'_def WPDS.weight_reach'_def using TTT'[OF assms(1,2,3)] by auto 
+qed
 
 lemma YES:
   assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
@@ -948,8 +1010,29 @@ lemma YES:
   assumes "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
   shows "(WPDS.weight_reach_set' :: _ \<Rightarrow> _ \<Rightarrow> _ \<Rightarrow> 'c) (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals') =
          WPDS.weight_reach' (w_rules \<Delta> W) (accepts_full (ts_to_wts ts) inits_set finals) (accepts_full (ts_to_wts ts') inits_set finals')"
-  unfolding BBB[OF assms(1,3)] BBB[OF assms(2,3)]
-  sorry
+proof -
+  have bats: "binary_aut (ts_to_wts ts)"
+    by (simp add: binary_aut_ts_to_wts)
+  have bats': "binary_aut (ts_to_wts ts)"
+    by (simp add: binary_aut_ts_to_wts)
+
+  have a: "\<forall>c. accepts_full (ts_to_wts ts) inits_set finals c \<in> {0:: 'c, 1}"
+    using bats
+    sorry
+
+  have b: "\<forall>c. accepts_full (ts_to_wts ts') inits_set finals' c \<in> {0::'c, 1}"
+    using bats'
+    sorry
+
+  have c: "0 \<noteq> (1 ::'c::{one,zero,bounded_idempotent_semiring})"
+    using assms by auto
+
+  have d: "countable (WPDS.transition_rel (w_rules \<Delta> W))"
+    by (simp add: finite_WPDS.countable_transition_rel finite_WPDS_def finite_w_rules)
+  show ?thesis
+    unfolding BBB[OF assms(1,3)] BBB[OF assms(2,3)] using TTT[of "accepts_full (ts_to_wts ts) inits_set finals" "accepts_full (ts_to_wts ts') inits_set finals'" "w_rules \<Delta> W", OF a b c d] by auto
+qed
+  
 
 lemma WPDS_reach_exec_correct:
   assumes "thing2 \<Delta> W ts ts' finals finals' = Some w"
