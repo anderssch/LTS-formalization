@@ -1,11 +1,12 @@
-theory WEx
+theory WExSetup
   imports WPDS_Code
 begin
 
-(* Query specific part START *)
-abbreviation(input) ctr_locN :: nat where "ctr_locN \<equiv> 3"
+(* Setup control locations, labels and states. 
+   Specify number of each, and define constants. *)
+abbreviation(input) ctr_locN :: nat where "ctr_locN \<equiv> 4"
 abbreviation(input) labelN :: nat where "labelN \<equiv> 2"
-abbreviation(input) stateN :: nat where "stateN \<equiv> 3"
+abbreviation(input) stateN :: nat where "stateN \<equiv> 4"
 typedef ctr_loc = "{0 ..< ctr_locN}" by (auto intro!: exI[of _ 0])
 typedef label = "{0 ..< labelN}" by (auto intro!: exI[of _ 0])
 typedef state = "{0 ..< stateN}" by (auto intro!: exI[of _ 0])
@@ -13,15 +14,19 @@ setup_lifting type_definition_ctr_loc
 setup_lifting type_definition_label
 setup_lifting type_definition_state
 
-lift_definition p1 :: ctr_loc is 0 by auto
-lift_definition p2 :: ctr_loc is 1 by auto
-lift_definition p3 :: ctr_loc is 2 by auto
-lift_definition x :: label is 0 by auto
-lift_definition y :: label is 1 by auto
+lift_definition p0 :: ctr_loc is 0 by auto
+lift_definition p1 :: ctr_loc is 1 by auto
+lift_definition p2 :: ctr_loc is 2 by auto
+lift_definition p3 :: ctr_loc is 3 by auto
+lift_definition A :: label is 0 by auto
+lift_definition B :: label is 1 by auto
 lift_definition q1 :: state is 0 by auto
 lift_definition q2 :: state is 1 by auto
-lift_definition qf :: state is 2 by auto
+lift_definition q3 :: state is 2 by auto
+lift_definition qf :: state is 3 by auto
 
+
+(* Proofs *)
 instantiation ctr_loc :: finite begin
 instance by (standard, rule finite_surj[of "{0 ..< ctr_locN}" _ Abs_ctr_loc])
   (simp, metis Rep_ctr_loc Rep_ctr_loc_inverse imageI subsetI)
@@ -56,7 +61,7 @@ instance by (standard, auto simp: enum_label_def enum_all_label_def enum_ex_labe
 end
 
 lift_definition (code_dt) state_list :: "state list" is "[0 ..< stateN]" by (auto simp: list.pred_set)
-instantiation WEx.state :: enum begin
+instantiation state :: enum begin
 definition "enum_state == state_list"
 definition "enum_all_state P == list_all P state_list"
 definition "enum_ex_state P == list_ex P state_list"
@@ -71,7 +76,6 @@ lift_definition less_ctr_loc :: "ctr_loc \<Rightarrow> ctr_loc \<Rightarrow> boo
 lift_definition less_eq_ctr_loc :: "ctr_loc \<Rightarrow> ctr_loc \<Rightarrow> bool" is "(\<le>)" .
 instance by (standard; transfer) auto
 end
-
 
 instantiation label :: linorder begin
 lift_definition less_label :: "label \<Rightarrow> label \<Rightarrow> bool" is "(<)" .
@@ -127,83 +131,5 @@ definition "finite_UNIV_state = Phantom(state) True"
 instance by standard (auto simp add: finite_UNIV_state_def card_UNIV_state card_UNIV_state_def)
 end
 
-
-
-(* Define rules of PDS, and the two P-automata *)
-(*definition wpds_rules :: "(ctr_loc, label, nat_inf) w_rule set" where
-  "wpds_rules = {
-  ((p1, y), fin 1,(p1, push x y)),
-  ((p1, x), fin 2,(p2, swap y)),
-  ((p2, x), fin 3,(p3, pop)),
-  ((p3, y), fin 4,(p2, swap x))}"*)
-definition pds_rules :: "(ctr_loc, label) rule set" where
-  "pds_rules = {
-  ((p1, y), (p1, push x y)),
-  ((p1, x), (p2, swap y)),
-  ((p2, x), (p3, pop)),
-  ((p3, y), (p2, swap x))}"
-definition W :: "(ctr_loc, label) rule \<Rightarrow> nat_inf" where
-  "W rule = (K$ infinity)
-    (((p1, y), (p1, push x y)) $:= fin 1)
-    (((p1, x), (p2, swap y))   $:= fin 2)
-    (((p2, x), (p3, pop))      $:= fin 3)
-    (((p3, y), (p2, swap x))   $:= fin 4) $ rule"
-
-definition initial_automaton :: "((ctr_loc, state) WPDS.state, label) transition set" where
-  "initial_automaton = {
-  ((Init p1, y, Noninit qf)),
-  ((Init p2, y, Noninit qf)),
-  ((Init p2, x, Init p2)),
-  ((Init p3, x, Noninit qf))}"
-definition "initial_finals = {Noninit qf}"
-
-definition final_automaton :: "((ctr_loc, state) WPDS.state, label) transition set" where
-  "final_automaton = {
-  ((Init p2, y, Noninit q1)),
-  ((Init p3, x, Noninit q1)),
-  ((Noninit q1, y, Noninit q2))}"
-definition "final_finals = {Noninit q2}"
-
-(* Query specific part END *)
-
-(*lemma "wpds_rules = w_rules pds_rules W"
-  unfolding pds_rules_def W_def wpds_rules_def w_rules_def by eval*)
-
-
-term "thing2 pds_rules W initial_automaton final_automaton initial_finals final_finals"
-
-
-lemma[code_unfold]: "finite pds_rules"
-  by simp
-  (*unfolding pds_rules_def
-  by simp
- 
-value "finite pds_rules"*)
-
-(* The check function agrees with the encoded answer (Some True) 
-   and therefore the proof succeeds as expected. *)
-
-
-term "($\<circ>)"
-thm finfun_comp2_const
-
-
-
-definition "thing3 == thing2 pds_rules W initial_automaton final_automaton initial_finals final_finals"
-
-
-export_code thing3 in SML module_name WPDS_Example
-
-
-value "thing3"
-
-
-lemma
-  "thing3 = Some (fin 3)" 
-  by eval
-
-lemma
-  "thing3 = Some (fin 5)"
-  by eval
 
 end

@@ -1111,39 +1111,42 @@ qed
 
 \<comment> \<open>Finally we show that \<^term>\<open>pre_star_exec ts\<close> is the saturation of \<^term>\<open>pre_star_rule\<close> from \<^term>\<open>ts\<close>.\<close>
 
-inductive pure_pre_star_rule :: "('ctr_loc, 'label, 'weight) w_transitions saturation_rule" where
+\<comment> \<open>We need a version of pre_star_rule without the requirement that the next \<^term>\<open>ts\<close> is different.
+   This allows proving the mono property below, which does not hold for pre_star_rule,
+   since at the fixed point, there will no longer exist such a \<^term>\<open>ts'\<close>.\<close>
+inductive non_strict_pre_star_rule :: "('ctr_loc, 'label, 'weight) w_transitions saturation_rule" where
  "((p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)) \<Longrightarrow> (p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) 
-  \<Longrightarrow> pure_pre_star_rule ts ts((p, \<gamma>, q) $:= ts $ (p, \<gamma>, q) + (d * d'))"
+  \<Longrightarrow> non_strict_pre_star_rule ts ts((p, \<gamma>, q) $:= ts $ (p, \<gamma>, q) + (d * d'))"
 
-lemma pre_star_rule_is_non_equal_pure: "pre_star_rule ts ts' = non_equal_rule pure_pre_star_rule ts ts'"
-  unfolding non_equal_rule.simps pre_star_rule.simps pure_pre_star_rule.simps 
+lemma pre_star_rule_is_non_equal_pure: "pre_star_rule ts ts' = strict_rule non_strict_pre_star_rule ts ts'"
+  unfolding strict_rule.simps pre_star_rule.simps non_strict_pre_star_rule.simps 
   apply simp
   apply safe
     apply blast
    apply (metis finfun_add_update_apply_same)
   by fastforce
-lemma pure_pre_star_rule_less_eq: "pure_pre_star_rule ts ts' \<Longrightarrow> ts' \<le> ts" 
-  unfolding pure_pre_star_rule.simps using finfun_add_update_less_eq by fast
+lemma pure_pre_star_rule_less_eq: "non_strict_pre_star_rule ts ts' \<Longrightarrow> ts' \<le> ts" 
+  unfolding non_strict_pre_star_rule.simps using finfun_add_update_less_eq by fast
 lemma pure_pre_star_rule_mono:
   assumes "ts\<^sub>3 \<le> ts\<^sub>1"
-  assumes "pure_pre_star_rule ts\<^sub>1 ts\<^sub>2"
-  shows "\<exists>ts'. pure_pre_star_rule ts\<^sub>3 ts' \<and> ts' \<le> ts\<^sub>2"
+  assumes "non_strict_pre_star_rule ts\<^sub>1 ts\<^sub>2"
+  shows "\<exists>ts'. non_strict_pre_star_rule ts\<^sub>3 ts' \<and> ts' \<le> ts\<^sub>2"
 proof -
   obtain p \<gamma> d p' w d' q where ts2: 
     "ts\<^sub>2 = ts\<^sub>1((p, \<gamma>, q) $+= d * d')"
     "(p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)" 
     "(p', (lbl w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts\<^sub>1)" 
-    using assms(2) unfolding pure_pre_star_rule.simps by blast
+    using assms(2) unfolding non_strict_pre_star_rule.simps by blast
   obtain d'' where d'': "(p', (lbl w, d''), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts\<^sub>3)" "d'' \<le> d'"
     using wts_monoid_rtrancl_mono[OF assms(1) ts2(3)] by blast
   have "ts\<^sub>3((p, \<gamma>, q) $+= d * d'') \<le> ts\<^sub>2" unfolding ts2(1) using d''(2) assms(1) 
     by (metis finfun_add_update_same_mono idempotent_semiring_ord_class.subdistl meet.inf.absorb_iff2)
   then show ?thesis
-    using pure_pre_star_rule.intros[OF ts2(2) d''(1)] by blast
+    using non_strict_pre_star_rule.intros[OF ts2(2) d''(1)] by blast
 qed
 
 lemma saturation_pre_star_exec: "saturation pre_star_rule ts (pre_star_exec ts)"
-  using sum_saturation_step_exec[of pure_pre_star_rule "pre_star_step \<Delta>" ts, OF pure_pre_star_rule_less_eq]
+  using sum_saturation_step_exec[of non_strict_pre_star_rule "pre_star_step \<Delta>" ts, OF pure_pre_star_rule_less_eq]
         pure_pre_star_rule_mono finite_pre_star_rule_set pre_star_step_to_pre_star_rule_sum
   unfolding pre_star_rule_is_non_equal_pure pre_star_exec_def step_saturation.step_exec_def pre_star_loop_def step_saturation.step_loop_def
   by fastforce
