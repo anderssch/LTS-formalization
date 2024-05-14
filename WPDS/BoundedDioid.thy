@@ -150,6 +150,11 @@ proof -
     using idem_sum_union[of "{f x |x. P x \<and> Q x}" "{f x |x. P x \<and> \<not> Q x}"] assms by argo
 qed
 
+lemma sum_subset_singleton_0_is_0:
+  assumes "X \<subseteq> {0}"
+  shows "\<Sum> X = 0"
+  using assms by (cases "X = {0}"; cases "X = {}") auto
+   
 
 abbreviation sum_seq :: "(nat \<Rightarrow> 'a) \<Rightarrow> nat \<Rightarrow> 'a" where
   "sum_seq f i \<equiv> sum f {x. x < i}"

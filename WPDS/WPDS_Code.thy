@@ -645,10 +645,9 @@ lemma monoid_rtrancl_one_if_trans_star:
 
 lemma accepts_1_if_monoid_rtrancl_1:
   assumes "finite (ts :: ('s :: enum \<times> 'd::finite \<times> 's) set)"
-  assumes "0 \<noteq> (1 ::'c::bounded_idempotent_semiring)"
   assumes "(p, (v, 1 :: 'c), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
   assumes "q \<in> finals"
-  shows "dioidLTS.accepts (ts_to_wts ts) finals (p, v) = (1::'c)"
+  shows "dioidLTS.accepts (ts_to_wts ts) finals (p, v) = (1::'c::bounded_idempotent_semiring)"
 proof -
   have "\<And>q d. q \<in> finals \<Longrightarrow> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts)) \<Longrightarrow> d = (1::'c) \<or> d = 0"
     by (simp add: binary_aut_path_binary ts_to_wts_bin)
@@ -656,7 +655,7 @@ proof -
     by blast
   moreover
   have "(p, (v, 1 :: 'c), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
-    using assms(3) by auto
+    using assms(2) by auto
   then have "(1 :: 'c) \<in> {d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))}"
     using assms by auto
   ultimately
@@ -783,11 +782,10 @@ qed
 
 lemma accepts_full_1_if_monoid_rtrancl_final:
   assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::finite \<times> ('a, 'b) state) set)"
-  assumes "0 \<noteq> (1 ::'c::bounded_idempotent_semiring)"
-  assumes "(Init p, (v, 1::'c), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+  assumes "(Init p, (v, 1::'c::bounded_idempotent_semiring), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
   assumes "q \<in> finals"
   shows "accepts_full (ts_to_wts ts) inits_set finals (p,v) = (1::'c)"
-  using accepts_1_if_monoid_rtrancl_1[OF assms(1,2,3,4)] unfolding accepts_full_def unfolding inits_set_def by auto
+  using accepts_1_if_monoid_rtrancl_1[OF assms(1,2,3)] unfolding accepts_full_def unfolding inits_set_def by auto
 
 lemma monoid_rtrancl_final_if_accepts_full_1:
   assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
@@ -800,6 +798,61 @@ proof -
   show ?thesis
     using monoid_rtrancl_final_if_accepts_1[OF assms(1,2) assms_3] by auto
 qed
+
+lemma aux: 
+  assumes "\<forall>q\<in>finals. (p, a # w, q) \<notin> LTS.trans_star (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
+  assumes "(p, a, p') \<in> ts"
+  shows "\<forall>q\<in>finals. (p', w, q) \<notin> LTS.trans_star ts"
+  using assms by (meson LTS.trans_star.trans_star_step)
+
+lemma aux2:
+  assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
+  assumes "(p, l, q) \<notin> ts"
+  shows "ts_to_wts ts $ (p, l, q) = 0"
+proof -
+  have f: "finite {(t, 1) |t. t \<in> ts}" using assms(1) by (fact finite_f_on_set)
+  show ?thesis
+  unfolding ts_to_wts_def update_wts_sum[OF f, of "K$ 0" "(p, l, q)"] using assms(2)
+  by simp
+qed
+
+lemma aux3:
+  assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
+  shows "\<forall>q\<in>finals. (p, w, q) \<notin> LTS.trans_star ts \<Longrightarrow> dioidLTS.accepts (ts_to_wts ts) finals (p, w) = (0::'c::bounded_idempotent_semiring)"
+unfolding accepts_code_correct[of "ts_to_wts ts"]
+proof (induct w arbitrary: p)
+  case Nil
+  then show ?case by simp (metis LTS.trans_star.trans_star_refl)
+next
+  case (Cons a w)
+  have f:"finite {ts_to_wts ts $ (p, a, q) * accepts_code (ts_to_wts ts) finals (q, w) |q. ts_to_wts ts $ (p, a, q) \<noteq> 0}"
+    by fastforce
+  have A:"{ts_to_wts ts $ (p, a, x) * accepts_code (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<notin> ts} = {}"
+    using aux2[OF assms] by blast
+  have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> accepts_code (ts_to_wts ts) finals (p', w) = (0::'c::bounded_idempotent_semiring)"
+    using Cons aux by blast
+  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> ts_to_wts ts $ (p, a, p') * accepts_code (ts_to_wts ts) finals (p', w) = (0::'c::bounded_idempotent_semiring)"
+    using mult_zero_right by fastforce
+  then have B:"{ts_to_wts ts $ (p, a, x) * accepts_code (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<in> ts} \<subseteq> {0::'c::bounded_idempotent_semiring}"
+    by blast
+  show ?case
+    apply simp
+    unfolding sum_split_f_P[OF f, of "\<lambda>q. (p, a, q) \<in> ts"] A
+    using B sum_subset_singleton_0_is_0
+    by simp
+qed
+
+lemma lang_aut_is_accepts_full_new:
+  assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
+  shows "accepts_full (ts_to_wts ts) inits_set finals pv = (if pv \<in> P_Automaton.lang_aut ts Init finals then 1 else 0)"
+  unfolding accepts_full_def P_Automaton.lang_aut_def P_Automaton.accepts_aut_def inits_set_def 
+  apply simp
+  apply safe
+  subgoal for p w q
+    using monoid_rtrancl_one_if_trans_star[of "Init p" w q ts, OF _ assms]
+          accepts_1_if_monoid_rtrancl_1[of ts "Init p" w q finals, OF assms]
+    by blast
+  using aux3[OF assms] by blast
 
 lemma lang_aut_is_accepts_full:
   assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
@@ -846,6 +899,21 @@ next
         unfolding P_Automaton.lang_aut_def P_Automaton.accepts_aut_def using sg1' by force
     qed
   qed
+qed
+
+lemma weight_reach_set_is_weight_reach_new: (* TODO: Check if this can remove 0 \noteq 1 assumption. *)
+  assumes "countable R"
+  shows "dioidLTS.weight_reach_set R C C' = dioidLTS.weight_reach R (\<lambda>c. if c \<in> C then 1 else 0) (\<lambda>c. if c \<in> C' then 1 else 0)"
+proof -
+  have "countable_monoidLTS R" (* Isn't this very wrong? Rather this theorem should be put in that locale... *)
+    unfolding countable_monoidLTS_def using assms by auto
+  have "{(pb, c, pc) |pb c pc. monoid_rtranclp (monoidLTS.l_step_relp R) pb c pc} = {(pa, x, y). monoid_rtranclp (monoidLTS.l_step_relp R) pa x y}"
+    using dissect_set(6) by auto
+  then have C:"countable ({(c, l, c') |c l c'. monoid_rtranclp (monoidLTS.l_step_relp R) c l c'})"
+    by (metis (no_types) \<open>countable_monoidLTS R\<close> countable_monoidLTS.countable_monoid_star_all(1) monoidLTS.monoid_star_def)
+  show ?thesis unfolding dioidLTS.weight_reach_set_def dioidLTS.weight_reach_def
+    using SumInf_if_1_0_both_is_sum[of _ "\<lambda>clc'. fst clc' \<in> C" "\<lambda>clc'. fst (snd clc')" "\<lambda>clc'. snd (snd clc') \<in> C'"] C
+    by fastforce
 qed
 
 lemma weight_reach_set_is_weight_reach:
@@ -904,6 +972,16 @@ proof -
     unfolding dioidLTS.weight_reach_def dioidLTS.weight_reach_set_def by auto
 qed
 
+lemma weight_reach_set'_is_weight_reach'_new: (* TODO: Check if this can remove 0 \noteq 1 assumption. *)
+  assumes "countable (WPDS.transition_rel R)"
+  shows "WPDS.weight_reach_set' R C C' = WPDS.weight_reach' R (\<lambda>c. if c \<in> C then 1 else 0) (\<lambda>c. if c \<in> C' then 1 else 0)"
+proof -
+  have "countable (WPDS.transition_rel R)"
+    using assms by auto
+  then show ?thesis
+    unfolding WPDS.weight_reach_set'_def WPDS.weight_reach'_def using weight_reach_set_is_weight_reach_new by auto 
+qed
+
 lemma weight_reach_set'_is_weight_reach':
   fixes C :: "'s::enum * ('l::enum) list \<Rightarrow> ('c :: bounded_idempotent_semiring)"
   fixes C' :: "'s::enum * ('l::enum) list \<Rightarrow> ('c :: bounded_idempotent_semiring)"
@@ -922,40 +1000,24 @@ qed
 lemma weight_reach_set'_lang_aut_is_weight_reach'_accepts_full:
   assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
   assumes "finite (ts' :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
-  assumes "0 \<noteq> (1 ::'c::bounded_idempotent_semiring)"
-  shows "(WPDS.weight_reach_set' :: _ \<Rightarrow> _ \<Rightarrow> _ \<Rightarrow> 'c) (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals') =
+  shows "(WPDS.weight_reach_set' :: _ \<Rightarrow> _ \<Rightarrow> _ \<Rightarrow> 'c::bounded_idempotent_semiring) (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals') =
          WPDS.weight_reach' (w_rules \<Delta> W) (accepts_full (ts_to_wts ts) inits_set finals) (accepts_full (ts_to_wts ts') inits_set finals')"
 proof -
   have bats: "binary_aut (ts_to_wts ts)"
     by (simp add: binary_aut_ts_to_wts)
   have bats': "binary_aut (ts_to_wts ts')"
     by (simp add: binary_aut_ts_to_wts)
-
-  have a': "\<forall>p w. dioidLTS.accepts (ts_to_wts ts) finals (Init p, w)  \<in> {0 ::'c, 1}"
-    using bin_zero_one_accept using assms by metis
-  then have a: "\<forall>c. accepts_full (ts_to_wts ts) inits_set finals c \<in> {0:: 'c, 1}"
-    unfolding accepts_full_def by auto
-
-  have b': "\<forall>p w. dioidLTS.accepts (ts_to_wts ts') finals' (Init p, w)  \<in> {0 :: 'c, 1}"
-    using bin_zero_one_accept using assms by metis
-  then have b: "\<forall>c. accepts_full (ts_to_wts ts') inits_set finals' c \<in> {0::'c, 1}"
-    unfolding accepts_full_def by auto
-
-  have c: "0 \<noteq> (1 ::'c::bounded_idempotent_semiring)"
-    using assms by auto
-
-  have d: "countable (WPDS.transition_rel (w_rules \<Delta> W))"
+  have c: "countable (WPDS.transition_rel (w_rules \<Delta> W))"
     by (simp add: finite_WPDS.countable_transition_rel finite_WPDS_def finite_w_rules)
   show ?thesis
-    unfolding lang_aut_is_accepts_full[OF assms(1,3)] lang_aut_is_accepts_full[OF assms(2,3)] 
-    using weight_reach_set'_is_weight_reach'[of "accepts_full (ts_to_wts ts) inits_set finals" 
-        "accepts_full (ts_to_wts ts') inits_set finals'" "w_rules \<Delta> W", OF a b c d]
-    by auto
+    unfolding lang_aut_is_accepts_full_new[OF assms(1)] lang_aut_is_accepts_full_new[OF assms(2)]
+    using weight_reach_set'_is_weight_reach'_new[of "w_rules \<Delta> W" "P_Automaton.lang_aut ts Init finals" 
+        "P_Automaton.lang_aut ts' Init finals'", OF c]  
+    by blast
 qed
   
 lemma WPDS_reach_exec_correct:
-  assumes "thing2 \<Delta> W ts ts' finals finals' = Some (w :: 'c)"
-  assumes "0 \<noteq> (1 :: 'c::bounded_idempotent_semiring)"
+  assumes "thing2 \<Delta> W ts ts' finals finals' = Some (w :: 'c::bounded_idempotent_semiring)"
   shows "w = (WPDS.weight_reach_set' (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
   using assms big_good_correctness_code[of "ts_to_wts ts" "w_rules \<Delta> W" "ts_to_wts ts'" inits_set finals finals', OF binary_aut_ts_to_wts[of ts]]
     weight_reach_set'_lang_aut_is_weight_reach'_accepts_full[of ts ts' \<Delta> W finals finals'] unfolding wpds.checking_def
