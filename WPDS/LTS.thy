@@ -437,6 +437,13 @@ next
     using LTS.trans_star_states.trans_star_states_step by fastforce 
 qed
 
+lemma trans_star_append:
+  assumes "(p2, w2, q') \<in> trans_star"
+  assumes "(q', v,  q) \<in> trans_star"
+  shows "(p2, w2 @ v, q) \<in> trans_star"
+  using assms trans_star_states_append[of p2 w2 _ q' v _ q]
+  by (meson trans_star_states_trans_star trans_star_trans_star_states)
+
 lemma trans_star_states_length:
   assumes "(p, u, u_ss, p1) \<in> trans_star_states"
   shows "length u_ss = Suc (length u)"

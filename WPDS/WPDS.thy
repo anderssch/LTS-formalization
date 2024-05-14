@@ -248,6 +248,11 @@ proof -
 qed
 
 
+lemma weight_reach_set'_is_weight_reach':
+  "weight_reach_set' C C' = weight_reach' (\<lambda>c. if c \<in> C then 1 else 0) (\<lambda>c. if c \<in> C' then 1 else 0)"
+  unfolding weight_reach_set'_def weight_reach'_def 
+  using weight_reach_set_is_weight_reach by auto
+
 
 section \<open>Pre* correctness\<close>
 (*

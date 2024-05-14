@@ -85,6 +85,9 @@ lemma countable_l_c': "countable {l |l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c
 lemma countable_l: "countable {l |l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
   using countable_star_f_p[of "\<lambda>c l c'. l" "\<lambda>a b. a = c \<and> b = c'"] by presburger
 
+lemma countable_star_tuple: "countable {(c, l, c') | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
+  using countable_star_f_p[of "\<lambda>c l c'. (c, l, c')" "\<lambda>c c'. True"] by presburger
+
 end
 
 (*
@@ -138,6 +141,12 @@ proof -
     using SumInf_of_SumInf_right_distr[of "\<lambda>c. True" "\<lambda>cl c'. fst cl \<Midarrow> snd cl \<Rightarrow>\<^sup>* c'" "\<lambda>cl c'. C (fst cl) * snd cl" "\<lambda>c'. C' c'", OF countableI_type c]
     by simp
 qed
+
+lemma weight_reach_set_is_weight_reach:
+ "weight_reach_set C C' = weight_reach (\<lambda>c. if c \<in> C then 1 else 0) (\<lambda>c. if c \<in> C' then 1 else 0)"
+  unfolding weight_reach_set_def weight_reach_def
+  using SumInf_if_1_0_both_is_sum[of _ "\<lambda>clc'. fst clc' \<in> C" "\<lambda>clc'. fst (snd clc')" "\<lambda>clc'. snd (snd clc') \<in> C'"] countable_star_tuple
+  by fastforce
 
 end
 
