@@ -15,9 +15,37 @@ session Dev_Weighted_Pushdown_Systems = Main +
     "Deriving.Derive"
     "Kleene_Algebra.Dioid_Models"
     "FinFun.FinFun"
-  theories [document = false]
+
+session Weighted_Pushdown_Systems = Main +
+  options [timeout = 3000]
+  sessions
+    "Dev_Weighted_Pushdown_Systems"
+  theories
+    FinFunOf
+    BoundedDioid
+    CountableSum
+    FinFunAddUpdate
+    FinFunWellFounded
+    FinFunWellQuasiOrder
+    FiniteMonoidLTS
+    LTS
+    MonoidClosure
+    MonoidLTS
+    ProdDioid
+    ReverseWellQuasiOrder
+    Saturation
+    Set_More
+    WAutomaton
+    WPDS
+    WPDS_Code
     Ex
   document_files
     "root.bib"
     "root.tex"
 
+session Weighted_Pushdown_Systems_TestCases in TestCases = Main +
+  sessions 
+    "Weighted_Pushdown_Systems"
+  theories [document = false]
+    WExSetup
+    WExInstances

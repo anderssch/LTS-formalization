@@ -343,7 +343,7 @@ declare Enum.enum_class.UNIV_enum[code]
 definition thing2 where
   "thing2 \<Delta> W ts ts' finals finals' = do_the_thing \<Delta> W (ts_to_wts ts') (ts_to_wts ts) finals finals'"
 
-export_code accepts_pre_star_check thing2 in Haskell
+definition "check = thing2" (* TODO: Rename thing2 etc... *)
 
 lemma trans_star_append: (* TODO: Put this in LTS ? ? ? ? *)
   assumes "(p2, w2, q') \<in> LTS.trans_star ts"
