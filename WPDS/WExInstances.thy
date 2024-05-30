@@ -86,7 +86,7 @@ thm finfun_comp2_const
 
 
 
-definition "thing3 == thing2 pds_rules W initial_automaton final_automaton initial_finals final_finals"
+definition "thing3 == run_WPDS_reach pds_rules W initial_automaton final_automaton initial_finals final_finals"
 
 
 (*export_code thing3 in SML module_name WPDS_Example*)

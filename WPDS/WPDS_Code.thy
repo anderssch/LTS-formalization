@@ -144,21 +144,23 @@ section \<open>Various code generation lemmas\<close>
 
 (*definition "checking ts \<longleftrightarrow> (\<forall>q. is_Init q \<longrightarrow> (\<forall>p \<gamma>. ts $ (p, \<gamma>, q) = 0))"*)
 
-global_interpretation wpds: WPDS_Code \<Delta> W ts
-  (*for \<Delta> :: "('ctr_loc::{enum,card_UNIV}, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set"*)
-  for \<Delta> :: "('ctr_loc::{enum,card_UNIV}, 'label::enum) rule set"
-  and W :: "('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_idempotent_semiring"
-  and ts :: "(('ctr_loc, 'noninit::{enum,card_UNIV}) state, 'label) transition \<Rightarrow>f 'weight"
-defines do_the_thing = "\<lambda>ts' finals finals'. if WPDS_Code.checking \<Delta> ts 
-            then Some (weight_reach_sum_exec (wts_to_weightLTS (intersff ts' (WPDS_with_W_automata_no_assms.pre_star_exec' (w_rules \<Delta> W) ts))) {(p, p) |p. p \<in> inits_set} (finals \<times> finals')) 
-            else None"
-
-  .
+definition run_WPDS_reach' ::
+   "('ctr_loc::{enum,card_UNIV}, 'label::enum) rule set \<Rightarrow> 
+    (('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_idempotent_semiring) \<Rightarrow> 
+    (('ctr_loc, 'noninit::{enum,card_UNIV}) state, 'label) transition \<Rightarrow>f 'weight \<Rightarrow>
+    (('ctr_loc, 'noninit) state, 'label) transition \<Rightarrow>f 'weight \<Rightarrow>
+    ('ctr_loc, 'noninit) state set \<Rightarrow> 
+    ('ctr_loc, 'noninit) state set \<Rightarrow> 'weight option" where
+   "run_WPDS_reach' \<Delta> W ts ts' finals finals' = (if WPDS_Code.checking \<Delta> ts'
+            then Some (weight_reach_sum_exec (wts_to_weightLTS (intersff ts (WPDS_with_W_automata_no_assms.pre_star_exec' (w_rules \<Delta> W) ts'))) {(p, p) |p. p \<in> inits_set} (finals \<times> finals')) 
+            else None)"
+definition "run_WPDS_reach \<Delta> W ts ts' = run_WPDS_reach' \<Delta> W (ts_to_wts ts) (ts_to_wts ts')"
 
 
 (* declare accepts_def[code]*)
 (* declare accepts_pre_star_check_def[code]*)
-declare do_the_thing_def[code]
+declare WPDS_Code.checking_def[code]
+(*declare run_WPDS_reach_def[code]*)
 
 (*lemma accepts_pre_star_check_code[code]: 
   "accepts_pre_star_check \<Delta> ts finals (p, w) = (if wpds.checking \<Delta> ts then Some (accepts_code (WPDS_Code.pre_star_exec' \<Delta> ts) finals (p, w)) else None)"
@@ -173,16 +175,10 @@ declare WPDS.lbl.simps[code]
 declare WPDS.accept_pre_star_exec0_def[code]
 declare Enum.enum_class.UNIV_enum[code]
 
-definition thing2 where
-  "thing2 \<Delta> W ts ts' finals finals' = do_the_thing \<Delta> W (ts_to_wts ts') (ts_to_wts ts) finals finals'"
-
-definition "check = thing2" (* TODO: Rename thing2 etc... *)
-
-
 lemma update_wts_apply_is_1_if_member:
   assumes "finite ts"
   assumes "t' \<in> ts"
-  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (1 ::'c::bounded_idempotent_semiring)"
+  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (1 ::'weight::bounded_idempotent_semiring)"
   using assms
 proof (induction rule: finite_induct)
   case empty
@@ -193,25 +189,25 @@ next
   show ?case
   proof (cases "t' = t''")
     assume a: "t' = t''"
-    have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'c::bounded_idempotent_semiring) + ((update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t')"
+    have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'weight::bounded_idempotent_semiring) + ((update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t')"
       by (simp add: a add.commute finfun_update_plus_pair_apply)
-    then have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'c::bounded_idempotent_semiring)"
+    then have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'weight::bounded_idempotent_semiring)"
       by (smt Collect_cong Groups.add_0 a empty_iff finfun_const_apply finite.emptyI fold_infinite insert.hyps(2) mem_Collect_eq prod.inject update_wts_def update_wts_empty update_wts_sum)
-    then have "update_wts (K$ 0) (insert (t'',1) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'c::bounded_idempotent_semiring)"
+    then have "update_wts (K$ 0) (insert (t'',1) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'weight::bounded_idempotent_semiring)"
       by (simp add: insert.hyps(1) update_wts_insert)
-    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (1 ::'c::bounded_idempotent_semiring)"
+    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (1 ::'weight::bounded_idempotent_semiring)"
       by (smt (verit, del_insts) Collect_cong insert_Collect insert_iff)
   next
     assume a: "t' \<noteq> t''"
     then have "t' \<in> F"
       using insert by auto
-    then have "update_wts (K$ 0) {(t, 1) |t. t \<in> F} $ t' = (1 ::'c::bounded_idempotent_semiring)"
+    then have "update_wts (K$ 0) {(t, 1) |t. t \<in> F} $ t' = (1 ::'weight::bounded_idempotent_semiring)"
       using insert a by metis
-    then have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'c::bounded_idempotent_semiring)"
+    then have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'weight::bounded_idempotent_semiring)"
       by (simp add: a finfun_update_plus_pair_apply_other)
-    then have "update_wts (K$ 0) (insert (t'',1) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'c::bounded_idempotent_semiring)"
+    then have "update_wts (K$ 0) (insert (t'',1) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'weight::bounded_idempotent_semiring)"
       by (metis (no_types, lifting) insert(3) \<open>t' \<in> F\<close> finite_insert fold_infinite update_wts_def update_wts_insert)
-    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (1 ::'c::bounded_idempotent_semiring)"
+    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (1 ::'weight::bounded_idempotent_semiring)"
       by (smt (verit, ccfv_SIG) Collect_cong insert_Collect insert_iff)
   qed
 qed
@@ -219,7 +215,7 @@ qed
 lemma update_wts_apply_is_0_if_not_member:
   assumes "finite ts"
   assumes "t' \<notin> ts"
-  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (0 ::'c::bounded_idempotent_semiring)"
+  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (0 ::'weight::bounded_idempotent_semiring)"
   using assms
 proof (induction rule: finite_induct)
   case empty
@@ -230,17 +226,17 @@ next
   show ?case
   proof (cases "t' = t''")
     assume a: "t' = t''"
-    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (0 ::'c::bounded_idempotent_semiring)"
+    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (0 ::'weight::bounded_idempotent_semiring)"
       using insert.prems by force
   next
     assume a: "t' \<noteq> t''"
-    then have "update_wts (K$ 0) {(t, 1) |t. t \<in> F} $ t' = (0 ::'c::bounded_idempotent_semiring)"
+    then have "update_wts (K$ 0) {(t, 1) |t. t \<in> F} $ t' = (0 ::'weight::bounded_idempotent_semiring)"
       using insert a by blast
-    then have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (0 ::'c::bounded_idempotent_semiring)"
+    then have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (0 ::'weight::bounded_idempotent_semiring)"
       by (simp add: a finfun_update_plus_pair_apply_other)
-    then have "update_wts (K$ 0) (insert (t'',1) {(t, 1) |t. t \<in> F}) $ t' = (0 ::'c::bounded_idempotent_semiring)"
+    then have "update_wts (K$ 0) (insert (t'',1) {(t, 1) |t. t \<in> F}) $ t' = (0 ::'weight::bounded_idempotent_semiring)"
       by (simp add: insert.hyps(1) update_wts_insert)
-    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (0 ::'c::bounded_idempotent_semiring)"
+    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (0 ::'weight::bounded_idempotent_semiring)"
       by (smt (verit, ccfv_SIG) Collect_cong insert_Collect insert_iff)
   qed
 qed
@@ -295,39 +291,38 @@ lemma monoid_rtrancl_one_if_trans_star:
   done
 
 lemma accepts_1_if_monoid_rtrancl_1:
-  assumes "finite (ts :: ('s :: enum \<times> 'd::finite \<times> 's) set)"
-  assumes "(p, (v, 1 :: 'c), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+  assumes "finite (ts :: ('s :: enum, 'd::finite) transition set)"
+  assumes "(p, (v, 1 :: 'weight), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
   assumes "q \<in> finals"
-  shows "dioidLTS.accepts (ts_to_wts ts) finals (p, v) = (1::'c::bounded_idempotent_semiring)"
+  shows "dioidLTS.accepts (ts_to_wts ts) finals (p, v) = (1::'weight::bounded_idempotent_semiring)"
 proof -
-  have "\<And>q d. q \<in> finals \<Longrightarrow> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts)) \<Longrightarrow> d = (1::'c) \<or> d = 0"
+  have "\<And>q d. q \<in> finals \<Longrightarrow> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts)) \<Longrightarrow> d = (1::'weight) \<or> d = 0"
     by (simp add: binary_aut_path_binary ts_to_wts_bin)
-  then have "{d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} \<subseteq> {1 :: 'c, 0}"
+  then have "{d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} \<subseteq> {1 ::'weight, 0}"
     by blast
   moreover
-  have "(p, (v, 1 :: 'c), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+  have "(p, (v, 1 :: 'weight), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
     using assms(2) by auto
-  then have "(1 :: 'c) \<in> {d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))}"
+  then have "(1 :: 'weight) \<in> {d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))}"
     using assms by auto
   ultimately
-  have "{d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} = {1 :: 'c, 0} \<or> {d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} = {1 :: 'c}"
+  have "{d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} = {1 :: 'weight, 0} \<or> {d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} = {1 :: 'weight}"
     by blast
   moreover
-  have "finite {1::'c, 0}"
+  have "finite {1::'weight, 0}"
     by auto
   moreover
-  have "\<Sum> {1::'c, 0} = (1::'c)"
+  have "\<Sum> {1::'weight, 0} = (1::'weight)"
     by (simp add: finite_SumInf_is_sum)
   ultimately
-  have "\<^bold>\<Sum> {d. \<exists>q.  q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} = (1::'c)"
+  have "\<^bold>\<Sum> {d. \<exists>q.  q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} = (1::'weight)"
     by (auto simp add: finite_SumInf_is_sum)
   then show ?thesis
     by (simp add: WPDS.accepts_def2)
 qed
 
-
 lemma ts_to_wts_not_member_is_0:
-  assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
+  assumes "finite (ts :: (('ctr_loc::enum, 'noninit::enum) state, 'label::enum) transition set)"
   assumes "(p, l, q) \<notin> ts"
   shows "ts_to_wts ts $ (p, l, q) = 0"
 proof -
@@ -338,7 +333,7 @@ proof -
 qed
 
 lemma not_in_trans_star_implies_accepts_0:
-  assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
+  assumes "finite (ts :: (('ctr_loc::enum, 'noninit::enum) state, 'label::enum) transition set)"
   shows "\<forall>q\<in>finals. (p, w, q) \<notin> LTS.trans_star ts \<Longrightarrow> dioidLTS.accepts (ts_to_wts ts) finals (p, w) = (0::'c::bounded_idempotent_semiring)"
 unfolding accepts_code_correct[of "ts_to_wts ts"]
 proof (induct w arbitrary: p)
@@ -366,7 +361,7 @@ next
 qed
 
 lemma lang_aut_is_accepts_full_new:
-  assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
+  assumes "finite (ts :: (('ctr_loc::enum, 'noninit::enum) state, 'label::enum) transition set)"
   shows "accepts_full (ts_to_wts ts) inits_set finals pv = (if pv \<in> P_Automaton.lang_aut ts Init finals then 1 else 0)"
   unfolding accepts_full_def P_Automaton.lang_aut_def P_Automaton.accepts_aut_def inits_set_def 
   apply simp
@@ -378,9 +373,9 @@ lemma lang_aut_is_accepts_full_new:
   using not_in_trans_star_implies_accepts_0[OF assms] by blast
 
 lemma weight_reach_set'_lang_aut_is_weight_reach'_accepts_full:
-  assumes "finite (ts :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
-  assumes "finite (ts' :: (('a::enum, 'b::enum) state \<times> 'd::enum \<times> ('a, 'b) state) set)"
-  shows "(WPDS.weight_reach_set' :: _ \<Rightarrow> _ \<Rightarrow> _ \<Rightarrow> 'c::bounded_idempotent_semiring) (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals') =
+  assumes "finite (ts :: (('ctr_loc::enum, 'noninit::enum) state, 'label::enum) transition set)"
+  assumes "finite (ts' :: (('ctr_loc::enum, 'noninit::enum) state, 'label::enum) transition set)"
+  shows "(WPDS.weight_reach_set' :: _ \<Rightarrow> _ \<Rightarrow> _ \<Rightarrow> 'weight::bounded_idempotent_semiring) (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals') =
          WPDS.weight_reach' (w_rules \<Delta> W) (accepts_full (ts_to_wts ts) inits_set finals) (accepts_full (ts_to_wts ts') inits_set finals')"
 proof -
   have bats: "binary_aut (ts_to_wts ts)"
@@ -395,14 +390,14 @@ proof -
         "P_Automaton.lang_aut ts' Init finals'", unfolded finite_WPDS_def, OF c]  
     by blast
 qed
-  
+
 lemma WPDS_reach_exec_correct:
-  assumes "thing2 \<Delta> W ts ts' finals finals' = Some (w :: 'c::bounded_idempotent_semiring)"
+  assumes "run_WPDS_reach \<Delta> W ts ts' finals finals' = Some (w :: 'c::bounded_idempotent_semiring)"
   shows "w = (WPDS.weight_reach_set' (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
   using assms big_good_correctness_code[of "ts_to_wts ts" "w_rules \<Delta> W" "ts_to_wts ts'" inits_set finals finals', OF binary_aut_ts_to_wts[of ts]]
-    weight_reach_set'_lang_aut_is_weight_reach'_accepts_full[of ts ts' \<Delta> W finals finals'] unfolding wpds.checking_def
-  do_the_thing_def  inits_set_def mem_Collect_eq thing2_def
-   finite_code  by (metis (no_types, lifting) WPDS_Code.checking_def assms(1) do_the_thing_def finite_w_rules option.distinct(1) option.inject thing2_def) 
+    weight_reach_set'_lang_aut_is_weight_reach'_accepts_full[of ts ts' \<Delta> W finals finals'] unfolding WPDS_Code.checking_def
+  run_WPDS_reach'_def  inits_set_def mem_Collect_eq run_WPDS_reach_def
+   finite_code by (metis (no_types, lifting) WPDS_Code.checking_def assms(1) run_WPDS_reach'_def finite_w_rules option.distinct(1) option.inject run_WPDS_reach_def) 
 
 (*
 
