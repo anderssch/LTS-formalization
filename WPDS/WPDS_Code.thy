@@ -97,7 +97,7 @@ next
     unfolding accepts_step_distrib by auto
 qed
 
-
+section \<open>Locale: WPDS_Code\<close>
 locale WPDS_Code =
   fixes \<Delta> :: "('ctr_loc::enum, 'label::enum) rule set"
     and W :: "('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_idempotent_semiring"
@@ -131,6 +131,8 @@ lemma augmented_WPDS_rules_code2[code]: "checking \<Delta> ts \<Longrightarrow> 
 
 
 end
+
+section \<open>Various code generation lemmas\<close>
 
 (*global_interpretation wpds: WPDS_Code \<Delta> ts
   for \<Delta> :: "('ctr_loc::{enum,card_UNIV}, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"

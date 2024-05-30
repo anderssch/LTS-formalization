@@ -2,6 +2,7 @@ theory MonoidLTS
   imports "LTS" "MonoidClosure" "CountableSum"
 begin
 
+section \<open>Locale: monoidLTS\<close>
 \<comment> \<open>If the @{typ 'weight} of a LTS is a monoid, we can express the monoid product of labels over a path.\<close>
 locale monoidLTS = LTS transition_relation 
   for transition_relation :: "('state::countable, 'weight::monoid_mult) transition set"
@@ -23,6 +24,7 @@ end
 lemma monoid_rtranclp_unfold: "monoid_rtranclp (monoidLTS.l_step_relp ts) c l c' \<longleftrightarrow> (c, l, c') \<in> monoid_rtrancl ts"
   unfolding monoidLTS.l_step_relp_def monoid_rtranclp_monoid_rtrancl_eq by simp
 
+section \<open>Locale: countable_monoidLTS\<close>
 locale countable_monoidLTS = monoidLTS +
   assumes ts_countable: "countable transition_relation"
 begin
@@ -98,6 +100,7 @@ lemma monoidLTS_monoid_star_mono:
 *)
 
 
+section \<open>Locale: dioidLTS\<close>
 \<comment> \<open>If the @{typ 'weight} of a LTS is a dioid with additive and multiplicative identities, 
     we can express the meet-over-all-paths value as a generalization of pre-star and post-star.\<close>
 locale dioidLTS = monoidLTS transition_relation
@@ -117,6 +120,7 @@ definition weight_reach_set :: "('state set) \<Rightarrow> ('state set) \<Righta
 
 end
 
+section \<open>Locale: countable_dioidLTS\<close>
 locale countable_dioidLTS = dioidLTS + countable_monoidLTS 
 begin 
 
@@ -149,8 +153,5 @@ lemma weight_reach_set_is_weight_reach:
   by fastforce
 
 end
-
-
-
 
 end

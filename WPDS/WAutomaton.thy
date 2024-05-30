@@ -2,6 +2,8 @@ theory WAutomaton
   imports "LTS" "Saturation" "ReverseWellQuasiOrder" "FinFunWellFounded" "FinFunAddUpdate" "MonoidLTS" "Kleene_Algebra.Dioid_Models" "Set_More" "FinFunOf"
 begin
 
+section \<open>Basic datatypes and definitions\<close>
+
 declare times_list_def[simp]
 
 \<comment> \<open>For the semantics of a weighted automaton, labels are lifted to the list-monoid and paired with a weight\<close>
@@ -89,6 +91,8 @@ lemma monoid_rtrancl_wts_to_monoidLTS_refl:
   "(p, ([], 1), p) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
   by (metis monoid_rtrancl_refl one_list_def one_prod_def)
 
+section \<open>Locale: W_automaton\<close>
+
 locale W_automaton = monoidLTS "wts_to_monoidLTS transition_relation"
   for transition_relation :: "('state::finite, 'label, 'weight::bounded_idempotent_semiring) w_transitions"
 begin
@@ -118,6 +122,8 @@ next
 qed
 
 end
+
+section \<open>Reachability and Paths\<close>
 
 lemma monoid_star_imp_exec: "(p,w,q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> (q, snd w) \<in> monoidLTS_reach (wts_to_monoidLTS ts) p (fst w)"
   apply (induct rule: monoid_rtrancl_induct_rev)

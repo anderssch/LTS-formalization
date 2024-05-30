@@ -2,12 +2,16 @@ theory FiniteMonoidLTS
   imports "MonoidLTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "FinFunSumSaturation"
 begin
 
+section \<open>Locale: finite_monoidLTS\<close>
+
 locale finite_monoidLTS = monoidLTS transition_relation 
   for transition_relation :: "('state::finite, 'weight::monoid_mult) transition set" +
   assumes ts_finite: "finite transition_relation"
 begin
 sublocale countable_monoidLTS by (standard, fact countable_finite[OF ts_finite])
 end
+
+section \<open>Locale: finite_dioidLTS\<close>
 
 locale finite_dioidLTS = finite_monoidLTS transition_relation + dioidLTS transition_relation
   for transition_relation :: "('state::finite, 'weight::bounded_idempotent_semiring) transition set"

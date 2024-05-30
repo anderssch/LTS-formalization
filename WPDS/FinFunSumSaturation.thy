@@ -9,6 +9,7 @@ inductive strict_rule :: "'t saturation_rule \<Rightarrow> 't saturation_rule" f
 inductive weak_rule :: "'t::idempotent_ab_semigroup_add_ord saturation_rule \<Rightarrow> 't saturation_rule" for rule where
   rule_to_weak_rule: "rule ts ts'' \<Longrightarrow> ts'' \<le> ts' \<Longrightarrow> ts' < ts \<Longrightarrow> weak_rule rule ts ts'"
 
+section \<open>Locale: rule_saturation\<close>
 locale rule_saturation =
   fixes rule :: "'t::idempotent_ab_semigroup_add_ord saturation_rule"
   assumes rule_less_eq: "rule ts ts' \<Longrightarrow> ts' \<le> ts"
@@ -227,7 +228,7 @@ qed
 
 end
 
-
+section \<open>Locale: step_saturation\<close>
 locale step_saturation = 
   fixes step::"('a::finite \<Rightarrow>f 'b::bounded_idempotent_semiring) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_idempotent_semiring)"
 begin
@@ -235,6 +236,8 @@ begin
   definition "step_exec = the o step_loop"
   definition "step_rule ts ts' \<equiv> step ts = ts'"
 end
+
+section \<open>Locale: decreasing_step_saturation\<close>
 locale decreasing_step_saturation = step_saturation step
   for step::"('a::finite \<Rightarrow>f 'b::bounded_idempotent_semiring) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_idempotent_semiring)" +
 (*  assumes weak_rule_star_step: "(weak_rule rule)\<^sup>*\<^sup>* S (step S)"*)
@@ -268,6 +271,7 @@ qed
 
 end
 
+section \<open>Locale: sum_saturation\<close>
 locale sum_saturation = decreasing_step_saturation step + rule_saturation rule
   for step::"('a::finite \<Rightarrow>f 'b::bounded_idempotent_semiring) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_idempotent_semiring)"
   and rule :: "('a::finite \<Rightarrow>f 'b::bounded_idempotent_semiring) saturation_rule" +

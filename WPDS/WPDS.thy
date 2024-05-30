@@ -10,7 +10,7 @@ type_synonym ('ctr_loc, 'label) rule = "('ctr_loc \<times> 'label) \<times> ('ct
 type_synonym ('ctr_loc, 'label, 'weight) w_rule = "('ctr_loc \<times> 'label) \<times> 'weight \<times> ('ctr_loc \<times> 'label operation)"
 type_synonym ('ctr_loc, 'label) conf = "'ctr_loc \<times> 'label list"
 
-\<comment> \<open>instantiation: Enumerability of operations\<close>
+\<comment> \<open>Instantiation: Enumerability of operations\<close>
 instantiation operation :: (enum) enum begin
 
 definition enum_a :: "'a list" where "enum_a = enum_class.enum"
@@ -100,6 +100,7 @@ lemma finite_w_rules: "finite rules \<Longrightarrow> finite (w_rules rules W)"
 definition (in dioidLTS) accepts :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> 'ctr_loc set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
   "accepts ts finals \<equiv> \<lambda>(p,w). (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)})"
 
+section \<open>Locale: WPDS\<close>
 locale WPDS =
   fixes \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set"
 begin
@@ -268,6 +269,7 @@ qed
 
 end
 
+section \<open>Locale: finite_WPDS\<close>
 locale finite_WPDS = WPDS \<Delta>
   for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_idempotent_semiring) w_rule set" +
   assumes finite_rules: "finite \<Delta>"
@@ -1403,7 +1405,7 @@ instance
   by standard (simp add: card_UNIV_state_def UNIV_a'_def UNIV_b'_def finite_card_states)
 end
 
-
+section \<open>Locale: WPDS_with_W_automata_no_assms\<close>
 locale WPDS_with_W_automata_no_assms = WPDS \<Delta>
   for \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_idempotent_semiring) w_rule set"
   and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions"
@@ -1441,13 +1443,14 @@ definition accept_pre_star_exec0' where
 
 end
 
+section \<open>Code declarations\<close>
 declare WPDS_with_W_automata_no_assms.init_rules_def2[code]
 declare WPDS_with_W_automata_no_assms.pop_ts_rules_def2[code]
 declare WPDS_with_W_automata_no_assms.augmented_WPDS_rules_def[code]
 declare WPDS_with_W_automata_no_assms.pre_star_exec'_def[code]
 declare WPDS_with_W_automata_no_assms.accept_pre_star_exec0'_def[code]
 
-
+section \<open>Locale: WPDS_with_W_automata\<close>
 locale WPDS_with_W_automata = WPDS_with_W_automata_no_assms \<Delta> ts + finite_WPDS \<Delta>
   for \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_idempotent_semiring) w_rule set"
   and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions" +
