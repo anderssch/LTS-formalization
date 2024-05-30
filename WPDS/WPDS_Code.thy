@@ -334,7 +334,7 @@ qed
 
 lemma not_in_trans_star_implies_accepts_0:
   assumes "finite (ts :: (('ctr_loc::enum, 'noninit::enum) state, 'label::enum) transition set)"
-  shows "\<forall>q\<in>finals. (p, w, q) \<notin> LTS.trans_star ts \<Longrightarrow> dioidLTS.accepts (ts_to_wts ts) finals (p, w) = (0::'c::bounded_idempotent_semiring)"
+  shows "\<forall>q\<in>finals. (p, w, q) \<notin> LTS.trans_star ts \<Longrightarrow> dioidLTS.accepts (ts_to_wts ts) finals (p, w) = (0::'weight::bounded_idempotent_semiring)"
 unfolding accepts_code_correct[of "ts_to_wts ts"]
 proof (induct w arbitrary: p)
   case Nil
@@ -347,11 +347,11 @@ next
     using ts_to_wts_not_member_is_0[OF assms] by blast
   have "\<And>p'. \<forall>q\<in>finals. (p, a # w, q) \<notin> LTS.trans_star ts \<Longrightarrow> (p, a, p') \<in> ts \<Longrightarrow> \<forall>q\<in>finals. (p', w, q) \<notin> LTS.trans_star ts"
     by (meson LTS.trans_star.trans_star_step)
-  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> accepts_code (ts_to_wts ts) finals (p', w) = (0::'c::bounded_idempotent_semiring)"
+  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> accepts_code (ts_to_wts ts) finals (p', w) = (0::'weight::bounded_idempotent_semiring)"
     using Cons by blast
-  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> ts_to_wts ts $ (p, a, p') * accepts_code (ts_to_wts ts) finals (p', w) = (0::'c::bounded_idempotent_semiring)"
+  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> ts_to_wts ts $ (p, a, p') * accepts_code (ts_to_wts ts) finals (p', w) = (0::'weight::bounded_idempotent_semiring)"
     using mult_zero_right by fastforce
-  then have B:"{ts_to_wts ts $ (p, a, x) * accepts_code (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<in> ts} \<subseteq> {0::'c::bounded_idempotent_semiring}"
+  then have B:"{ts_to_wts ts $ (p, a, x) * accepts_code (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<in> ts} \<subseteq> {0::'weight::bounded_idempotent_semiring}"
     by blast
   show ?case
     apply simp
@@ -392,7 +392,7 @@ proof -
 qed
 
 lemma WPDS_reach_exec_correct:
-  assumes "run_WPDS_reach \<Delta> W ts ts' finals finals' = Some (w :: 'c::bounded_idempotent_semiring)"
+  assumes "run_WPDS_reach \<Delta> W ts ts' finals finals' = Some (w :: 'weight::bounded_idempotent_semiring)"
   shows "w = (WPDS.weight_reach_set' (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
   using assms big_good_correctness_code[of "ts_to_wts ts" "w_rules \<Delta> W" "ts_to_wts ts'" inits_set finals finals', OF binary_aut_ts_to_wts[of ts]]
     weight_reach_set'_lang_aut_is_weight_reach'_accepts_full[of ts ts' \<Delta> W finals finals'] unfolding WPDS_Code.checking_def
