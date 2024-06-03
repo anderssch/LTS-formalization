@@ -312,5 +312,71 @@ proof (rule finfun_ext)
     by fastforce
 qed
 
+lemma update_wts_apply_is_1_if_member:
+  assumes "finite ts"
+  assumes "t' \<in> ts"
+  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (1 ::'weight::bounded_idempotent_semiring)"
+  using assms
+proof (induction rule: finite_induct)
+  case empty
+  then show ?case
+    by auto
+next
+  case (insert t'' F)
+  show ?case
+  proof (cases "t' = t''")
+    assume a: "t' = t''"
+    have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'weight) + ((update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t')"
+      by (simp add: a add.commute finfun_update_plus_pair_apply)
+    then have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'weight)"
+      by (smt Collect_cong Groups.add_0 a empty_iff finfun_const_apply finite.emptyI fold_infinite insert.hyps(2) mem_Collect_eq prod.inject update_wts_def update_wts_empty update_wts_sum)
+    then have "update_wts (K$ 0) (insert (t'',1) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'weight)"
+      by (simp add: insert.hyps(1) update_wts_insert)
+    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (1 ::'weight)"
+      by (smt (verit, del_insts) Collect_cong insert_Collect insert_iff)
+  next
+    assume a: "t' \<noteq> t''"
+    then have "t' \<in> F"
+      using insert by auto
+    then have "update_wts (K$ 0) {(t, 1) |t. t \<in> F} $ t' = (1 ::'weight)"
+      using insert a by metis
+    then have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'weight)"
+      by (simp add: a finfun_update_plus_pair_apply_other)
+    then have "update_wts (K$ 0) (insert (t'',1) {(t, 1) |t. t \<in> F}) $ t' = (1 ::'weight)"
+      by (metis (no_types, lifting) insert(3) \<open>t' \<in> F\<close> finite_insert fold_infinite update_wts_def update_wts_insert)
+    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (1 ::'weight)"
+      by (smt (verit, ccfv_SIG) Collect_cong insert_Collect insert_iff)
+  qed
+qed
+
+lemma update_wts_apply_is_0_if_not_member:
+  fixes ts :: "'transition set"
+  assumes "finite ts"
+  assumes "t' \<notin> ts"
+  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (0 ::'weight::bounded_idempotent_semiring)"
+  using assms
+proof (induction rule: finite_induct)
+  case empty
+  then show ?case
+    by (simp add: update_wts_empty)
+next
+  case (insert t'' F)
+  show ?case
+  proof (cases "t' = t''")
+    assume a: "t' = t''"
+    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (0 ::'weight)"
+      using insert.prems by force
+  next
+    assume a: "t' \<noteq> t''"
+    then have "update_wts (K$ 0) {(t, 1) |t. t \<in> F} $ t' = (0 ::'weight)"
+      using insert a by blast
+    then have "finfun_update_plus_pair (t'', 1) (update_wts (K$ 0) {(t, 1) |t. t \<in> F}) $ t' = (0 ::'weight)"
+      by (simp add: a finfun_update_plus_pair_apply_other)
+    then have "update_wts (K$ 0) (insert (t'',1) {(t, 1) |t. t \<in> F}) $ t' = (0 ::'weight)"
+      by (simp add: insert.hyps(1) update_wts_insert)
+    then show "update_wts (K$ 0) {(t, 1) |t. t \<in> insert t'' F} $ t' = (0 ::'weight)"
+      by (smt (verit, ccfv_SIG) Collect_cong insert_Collect insert_iff)
+  qed
+qed
 
 end

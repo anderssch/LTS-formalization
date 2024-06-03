@@ -229,43 +229,6 @@ lemma pre_star_rule_less: "pre_star_rule ts ts' \<Longrightarrow> ts' < ts"
 lemma pre_star_rules_less_eq: "pre_star_rule\<^sup>*\<^sup>* ts ts' \<Longrightarrow> ts' \<le> ts"
   by (induct rule: rtranclp.induct, simp) (fastforce dest: pre_star_rule_less)
 
-lemma wts_to_monoidLTS_mono': "ts \<le> ts' \<Longrightarrow> (p, (w, d), q) \<in> wts_to_monoidLTS ts \<Longrightarrow> \<exists>d'. (p, (w, d'), q) \<in> wts_to_monoidLTS ts' \<and> d \<le> d'"
-  unfolding less_eq_finfun_def wts_to_monoidLTS_def by blast
-
-lemma wts_to_monoidLTS_mono: "ts' \<le> ts \<Longrightarrow> (p, (w, d), q) \<in> wts_to_monoidLTS ts \<Longrightarrow> \<exists>d'. (p, (w, d'), q) \<in> wts_to_monoidLTS ts' \<and> d' \<le> d"
-  unfolding less_eq_finfun_def wts_to_monoidLTS_def by blast
-
-lemma wts_monoid_rtrancl_mono: 
-  assumes "ts' \<le> ts"
-  assumes "(p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-  shows "\<exists>d'. (p, (w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts') \<and> d' \<le> d"
-proof (induction rule: monoid_rtrancl_pair_weight_induct[OF assms(2)])
-  case (1 p)
-  then show ?case 
-    by (rule exI[of _ "1"]) 
-       (simp add: monoid_rtrancl_refl[of _ "wts_to_monoidLTS ts'", unfolded one_prod_def])
-next
-  case (2 p w d p' w' d' p'')
-  obtain da da' 
-    where da:"(p, (w, da), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts')" "da \<le> d" 
-     and da':"(p', (w', da'), p'') \<in> wts_to_monoidLTS ts'" "da' \<le> d'" 
-    using 2(3) wts_to_monoidLTS_mono[OF assms(1) 2(2)] by blast
-  show ?case
-    apply (rule exI[of _ "da * da'"])
-    using da(2) da'(2) monoid_rtrancl_into_rtrancl[OF da(1) da'(1)]
-    by (simp add: idempotent_semiring_ord_class.mult_isol_var)
-qed
-
-lemma finite_wts: 
-  fixes wts::"('ctr_loc, 'label, 'weight) w_transitions"
-  shows "finite (wts_to_monoidLTS wts)"
-proof -
-  have "range (\<lambda>t. (fst t, ([fst (snd t)], wts $ t), snd (snd t))) = {t. \<exists>p l q. t = (p, ([l], wts $ (p, l, q)), q)}"
-    by force
-  then have "finite {t. \<exists>p l q. t = (p, ([l], wts $ (p, l, q)), q)}"
-    using finite_imageI[of UNIV "(\<lambda>t. (fst t, ([fst (snd t)], wts $ t), snd (snd t)))"] by simp
-  then show ?thesis unfolding wts_to_monoidLTS_def by presburger
-qed
 
 end
 
@@ -2302,6 +2265,9 @@ lemma
          WPDS.weight_reach' \<Delta> (accepts_full ts inits finals) (accepts_full ts' inits' finals')" 
   oops
 (* TODO: Make executable version of "dioidLTS.SumInf {d | c d. d = dioidLTS.accepts ts finals c}" *)
+
+
+
 
 
 end

@@ -29,6 +29,17 @@ definition wts_to_weightLTS :: "('state, 'label, 'weight::bounded_idempotent_sem
 lemma wts_to_weightLTS_code[code]: "wts_to_weightLTS ts = (\<Union>(p,l,q). {(p, (ts $ (p,l,q)), q)})"
   unfolding wts_to_weightLTS_def by blast
 
+lemma finite_wts: 
+  fixes wts::"('state::enum, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  shows "finite (wts_to_monoidLTS wts)"
+proof -
+  have "range (\<lambda>t. (fst t, ([fst (snd t)], wts $ t), snd (snd t))) = {t. \<exists>p l q. t = (p, ([l], wts $ (p, l, q)), q)}"
+    by force
+  then have "finite {t. \<exists>p l q. t = (p, ([l], wts $ (p, l, q)), q)}"
+    using finite_imageI[of UNIV "(\<lambda>t. (fst t, ([fst (snd t)], wts $ t), snd (snd t)))"] by simp
+  then show ?thesis unfolding wts_to_monoidLTS_def by presburger
+qed
+
 lemma wts_monoidLTS_to_weightLTS: "(p, (w, d), p') \<in> wts_to_monoidLTS ts \<Longrightarrow> (p, d, p') \<in> wts_to_weightLTS ts"
   unfolding wts_to_monoidLTS_def wts_to_weightLTS_def by blast
 
@@ -90,6 +101,34 @@ qed
 lemma monoid_rtrancl_wts_to_monoidLTS_refl:
   "(p, ([], 1), p) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
   by (metis monoid_rtrancl_refl one_list_def one_prod_def)
+
+lemma wts_to_monoidLTS_mono': "ts \<le> ts' \<Longrightarrow> (p, (w, d), q) \<in> wts_to_monoidLTS ts \<Longrightarrow> \<exists>d'. (p, (w, d'), q) \<in> wts_to_monoidLTS ts' \<and> d \<le> d'"
+  unfolding less_eq_finfun_def wts_to_monoidLTS_def by blast
+
+lemma wts_to_monoidLTS_mono: "ts' \<le> ts \<Longrightarrow> (p, (w, d), q) \<in> wts_to_monoidLTS ts \<Longrightarrow> \<exists>d'. (p, (w, d'), q) \<in> wts_to_monoidLTS ts' \<and> d' \<le> d"
+  unfolding less_eq_finfun_def wts_to_monoidLTS_def by blast
+
+lemma wts_monoid_rtrancl_mono: 
+  assumes "ts' \<le> ts"
+  assumes "(p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  shows "\<exists>d'. (p, (w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts') \<and> d' \<le> d"
+proof (induction rule: monoid_rtrancl_pair_weight_induct[OF assms(2)])
+  case (1 p)
+  then show ?case 
+    by (rule exI[of _ "1"]) 
+       (simp add: monoid_rtrancl_refl[of _ "wts_to_monoidLTS ts'", unfolded one_prod_def])
+next
+  case (2 p w d p' w' d' p'')
+  obtain da da' 
+    where da:"(p, (w, da), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts')" "da \<le> d" 
+     and da':"(p', (w', da'), p'') \<in> wts_to_monoidLTS ts'" "da' \<le> d'" 
+    using 2(3) wts_to_monoidLTS_mono[OF assms(1) 2(2)] by blast
+  show ?case
+    apply (rule exI[of _ "da * da'"])
+    using da(2) da'(2) monoid_rtrancl_into_rtrancl[OF da(1) da'(1)]
+    by (simp add: idempotent_semiring_ord_class.mult_isol_var)
+qed
+
 
 section \<open>Locale: W_automaton\<close>
 
@@ -509,7 +548,63 @@ lemma empty_ts_to_wts[simp]: "ts_to_wts {} = (K$ 0)"
 lemma empty_wts_to_ts[simp]: "wts_to_ts (K$ 0) = {}"
   unfolding wts_to_ts_def by simp
 
+lemma ts_to_wts_1_if_member:
+  fixes ts :: "('s, 'l) transition set"
+  assumes "finite ts"
+  assumes "(p', l, p'') \<in> ts"
+  shows "ts_to_wts ts $ (p', l, p'') = 1"
+  by (metis (mono_tags, lifting) assms ts_to_wts_def update_wts_apply_is_1_if_member)
 
+lemma ts_to_wts_1_or_0:
+  fixes ts :: "('s, 'l) transition set"
+  assumes "finite ts"
+  shows "ts_to_wts ts $ (p1, w, p2) = 1 \<or> ts_to_wts ts $ (p1, w, p2) = 0"
+ using assms
+proof (induction rule: finite_induct)
+  case empty
+  then show ?case
+    by auto
+next
+  case (insert x F)
+  then show ?case
+  proof (cases "x =  (p1, w, p2)")
+    case True
+    then show ?thesis 
+      using insert
+      by (simp add: ts_to_wts_1_if_member)
+  next
+    case False
+    then show ?thesis 
+      using insert update_wts_apply_is_0_if_not_member update_wts_apply_is_1_if_member
+      by (metis (mono_tags) finite.insertI ts_to_wts_def)
+  qed    
+qed
+
+lemma monoid_rtrancl_one_if_trans_star:
+  fixes ts :: "('s, 'label) transition set"
+  assumes "(p, l, q) \<in> LTS.trans_star ts"
+  assumes "finite ts"
+  shows "(p, (l, 1), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+  apply (induction rule: LTS.trans_star.induct[OF assms(1)])
+  subgoal
+    apply (simp add: monoid_rtrancl_wts_to_monoidLTS_refl)
+    done
+  subgoal 
+    apply (metis ts_to_wts_1_if_member assms(2) monoid_rtrancl_intros_Cons mult.right_neutral wts_label_d wts_to_monoidLTS_exists)
+    done
+  done
+
+lemma ts_to_wts_not_member_is_0:
+  fixes ts :: "('state, 'label) transition set"
+  assumes "finite ts"
+  assumes "(p, l, q) \<notin> ts"
+  shows "ts_to_wts ts $ (p, l, q) = 0"
+proof -
+  have f: "finite {(t, 1) |t. t \<in> ts}" using assms(1) by (fact finite_f_on_set)
+  show ?thesis
+    unfolding ts_to_wts_def update_wts_sum[OF f, of "K$ 0" "(p, l, q)"] using assms(2)
+    by simp
+qed
 
 section \<open>Intersection of WAutomata\<close>
 
@@ -611,8 +706,14 @@ proof -
     by (metis wts_to_monoidLTS_exists_iff assms list.sel(1) that wts_label_d)
 qed
 
-definition binary_aut :: "('state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> bool" where
+definition binary_aut :: "('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> bool" where
   "binary_aut ts1 \<longleftrightarrow> (\<forall>p1 w p2. ts1 $ (p1, w, p2) = 1 \<or> ts1 $ (p1, w, p2) = 0)"
+
+lemma ts_to_wts_bin:
+  fixes ts :: "('s, 'l) transition set"
+  assumes "finite ts"
+  shows "binary_aut (ts_to_wts ts)"
+  unfolding binary_aut_def using assms ts_to_wts_1_or_0 by metis
 
 lemma binary_aut_monoid_rtrancl_wts_to_monoidLTS_cases_rev:
   assumes "binary_aut ts1"
