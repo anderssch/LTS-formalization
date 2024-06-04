@@ -2,8 +2,6 @@ theory WPDS_Code
   imports WPDS "Deriving.Derive" "P_Automata"
 begin
 
-term dioidLTS.accepts
-
 fun accepts_code :: "('state \<times> 'label \<times> 'state) \<Rightarrow>f 'weight::bounded_idempotent_semiring \<Rightarrow> 'state set \<Rightarrow> ('state \<times> 'label list) \<Rightarrow> 'weight"  where
     "accepts_code ts finals (p,[]) = (if p \<in> finals then 1 else 0)"
  |  "accepts_code ts finals (p,(y#w)) = (\<Sum>{(ts $ (p,y,q) * (accepts_code ts finals (q,w))) | q. ts $ (p,y,q) \<noteq> 0})"
@@ -188,7 +186,7 @@ qed
 lemma lang_aut_is_accepts_full_new:
   fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::enum) transition set"
   assumes "finite ts"
-  shows "accepts_full (ts_to_wts ts) inits_set finals pv = (if pv \<in> P_Automaton.lang_aut ts Init finals then 1 else 0)"
+  shows "accepts_full (ts_to_wts ts) finals pv = (if pv \<in> P_Automaton.lang_aut ts Init finals then 1 else 0)"
   unfolding accepts_full_def P_Automaton.lang_aut_def P_Automaton.accepts_aut_def inits_set_def 
   apply simp
   apply safe
@@ -204,7 +202,7 @@ lemma weight_reach_set'_lang_aut_is_weight_reach'_accepts_full:
   assumes "finite ts"
   assumes "finite ts'"
   shows "(WPDS.weight_reach_set' :: _ \<Rightarrow> _ \<Rightarrow> _ \<Rightarrow> 'weight::bounded_idempotent_semiring) (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals') =
-         WPDS.weight_reach' (w_rules \<Delta> W) (accepts_full (ts_to_wts ts) inits_set finals) (accepts_full (ts_to_wts ts') inits_set finals')"
+         WPDS.weight_reach' (w_rules \<Delta> W) (accepts_full (ts_to_wts ts) finals) (accepts_full (ts_to_wts ts') finals')"
 proof -
   have bats: "binary_aut (ts_to_wts ts)"
     by (simp add: binary_aut_ts_to_wts)
