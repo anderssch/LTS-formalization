@@ -74,13 +74,6 @@ end
 
 section \<open>Various code generation lemmas\<close>
 
-(*global_interpretation wpds: WPDS_Code \<Delta> ts
-  for \<Delta> :: "('ctr_loc::{enum,card_UNIV}, 'label::finite, 'weight::bounded_idempotent_semiring) rule set"
-  and ts :: "(('ctr_loc, 'noninit::{enum,card_UNIV}) state, 'label) transition \<Rightarrow>f 'weight"
-  defines pre_star = "WPDS_with_W_automata.pre_star_exec' \<Delta>"
-  .
-*)
-
 definition run_WPDS_reach' ::
    "('ctr_loc::{enum,card_UNIV}, 'label::enum) rule set \<Rightarrow> 
     (('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_idempotent_semiring) \<Rightarrow> 
