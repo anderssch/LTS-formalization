@@ -63,18 +63,12 @@ definition "pre_star_exec' = WPDS_with_W_automata_no_assms.pre_star_exec'"
 definition "accept_pre_star_exec0' = WPDS_with_W_automata_no_assms.accept_pre_star_exec0'"
 declare accept_pre_star_exec0'_def[code]
 
-thm WPDS_with_W_automata.pre_star_exec_correctness
 lemma pre_star_exec_correctness:
   assumes "checking"
   shows "dioidLTS.accepts (WPDS_with_W_automata_no_assms.pre_star_exec' (w_rules \<Delta> W) ts) finals (Init p, w) =
          dioidLTS.weight_pre_star (WPDS.transition_rel wrules) (\<lambda>(p, w). dioidLTS.accepts ts finals (Init p, w)) (p, w)"
   using WPDS_with_W_automata.pre_star_exec_correctness[of "wrules" ts finals p w] checking_implies[OF assms]
   unfolding wrules_def by blast
-
-(*
-lemma augmented_WPDS_rules_code2[code]: "checking \<Delta> ts \<Longrightarrow> WPDS_with_W_automata_no_assms.augmented_WPDS_rules \<Delta> ts = (\<Union>((p, \<gamma>), d, (p', w)) \<in> \<Delta>. {((Init p, \<gamma>), d, (Init p', w))}) \<union> {((p,\<gamma>), d, (q, pop)) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
-  *)
-
 
 end
 
@@ -86,9 +80,6 @@ section \<open>Various code generation lemmas\<close>
   defines pre_star = "WPDS_with_W_automata.pre_star_exec' \<Delta>"
   .
 *)
-
-
-(*definition "checking ts \<longleftrightarrow> (\<forall>q. is_Init q \<longrightarrow> (\<forall>p \<gamma>. ts $ (p, \<gamma>, q) = 0))"*)
 
 definition run_WPDS_reach' ::
    "('ctr_loc::{enum,card_UNIV}, 'label::enum) rule set \<Rightarrow> 
@@ -102,25 +93,10 @@ definition run_WPDS_reach' ::
             else None)"
 definition "run_WPDS_reach \<Delta> W ts ts' = run_WPDS_reach' \<Delta> W (ts_to_wts ts) (ts_to_wts ts')"
 
-
-(* declare accepts_def[code]*)
-(* declare accepts_pre_star_check_def[code]*)
 declare WPDS_Code.checking_def[code]
-(*declare run_WPDS_reach_def[code]*)
-
-(*lemma accepts_pre_star_check_code[code]: 
-  "accepts_pre_star_check \<Delta> ts finals (p, w) = (if wpds.checking \<Delta> ts then Some (accepts_code (WPDS_Code.pre_star_exec' \<Delta> ts) finals (p, w)) else None)"
-  unfolding accepts_pre_star_check_def accepts_code_correct[of "(wpds.pre_star_exec' \<Delta> ts)" finals p w, symmetric]
-  unfolding wpds.accept_pre_star_exec0'_def WPDS_Code.pre_star_exec'_def
-  using WPDS_with_W_automata_no_assms.accept_pre_star_exec0'_unfold[of \<Delta> ts]
-  by simp  
-*)
-
-
 declare WPDS.lbl.simps[code]
 declare WPDS.accept_pre_star_exec0_def[code]
 declare Enum.enum_class.UNIV_enum[code]
-
 
 lemma accepts_1_if_monoid_rtrancl_1:
   fixes ts :: "('s :: enum, 'l::finite) transition set"
@@ -223,48 +199,5 @@ lemma WPDS_reach_exec_correct:
     weight_reach_set'_lang_aut_is_weight_reach'_accepts_full[of ts ts' \<Delta> W finals finals'] unfolding WPDS_Code.checking_def
   run_WPDS_reach'_def  inits_set_def mem_Collect_eq run_WPDS_reach_def
    finite_code by (metis (no_types, lifting) WPDS_Code.checking_def assms(1) run_WPDS_reach'_def finite_w_rules option.distinct(1) option.inject run_WPDS_reach_def) 
-
-(*
-
-(* TODO: ADAPT THE FOLLOWING TO DO WEIGHTED INTERSECTION:  *)
-global_interpretation inter: Intersection_P_Automaton
-  initial_automaton Init "finals initial_F_ctr_loc initial_F_ctr_loc_st"
-  "pre_star \<Delta> final_automaton" "finals final_F_ctr_loc final_F_ctr_loc_st"
-  for \<Delta> :: "('ctr_loc::{enum, linorder}, 'label::{finite, linorder}) rule set"
-  and initial_automaton :: "(('ctr_loc, 'state::finite, 'label) state, 'label) transition set"
-  and initial_F_ctr_loc :: "'ctr_loc set"
-  and initial_F_ctr_loc_st :: "'state set"
-  and final_automaton :: "(('ctr_loc, 'state, 'label) state, 'label) transition set"
-  and final_F_ctr_loc :: "'ctr_loc set"
-  and final_F_ctr_loc_st :: "'state set"
-  defines nonempty_inter = "P_Automaton.nonempty
-    (inters initial_automaton (pre_star \<Delta> final_automaton))
-    ((\<lambda>p. (Init p, Init p)))
-    (inters_finals (finals initial_F_ctr_loc initial_F_ctr_loc_st)
-                   (finals final_F_ctr_loc final_F_ctr_loc_st))"
-  .
-
-definition "check \<Delta> I IF IF_st F FF FF_st =
-  (if pds.inits \<subseteq> LTS.srcs F then Some (nonempty_inter \<Delta> I IF IF_st F FF FF_st) else None)"
-
-lemma check_None: "check \<Delta> I IF IF_st F FF FF_st = None \<longleftrightarrow> \<not> (inits \<subseteq> LTS.srcs F)"
-  unfolding check_def by auto
-
-lemma check_Some: "check \<Delta> I IF IF_st F FF FF_st = Some b \<longleftrightarrow>
-  (inits \<subseteq> LTS.srcs F \<and> b = (\<exists>p w p' w'.
-     (p, w) \<in> language IF IF_st I \<and>
-     (p', w') \<in> language FF FF_st F \<and>
-     step_starp \<Delta> (p, w) (p', w')))"
-  unfolding check_def nonempty_inter_def P_Automaton.nonempty_def
-    inter.lang_aut_alt inter.inters_lang
-    pds.lang_aut_lang
-  by (auto 0 5 simp: pds.pre_star_exec_lang_correct pds.pre_star_def image_iff
-    elim!: bexI[rotated])
-
-declare P_Automaton.mark.simps[code]
-
-export_code check in SML
-
-*)
 
 end
