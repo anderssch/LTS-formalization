@@ -6,8 +6,8 @@ lemma dioidLTS_accepts_code_Nil[code]:
   fixes ts :: "('state \<times> ('label::finite) \<times> ('state::enum)) \<Rightarrow>f 'weight::bounded_idempotent_semiring"
   fixes finals :: "'state set"
   shows "dioidLTS.accepts ts finals (p,[]) = (if p \<in> finals then 1 else 0)"
-  using finite_WPDS.accepts_empty_iff[of "{}" ts]
-  unfolding finite_WPDS_def by auto
+  using dioidLTS.accepts_K0_iff[of "{}" ts]
+  unfolding finite_WPDS_def by (simp add: dioidLTS.accepts_empty_iff)
 
 lemma dioidLTS_accepts_code_Cons[code]:
   fixes ts :: "('state \<times> ('label::finite) \<times> ('state::enum)) \<Rightarrow>f 'weight::bounded_idempotent_semiring"

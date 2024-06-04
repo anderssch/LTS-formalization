@@ -2,6 +2,10 @@ theory WPDS
   imports "LTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "WAutomaton" "FiniteMonoidLTS"
 begin
 
+
+lemma SumInf_is_zero_if_subset_singleton_zero[simp]: "X \<subseteq> {0} \<Longrightarrow> \<^bold>\<Sum> X = 0"
+  using subset_singletonD by fastforce
+
 section \<open>WPDS definitions and data types\<close>
 
 datatype 'label operation = pop | swap 'label | push 'label 'label
@@ -157,6 +161,105 @@ proof -
     by auto
 qed
 
+lemma accepts_def2:
+  "dioidLTS.accepts ts finals (p,w) = (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)})"
+  using dioidLTS.accepts_def[of ts finals] by auto
+
+lemma accept_is_one_if_final_empty:
+  assumes "p \<in> finals"
+  shows "accepts A finals (p,[]) = 1"
+proof -
+  have "{d | d q. q \<in> finals \<and> (p,([],d),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} = {1}"
+    using Collect_cong[of "\<lambda>d. \<exists>q. q \<in> finals \<and> (p, ([], d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)" "\<lambda>d. d = 1"]
+      assms monoid_rtrancl_wts_to_monoidLTS_refl mstar_wts_empty_one by force
+  then show ?thesis
+    by (simp add: accepts_def)
+qed
+
+lemma accept_is_zero_if_nonfinal_empty:
+  fixes A::"('ctr_loc \<times> 'label \<times> 'ctr_loc) \<Rightarrow>f 'weight"
+  assumes "p \<notin> finals"
+  shows "accepts A finals (p,[]) = 0"
+proof -
+  have "{d | d q. q \<in> finals \<and> (p,([],d),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} = {}"
+    using assms monoid_star_w0[of p _ _ A] by fastforce
+  then show ?thesis
+    unfolding accepts_def2 using SumInf_empty 
+      Collect_cong[of "\<lambda>d. \<exists>q. q \<in> finals \<and> (p, ([], d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+        "\<lambda>d. \<exists>q. q \<in> finals \<and> (p, ([], d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"] by metis
+qed
+
+
+lemma zero_weight_if_nonrefl_path_in_K0:
+  "(p,wd,q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0)) \<Longrightarrow> p \<noteq> q \<Longrightarrow> snd wd = 0"
+proof (induct rule: monoid_rtrancl_induct_rev)
+  case (monoid_rtrancl_refl p)
+  then show ?case by auto
+next
+  case (monoid_rtrancl_into_rtrancl p w p' q wd')
+  show ?case 
+  proof (cases "p' \<noteq> q")
+    case True
+    then show ?thesis
+      using monoid_rtrancl_into_rtrancl by simp
+  next
+    case False
+    then show ?thesis
+      by (metis finfun_const_apply monoid_rtrancl_into_rtrancl.hyps(1) mult_prod_def mult_zero_left 
+          snd_conv wts_label_d')
+  qed
+qed
+
+lemma zero_weight_if_nonempty_word_in_K0:
+  "(p,wd,q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0)) \<Longrightarrow> fst wd \<noteq> [] \<Longrightarrow> snd wd = 0"
+proof (induct rule: monoid_rtrancl_induct_rev)
+  case (monoid_rtrancl_refl p)
+  then show ?case 
+    by (simp add: one_list_def one_prod_def)
+next
+  case (monoid_rtrancl_into_rtrancl p w p' q wd')
+  show ?case 
+  proof (cases "fst wd' \<noteq> []")
+    case True
+    then show ?thesis
+      using monoid_rtrancl_into_rtrancl by simp
+  next
+    case False
+    then show ?thesis
+      by (metis finfun_const_apply monoid_rtrancl_into_rtrancl.hyps(1) mult_prod_def mult_zero_left 
+          snd_conv wts_label_d')
+  qed
+qed
+
+lemma accepts_K0_is_zero_if_nonfinal:
+  assumes "p \<notin> finals"
+  shows "accepts (K$ 0) finals (p,w) = 0"
+proof -
+  have "{d :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0))} \<subseteq> {0}"
+    using zero_weight_if_nonrefl_path_in_K0[of p "(w,_)" _] assms by auto
+  then show ?thesis
+    unfolding accepts_def by auto
+qed
+
+lemma accepts_K0_is_zero_if_nonempty:
+  assumes "w \<noteq> []"
+  shows "accepts (K$ 0) finals (p,w) = 0"
+proof -
+  have "{d :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0))} \<subseteq> {0}"
+    using zero_weight_if_nonempty_word_in_K0[of p "(w,_)" _] assms by auto
+  then show ?thesis
+    unfolding accepts_def by auto
+qed
+
+lemma accepts_empty_iff: 
+  fixes A::"('ctr_loc \<times> 'label \<times> 'ctr_loc) \<Rightarrow>f 'weight"
+  shows "accepts A finals (p,[]) = (if p\<in>finals then 1 else 0)"
+  by (simp add: accept_is_one_if_final_empty accept_is_zero_if_nonfinal_empty)
+
+lemma accepts_K0_iff[simp]: "accepts (K$ 0) finals (p,w) = (if p\<in>finals \<and> w = [] then 1 else 0)"
+  by (metis accept_is_one_if_final_empty accepts_K0_is_zero_if_nonfinal accepts_K0_is_zero_if_nonempty)
+
+
 end
 
 section \<open>Locale: WPDS\<close>
@@ -196,9 +299,7 @@ notation l_step_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80)
 
 subsection \<open>Proofs of basic properties\<close>
 
-lemma accepts_def2:
-  "dioidLTS.accepts ts finals (p,w) = (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)})"
-  using dioidLTS.accepts_def[of ts finals] by auto
+
 
 lemma step_relp_def2:
   "(p, \<gamma>w') \<Midarrow>d\<Rightarrow> (p',ww') \<longleftrightarrow> (\<exists>\<gamma> w' w. \<gamma>w' = \<gamma>#w' \<and> ww' = (lbl w)@w' \<and> (p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w))"
@@ -693,101 +794,9 @@ next
     using pre_star_rule_sound by blast
 qed
 
-lemma accept_is_one_if_final_empty:
-  assumes "p \<in> finals"
-  shows "accepts A finals (p,[]) = 1"
-proof -
-  have "{d | d q. q \<in> finals \<and> (p,([],d),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} = {1}"
-    using Collect_cong[of "\<lambda>d. \<exists>q. q \<in> finals \<and> (p, ([], d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)" "\<lambda>d. d = 1"]
-      assms monoid_rtrancl_wts_to_monoidLTS_refl mstar_wts_empty_one by force
-  then show ?thesis
-    by (simp add: accepts_def)
-qed
 
-lemma accept_is_zero_if_nonfinal_empty:
-  fixes A::"('ctr_loc \<times> 'label \<times> 'ctr_loc) \<Rightarrow>f 'weight"
-  assumes "p \<notin> finals"
-  shows "accepts A finals (p,[]) = 0"
-proof -
-  have "{d | d q. q \<in> finals \<and> (p,([],d),q) \<in> monoid_rtrancl (wts_to_monoidLTS A)} = {}"
-    using assms monoid_star_pop[of p pop _ _ A] by fastforce
-  then show ?thesis
-    unfolding accepts_def2 using SumInf_empty 
-      Collect_cong[of "\<lambda>d. \<exists>q. q \<in> finals \<and> (p, ([], d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-        "\<lambda>d. \<exists>q. q \<in> finals \<and> (p, ([], d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"] by metis
-qed
 
-lemma zero_weight_if_nonrefl_path_in_K0:
-  "(p,wd,q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0)) \<Longrightarrow> p \<noteq> q \<Longrightarrow> snd wd = 0"
-proof (induct rule: monoid_rtrancl_induct_rev)
-  case (monoid_rtrancl_refl p)
-  then show ?case by auto
-next
-  case (monoid_rtrancl_into_rtrancl p w p' q wd')
-  show ?case 
-  proof (cases "p' \<noteq> q")
-    case True
-    then show ?thesis
-      using monoid_rtrancl_into_rtrancl by simp
-  next
-    case False
-    then show ?thesis
-      by (metis finfun_const_apply monoid_rtrancl_into_rtrancl.hyps(1) mult_prod_def mult_zero_left 
-          snd_conv wts_label_d')
-  qed
-qed
 
-lemma zero_weight_if_nonempty_word_in_K0:
-  "(p,wd,q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0)) \<Longrightarrow> fst wd \<noteq> [] \<Longrightarrow> snd wd = 0"
-proof (induct rule: monoid_rtrancl_induct_rev)
-  case (monoid_rtrancl_refl p)
-  then show ?case 
-    by (simp add: one_list_def one_prod_def)
-next
-  case (monoid_rtrancl_into_rtrancl p w p' q wd')
-  show ?case 
-  proof (cases "fst wd' \<noteq> []")
-    case True
-    then show ?thesis
-      using monoid_rtrancl_into_rtrancl by simp
-  next
-    case False
-    then show ?thesis
-      by (metis finfun_const_apply monoid_rtrancl_into_rtrancl.hyps(1) mult_prod_def mult_zero_left 
-          snd_conv wts_label_d')
-  qed
-qed
-
-lemma SumInf_is_zero_if_subset_singleton_zero[simp]: "X \<subseteq> {0} \<Longrightarrow> \<^bold>\<Sum> X = 0"
-  using subset_singletonD by fastforce
-
-lemma accepts_K0_is_zero_if_nonfinal:
-  assumes "p \<notin> finals"
-  shows "accepts (K$ 0) finals (p,w) = 0"
-proof -
-  have "{d :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0))} \<subseteq> {0}"
-    using zero_weight_if_nonrefl_path_in_K0[of p "(w,_)" _] assms by auto
-  then show ?thesis
-    unfolding accepts_def by auto
-qed
-
-lemma accepts_K0_is_zero_if_nonempty:
-  assumes "w \<noteq> []"
-  shows "accepts (K$ 0) finals (p,w) = 0"
-proof -
-  have "{d :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (K$ 0))} \<subseteq> {0}"
-    using zero_weight_if_nonempty_word_in_K0[of p "(w,_)" _] assms by auto
-  then show ?thesis
-    unfolding accepts_def by auto
-qed
-
-lemma accepts_empty_iff: 
-  fixes A::"('ctr_loc \<times> 'label \<times> 'ctr_loc) \<Rightarrow>f 'weight"
-  shows "accepts A finals (p,[]) = (if p\<in>finals then 1 else 0)"
-  by (simp add: accept_is_one_if_final_empty accept_is_zero_if_nonfinal_empty)
-
-lemma accepts_K0_iff[simp]: "accepts (K$ 0) finals (p,w) = (if p\<in>finals \<and> w = [] then 1 else 0)"
-  by (metis accept_is_one_if_final_empty accepts_K0_is_zero_if_nonfinal accepts_K0_is_zero_if_nonempty)
 
 lemma sound_empty: "sound (K$ 0)"
   by (simp add: sound_def wts_to_monoidLTS_def)
@@ -2034,9 +2043,9 @@ proof -
     using countable_monoidLTS.countable_monoid_star_variant1[OF monoidLTS_instance, of "(Init p, w)"]
     by (metis (no_types, lifting) Collect_cong case_prod_beta)
   moreover have "\<And>(a::('ctr_loc, 'noninit) state) (b::'label list) d::'weight. a \<notin> finals \<or> b \<noteq> [] \<Longrightarrow> d * accepts (K$ 0) finals (a,b) = 0" 
-    using finite_WPDS.accepts_K0_iff[OF WPDS_instance, of finals] by fastforce
+    by fastforce
   moreover have "\<And>(a::('ctr_loc, 'noninit) state) (b::'label list) d::'weight. a \<in> finals \<and> b = [] \<Longrightarrow> d * accepts (K$ 0) finals (a,b) = d"
-    using finite_WPDS.accepts_K0_iff[OF WPDS_instance, of finals] by auto
+    by auto
   ultimately have 
      "\<^bold>\<Sum> {a * accepts (K$ 0) finals (aa, b) |a aa b.
           monoid_rtranclp (monoidLTS.l_step_relp (WPDS.transition_rel augmented_WPDS_rules)) (Init p, w) a (aa, b)} =
@@ -2358,9 +2367,8 @@ proof -
   have "\<^bold>\<Sum> {d. \<exists>q.  q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} = (1::'weight)"
     by (auto simp add: finite_SumInf_is_sum)
   then show ?thesis
-    by (simp add: WPDS.accepts_def2)
+    by (simp add: dioidLTS.accepts_def2)
 qed
-
 
 
 end
