@@ -201,26 +201,23 @@ lemma weight_reach_set'_lang_aut_is_weight_reach'_accepts_full:
   fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
   assumes "finite ts"
   assumes "finite ts'"
-  shows "(WPDS.weight_reach_set' :: _ \<Rightarrow> _ \<Rightarrow> _ \<Rightarrow> 'weight::bounded_idempotent_semiring) (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals') =
+  shows "WPDS.weight_reach_set' (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals') =
          WPDS.weight_reach' (w_rules \<Delta> W) (accepts_full (ts_to_wts ts) finals) (accepts_full (ts_to_wts ts') finals')"
 proof -
-  have bats: "binary_aut (ts_to_wts ts)"
-    by (simp add: binary_aut_ts_to_wts)
-  have bats': "binary_aut (ts_to_wts ts')"
-    by (simp add: binary_aut_ts_to_wts)
-  have c: "finite (w_rules \<Delta> W)"
+  have fin_w_rules: "finite (w_rules \<Delta> W)"
     by (simp add: finite_w_rules)
   show ?thesis
     unfolding lang_aut_is_accepts_full_new[OF assms(1)] lang_aut_is_accepts_full_new[OF assms(2)]
     using finite_WPDS.weight_reach_set'_is_weight_reach'[of "w_rules \<Delta> W" "P_Automaton.lang_aut ts Init finals" 
-        "P_Automaton.lang_aut ts' Init finals'", unfolded finite_WPDS_def, OF c]  
+        "P_Automaton.lang_aut ts' Init finals'", unfolded finite_WPDS_def, OF fin_w_rules]
     by blast
 qed
 
 lemma WPDS_reach_exec_correct:
   fixes ts :: "(('ctr_loc :: {card_UNIV,enum}, 'noninit::{card_UNIV,enum}) state, 'label::enum) transition set"
   fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
-  assumes "run_WPDS_reach \<Delta> W ts ts' finals finals' = Some (w :: 'weight::bounded_idempotent_semiring)"
+  fixes W :: "('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_idempotent_semiring"
+  assumes "run_WPDS_reach \<Delta> W ts ts' finals finals' = Some w"
   shows "w = (WPDS.weight_reach_set' (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
   using assms big_good_correctness_code[of "ts_to_wts ts" "w_rules \<Delta> W" "ts_to_wts ts'" inits_set finals finals', OF binary_aut_ts_to_wts[of ts]]
     weight_reach_set'_lang_aut_is_weight_reach'_accepts_full[of ts ts' \<Delta> W finals finals'] unfolding WPDS_Code.checking_def
