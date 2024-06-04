@@ -2153,7 +2153,6 @@ lemma "dioidLTS.weight_reach (wts_to_weightLTS (intersff ts' A)) (\<lambda>p. if
 
 definition accepts_full :: "(('ctr_loc::enum, 'noninit::enum) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('ctr_loc, 'noninit) state set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
   "accepts_full ts finals \<equiv> \<lambda>(p, w). dioidLTS.accepts ts finals (Init p, w)"
-(* THE inits PARAMETER CAN BE DELETED *)
 
 lemma finite_weightLTS':
   fixes ts :: "('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
