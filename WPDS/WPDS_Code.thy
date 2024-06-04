@@ -56,7 +56,9 @@ declare Enum.enum_class.UNIV_enum[code]
 lemma not_in_trans_star_implies_accepts_0:
   fixes ts :: "('s :: enum, 'label::enum) transition set"
   assumes "finite ts"
-  shows "\<forall>q\<in>finals. (p, w, q) \<notin> LTS.trans_star ts \<Longrightarrow> dioidLTS.accepts (ts_to_wts ts) finals (p, w) = (0::'weight::bounded_idempotent_semiring)"
+  assumes "\<forall>q\<in>finals. (p, w, q) \<notin> LTS.trans_star ts"
+  shows "dioidLTS.accepts (ts_to_wts ts) finals (p, w) = (0::'weight::bounded_idempotent_semiring)"
+  using assms(2)
 proof (induct w arbitrary: p)
   case Nil
   then show ?case by (simp add: dioidLTS.dioidLTS_accepts_code_Nil) (metis LTS.trans_star.trans_star_refl)
@@ -65,7 +67,7 @@ next
   have f:"finite {ts_to_wts ts $ (p, a, q) * dioidLTS.accepts (ts_to_wts ts) finals (q, w) |q. ts_to_wts ts $ (p, a, q) \<noteq> 0}"
     by fastforce
   have A:"{ts_to_wts ts $ (p, a, x) * dioidLTS.accepts (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<notin> ts} = {}"
-    using ts_to_wts_not_member_is_0[OF assms] by blast
+    using ts_to_wts_not_member_is_0[OF assms(1)] by blast
   have "\<And>p'. \<forall>q\<in>finals. (p, a # w, q) \<notin> LTS.trans_star ts \<Longrightarrow> (p, a, p') \<in> ts \<Longrightarrow> \<forall>q\<in>finals. (p', w, q) \<notin> LTS.trans_star ts"
     by (meson LTS.trans_star.trans_star_step)
   then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> dioidLTS.accepts (ts_to_wts ts) finals (p', w) = (0::'weight::bounded_idempotent_semiring)"
