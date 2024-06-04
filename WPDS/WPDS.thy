@@ -2322,10 +2322,44 @@ lemma
     and "binary_aut ts'"
   shows "\<^bold>\<Sum> {d| c d. d = dioidLTS.accepts (intersff ts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')) (finals\<times>finals') c} = 
          WPDS.weight_reach' \<Delta> (accepts_full ts finals) (accepts_full ts' finals')" 
+  
   oops
 (* TODO: Make executable version of "dioidLTS.SumInf {d | c d. d = dioidLTS.accepts ts finals c}" *)
 
 
+section \<open>Something about acceptance\<close>
+
+lemma accepts_1_if_monoid_rtrancl_1:
+  fixes ts :: "('s :: enum, 'l::finite) transition set"
+  assumes "finite ts"
+  assumes "(p, (v, 1 :: 'weight), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+  assumes "q \<in> finals"
+  shows "dioidLTS.accepts (ts_to_wts ts) finals (p, v) = (1::'weight::bounded_idempotent_semiring)"
+proof -
+  have "\<And>q d. q \<in> finals \<Longrightarrow> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts)) \<Longrightarrow> d = (1::'weight) \<or> d = 0"
+    by (simp add: binary_aut_path_binary ts_to_wts_bin)
+  then have "{d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} \<subseteq> {1 ::'weight, 0}"
+    by blast
+  moreover
+  have "(p, (v, 1 :: 'weight), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))"
+    using assms(2) by auto
+  then have "(1 :: 'weight) \<in> {d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))}"
+    using assms by auto
+  ultimately
+  have "{d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} = {1 :: 'weight, 0} \<or> {d. \<exists>q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} = {1 :: 'weight}"
+    by blast
+  moreover
+  have "finite {1::'weight, 0}"
+    by auto
+  moreover
+  have "\<Sum> {1::'weight, 0} = (1::'weight)"
+    by (simp add: finite_SumInf_is_sum)
+  ultimately
+  have "\<^bold>\<Sum> {d. \<exists>q.  q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS (ts_to_wts ts))} = (1::'weight)"
+    by (auto simp add: finite_SumInf_is_sum)
+  then show ?thesis
+    by (simp add: WPDS.accepts_def2)
+qed
 
 
 
