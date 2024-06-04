@@ -2,41 +2,6 @@ theory WPDS_Code
   imports WPDS "Deriving.Derive" "P_Automata"
 begin
 
-lemma dioidLTS_accepts_code_Nil[code]:
-  fixes ts :: "('state \<times> ('label::finite) \<times> ('state::enum)) \<Rightarrow>f 'weight::bounded_idempotent_semiring"
-  fixes finals :: "'state set"
-  shows "dioidLTS.accepts ts finals (p,[]) = (if p \<in> finals then 1 else 0)"
-  using dioidLTS.accepts_K0_iff[of "{}" ts]
-  unfolding finite_WPDS_def by (simp add: dioidLTS.accepts_empty_iff)
-
-lemma dioidLTS_accepts_code_Cons[code]:
-  fixes ts :: "('state \<times> ('label::finite) \<times> ('state::enum)) \<Rightarrow>f 'weight::bounded_idempotent_semiring"
-  fixes finals :: "'state set"
-  shows "dioidLTS.accepts ts finals (p,(a#w)) = (\<Sum>{(ts $ (p,a,q) * (dioidLTS.accepts ts finals (q,w))) | q. ts $ (p,a,q) \<noteq> 0})"
-proof -
-  have "finite ({d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts})"
-    unfolding wts_to_monoidLTS_def
-    using finite_f_on_set[of UNIV "\<lambda>q. ts $ (p, a, q) * dioidLTS.accepts ts finals (q, w)"]
-    by simp
-  then have
-    "\<Sum> {d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts} = 
-     \<^bold>\<Sum> {d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
-    using finite_SumInf_is_sum[of "{d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"]
-    by auto
-  moreover
-  have "\<Sum> {d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts} =
-        \<Sum> {ts $ (p, a, q) * dioidLTS.accepts ts finals (q, w) |q. True}"
-    by (metis (no_types, opaque_lifting) wts_label_d wts_to_monoidLTS_exists)
-  moreover
-  have "\<Sum> {ts $ (p, a, q) * dioidLTS.accepts ts finals (q, w) |q. ts $ (p, a, q) \<noteq> 0} = 
-                      \<Sum> {ts $ (p, a, q) * dioidLTS.accepts ts finals (q, w) |q. True}"
-    using sum_mult_not0_is_sum[of "\<lambda>q. True" "\<lambda>q. ts $ (p, a, q)" "\<lambda>q. dioidLTS.accepts ts finals (q, w)"]
-    by auto
-  ultimately
-  show ?thesis
-    unfolding dioidLTS.accepts_step_distrib by auto
-qed
-
 section \<open>Locale: WPDS_Code\<close>
 locale WPDS_Code =
   fixes \<Delta> :: "('ctr_loc::enum, 'label::enum) rule set"
@@ -94,7 +59,7 @@ lemma not_in_trans_star_implies_accepts_0:
   shows "\<forall>q\<in>finals. (p, w, q) \<notin> LTS.trans_star ts \<Longrightarrow> dioidLTS.accepts (ts_to_wts ts) finals (p, w) = (0::'weight::bounded_idempotent_semiring)"
 proof (induct w arbitrary: p)
   case Nil
-  then show ?case by (simp add: dioidLTS_accepts_code_Nil) (metis LTS.trans_star.trans_star_refl)
+  then show ?case by (simp add: dioidLTS.dioidLTS_accepts_code_Nil) (metis LTS.trans_star.trans_star_refl)
 next
   case (Cons a w)
   have f:"finite {ts_to_wts ts $ (p, a, q) * dioidLTS.accepts (ts_to_wts ts) finals (q, w) |q. ts_to_wts ts $ (p, a, q) \<noteq> 0}"
@@ -110,7 +75,7 @@ next
   then have B:"{ts_to_wts ts $ (p, a, x) * dioidLTS.accepts (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<in> ts} \<subseteq> {0::'weight::bounded_idempotent_semiring}"
     by blast
   show ?case
-    apply (simp add: dioidLTS_accepts_code_Cons)
+    apply (simp add: dioidLTS.dioidLTS_accepts_code_Cons)
     unfolding sum_split_f_P[OF f, of "\<lambda>q. (p, a, q) \<in> ts"] A
     using B sum_subset_singleton_0_is_0
     by simp

@@ -259,6 +259,40 @@ lemma accepts_empty_iff:
 lemma accepts_K0_iff[simp]: "accepts (K$ 0) finals (p,w) = (if p\<in>finals \<and> w = [] then 1 else 0)"
   by (metis accept_is_one_if_final_empty accepts_K0_is_zero_if_nonfinal accepts_K0_is_zero_if_nonempty)
 
+lemma dioidLTS_accepts_code_Nil[code]:
+  fixes ts :: "('ctr_loc \<times> ('label::finite) \<times> ('ctr_loc::enum)) \<Rightarrow>f 'weight::bounded_idempotent_semiring"
+  fixes finals :: "'ctr_loc set"
+  shows "dioidLTS.accepts ts finals (p,[]) = (if p \<in> finals then 1 else 0)"
+  using dioidLTS.accepts_K0_iff[of "{}" ts] by (simp add: dioidLTS.accepts_empty_iff)
+
+lemma dioidLTS_accepts_code_Cons[code]:
+  fixes ts :: "('ctr_loc \<times> ('label::finite) \<times> ('ctr_loc::enum)) \<Rightarrow>f 'weight::bounded_idempotent_semiring"
+  fixes finals :: "'ctr_loc set"
+  shows "dioidLTS.accepts ts finals (p,(a#w)) = (\<Sum>{(ts $ (p,a,q) * (dioidLTS.accepts ts finals (q,w))) | q. ts $ (p,a,q) \<noteq> 0})"
+proof -
+  have "finite ({d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts})"
+    unfolding wts_to_monoidLTS_def
+    using finite_f_on_set[of UNIV "\<lambda>q. ts $ (p, a, q) * dioidLTS.accepts ts finals (q, w)"]
+    by simp
+  then have
+    "\<Sum> {d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts} = 
+     \<^bold>\<Sum> {d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"
+    using finite_SumInf_is_sum[of "{d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts}"]
+    by auto
+  moreover
+  have "\<Sum> {d * dioidLTS.accepts ts finals (q1, w) |q1 d. (p, ([a], d), q1) \<in> wts_to_monoidLTS ts} =
+        \<Sum> {ts $ (p, a, q) * dioidLTS.accepts ts finals (q, w) |q. True}"
+    by (metis (no_types, opaque_lifting) wts_label_d wts_to_monoidLTS_exists)
+  moreover
+  have "\<Sum> {ts $ (p, a, q) * dioidLTS.accepts ts finals (q, w) |q. ts $ (p, a, q) \<noteq> 0} = 
+                      \<Sum> {ts $ (p, a, q) * dioidLTS.accepts ts finals (q, w) |q. True}"
+    using sum_mult_not0_is_sum[of "\<lambda>q. True" "\<lambda>q. ts $ (p, a, q)" "\<lambda>q. dioidLTS.accepts ts finals (q, w)"]
+    by auto
+  ultimately
+  show ?thesis
+    unfolding dioidLTS.accepts_step_distrib by auto
+qed
+
 
 end
 
