@@ -386,10 +386,7 @@ next
     using finite_image_set2 Cons by fast
   moreover have "{d. \<exists>p q. (p, (l # w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)} 
               \<subseteq> {d * d' |d d'. (\<exists>p q. (p, ([l], d), q) \<in> wts_to_monoidLTS ts) \<and> (\<exists>p q. (p, (w, d'), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts))}"
-    apply safe
-    subgoal for d p q
-      using mstar_wts_cons by fast
-    done
+    using mstar_wts_cons by fast
   ultimately show ?case using finite_subset by fast
 qed
 
@@ -478,51 +475,51 @@ next
 qed
 
 lemma monoid_rtrancl_wts_to_monoidLTS_cases_rev:
-  assumes "(p, (\<gamma>#w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
-  shows "\<exists>d' s d''.
-           (p, ([\<gamma>], d'), s) \<in> wts_to_monoidLTS ts \<and>
-           (s, (w, d''), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
+  assumes "(p, (\<gamma>#w,d), p'') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
+  shows "\<exists>d' p' d''.
+           (p, ([\<gamma>], d'), p') \<in> wts_to_monoidLTS ts \<and>
+           (p', (w, d''), p'') \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<and>
            d = d' * d''"
   using assms monoid_rtrancl_wts_to_monoidLTS_cases_rev' by fastforce
 
 (* Proof adapted from monoid_rtrancl_list_embed_ts_append_split *)
 lemma monoid_rtrancl_wts_to_monoidLTS_append_split:
-  assumes "(p, (w@w',d\<^sub>p\<^sub>q), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-  shows "\<exists>d\<^sub>p\<^sub>p\<^sub>' p' d\<^sub>p\<^sub>'\<^sub>q.
-           (p, (w,d\<^sub>p\<^sub>p\<^sub>'), p') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and>
-           (p', (w',d\<^sub>p\<^sub>'\<^sub>q), q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and>
-           d\<^sub>p\<^sub>q = d\<^sub>p\<^sub>p\<^sub>' * d\<^sub>p\<^sub>'\<^sub>q"
-using assms proof(induction w arbitrary: p d\<^sub>p\<^sub>q)
+  assumes "(p\<^sub>1, (w\<^sub>1\<^sub>3@w\<^sub>3\<^sub>4,d\<^sub>1\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+  shows "\<exists>d\<^sub>1\<^sub>3 p\<^sub>3 d\<^sub>3\<^sub>4.
+           (p\<^sub>1, (w\<^sub>1\<^sub>3,d\<^sub>1\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and>
+           (p\<^sub>3, (w\<^sub>3\<^sub>4,d\<^sub>3\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and>
+           d\<^sub>1\<^sub>4 = d\<^sub>1\<^sub>3 * d\<^sub>3\<^sub>4"
+using assms proof(induction w\<^sub>1\<^sub>3 arbitrary: p\<^sub>1 d\<^sub>1\<^sub>4)
   case Nil
   then show ?case
     by (metis eq_Nil_appendI monoid_rtrancl.monoid_rtrancl_refl mult_1 one_list_def one_prod_def) 
 next
-  case (Cons l w) 
-  then have "\<exists>d\<^sub>p\<^sub>p\<^sub>' p' d\<^sub>p\<^sub>'\<^sub>q. (p, ([l],d\<^sub>p\<^sub>p\<^sub>'), p') \<in> (wts_to_monoidLTS A) \<and> 
-                         (p', (w @ w',d\<^sub>p\<^sub>'\<^sub>q), q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> 
-                         d\<^sub>p\<^sub>q = d\<^sub>p\<^sub>p\<^sub>' * d\<^sub>p\<^sub>'\<^sub>q"
+  case (Cons \<gamma>\<^sub>1\<^sub>2 w\<^sub>2\<^sub>3)
+  then have "\<exists>d\<^sub>1\<^sub>2 p\<^sub>2 d\<^sub>2\<^sub>4. (p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2],d\<^sub>1\<^sub>2), p\<^sub>2) \<in> (wts_to_monoidLTS A) \<and>
+                         (p\<^sub>2, (w\<^sub>2\<^sub>3 @ w\<^sub>3\<^sub>4,d\<^sub>2\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and>
+                         d\<^sub>1\<^sub>4 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>4"
     using monoid_rtrancl_wts_to_monoidLTS_cases_rev by fastforce
 
-  then obtain p' d\<^sub>p\<^sub>p\<^sub>' d\<^sub>p\<^sub>'\<^sub>q where q_du0_du1_p:
-    "(p, ([l],d\<^sub>p\<^sub>p\<^sub>'), p') \<in> (wts_to_monoidLTS A)" 
-    "(p', (w @ w',d\<^sub>p\<^sub>'\<^sub>q), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)" 
-    "d\<^sub>p\<^sub>q = d\<^sub>p\<^sub>p\<^sub>' * d\<^sub>p\<^sub>'\<^sub>q"
+  then obtain p\<^sub>2 d\<^sub>1\<^sub>2 d\<^sub>2\<^sub>4 where q_du0_du1_p:
+    "(p\<^sub>1, ([\<gamma>\<^sub>1\<^sub>2],d\<^sub>1\<^sub>2), p\<^sub>2) \<in> (wts_to_monoidLTS A)" 
+    "(p\<^sub>2, (w\<^sub>2\<^sub>3 @ w\<^sub>3\<^sub>4,d\<^sub>2\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (wts_to_monoidLTS A)" 
+    "d\<^sub>1\<^sub>4 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>4"
     by auto
 
-  have "\<exists>d\<^sub>p\<^sub>'\<^sub>p\<^sub>'\<^sub>' p'' d\<^sub>p\<^sub>'\<^sub>'\<^sub>q. (p', (w, d\<^sub>p\<^sub>'\<^sub>p\<^sub>'\<^sub>'), p'') \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> 
-                     (p'', (w', d\<^sub>p\<^sub>'\<^sub>'\<^sub>q), q) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> 
-                     d\<^sub>p\<^sub>'\<^sub>q = d\<^sub>p\<^sub>'\<^sub>p\<^sub>'\<^sub>' * d\<^sub>p\<^sub>'\<^sub>'\<^sub>q"
+  have "\<exists>d\<^sub>2\<^sub>3 p\<^sub>3 d\<^sub>3\<^sub>4. (p\<^sub>2, (w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> 
+                     (p\<^sub>3, (w\<^sub>3\<^sub>4, d\<^sub>3\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (wts_to_monoidLTS A) \<and> 
+                     d\<^sub>2\<^sub>4 = d\<^sub>2\<^sub>3 * d\<^sub>3\<^sub>4"
      using Cons.IH[OF q_du0_du1_p(2)] .
-  then obtain d\<^sub>p\<^sub>'\<^sub>p\<^sub>'\<^sub>' p'' d\<^sub>p\<^sub>'\<^sub>'\<^sub>q where
-    "(p', (w,d\<^sub>p\<^sub>'\<^sub>p\<^sub>'\<^sub>'), p'') \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-    "(p'', (w',d\<^sub>p\<^sub>'\<^sub>'\<^sub>q), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)" 
-    "d\<^sub>p\<^sub>'\<^sub>q = d\<^sub>p\<^sub>'\<^sub>p\<^sub>'\<^sub>' * d\<^sub>p\<^sub>'\<^sub>'\<^sub>q"
+  then obtain d\<^sub>2\<^sub>3 p\<^sub>3 d\<^sub>3\<^sub>4 where
+    "(p\<^sub>2, (w\<^sub>2\<^sub>3,d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+    "(p\<^sub>3, (w\<^sub>3\<^sub>4,d\<^sub>3\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (wts_to_monoidLTS A)" 
+    "d\<^sub>2\<^sub>4 = d\<^sub>2\<^sub>3 * d\<^sub>3\<^sub>4"
     by auto
-  from this(1) have "(p, (l # w, d\<^sub>p\<^sub>p\<^sub>' * d\<^sub>p\<^sub>'\<^sub>p\<^sub>'\<^sub>'), p'') \<in> monoid_rtrancl (wts_to_monoidLTS A)"
-    using q_du0_du1_p(1) monoid_rtrancl_into_rtrancl_rev[of p "([l], d\<^sub>p\<^sub>p\<^sub>')" p' "wts_to_monoidLTS A" "(w, d\<^sub>p\<^sub>'\<^sub>p\<^sub>'\<^sub>')" p'']
+  from this(1) have "(p\<^sub>1, (\<gamma>\<^sub>1\<^sub>2 # w\<^sub>2\<^sub>3, d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
+    using q_du0_du1_p(1) monoid_rtrancl_into_rtrancl_rev[of p\<^sub>1 "([\<gamma>\<^sub>1\<^sub>2], d\<^sub>1\<^sub>2)" p\<^sub>2 "wts_to_monoidLTS A" "(w\<^sub>2\<^sub>3, d\<^sub>2\<^sub>3)" p\<^sub>3]
     by simp
   then show ?case
-    using  \<open>(p'', (w', d\<^sub>p\<^sub>'\<^sub>'\<^sub>q), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)\<close> \<open>d\<^sub>p\<^sub>'\<^sub>q = d\<^sub>p\<^sub>'\<^sub>p\<^sub>'\<^sub>' * d\<^sub>p\<^sub>'\<^sub>'\<^sub>q\<close> q_du0_du1_p(3) 
+    using  \<open>(p\<^sub>3, (w\<^sub>3\<^sub>4, d\<^sub>3\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (wts_to_monoidLTS A)\<close> \<open>d\<^sub>2\<^sub>4 = d\<^sub>2\<^sub>3 * d\<^sub>3\<^sub>4\<close> q_du0_du1_p(3) 
     by (metis (no_types, lifting) mult.assoc)   
 qed
 
@@ -660,10 +657,10 @@ lemma ts_to_wts_not_member_is_0:
   assumes "(p, l, q) \<notin> ts"
   shows "ts_to_wts ts $ (p, l, q) = 0"
 proof -
-  have f: "finite {(t, 1) |t. t \<in> ts}" using assms(1) by (fact finite_f_on_set)
+  have f: "finite {(t, 1) |t. t \<in> ts}" 
+    using assms(1) by (fact finite_f_on_set)
   show ?thesis
-    unfolding ts_to_wts_def update_wts_sum[OF f, of "K$ 0" "(p, l, q)"] using assms(2)
-    by simp
+    unfolding ts_to_wts_def update_wts_sum[OF f, of "K$ 0" "(p, l, q)"] using assms(2) by simp
 qed
 
 section \<open>Intersection of WAutomata\<close>
@@ -677,7 +674,7 @@ fun snd_trans :: "(('state \<times> 'state), 'label::finite) transition \<Righta
 definition fst_weight :: "('state, 'label::finite, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions"
   where "fst_weight = (\<lambda>ts. ts $\<circ> fst_trans)" 
 
-lemma fw:
+lemma fst_weight_apply:
   fixes p1::"'state::finite"
   fixes q1::"'state::finite"
   shows "(fst_weight ts1) $ ((p1,q1),l,(p2,q2)) = ts1 $ (p1,l,p2)"
@@ -686,7 +683,7 @@ lemma fw:
 definition snd_weight :: "('state, 'label::finite, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions"
   where "snd_weight = (\<lambda>ts. ts $\<circ> snd_trans)"
 
-lemma sw:
+lemma snd_weight_apply:
   fixes p1::"'state::finite"
   fixes q1::"'state::finite"
   shows "(snd_weight ts2) $ ((p1,q1),l,(p2,q2)) = ts2 $ (q1,l,q2)"
@@ -695,20 +692,20 @@ lemma sw:
 definition pair_weight :: "('state, 'label::finite, 'weight) w_transitions \<Rightarrow> ('state, 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, ('weight \<times>'weight)) w_transitions" where
   "pair_weight = (\<lambda>ts1 ts2. finfun_Diag (fst_weight ts1) (snd_weight ts2))"
                                             
-lemma finfun_apply_pair_weight':
+lemma finfun_apply_pair_weight_transition:
   fixes p1::"'state::finite" 
   fixes q1::"'state::finite"
   shows "pair_weight ts1 ts2 $ ((p1,q1),l,(p2,q2)) = (ts1 $ (p1,l,p2),ts2 $ (q1,l,q2))"
-  unfolding pair_weight_def finfun_Diag_apply by (auto simp add: fw sw)
+  unfolding pair_weight_def finfun_Diag_apply by (auto simp add: fst_weight_apply snd_weight_apply)
 
-lemma finfun_apply_pair_weight[code]:
+lemma finfun_apply_pair_weight:
   fixes ts1::"('state::finite, 'label::finite, 'weight) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   shows "(($) (pair_weight ts1 ts2)) = (\<lambda>t. (ts1 $ (fst_trans t), ts2 $ (snd_trans t)))"
 proof (rule HOL.ext)
   fix t 
   show "pair_weight ts1 ts2 $ t = (ts1 $ (fst_trans t), ts2 $ (snd_trans t))"
-    using finfun_apply_pair_weight' by (cases t) fastforce
+    using finfun_apply_pair_weight_transition by (cases t) fastforce
 qed
 
 definition intersff :: "('state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions" where
@@ -718,7 +715,7 @@ lemma finfun_apply_intersff_transition:
   fixes p1::"'state::finite"
   fixes q1::"'state::finite"
   shows "intersff ts1 ts2 $ ((p1,q1),l,(p2,q2)) = (ts1 $ (p1,l,p2)*ts2 $ (q1,l,q2))"
-  by (auto simp add: fw sw finfun_apply_pair_weight' intersff_def)
+  by (auto simp add: fst_weight_apply snd_weight_apply finfun_apply_pair_weight_transition intersff_def)
 
 lemma finfun_apply_intersff:
   fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
