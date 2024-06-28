@@ -61,13 +61,13 @@ definition final_100_automaton :: "((ctr_loc, state) WPDS.state, label) transiti
   ((Noninit q2, B, Noninit q2))}"
 definition final_100_finals where "final_100_finals = {}"
 
-value "thing2 pds_rules_900 pds_rules_900_W initial_100_automaton final_100_automaton initial_100_finals final_100_finals"
+value "run_WPDS_reach pds_rules_900 pds_rules_900_W initial_100_automaton final_100_automaton initial_100_finals final_100_finals"
 
 (*lemma "wpds_rules = w_rules pds_rules W"
   unfolding pds_rules_def W_def wpds_rules_def w_rules_def by eval*)
 
 
-term "thing2 pds_rules W initial_automaton final_automaton initial_finals final_finals"
+term "run_WPDS_reach pds_rules W initial_automaton final_automaton initial_finals final_finals"
 
 
 lemma[code_unfold]: "finite pds_rules"
@@ -96,7 +96,7 @@ value "thing3"
 
 
 lemma
-  "thing3 = Some (fin 3)" 
+  "thing3 = Some (fin 3)"
   by eval
 
 lemma

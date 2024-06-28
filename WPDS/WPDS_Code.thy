@@ -92,7 +92,7 @@ lemma lang_aut_is_accepts_full_new:
   apply safe
   subgoal for p w q
     using monoid_rtrancl_one_if_trans_star[of "Init p" w q ts, OF _ assms]
-          accepts_1_if_monoid_rtrancl_1[of ts "Init p" w q finals, OF assms]
+          dioidLTS.accepts_1_if_monoid_rtrancl_1[of ts "Init p" w q finals, OF assms]
     by blast
   using not_in_trans_star_implies_accepts_0[OF assms] by blast
 

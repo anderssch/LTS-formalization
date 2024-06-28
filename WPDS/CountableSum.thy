@@ -134,9 +134,6 @@ lemma finite_sum_less_eq:
         sum_greater_elem[OF _ assms(1)]
   by presburger
 
-lemma SumInf_empty[simp]: "\<^bold>\<Sum> {} = 0"
-  unfolding SumInf_def using suminf_finite[of "{}", simplified] path_seq_empty by blast
-
 lemma finite_SumInf_is_sum:
   assumes "finite W"
   shows "\<^bold>\<Sum> W = \<Sum> W"
@@ -153,6 +150,12 @@ qed
 
 lemma singleton_SumInf[simp]: "\<^bold>\<Sum> {w} = w"
   using finite_SumInf_is_sum[of "{w}"] by simp
+
+lemma SumInf_empty[simp]: "\<^bold>\<Sum> {} = 0"
+  unfolding SumInf_def using suminf_finite[of "{}", simplified] path_seq_empty by blast
+
+lemma SumInf_is_zero_if_subset_singleton_zero[simp]: "X \<subseteq> {0} \<Longrightarrow> \<^bold>\<Sum> X = 0"
+  using subset_singletonD by fastforce
 
 lemma SumInf_mono: 
   assumes "A \<subseteq> B"
