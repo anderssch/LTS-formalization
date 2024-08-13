@@ -591,14 +591,14 @@ lemma step_relp_append:
         step_rule_aux step_relp_def2 by fastforce
 
 lemma step_relp_seq:
-  assumes "(p, w') \<Midarrow>d1\<Rightarrow>\<^sup>* (pi, [])"
-  assumes "(pi, w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p', [])"
+  assumes "(p, w') \<Midarrow>d1\<Rightarrow>\<^sup>* (p\<^sub>i, [])"
+  assumes "(p\<^sub>i, w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p', [])"
   shows "(p, w' @ w) \<Midarrow>(d1 * d')\<Rightarrow>\<^sup>* (p', [])"
 proof -
-  have "(p, w' @ w) \<Midarrow> d1 \<Rightarrow>\<^sup>* (pi, w)"
+  have "(p, w' @ w) \<Midarrow> d1 \<Rightarrow>\<^sup>* (p\<^sub>i, w)"
     using assms(1) using step_relp_append by fastforce
   show ?thesis
-    by (meson \<open>(p, w' @ w) \<Midarrow> d1 \<Rightarrow>\<^sup>* (pi, w)\<close> assms(2) monoid_rtranclp_trans)
+    by (meson \<open>(p, w' @ w) \<Midarrow> d1 \<Rightarrow>\<^sup>* (p\<^sub>i, w)\<close> assms(2) monoid_rtranclp_trans)
 qed
 
 lemma monoid_star_relp_if_l_step_relp:
@@ -619,17 +619,17 @@ lemma push_seq_weight_if_l_step_relp:
   by (simp add: assms monoid_star_relp_if_l_step_relp push_seq_weight_if_monoid_star_relp)
 
 lemma push_seq_weight_trans:
-  assumes "(\<^bold>\<Sigma>(p'', w')\<Rightarrow>\<^sup>*pi) \<le> d1"
-  assumes "(\<^bold>\<Sigma>(pi, w'')\<Rightarrow>\<^sup>*p2) \<le> d2"
+  assumes "(\<^bold>\<Sigma>(p'', w')\<Rightarrow>\<^sup>*p\<^sub>i) \<le> d1"
+  assumes "(\<^bold>\<Sigma>(p\<^sub>i, w'')\<Rightarrow>\<^sup>*p2) \<le> d2"
   shows "(\<^bold>\<Sigma>(p'', w'@w'')\<Rightarrow>\<^sup>*p2) \<le> d1 * d2"
 proof -
-  have "(\<^bold>\<Sigma>(p'',w'@w'') \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d1' * d2'| d1'  d2'. (p'',w') \<Midarrow>d1'\<Rightarrow>\<^sup>* (pi,[]) \<and> (pi,w'') \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
-    using SumInf_mono[of "{d1' * d2' |d1' d2'. (p'', w') \<Midarrow> d1' \<Rightarrow>\<^sup>* (pi, []) \<and> (pi, w'') \<Midarrow> d2' \<Rightarrow>\<^sup>* (p2, [])}" 
+  have "(\<^bold>\<Sigma>(p'',w'@w'') \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d1' * d2'| d1'  d2'. (p'',w') \<Midarrow>d1'\<Rightarrow>\<^sup>* (p\<^sub>i,[]) \<and> (p\<^sub>i,w'') \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
+    using SumInf_mono[of "{d1' * d2' |d1' d2'. (p'', w') \<Midarrow> d1' \<Rightarrow>\<^sup>* (p\<^sub>i, []) \<and> (p\<^sub>i, w'') \<Midarrow> d2' \<Rightarrow>\<^sup>* (p2, [])}" 
         "{d'. (p'', w' @ w'') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}"]
       step_relp_seq by (force simp add: countable_monoid_star_all dissect_set)
-  also have "... \<le> (\<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* pi) * (\<^bold>\<Sigma>(pi,w'') \<Rightarrow>\<^sup>* p2)"
-    using SumInf_left_distr[of "{d'. (pi, w'') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}" "\<^bold>\<Sum> {d'. (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (pi, [])}"] 
-          SumInf_of_SumInf_right_distr_simple[of "\<lambda>d'. (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (pi, [])"]
+  also have "... \<le> (\<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* p\<^sub>i) * (\<^bold>\<Sigma>(p\<^sub>i,w'') \<Rightarrow>\<^sup>* p2)"
+    using SumInf_left_distr[of "{d'. (p\<^sub>i, w'') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}" "\<^bold>\<Sum> {d'. (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (p\<^sub>i, [])}"] 
+          SumInf_of_SumInf_right_distr_simple[of "\<lambda>d'. (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (p\<^sub>i, [])"]
     by (simp add: dissect_set countable_monoid_star_all)
   also have "... \<le> d1 * d2"
     using assms BoundedDioid.mult_isol_var by auto
@@ -639,10 +639,10 @@ proof -
 qed
 
 lemma push_seq_weight_trans_push:
-  assumes "(\<^bold>\<Sigma>(p'', [\<mu>'])\<Rightarrow>\<^sup>*pi) \<le> d1"
-  assumes "(\<^bold>\<Sigma>(pi, [\<mu>''])\<Rightarrow>\<^sup>*p2) \<le> d2"
+  assumes "(\<^bold>\<Sigma>(p'', [\<mu>'])\<Rightarrow>\<^sup>*p\<^sub>i) \<le> d1"
+  assumes "(\<^bold>\<Sigma>(p\<^sub>i, [\<mu>''])\<Rightarrow>\<^sup>*p2) \<le> d2"
   shows "(\<^bold>\<Sigma>(p'', [\<mu>', \<mu>''])\<Rightarrow>\<^sup>*p2) \<le> d1 * d2"
-  using assms push_seq_weight_trans[of p'' "[\<mu>']" pi d1 "[\<mu>'']" p2 d2] by auto
+  using assms push_seq_weight_trans[of p'' "[\<mu>']" p\<^sub>i d1 "[\<mu>'']" p2 d2] by auto
 
 lemma monoid_star_relp_push_seq_weight_trans:
   assumes "(p1, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p'', w')"
@@ -665,10 +665,10 @@ proof -
 qed
 
 lemma push_seq_weight_trans_Cons:
-  assumes "(\<^bold>\<Sigma>(p, [\<gamma>])\<Rightarrow>\<^sup>*pi) \<le> d1"
-  assumes "(\<^bold>\<Sigma>(pi, w)\<Rightarrow>\<^sup>*p') \<le> d2"
+  assumes "(\<^bold>\<Sigma>(p, [\<gamma>])\<Rightarrow>\<^sup>*p\<^sub>i) \<le> d1"
+  assumes "(\<^bold>\<Sigma>(p\<^sub>i, w)\<Rightarrow>\<^sup>*p') \<le> d2"
   shows "(\<^bold>\<Sigma>(p, \<gamma> # w)\<Rightarrow>\<^sup>*p') \<le> d1 * d2"
-  using assms push_seq_weight_trans[of p "[\<gamma>]" pi d1 w p' d2] by auto
+  using assms push_seq_weight_trans[of p "[\<gamma>]" p\<^sub>i d1 w p' d2] by auto
 
 lemma sound_elim2:
   assumes "sound A"

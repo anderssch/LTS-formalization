@@ -1,6 +1,6 @@
 theory BoundedDioid
-  imports "ReverseWellQuasiOrder"
-          "HOL.Lattices" "HOL.Order_Relation" "HOL.Complete_Lattices" "HOL.Series"
+  imports "HOL.Lattices" "HOL.Order_Relation" "HOL.Complete_Lattices" "HOL.Series" 
+          "HOL-Library.Extended_Real" "Well_Quasi_Orders.Well_Quasi_Orders" 
 begin
 
 class idempotent_ab_semigroup_add = ab_semigroup_add +
@@ -521,7 +521,6 @@ qed
 end
 
 class bounded_idempotent_comm_monoid_add_topology = discrete_topology + bounded_idempotent_comm_monoid_add
-(*  assumes no_infinite_decending_chains: "almost_full_on (\<le>) UNIV"*)
 begin
 subclass t2_space proof
   fix x y :: 'a
