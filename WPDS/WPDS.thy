@@ -1050,6 +1050,53 @@ theorem pre_star_rule_correct:
   shows "accepts A finals = weight_pre_star (accepts (ts_to_wts {}) finals)"
   using assms correctness by auto
 
+lemma weight_pre_star_K0_meaning:
+   "weight_pre_star (accepts (K$ 0) finals) (p, w) = \<^bold>\<Sum> {l |l q. q \<in> finals \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, [])}"
+proof -
+  have count: "countable {uu. \<exists>q. q \<in> finals \<and> (p, w) \<Midarrow> uu \<Rightarrow>\<^sup>* (q, [])}"
+    using Collect_mono_iff countable_l_c_c' countable_subset by fastforce
+
+  have "weight_pre_star (accepts (K$ 0) finals) (p, w) = \<^bold>\<Sum> {l * accepts (K$ 0) finals c' |l c'. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    unfolding weight_pre_star_def ..
+  also have "... = \<^bold>\<Sum> {l * accepts (K$ 0) finals (q,v) |l q v. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q,v)}"
+    by auto
+  also have "... = \<^bold>\<Sum> {l * (if q \<in> finals \<and> v = [] then 1 else 0) |l q v. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)}"
+    unfolding accepts_K0_iff by auto
+  also have "... = \<^bold>\<Sum> ({l * 1 |l q v. q \<in> finals \<and> v = [] \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)} \<union>
+                       {l * 0 |l q v. \<not>(q \<in> finals \<and> v = []) \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)})"
+    apply -
+    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
+    apply auto
+    done
+  also have "... = \<^bold>\<Sum> ({l * 1 |l q v. q \<in> finals \<and> v = [] \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)} \<union>
+                       {0 |l q v. \<not>(q \<in> finals \<and> v = []) \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)})"
+    apply -
+    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
+    apply auto
+    done
+  also have "... = \<^bold>\<Sum> ({l * 1 |l q v. q \<in> finals \<and> v = [] \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)})"
+    apply (cases "\<exists>l q v. \<not>(q \<in> finals \<and> v = []) \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)")
+    subgoal
+      using SumInf_insert_0[OF count]
+      apply auto
+      done
+    subgoal
+      apply auto
+      apply (smt (verit, best) Collect_empty_eq sup_bot.right_neutral)
+      done
+    done
+  also have "... = \<^bold>\<Sum> {l |l q. q \<in> finals \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, [])}"
+    by auto
+  finally show ?thesis
+    by blast
+qed
+
+corollary pre_star_rule_correct_variant: (* We could put a notation like (\<Sigma>(p,w)\<Rightarrow>*finals) for the RHS. Similar to push_seq_weight *)
+  assumes "saturation pre_star_rule (K$ 0) A"
+  shows "accepts A finals (p,w) = \<^bold>\<Sum> {l |l q. q \<in> finals \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, [])}"
+  by (simp add: assms correctness finite_WPDS.weight_pre_star_K0_meaning finite_WPDS_axioms)
+
+
 end
 
 

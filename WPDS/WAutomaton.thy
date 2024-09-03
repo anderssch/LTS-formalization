@@ -16,7 +16,8 @@ type_synonym ('state, 'label, 'weight) w_transitions = "('state, 'label) transit
 type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list \<times> 'weight)) transition set"
 
 
-\<comment> \<open>Embed a weighted automaton into a monoidLTS. All non-zero transitions are added. The label is lifted to the list-monoid.\<close>
+(* TODO: Investigate: Would adding only non-zero be advantagous or not? *)
+\<comment> \<open>Embed a weighted automaton into a monoidLTS. All transitions are added. The label is lifted to the list-monoid.\<close>
 definition wts_to_monoidLTS :: "('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
   "wts_to_monoidLTS ts = {(p, ([\<gamma>],d), q) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
 
