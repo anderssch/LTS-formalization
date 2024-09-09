@@ -1101,7 +1101,7 @@ lemma accepts_if_saturated_monoid_star_relp_final:
   shows "accepts A finals c \<le> d"
   using accepts_if_saturated_monoid_star_relp_final' assms by simp 
 
-lemma lemma_3_1_w_CREATIVE_AUX:
+lemma lemma_3_1_w_AUX:
   assumes "saturated pre_star_rule A"
   assumes "q \<in> finals"
   shows "accepts A finals c \<le> \<^bold>\<Sigma>c\<Rightarrow>\<^sup>*q"
@@ -1116,10 +1116,10 @@ qed
 lemma pre_star_leq_pred_weight:
   assumes "saturated pre_star_rule A"
   shows "accepts A finals c \<le> (\<^bold>\<Sigma>\<^sub>sc\<Rightarrow>\<^sup>*finals)"
-  using lemma_3_1_w_CREATIVE_AUX[OF assms, of _ finals c]
+  using lemma_3_1_w_AUX[OF assms, of _ finals c]
   using push_seq_USEFUL_THING2 by auto
 
-lemma lemma_3_1_w_CREATIVE2:
+lemma lemma_3_1_w:
   assumes "saturation pre_star_rule A A'"
   shows "accepts A' finals c \<le> (\<^bold>\<Sigma>\<^sub>sc\<Rightarrow>\<^sup>*finals)"
   by (metis (no_types, lifting) assms pre_star_leq_pred_weight saturation_def)
@@ -1127,7 +1127,7 @@ lemma lemma_3_1_w_CREATIVE2:
 corollary correctness:
   assumes "saturation pre_star_rule (K$ 0) A"
   shows "accepts A finals (p,w) = (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
-  using lemma_3_1_w_CREATIVE2[of "K$ 0" A finals "(p,w)", OF assms]
+  using lemma_3_1_w[of "K$ 0" A finals "(p,w)", OF assms]
     pre_star_geq_pred_weight[OF assms, of finals p w] by order 
 
 theorem correctness':
