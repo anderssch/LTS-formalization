@@ -955,7 +955,7 @@ proof -
     by blast
 qed
 
-lemma lemma_3_2_w_alternative_NEW:
+lemma lemma_3_2_w_alternative:
   assumes soundA': "sound A'"
   shows "accepts A' finals pv \<ge> (\<^bold>\<Sigma>\<^sub>spv\<Rightarrow>\<^sup>*finals)"
 proof -
@@ -980,35 +980,16 @@ proof -
     unfolding pv_split by auto
 qed
 
-lemma lemma_3_2_w_alternative:
-  assumes soundA': "sound A'"
-  shows "accepts A' finals pv \<ge> weight_pre_star (accepts (K$ 0) finals) pv"
-  using lemma_3_2_w_alternative_NEW[OF assms] weight_pre_star_K0_is_pred_weight by (cases pv) auto
 
-lemma lemma_3_2_w_alternative'_NEW: 
-  assumes "pre_star_rule (K$ 0) A"
-  shows "accepts A finals pv \<ge> (\<^bold>\<Sigma>\<^sub>spv\<Rightarrow>\<^sup>*finals)"
-  using lemma_3_2_w_alternative_NEW[OF pre_star_rule_sound[OF sound_empty assms]] by auto
-
-lemma lemma_3_2_w_alternative':
-  assumes "pre_star_rule (K$ 0) A"
-  shows "accepts A finals pv \<ge> weight_pre_star (accepts (K$ 0) finals) pv"
-  using lemma_3_2_w_alternative'_NEW[OF assms] weight_pre_star_K0_is_pred_weight by (cases pv) auto
-
-lemma lemma_3_2_w_alternative'''_NEW:
-  assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
-  shows "accepts A' finals (p,v) \<ge> (\<^bold>\<Sigma>\<^sub>s(p,v)\<Rightarrow>\<^sup>*finals)"
-  using pre_star_rule_rtranclp_sound[OF sound_empty, of A'] assms lemma_3_2_w_alternative_NEW[of A' finals] by blast
-
-lemma lemma_3_2_w_alternative''':
-  assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
-  shows "accepts A' finals (p,v) \<ge> weight_pre_star (accepts (K$ 0) finals) (p,v)"
-  using lemma_3_2_w_alternative'''_NEW[OF assms] weight_pre_star_K0_is_pred_weight by auto
-
-lemma pre_star_geq_pred_weight:
+lemma pre_star_geq_pred_weight':
   assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
   shows "accepts A' finals (p,w) \<ge> (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
-  using lemma_3_2_w_alternative'''_NEW assms .
+   using pre_star_rule_rtranclp_sound[OF sound_empty, of A'] assms lemma_3_2_w_alternative[of A' finals] by blast
+
+lemma pre_star_geq_pred_weight:
+  assumes "saturation pre_star_rule (K$ 0) A'"
+  shows "accepts A' finals (p,w) \<ge> (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
+  using assms pre_star_geq_pred_weight' unfolding saturation_def by auto
 
 lemma saturated_pre_star_rule_transition:
   assumes "saturated pre_star_rule A"
@@ -1123,7 +1104,7 @@ lemma accepts_if_saturated_monoid_star_relp_final:
 lemma lemma_3_1_w_CREATIVE_AUX:
   assumes "saturated pre_star_rule A"
   assumes "q \<in> finals"
-  shows "accepts A finals c \<le> (\<^bold>\<Sigma>c\<Rightarrow>\<^sup>*q)"
+  shows "accepts A finals c \<le> \<^bold>\<Sigma>c\<Rightarrow>\<^sup>*q"
 proof -
   define X where "X = accepts A finals c"
   show ?thesis
@@ -1132,54 +1113,27 @@ proof -
     using push_seq_USEFUL_THING by blast
 qed
 
-lemma lemma_3_1_w_CREATIVE:
+lemma pre_star_leq_pred_weight:
   assumes "saturated pre_star_rule A"
   shows "accepts A finals c \<le> (\<^bold>\<Sigma>\<^sub>sc\<Rightarrow>\<^sup>*finals)"
   using lemma_3_1_w_CREATIVE_AUX[OF assms, of _ finals c]
   using push_seq_USEFUL_THING2 by auto
 
+lemma lemma_3_1_w_CREATIVE2:
+  assumes "saturation pre_star_rule A A'"
+  shows "accepts A' finals c \<le> (\<^bold>\<Sigma>\<^sub>sc\<Rightarrow>\<^sup>*finals)"
+  by (metis (no_types, lifting) assms pre_star_leq_pred_weight saturation_def)
 
-
-lemma lemma_3_1_w':
-  assumes "saturated pre_star_rule A"
-  assumes "c \<Midarrow>d\<Rightarrow>\<^sup>* c'"
-  shows "accepts A finals c \<le> d * accepts (K$ 0) finals c'"
-  using assms accepts_if_saturated_monoid_star_relp_final[OF assms(1)] 
-    accepts_K0_iff[of finals "fst c'" "snd c'"] by simp (metis prod.collapse)
-
-lemma lemma_3_1_w:
-  assumes "saturated pre_star_rule A"
-  shows "accepts A finals c \<le> weight_pre_star (accepts (K$ 0) finals) c"
-  unfolding weight_pre_star_def
-  using SumInf_bounded_if_set_bounded[of "{d * accepts (K$ 0) finals c' |d c'. c \<Midarrow> d \<Rightarrow>\<^sup>* c'}" "accepts A finals c"]
-    lemma_3_1_w'[OF assms] by (fastforce simp add: dissect_set countable_monoid_star_all)
-
-lemma pre_star_leq_pred_weight:
-  assumes "saturated pre_star_rule A"
-  shows "accepts A finals (p,w) \<le> (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
-  using lemma_3_1_w weight_pre_star_K0_is_pred_weight using assms by auto
-
-theorem correctness'':
+corollary correctness:
   assumes "saturation pre_star_rule (K$ 0) A"
-  shows "accepts A finals (p,v) = weight_pre_star (accepts (K$ 0) finals) (p,v)"
-  using assms lemma_3_2_w_alternative''' lemma_3_1_w  saturation_def dual_order.eq_iff by metis
+  shows "accepts A finals (p,w) = (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
+  using lemma_3_1_w_CREATIVE2[of "K$ 0" A finals "(p,w)", OF assms]
+    pre_star_geq_pred_weight[OF assms, of finals p w] by order 
 
 theorem correctness':
   assumes "saturation pre_star_rule (K$ 0) A"
   shows "accepts A finals c = weight_pre_star (accepts (K$ 0) finals) c"
-  using assms lemma_3_2_w_alternative''' lemma_3_1_w  saturation_def dual_order.eq_iff by (metis prod.exhaust)
-
-theorem pre_star_rule_correct:
-  assumes "saturation pre_star_rule (ts_to_wts {}) A"
-  shows "accepts A finals = weight_pre_star (accepts (ts_to_wts {}) finals)"
-  using assms correctness'' by auto
-
-
-corollary correctness: (* We could put a notation like (\<Sigma>(p,w)\<Rightarrow>*finals) for the RHS. Similar to push_seq_weight *)
-  assumes "saturation pre_star_rule (K$ 0) A"
-  shows "accepts A finals (p,w) = \<^bold>\<Sum> {l |l q. q \<in> finals \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, [])}"
-  by (simp add: assms correctness'' finite_WPDS.weight_pre_star_K0_is_pred_weight finite_WPDS_axioms)
-
+  using correctness[OF assms] weight_pre_star_K0_is_pred_weight by (cases c) auto
 
 end
 
