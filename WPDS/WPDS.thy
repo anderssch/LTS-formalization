@@ -526,8 +526,11 @@ lemma weight_reach_set'_is_weight_reach':
 
 subsection \<open>Pre* correctness\<close>
 
-abbreviation (input) push_seq_weight :: "('ctr_loc * 'label list) \<Rightarrow> 'ctr_loc \<Rightarrow> 'weight" ("\<^bold>\<Sigma>_\<Rightarrow>\<^sup>*_") where
+abbreviation (input) ctr_loc_pred_weight :: "('ctr_loc * 'label list) \<Rightarrow> 'ctr_loc \<Rightarrow> 'weight" ("\<^bold>\<Sigma>_\<Rightarrow>\<^sup>*_") where
   "(\<^bold>\<Sigma>pw\<Rightarrow>\<^sup>*p') \<equiv> \<^bold>\<Sum>{d'. pw \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
+
+abbreviation (input) ctr_loc_preds_weight :: "('ctr_loc * 'label list) \<Rightarrow> 'ctr_loc set \<Rightarrow> 'weight" ("\<^bold>\<Sigma>\<^sub>s_\<Rightarrow>\<^sup>*_") where
+  "(\<^bold>\<Sigma>\<^sub>spw\<Rightarrow>\<^sup>*Q) \<equiv> \<^bold>\<Sum> {l |l q. q \<in> Q \<and> pw \<Midarrow> l \<Rightarrow>\<^sup>* (q, [])}"
 
 lemma push_seq_weight_def2:
   "(\<^bold>\<Sigma>pw\<Rightarrow>\<^sup>*p') = \<^bold>\<Sum> {d |d. pw \<Midarrow> d \<Rightarrow>\<^sup>* (p', [])}"
@@ -669,6 +672,54 @@ lemma push_seq_weight_trans_Cons:
   assumes "(\<^bold>\<Sigma>(pi, w)\<Rightarrow>\<^sup>*p') \<le> d2"
   shows "(\<^bold>\<Sigma>(p, \<gamma> # w)\<Rightarrow>\<^sup>*p') \<le> d1 * d2"
   using assms push_seq_weight_trans[of p "[\<gamma>]" pi d1 w p' d2] by auto
+
+lemma push_seq_USEFUL_THING:
+  assumes "\<forall>d. c \<Midarrow> d \<Rightarrow>\<^sup>* (q, []) \<longrightarrow> X \<le> d"
+  shows "X \<le> (\<^bold>\<Sigma>c \<Rightarrow>\<^sup>* q)"
+  by (metis (mono_tags, lifting) Collect_mono_iff SumInf_bounded_if_set_bounded assms countable_l_c_c' 
+      countable_subset mem_Collect_eq)
+
+lemma push_seq_USEFUL_THING2:
+  assumes "\<forall>q\<in>finals. X \<le> (\<^bold>\<Sigma>c \<Rightarrow>\<^sup>* q)"
+  shows "X \<le> (\<^bold>\<Sigma>\<^sub>sc \<Rightarrow>\<^sup>* finals)"
+proof -
+  have "\<forall>l q. q \<in> finals \<longrightarrow> c \<Midarrow> l \<Rightarrow>\<^sup>* (q, []) \<longrightarrow> X \<le> l"
+  proof -
+    { 
+      fix w :: 'weight and q :: 'ctr_loc
+      have "\<forall>p c w. p \<Midarrow> w \<Rightarrow>\<^sup>* (c, []) \<longrightarrow> \<^bold>\<Sum> {w. p \<Midarrow> w \<Rightarrow>\<^sup>* (c, [])} \<le> w"
+        by (simp add: push_seq_weight_if_monoid_star_relp)
+      then have "c \<Midarrow> w \<Rightarrow>\<^sup>* (q, []) \<longrightarrow> q \<in> finals \<longrightarrow> X \<le> w"
+        using assms dual_order.trans by blast 
+    }
+    then show ?thesis
+      by blast
+  qed
+  then show ?thesis
+    by (smt (verit, best) Collect_mono_iff SumInf_bounded_if_set_bounded countable_l_c_c' countable_subset mem_Collect_eq)
+qed
+
+lemma push_seq_USEFUL_THING3:
+  "(\<^bold>\<Sigma>\<^sub>s(p,v)\<Rightarrow>\<^sup>*finals) = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
+proof -
+  have "(\<^bold>\<Sigma>\<^sub>s(p,v)\<Rightarrow>\<^sup>*finals) = \<^bold>\<Sum> {d' |d' q. q \<in> finals \<and> (p,v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])}"
+    by auto
+  moreover
+  have "... = \<^bold>\<Sum> {uu. \<exists>x y. uu = x \<and> (p, v) \<Midarrow> x \<Rightarrow>\<^sup>* (y, []) \<and> y \<in> finals}"
+    by metis
+  moreover
+  have "... = \<^bold>\<Sum> {\<^bold>\<Sum> {x |x. (p, v) \<Midarrow> x \<Rightarrow>\<^sup>* (y, [])} |y. y \<in> finals}"
+    using SumInf_of_SumInf[of "\<lambda>q. q \<in> finals" "%d' q. (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])" "\<lambda>d' q. d'"]
+    by (auto simp add: countable_star_f_p9)
+  moreover
+  have "... = \<^bold>\<Sum> {\<^bold>\<Sum>{d'. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])} | q. q \<in> finals}"
+    by auto
+  moreover
+  have "... = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
+    by auto
+  ultimately show ?thesis
+    by auto
+qed
 
 lemma sound_elim2:
   assumes "sound A"
@@ -863,27 +914,55 @@ lemma countable_monoid_rtrancl_wts_to_monoidLTS_P:
   shows "countable {f d q |d q. P d q \<and> (p, (w, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A)}"
   using countable_monoid_rtrancl_wts_to_monoidLTS_all by (simp add: dissect_set)
 
-lemma lemma_3_2_w_alternative:
+lemma weight_pre_star_K0_is_pred_weight:
+   "weight_pre_star (accepts (K$ 0) finals) (p, w) = (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
+proof -
+  have count: "countable {uu. \<exists>q. q \<in> finals \<and> (p, w) \<Midarrow> uu \<Rightarrow>\<^sup>* (q, [])}"
+    using Collect_mono_iff countable_l_c_c' countable_subset by fastforce
+
+  have "weight_pre_star (accepts (K$ 0) finals) (p, w) = \<^bold>\<Sum> {l * accepts (K$ 0) finals c' |l c'. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
+    unfolding weight_pre_star_def ..
+  also have "... = \<^bold>\<Sum> {l * accepts (K$ 0) finals (q,v) |l q v. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q,v)}"
+    by auto
+  also have "... = \<^bold>\<Sum> {l * (if q \<in> finals \<and> v = [] then 1 else 0) |l q v. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)}"
+    unfolding accepts_K0_iff by auto
+  also have "... = \<^bold>\<Sum> ({l * 1 |l q v. q \<in> finals \<and> v = [] \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)} \<union>
+                       {l * 0 |l q v. \<not>(q \<in> finals \<and> v = []) \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)})"
+    apply -
+    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
+    apply auto
+    done
+  also have "... = \<^bold>\<Sum> ({l * 1 |l q v. q \<in> finals \<and> v = [] \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)} \<union>
+                       {0 |l q v. \<not>(q \<in> finals \<and> v = []) \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)})"
+    apply -
+    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
+    apply auto
+    done
+  also have "... = \<^bold>\<Sum> ({l * 1 |l q v. q \<in> finals \<and> v = [] \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)})"
+    apply (cases "\<exists>l q v. \<not>(q \<in> finals \<and> v = []) \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)")
+    subgoal
+      using SumInf_insert_0[OF count]
+      apply auto
+      done
+    subgoal
+      apply auto
+      apply (smt (verit, best) Collect_empty_eq sup_bot.right_neutral)
+      done
+    done
+  also have "... = (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
+    by auto
+  finally show ?thesis
+    by blast
+qed
+
+lemma lemma_3_2_w_alternative_NEW:
   assumes soundA': "sound A'"
-  shows "accepts A' finals pv \<ge> weight_pre_star (accepts (K$ 0) finals) pv"
+  shows "accepts A' finals pv \<ge> (\<^bold>\<Sigma>\<^sub>spv\<Rightarrow>\<^sup>*finals)"
 proof -
   obtain p v where pv_split: "pv = (p, v)"
-    by (cases pv) 
-  have "weight_pre_star (accepts (K$ 0) finals) (p,v) = \<^bold>\<Sum>{d' * accepts (K$ 0) finals (q,w)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"
-    by (simp add: weight_pre_star_def)
-  also have "... = \<^bold>\<Sum>{d' * (if q\<in>finals \<and> w=[] then 1 else 0)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"
-    by simp
-  also have "... \<le> \<^bold>\<Sum>{d' |d' q. q \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}"
-    using SumInf_mono[of "{d' |d' q. q \<in> finals \<and> (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])}" 
-        "{d' * (if q\<in>finals \<and> w=[] then 1 else 0)| d' q w. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,w)}"]
-      countable_push_seq_weight2 by (fastforce simp add: countable_monoid_star_all dissect_set)
-  also have "... = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
-    using SumInf_of_SumInf_right_distr[of "\<lambda>q. q \<in> finals" "\<lambda>d q. (p,v) \<Midarrow>d\<Rightarrow>\<^sup>* (q,[])" "\<lambda>d q. d" "\<lambda>q. 1", 
-                                       OF _ countable_star_f_p9, symmetric]
-    unfolding push_seq_weight_def2[symmetric] mult.right_neutral 
-    using Collect_cong[of "\<lambda>d. \<exists>d'. (p, v) \<Midarrow> d \<Rightarrow>\<^sup>* (d', []) \<and> d' \<in> finals"
-        "\<lambda>d'. \<exists>q. q \<in> finals \<and> (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])"]
-    by fastforce
+    by (cases pv)   
+  have "(\<^bold>\<Sigma>\<^sub>s(p,v)\<Rightarrow>\<^sup>*finals) = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
+    using push_seq_USEFUL_THING3 by blast
   also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sigma>(p,v) \<Rightarrow>\<^sup>* q |d q. q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
     using SumInf_mono[of "{pvq. \<exists>d q. pvq = (\<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q) \<and> q \<in> finals \<and> (p, (v, d), q) \<in> monoid_rtrancl (wts_to_monoidLTS A')}" 
         "{\<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q |q. q \<in> finals}"] by (force simp add: countable_monoid_rtrancl_wts_to_monoidLTS_all dissect_set)
@@ -901,15 +980,35 @@ proof -
     unfolding pv_split by auto
 qed
 
-lemma lemma_3_2_w_alternative': 
+lemma lemma_3_2_w_alternative:
+  assumes soundA': "sound A'"
+  shows "accepts A' finals pv \<ge> weight_pre_star (accepts (K$ 0) finals) pv"
+  using lemma_3_2_w_alternative_NEW[OF assms] weight_pre_star_K0_is_pred_weight by (cases pv) auto
+
+lemma lemma_3_2_w_alternative'_NEW: 
+  assumes "pre_star_rule (K$ 0) A"
+  shows "accepts A finals pv \<ge> (\<^bold>\<Sigma>\<^sub>spv\<Rightarrow>\<^sup>*finals)"
+  using lemma_3_2_w_alternative_NEW[OF pre_star_rule_sound[OF sound_empty assms]] by auto
+
+lemma lemma_3_2_w_alternative':
   assumes "pre_star_rule (K$ 0) A"
   shows "accepts A finals pv \<ge> weight_pre_star (accepts (K$ 0) finals) pv"
-  using lemma_3_2_w_alternative[OF pre_star_rule_sound[OF sound_empty assms]] by auto
+  using lemma_3_2_w_alternative'_NEW[OF assms] weight_pre_star_K0_is_pred_weight by (cases pv) auto
+
+lemma lemma_3_2_w_alternative'''_NEW:
+  assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
+  shows "accepts A' finals (p,v) \<ge> (\<^bold>\<Sigma>\<^sub>s(p,v)\<Rightarrow>\<^sup>*finals)"
+  using pre_star_rule_rtranclp_sound[OF sound_empty, of A'] assms lemma_3_2_w_alternative_NEW[of A' finals] by blast
 
 lemma lemma_3_2_w_alternative''':
   assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
   shows "accepts A' finals (p,v) \<ge> weight_pre_star (accepts (K$ 0) finals) (p,v)"
-  using pre_star_rule_rtranclp_sound assms lemma_3_2_w_alternative sound_empty by blast
+  using lemma_3_2_w_alternative'''_NEW[OF assms] weight_pre_star_K0_is_pred_weight by auto
+
+lemma pre_star_geq_pred_weight:
+  assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
+  shows "accepts A' finals (p,w) \<ge> (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
+  using lemma_3_2_w_alternative'''_NEW assms .
 
 lemma saturated_pre_star_rule_transition:
   assumes "saturated pre_star_rule A"
@@ -1021,6 +1120,26 @@ lemma accepts_if_saturated_monoid_star_relp_final:
   shows "accepts A finals c \<le> d"
   using accepts_if_saturated_monoid_star_relp_final' assms by simp 
 
+lemma lemma_3_1_w_CREATIVE_AUX:
+  assumes "saturated pre_star_rule A"
+  assumes "q \<in> finals"
+  shows "accepts A finals c \<le> (\<^bold>\<Sigma>c\<Rightarrow>\<^sup>*q)"
+proof -
+  define X where "X = accepts A finals c"
+  show ?thesis
+    using 
+      accepts_if_saturated_monoid_star_relp_final[OF assms(1) _ assms(2), of c]  unfolding X_def[symmetric]
+    using push_seq_USEFUL_THING by blast
+qed
+
+lemma lemma_3_1_w_CREATIVE:
+  assumes "saturated pre_star_rule A"
+  shows "accepts A finals c \<le> (\<^bold>\<Sigma>\<^sub>sc\<Rightarrow>\<^sup>*finals)"
+  using lemma_3_1_w_CREATIVE_AUX[OF assms, of _ finals c]
+  using push_seq_USEFUL_THING2 by auto
+
+
+
 lemma lemma_3_1_w':
   assumes "saturated pre_star_rule A"
   assumes "c \<Midarrow>d\<Rightarrow>\<^sup>* c'"
@@ -1035,7 +1154,12 @@ lemma lemma_3_1_w:
   using SumInf_bounded_if_set_bounded[of "{d * accepts (K$ 0) finals c' |d c'. c \<Midarrow> d \<Rightarrow>\<^sup>* c'}" "accepts A finals c"]
     lemma_3_1_w'[OF assms] by (fastforce simp add: dissect_set countable_monoid_star_all)
 
-theorem correctness:
+lemma pre_star_leq_pred_weight:
+  assumes "saturated pre_star_rule A"
+  shows "accepts A finals (p,w) \<le> (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
+  using lemma_3_1_w weight_pre_star_K0_is_pred_weight using assms by auto
+
+theorem correctness'':
   assumes "saturation pre_star_rule (K$ 0) A"
   shows "accepts A finals (p,v) = weight_pre_star (accepts (K$ 0) finals) (p,v)"
   using assms lemma_3_2_w_alternative''' lemma_3_1_w  saturation_def dual_order.eq_iff by metis
@@ -1048,53 +1172,13 @@ theorem correctness':
 theorem pre_star_rule_correct:
   assumes "saturation pre_star_rule (ts_to_wts {}) A"
   shows "accepts A finals = weight_pre_star (accepts (ts_to_wts {}) finals)"
-  using assms correctness by auto
+  using assms correctness'' by auto
 
-lemma weight_pre_star_K0_meaning:
-   "weight_pre_star (accepts (K$ 0) finals) (p, w) = \<^bold>\<Sum> {l |l q. q \<in> finals \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, [])}"
-proof -
-  have count: "countable {uu. \<exists>q. q \<in> finals \<and> (p, w) \<Midarrow> uu \<Rightarrow>\<^sup>* (q, [])}"
-    using Collect_mono_iff countable_l_c_c' countable_subset by fastforce
 
-  have "weight_pre_star (accepts (K$ 0) finals) (p, w) = \<^bold>\<Sum> {l * accepts (K$ 0) finals c' |l c'. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
-    unfolding weight_pre_star_def ..
-  also have "... = \<^bold>\<Sum> {l * accepts (K$ 0) finals (q,v) |l q v. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q,v)}"
-    by auto
-  also have "... = \<^bold>\<Sum> {l * (if q \<in> finals \<and> v = [] then 1 else 0) |l q v. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)}"
-    unfolding accepts_K0_iff by auto
-  also have "... = \<^bold>\<Sum> ({l * 1 |l q v. q \<in> finals \<and> v = [] \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)} \<union>
-                       {l * 0 |l q v. \<not>(q \<in> finals \<and> v = []) \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)})"
-    apply -
-    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
-    apply auto
-    done
-  also have "... = \<^bold>\<Sum> ({l * 1 |l q v. q \<in> finals \<and> v = [] \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)} \<union>
-                       {0 |l q v. \<not>(q \<in> finals \<and> v = []) \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)})"
-    apply -
-    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
-    apply auto
-    done
-  also have "... = \<^bold>\<Sum> ({l * 1 |l q v. q \<in> finals \<and> v = [] \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)})"
-    apply (cases "\<exists>l q v. \<not>(q \<in> finals \<and> v = []) \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)")
-    subgoal
-      using SumInf_insert_0[OF count]
-      apply auto
-      done
-    subgoal
-      apply auto
-      apply (smt (verit, best) Collect_empty_eq sup_bot.right_neutral)
-      done
-    done
-  also have "... = \<^bold>\<Sum> {l |l q. q \<in> finals \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, [])}"
-    by auto
-  finally show ?thesis
-    by blast
-qed
-
-corollary pre_star_rule_correct_variant: (* We could put a notation like (\<Sigma>(p,w)\<Rightarrow>*finals) for the RHS. Similar to push_seq_weight *)
+corollary correctness: (* We could put a notation like (\<Sigma>(p,w)\<Rightarrow>*finals) for the RHS. Similar to push_seq_weight *)
   assumes "saturation pre_star_rule (K$ 0) A"
   shows "accepts A finals (p,w) = \<^bold>\<Sum> {l |l q. q \<in> finals \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, [])}"
-  by (simp add: assms correctness finite_WPDS.weight_pre_star_K0_meaning finite_WPDS_axioms)
+  by (simp add: assms correctness'' finite_WPDS.weight_pre_star_K0_is_pred_weight finite_WPDS_axioms)
 
 
 end
@@ -2088,7 +2172,7 @@ lemma augmented_rules_correct:
 lemma pre_star_correctness: 
   assumes "saturation (augmented_WPDS.pre_star_rule) (K$ 0) A"
   shows "accepts A finals (Init p, w) = weight_pre_star (accepts_ts finals) (p,w)"
-  using assms augmented_rules_correct augmented_WPDS.correctness by simp
+  using assms augmented_rules_correct augmented_WPDS.correctness' by auto 
 
 subsection \<open>Code generation 2\<close>
 
