@@ -2374,19 +2374,4 @@ proof -
     done
 qed
 
-thm big_good_correctness_code[of _ _ _ inits_set, unfolded inits_set_def, simplified]
-
-lemma 
-  assumes "binary_aut ts"
-    and "binary_aut ts'"
-  shows "\<^bold>\<Sum> {d| c d. d = dioidLTS.accepts (intersff ts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')) (finals\<times>finals') c} = 
-         WPDS.weight_reach' \<Delta> (accepts_full ts finals) (accepts_full ts' finals')" 
-  
-  oops
-(* TODO: Make executable version of "dioidLTS.SumInf {d | c d. d = dioidLTS.accepts ts finals c}" *)
-
-
-
-
-
 end

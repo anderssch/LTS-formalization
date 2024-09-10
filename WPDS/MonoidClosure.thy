@@ -27,9 +27,9 @@ lemma predicate3D[dest]:
   by (erule le_funE)+ (erule le_boolE)
 
 lemma "(a,b,c) \<in> r \<Longrightarrow> (a,b,c) \<in> monoid_rtrancl r"
-  using monoid_rtrancl_def
-  apply -
-  oops
+  using monoid_rtrancl_into_rtrancl[OF monoid_rtrancl_refl]
+  by fastforce
+
 
 lemma monoid_rtranclp_mono: "r \<le> s \<Longrightarrow> monoid_rtranclp r \<le> monoid_rtranclp s"
   \<comment> \<open>monotonicity of \<open>monoid_rtrancl\<close>\<close>
@@ -169,11 +169,6 @@ next
   then show ?case
     using d_is by metis
 qed
-
-lemma monoid_rtrancl_if_monoid_rtrancl_list_embed_ts'':
-  assumes "(p, (d,l), q) \<in> monoid_rtrancl (list_embed_ts ts)"
-  shows "(p, d, q) \<in> monoid_rtrancl ts"
-  using assms monoid_rtrancl_if_monoid_rtrancl_list_embed_ts' by fastforce
 
 lemma monoid_rtrancl_if_monoid_rtrancl_list_embed_ts:
   assumes "(p, (d,l), q) \<in> monoid_rtrancl (list_embed_ts ts)"
@@ -419,7 +414,7 @@ proof -
     assume "(b, (d', l'), c) \<in> monoid_rtrancl (list_embed_ts r)"
     ultimately
     show "P a (d * d') c"
-      using assms(3) by (meson list_embed_ts_project monoid_rtrancl_if_monoid_rtrancl_list_embed_ts'')
+      using assms(3) by (meson list_embed_ts_project monoid_rtrancl_if_monoid_rtrancl_list_embed_ts)
   qed
 qed
 
