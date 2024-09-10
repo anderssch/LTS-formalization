@@ -303,6 +303,6 @@ instantiation prod :: (wfp, wfp) wfp begin
   qed
 end
 instantiation prod :: (bounded_idempotent_comm_monoid_add, bounded_idempotent_comm_monoid_add) bounded_idempotent_comm_monoid_add begin instance .. end
-instantiation prod :: (bounded_idempotent_semiring, bounded_idempotent_semiring) bounded_idempotent_semiring begin instance .. end
+instantiation prod :: (bounded_dioid, bounded_dioid) bounded_dioid begin instance .. end
 
 end

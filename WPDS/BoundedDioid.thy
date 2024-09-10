@@ -693,7 +693,7 @@ lemma seqs_same_elems_obtain_map:
 
 
 \<comment> \<open>Definition 5 from [RSJM'05].\<close>
-class bounded_idempotent_semiring = bounded_idempotent_comm_monoid_add_topology + idempotent_semiring_ord
+class bounded_dioid = bounded_idempotent_comm_monoid_add_topology + idempotent_semiring_ord
 begin
 end
 
@@ -710,22 +710,22 @@ lemma idempotent_semiring_with_plus_ord:
    apply (metis idempotent_semiring_unfolds(4)[OF assms])
   by (simp add: idempotent_semiring_unfolds(6)[OF assms])
 
-\<comment> \<open>For clarity, we here show how the bounded_idempotent_semiring extends the definition of idempotent_semiring
+\<comment> \<open>For clarity, we here show how the bounded_dioid extends the definition of idempotent_semiring
    (When instantiated with the plus-order as it should be):\<close>
-lemma bounded_idempotent_semiring_unfolded_definition:
-   "class.bounded_idempotent_semiring (+) (\<lambda>a b::'d. a + b = a) (strict (\<lambda>a b. a + b = a)) 0 (\<lambda>S. True) 1 (*) \<longleftrightarrow>
+lemma bounded_dioid_unfolded_definition:
+   "class.bounded_dioid (+) (\<lambda>a b::'d. a + b = a) (strict (\<lambda>a b. a + b = a)) 0 (\<lambda>S. True) 1 (*) \<longleftrightarrow>
   \<comment> \<open>An idempotent semiring\<close>
     class.idempotent_semiring (+) 1 (*) (0::'d::{plus,one,times,zero}) \<and>
   \<comment> \<open>where there is no infinite descending chain in the order defined by \<^term>\<open>\<And>a b. a \<le> b \<equiv> a + b = a\<close>\<close>
     (\<nexists>f::nat\<Rightarrow>'d. \<forall>i. (strict (\<lambda>a b. a + b = a)) (f (i + 1)) (f i))"
-  unfolding class.bounded_idempotent_semiring_def
+  unfolding class.bounded_dioid_def
     class.bounded_idempotent_comm_monoid_add_topology_def 
     class.bounded_idempotent_comm_monoid_add_def
     class.wfp_def class.wfp_axioms_def
   by (auto simp add: discrete_topology_True class.idempotent_semiring_ord_def idempotent_semiring_with_plus_ord)
 
 
-lemma d_mult_not_zero: assumes "(d::'weight::bounded_idempotent_semiring) * d' \<noteq> 0" shows "d \<noteq> 0" and "d' \<noteq> 0"
+lemma d_mult_not_zero: assumes "(d::'weight::bounded_dioid) * d' \<noteq> 0" shows "d \<noteq> 0" and "d' \<noteq> 0"
   using assms by auto
 
 
@@ -751,7 +751,7 @@ fun less_inf :: "nat_inf \<Rightarrow> nat_inf \<Rightarrow> bool" where
 | "less_inf _ infinity = True"
 | "less_inf (fin a) (fin b) = (a < b)"
 
-interpretation min_plus_nat_inf: bounded_idempotent_semiring min_inf less_eq_inf less_inf infinity "\<lambda>S. True" "fin 0" "plus_inf"
+interpretation min_plus_nat_inf: bounded_dioid min_inf less_eq_inf less_inf infinity "\<lambda>S. True" "fin 0" "plus_inf"
 proof
   fix i :: nat
   fix a b c :: nat_inf
@@ -819,7 +819,7 @@ proof
   qed
 qed
 
-instantiation nat_inf :: bounded_idempotent_semiring begin
+instantiation nat_inf :: bounded_dioid begin
 definition "one_nat_inf == fin 0 :: nat_inf"
 definition "times_nat_inf == plus_inf :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> nat_inf"
 definition "open_nat_inf == (\<lambda>S. True) :: nat_inf set \<Rightarrow> bool"
@@ -899,9 +899,5 @@ instance proof
 qed
 end
 
-
-class bounded_dioid = bounded_idempotent_semiring
-begin
-end
 
 end

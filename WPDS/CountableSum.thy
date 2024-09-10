@@ -3,7 +3,7 @@ theory CountableSum
 begin
 
 
-definition path_seq :: "'weight::bounded_idempotent_semiring set \<Rightarrow> nat \<Rightarrow> 'weight" where
+definition path_seq :: "'weight::bounded_dioid set \<Rightarrow> nat \<Rightarrow> 'weight" where
   "path_seq W \<equiv> if W = {} then (\<lambda>_. 0) else SOME f. \<forall>l. l \<in> W \<longleftrightarrow> (\<exists>i. f i = l)"
 
 lemma path_seq_empty[simp]: "path_seq {} i = 0"
@@ -44,7 +44,7 @@ lemma path_seq_notin_set_zero:
   by simp
 
 
-definition SumInf :: "'weight::bounded_idempotent_semiring set \<Rightarrow> 'weight" ("\<^bold>\<Sum>") where
+definition SumInf :: "'weight::bounded_dioid set \<Rightarrow> 'weight" ("\<^bold>\<Sum>") where
   "\<^bold>\<Sum> W = suminf (path_seq W)"
 
 
@@ -54,7 +54,7 @@ lemma countable_obtain_seq:
   using assms unfolding countable_def inj_on_def by presburger
 
 lemma countable_SumInf_exists_sumseq_bound:
-  fixes W :: "'weight::bounded_idempotent_semiring set"
+  fixes W :: "'weight::bounded_dioid set"
   assumes "countable W"
   shows "\<exists>f N. \<forall>n\<ge>N. \<^bold>\<Sum> W = sum_seq f n \<and> {f i | i. i < N} \<subseteq> W"
 proof (cases "W = {}")
@@ -96,7 +96,7 @@ lemma countable_suminf_obtains_sumseq:
   using countable_SumInf_exists_sumseq_bound[OF assms] by fast
 
 lemma SumInf_exists_finite_subset:
-  fixes W :: "'weight::bounded_idempotent_semiring set"
+  fixes W :: "'weight::bounded_dioid set"
   assumes "countable W"
   shows "\<exists>W'. W' \<subseteq> W \<and> finite W' \<and> \<^bold>\<Sum> W = \<Sum> W'"
 proof -
@@ -110,13 +110,13 @@ proof -
 qed
 
 lemma SumInf_obtains_finite_subset:
-  fixes W :: "'weight::bounded_idempotent_semiring set"
+  fixes W :: "'weight::bounded_dioid set"
   assumes "countable W"
   obtains W' where "W' \<subseteq> W" and "finite W'" and "\<^bold>\<Sum> W = \<Sum> W'"
   using SumInf_exists_finite_subset[OF assms] by blast
 
 lemma countable_SumInf_elem:
-  fixes W :: "'weight::bounded_idempotent_semiring set"
+  fixes W :: "'weight::bounded_dioid set"
   assumes "countable W"
   assumes "w \<in> W"
   shows "\<^bold>\<Sum> W \<le> w"

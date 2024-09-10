@@ -315,7 +315,7 @@ qed
 lemma update_wts_apply_is_1_if_member:
   assumes "finite ts"
   assumes "t' \<in> ts"
-  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (1 ::'weight::bounded_idempotent_semiring)"
+  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (1 ::'weight::bounded_dioid)"
   using assms
 proof (induction rule: finite_induct)
   case empty
@@ -353,7 +353,7 @@ lemma update_wts_apply_is_0_if_not_member:
   fixes ts :: "'transition set"
   assumes "finite ts"
   assumes "t' \<notin> ts"
-  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (0 ::'weight::bounded_idempotent_semiring)"
+  shows "update_wts (K$ 0) {(t, 1) |t. t \<in> ts} $ t' = (0 ::'weight::bounded_dioid)"
   using assms
 proof (induction rule: finite_induct)
   case empty

@@ -230,7 +230,7 @@ end
 
 section \<open>Locale: step_saturation\<close>
 locale step_saturation = 
-  fixes step::"('a::finite \<Rightarrow>f 'b::bounded_idempotent_semiring) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_idempotent_semiring)"
+  fixes step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)"
 begin
   definition "step_loop = while_option (\<lambda>s. step s \<noteq> s) (step)"
   definition "step_exec = the o step_loop"
@@ -239,7 +239,7 @@ end
 
 section \<open>Locale: decreasing_step_saturation\<close>
 locale decreasing_step_saturation = step_saturation step
-  for step::"('a::finite \<Rightarrow>f 'b::bounded_idempotent_semiring) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_idempotent_semiring)" +
+  for step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)" +
 (*  assumes weak_rule_star_step: "(weak_rule rule)\<^sup>*\<^sup>* S (step S)"*)
   assumes step_decreasing: "step S \<le> S"
 (*  assumes step_fixpoint_is_rule_saturated: "step t = t \<Longrightarrow> \<forall>ts. \<not> (weak_rule rule) t ts"*)
@@ -273,8 +273,8 @@ end
 
 section \<open>Locale: sum_saturation\<close>
 locale sum_saturation = decreasing_step_saturation step + rule_saturation rule
-  for step::"('a::finite \<Rightarrow>f 'b::bounded_idempotent_semiring) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_idempotent_semiring)"
-  and rule :: "('a::finite \<Rightarrow>f 'b::bounded_idempotent_semiring) saturation_rule" +
+  for step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)"
+  and rule :: "('a::finite \<Rightarrow>f 'b::bounded_dioid) saturation_rule" +
   assumes step_is_sum: "step ts = ts + \<Sum>{ts'. strict_rule rule ts ts'}"
   assumes finite_rule_set: "finite {ts'. strict_rule rule ts ts'}"
 begin

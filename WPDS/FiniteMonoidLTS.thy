@@ -14,11 +14,11 @@ end
 section \<open>Locale: finite_dioidLTS\<close>
 
 locale finite_dioidLTS = finite_monoidLTS transition_relation + dioidLTS transition_relation
-  for transition_relation :: "('state::finite, 'weight::bounded_idempotent_semiring) transition set"
+  for transition_relation :: "('state::finite, 'weight::bounded_dioid) transition set"
 begin
 sublocale countable_dioidLTS ..
 
-inductive weight_reach_rule :: "('state::finite \<Rightarrow>f 'weight::bounded_idempotent_semiring) saturation_rule" where
+inductive weight_reach_rule :: "('state::finite \<Rightarrow>f 'weight::bounded_dioid) saturation_rule" where
     add_state: "(p,d,q) \<in> transition_relation \<Longrightarrow> S $ q + (S $ p * d) \<noteq> S $ q 
                 \<Longrightarrow> weight_reach_rule S S(q $+= S $ p * d)"
 
@@ -271,7 +271,7 @@ proof -
   ultimately show ?thesis unfolding weight_reach_rule.simps by presburger
 qed
 
-inductive non_strict_weight_reach_rule :: "('state::finite \<Rightarrow>f 'weight::bounded_idempotent_semiring) saturation_rule" where
+inductive non_strict_weight_reach_rule :: "('state::finite \<Rightarrow>f 'weight::bounded_dioid) saturation_rule" where
     "(p,d,q) \<in> transition_relation \<Longrightarrow> non_strict_weight_reach_rule S S(q $+= S $ p * d)"
 
 lemma weight_reach_rule_is_non_equal_pure: "weight_reach_rule = strict_rule non_strict_weight_reach_rule"
