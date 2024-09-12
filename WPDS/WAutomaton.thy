@@ -152,6 +152,7 @@ qed
 
 end
 
+
 section \<open>Reachability and Paths\<close>
 
 lemma monoid_star_imp_exec: "(p,w,q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> (q, snd w) \<in> monoidLTS_reach (wts_to_monoidLTS ts) p (fst w)"
@@ -191,6 +192,7 @@ next
   case (2 p \<gamma> w)
   then show ?case using assms by (fastforce simp: dissect_set)
 qed
+
 end
 
 
@@ -246,7 +248,6 @@ qed
 lemma monoid_star_n0_code[code_unfold]: "d \<noteq> 0 \<Longrightarrow> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<longleftrightarrow> (q,d) \<in> monoidLTS_reach_not0 (wts_to_monoidLTS ts) p w"
   using monoidLTS_reach_n0_imp monoid_star_n0_imp_exec by fastforce
 
-
 \<comment> \<open>Auxiliary lemmas for WAutomaton and monoidLTS\<close>
 lemma wts_label_exist: "(p, w, q) \<in> wts_to_monoidLTS ts \<Longrightarrow> \<exists>\<gamma>. fst w = [\<gamma>]"
   unfolding wts_to_monoidLTS_def by fastforce
@@ -284,10 +285,7 @@ lemma wts_to_monoidLTS_exists_iff:
   "(\<exists>dp23. (p2, (w23, dp23), p3) \<in> wts_to_monoidLTS ts1) \<longleftrightarrow> (\<exists>\<gamma>. w23 = [\<gamma>])"
   using wts_label_exist wts_to_monoidLTS_weight_exists by fastforce
 
-
-
-\<comment> \<open>Unfold monoid_closure of transitions for 0, 1 and 2 transitions\<close>
-  
+\<comment> \<open>Unfold monoid_closure of transitions for 0, 1 and 2 transitions\<close>  
 lemma monoid_star_w0:
   assumes "(p, w, q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
   assumes "fst w = []"
@@ -381,7 +379,6 @@ next
     using mstar_wts_cons by fast
   ultimately show ?case using finite_subset by fast
 qed
-
 
 lemma monoid_star_intros_step':
   assumes "(p,w,q) \<in> wts_to_monoidLTS A"
@@ -533,7 +530,6 @@ proof -
     using assms(1) d\<^sub>1\<^sub>2_def idempotent_semiring_ord_class.mult_isol_var by blast
 qed
 
-
 lemma wts_to_monoidLTS_induct[consumes 1, case_names base step]:
   assumes "(p, (w, d), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
   assumes "(\<And>p. P p [] 1 p)"
@@ -561,7 +557,6 @@ lemma wts_to_monoidLTS_pair_induct[consumes 1, case_names base step]:
       "\<lambda>pq y z p'q'. P (fst pq) (snd pq) y z (fst p'q') (snd p'q')"]
     assms by auto
 
-(* We are not using this induction. But it could be useful. *)
 lemma wts_to_monoidLTS_induct_reverse:
   assumes "(p, (w,d), p') \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
   assumes "(\<And>p. P p [] 1 p)"
@@ -582,18 +577,17 @@ lemma monoid_star_nonempty:
                     (p, ([hd (fst w)], d1), pi) \<in> wts_to_monoidLTS ts"
   by (metis assms list.collapse monoid_rtrancl_wts_to_monoidLTS_cases_rev surjective_pairing)
 
-
-
-
 \<comment> \<open>A weighted automaton is initialized with weights 1 (neutral element along paths) on existing transitions, 
     and a default weight of 0 (neutral element for combining paths) for non-existing transitions.\<close>
 definition ts_to_wts :: "('state, 'label) transition set \<Rightarrow> ('state, 'label, 'weight::bounded_dioid) w_transitions" where
   "ts_to_wts ts = update_wts (K$ 0) {(t,1) | t. t \<in> ts}"
+
 definition wts_to_ts :: "('state, 'label, 'weight::bounded_dioid) w_transitions \<Rightarrow> ('state, 'label) transition set" where
   "wts_to_ts wts = {t | t. wts $ t \<noteq> 0}"
 
 lemma empty_ts_to_wts[simp]: "ts_to_wts {} = (K$ 0)" 
   unfolding ts_to_wts_def update_wts_def by simp
+
 lemma empty_wts_to_ts[simp]: "wts_to_ts (K$ 0) = {}"
   unfolding wts_to_ts_def by simp
 
@@ -655,6 +649,7 @@ proof -
     unfolding ts_to_wts_def update_wts_sum[OF f, of "K$ 0" "(p, \<gamma>, q)"] using assms(2) by simp
 qed
 
+
 section \<open>Intersection of WAutomata\<close>
 
 fun fst_trans :: "(('state \<times> 'state), 'label::finite) transition \<Rightarrow> ('state, 'label) transition" where
@@ -700,7 +695,7 @@ proof (rule HOL.ext)
     using finfun_apply_pair_weight_transition by (cases t) fastforce
 qed
 
-(* Weighted Intersection *)
+\<comment> \<open>Weighted Intersection\<close>
 definition w_inters :: "('state, 'label::finite, 'weight::bounded_dioid) w_transitions \<Rightarrow> ('state, 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions" where
   "w_inters = (\<lambda>ts1 ts2. (case_prod (*)) \<circ>$ (pair_weight ts1 ts2))"
 
@@ -720,7 +715,7 @@ proof (rule HOL.ext)
     using finfun_apply_w_inters_transition by (cases t) force
 qed
 
-lemma inftersff_complete_transition_finfun_apply:
+lemma w_inters_complete_transition_finfun_apply:
   fixes p::"'state::finite"
   fixes p'::"'state::finite"
   assumes "A $ (p, y, q) = d"
@@ -728,7 +723,7 @@ lemma inftersff_complete_transition_finfun_apply:
   shows "(w_inters A A') $ ((p,p'), y, (q,q')) = d * d'"
   using assms finfun_apply_w_inters_transition by auto
 
-lemma inftersff_complete_transition:
+lemma w_inters_complete_transition:
   fixes p1::"'state::finite"
   fixes q1::"'state::finite"
   assumes "(p1, ([\<alpha>], dp), p') \<in> wts_to_monoidLTS ts1"
@@ -866,7 +861,7 @@ proof (induction w arbitrary: p1 q1 d)
     by (simp add: Cons.IH p'_p(2) q'_p(2))
   moreover
   have "((p1, q1), ([\<alpha>], dq1q'), (p', q')) \<in> (wts_to_monoidLTS (w_inters ts1 ts2))"
-    using p'_p q'_p inftersff_complete_transition by (metis mult_1)
+    using p'_p q'_p w_inters_complete_transition by (metis mult_1)
   ultimately
   have "((p1, q1), (\<alpha>#w1', dq1q' * dq'q2), (p2, q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (w_inters ts1 ts2))"
     using monoid_rtrancl_into_rtrancl_rev[of "(p1, q1)" " ([\<alpha>], dq1q')" "(p', q')" "wts_to_monoidLTS (w_inters ts1 ts2)" "(w1', dq'q2)" "(p2, q2)"]
@@ -906,7 +901,7 @@ proof (induction w arbitrary: p1 q1 d)
       using Cons(3) monoid_rtrancl_wts_to_monoidLTS_cases_rev by fastforce
     ultimately
     have pq1_pq': "((p1,q1), ([\<alpha>], 0), (p',q')) \<in> wts_to_monoidLTS (w_inters ts1 ts2)"
-      using inftersff_complete_transition by fastforce
+      using w_inters_complete_transition by fastforce
 
     obtain d2 where pq'_pq2: "((p',q'), (w1', d2), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (w_inters ts1 ts2))"
       using w_inters_complete_exi[of p' w1' _ p2 ts1 q' _ q2 ts2] Cons p'_p(2)
@@ -1267,6 +1262,7 @@ lemma w_inters_complete_wts_to_weightLTS:
   by fast
 
 definition "fst_trans_all = fin_fun_of_fun fst_trans"
+
 definition "snd_trans_all = fin_fun_of_fun snd_trans"
 
 lemma fst_trans_all_is_fst_trans: "fst_trans_all $ t = fst_trans t"

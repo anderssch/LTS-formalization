@@ -4,18 +4,22 @@ begin
 
 section \<open>Locale: monoidLTS\<close>
 \<comment> \<open>If the @{typ 'weight} of a LTS is a monoid, we can express the monoid product of labels over a path.\<close>
+
 locale monoidLTS = LTS transition_relation 
   for transition_relation :: "('state::countable, 'weight::monoid_mult) transition set"
 begin
 definition l_step_relp  :: "'state \<Rightarrow> 'weight \<Rightarrow> 'state \<Rightarrow> bool" ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80) where
   "c \<Midarrow>l\<Rightarrow> c' \<longleftrightarrow> (c, l, c') \<in> transition_relation"
+
 abbreviation monoid_star_relp :: "'state \<Rightarrow> 'weight \<Rightarrow> 'state \<Rightarrow> bool" ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [90,90,100] 100) where
   "c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<equiv> (monoid_rtranclp l_step_relp) c l c'"
+
 definition monoid_star :: "('state \<times> 'weight \<times> 'state) set" where
   "monoid_star = {(c,l,c'). c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
 
 lemma monoid_star_is_monoid_rtrancl[simp]: "monoid_star = monoid_rtrancl transition_relation"
   unfolding monoid_star_def l_step_relp_def monoid_rtrancl_def by simp
+
 lemma star_to_closure: "c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<Longrightarrow> (c, l, c') \<in> monoid_rtrancl transition_relation"
   unfolding l_step_relp_def monoid_rtrancl_def by simp
 
@@ -24,7 +28,9 @@ end
 lemma monoid_rtranclp_unfold: "monoid_rtranclp (monoidLTS.l_step_relp ts) c l c' \<longleftrightarrow> (c, l, c') \<in> monoid_rtrancl ts"
   unfolding monoidLTS.l_step_relp_def monoid_rtranclp_monoid_rtrancl_eq by simp
 
+
 section \<open>Locale: countable_monoidLTS\<close>
+
 locale countable_monoidLTS = monoidLTS +
   assumes ts_countable: "countable transition_relation"
 begin
@@ -56,6 +62,7 @@ lemma countable_star_f_p: "countable {f c l c' | c l c'. c \<Midarrow>l\<Rightar
 
 lemma countable_star_f_p3: "countable {f l c' | l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
   by (auto simp add: dissect_set countable_monoid_star_all)
+
 lemma countable_star_f_c_l: "countable {f c l | c l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
   using countable_star_f_p[of "\<lambda>c l c'. f c l" "\<lambda>a b. b = c'"] by presburger
 
@@ -77,13 +84,15 @@ qed
 lemma countable_star_f_p9: "countable {f l | l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
   by (auto simp add: dissect_set countable_monoid_star_all)
 
-
 lemma countable_l_c_c': "countable {l |c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
   using countable_star_f_p[of "\<lambda>c l c'. l" "\<lambda>c c'. True"] by presburger
+
 lemma countable_l_c: "countable {l |c l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
   using countable_star_f_p[of "\<lambda>c l c'. l" "\<lambda>a b. b = c'"] by presburger
+
 lemma countable_l_c': "countable {l |l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
   using countable_star_f_p[of "\<lambda>c l c'. l" "\<lambda>a b. a = c"] by presburger
+
 lemma countable_l: "countable {l |l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
   using countable_star_f_p[of "\<lambda>c l c'. l" "\<lambda>a b. a = c \<and> b = c'"] by presburger
 
@@ -91,13 +100,6 @@ lemma countable_star_tuple: "countable {(c, l, c') | c l c'. c \<Midarrow>l\<Rig
   using countable_star_f_p[of "\<lambda>c l c'. (c, l, c')" "\<lambda>c c'. True"] by presburger
 
 end
-
-(*
-lemma monoidLTS_monoid_star_mono:
-  "mono monoidLTS.monoid_star"
-  using monoidLTS.monoid_star_is_monoid_rtrancl monoid_rtrancl_is_mono unfolding mono_def
-  by simp
-*)
 
 
 section \<open>Locale: dioidLTS\<close>
@@ -117,10 +119,11 @@ definition weight_reach :: "('state \<Rightarrow> 'weight) \<Rightarrow> ('state
 definition weight_reach_set :: "('state set) \<Rightarrow> ('state set) \<Rightarrow> 'weight" where
   "weight_reach_set C C' = \<^bold>\<Sum>{l | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<and> c \<in> C \<and> c' \<in> C'}"
 
-
 end
 
+
 section \<open>Locale: countable_dioidLTS\<close>
+
 locale countable_dioidLTS = dioidLTS + countable_monoidLTS 
 begin 
 

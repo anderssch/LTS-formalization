@@ -17,12 +17,14 @@ lemma checking_implies: "checking \<Longrightarrow> WPDS_with_W_automata wrules 
   unfolding checking_def WPDS_with_W_automata_def finite_WPDS_def WPDS_with_W_automata_axioms_def 
   using finite_w_rules unfolding wrules_def by blast
 
-
 definition "lbl = WPDS.lbl"
 
 definition "augmented_WPDS_rules = WPDS_with_W_automata_no_assms.augmented_WPDS_rules"
+
 definition "pre_star_exec' = WPDS_with_W_automata_no_assms.pre_star_exec'"
+
 definition "accept_pre_star_exec0' = WPDS_with_W_automata_no_assms.accept_pre_star_exec0'"
+
 declare accept_pre_star_exec0'_def[code]
 
 lemma pre_star_exec_correctness:
@@ -46,6 +48,7 @@ definition run_WPDS_reach' ::
    "run_WPDS_reach' \<Delta> W ts ts' finals finals' = (if WPDS_Code.checking \<Delta> ts'
             then Some (weight_reach_sum_exec (wts_to_weightLTS (w_inters ts (WPDS_with_W_automata_no_assms.pre_star_exec' (w_rules \<Delta> W) ts'))) {(p, p) |p. p \<in> inits_set} (finals \<times> finals')) 
             else None)"
+
 definition "run_WPDS_reach \<Delta> W ts ts' = run_WPDS_reach' \<Delta> W (ts_to_wts ts) (ts_to_wts ts')"
 
 declare WPDS_Code.checking_def[code]

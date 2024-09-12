@@ -2,6 +2,7 @@ theory FiniteMonoidLTS
   imports "MonoidLTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "FinFunSumSaturation"
 begin
 
+
 section \<open>Locale: finite_monoidLTS\<close>
 
 locale finite_monoidLTS = monoidLTS transition_relation 
@@ -10,6 +11,7 @@ locale finite_monoidLTS = monoidLTS transition_relation
 begin
 sublocale countable_monoidLTS by (standard, fact countable_finite[OF ts_finite])
 end
+
 
 section \<open>Locale: finite_dioidLTS\<close>
 
@@ -41,8 +43,10 @@ lemma weight_reach_rule_elim2:
 
 lemma weight_reach_rule_less: "weight_reach_rule S S' \<Longrightarrow> S' < S"
   unfolding weight_reach_rule.simps by (auto simp: add.commute finfun_add_update_less)
+
 lemma weight_reach_rule_less_eq: "weight_reach_rule S S' \<Longrightarrow> S' \<le> S"
   using weight_reach_rule_less by fastforce
+
 lemma weight_reach_star_less_eq: "weight_reach_rule\<^sup>*\<^sup>* S S' \<Longrightarrow> S' \<le> S"
   by (induct rule: rtranclp.induct) (use weight_reach_rule_less in fastforce)+ 
 
@@ -210,7 +214,6 @@ theorem weight_reach_saturation_correct:
         weight_reach_star_less_eq[of S S']
   by fastforce
 
-
 lemma weight_reach_distrib:
   "\<Sum>{\<^bold>\<Sum>{S $ c * l |c l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'} * C' c' |c'. c' \<in> X} = \<^bold>\<Sum>{S $ c * l * C' c' |c l c'. c \<Midarrow> l \<Rightarrow>\<^sup>* c' \<and> c' \<in> X}"
 proof -
@@ -232,11 +235,13 @@ theorem weight_reach_saturation_sum_correct:
 
 end
 
+
 section \<open>Weight reach code\<close>
 
 definition weight_reach_step where "weight_reach_step ts S = update_wts S (\<Union>(p,d,q)\<in>ts. {(q,S $ p * d)})"
 
 definition "weight_reach_loop ts = while_option (\<lambda>s. weight_reach_step ts s \<noteq> s) (weight_reach_step ts)"
+
 definition "weight_reach_exec ts = the o weight_reach_loop ts"
 
 context finite_dioidLTS begin
@@ -287,6 +292,7 @@ qed
 
 lemma pure_weight_reach_rule_less_eq: "non_strict_weight_reach_rule ts ts' \<Longrightarrow> ts' \<le> ts"
   unfolding non_strict_weight_reach_rule.simps using finfun_add_update_less_eq by fast
+
 lemma pure_weight_reach_rule_mono: "ts\<^sub>3 \<le> ts\<^sub>1 \<Longrightarrow> non_strict_weight_reach_rule ts\<^sub>1 ts\<^sub>2 \<Longrightarrow> \<exists>ts'. non_strict_weight_reach_rule ts\<^sub>3 ts' \<and> ts' \<le> ts\<^sub>2"
   unfolding non_strict_weight_reach_rule.simps 
   by simp (metis add_finfun_apply finfun_add_update_same_mono idempotent_ab_semigroup_add_ord_class.order_prop idempotent_semiring_ord_class.mult_isor)
@@ -306,6 +312,5 @@ lemma saturation_weight_reach_exec:
   unfolding weight_reach_rule_is_non_equal_pure by fast
 
 end
-
 
 end

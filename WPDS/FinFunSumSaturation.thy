@@ -2,7 +2,6 @@ theory FinFunSumSaturation
   imports "Saturation" "FinFunAddUpdate"
 begin
 
-
 inductive strict_rule :: "'t saturation_rule \<Rightarrow> 't saturation_rule" for rule where
   rule_to_strict_rule: "rule ts ts' \<Longrightarrow> ts \<noteq> ts' \<Longrightarrow> strict_rule rule ts ts'"
 
@@ -18,6 +17,7 @@ begin
 
 lemma rule_exists_addition: "rule ts ts' \<Longrightarrow> \<exists>a. ts' = ts + a"
   using order_prop rule_less_eq add.commute by metis
+
 lemma weak_rule_exists_addition: "weak_rule rule a b \<Longrightarrow> \<exists>c. b = a + c"
   unfolding weak_rule.simps by (metis meet.inf.absorb4) 
 
@@ -34,11 +34,13 @@ qed
 
 lemma strict_rule_less: "strict_rule rule a b \<Longrightarrow> b < a"
   using rule_less_eq by (metis strict_rule.simps order_le_imp_less_or_eq)
+
 lemma strict_rule_less_eq: "strict_rule rule a b \<Longrightarrow> b \<le> a"
   using strict_rule_less by fastforce
 
 lemma weak_rule_less: "weak_rule rule ts ts' \<Longrightarrow> ts' < ts"
   using weak_rule.simps by blast
+
 lemma weak_rule_less_eq: "weak_rule rule ts ts' \<Longrightarrow> ts' \<le> ts"
   using weak_rule_less  by fastforce
 
@@ -155,7 +157,6 @@ lemma weak_rule_add_star_mono:
   using assms(1,2)
   by (induct rule: rtranclp_induct, simp_all add: weak_rule_add_mono)
 
-
 lemma weak_rule_star_mono:
   assumes "(weak_rule rule)\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>2"
   assumes "(weak_rule rule)\<^sup>*\<^sup>* ts\<^sub>1 ts\<^sub>3"
@@ -173,6 +174,7 @@ qed
 lemma saturated_non_equal_to_weak:
   "saturated (strict_rule rule) ts \<Longrightarrow> saturated (weak_rule rule) ts"
   unfolding saturated_def strict_rule.simps weak_rule.simps by force
+
 lemma saturated_weak_to_non_equal:
   "saturated (weak_rule rule) ts \<Longrightarrow> saturated (strict_rule rule) ts"
   unfolding saturated_def strict_rule.simps weak_rule.simps 
@@ -228,7 +230,9 @@ qed
 
 end
 
+
 section \<open>Locale: step_saturation\<close>
+
 locale step_saturation = 
   fixes step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)"
 begin
@@ -237,7 +241,9 @@ begin
   definition "step_rule ts ts' \<equiv> step ts = ts'"
 end
 
+
 section \<open>Locale: decreasing_step_saturation\<close>
+
 locale decreasing_step_saturation = step_saturation step
   for step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)" +
 (*  assumes weak_rule_star_step: "(weak_rule rule)\<^sup>*\<^sup>* S (step S)"*)
@@ -254,6 +260,7 @@ lemma step_exec_terminates:
 
 lemma step_rule_star_step: "(strict_rule step_rule)\<^sup>*\<^sup>* S (step S)"
   unfolding step_rule_def strict_rule.simps by (cases "S = step S") auto
+
 lemma weak_rule_star_step_k: "(strict_rule step_rule)\<^sup>*\<^sup>* S ((step ^^ k) S)"
   by (induct k) (auto elim!: rtranclp_trans intro: step_rule_star_step)
 
@@ -272,6 +279,7 @@ qed
 end
 
 section \<open>Locale: sum_saturation\<close>
+
 locale sum_saturation = decreasing_step_saturation step + rule_saturation rule
   for step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)"
   and rule :: "('a::finite \<Rightarrow>f 'b::bounded_dioid) saturation_rule" +
@@ -362,6 +370,5 @@ lemma sum_saturation_step_exec:
   using sum_saturation.saturation_step_exec[of step rule ts]
   unfolding sum_saturation_def decreasing_step_saturation_def rule_saturation_def sum_saturation_axioms_def
   using assms by auto
-
 
 end

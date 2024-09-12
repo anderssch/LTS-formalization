@@ -2,6 +2,7 @@ theory Saturation
   imports Main BoundedDioid
 begin
 
+
 subsection \<open>Well-quasi-ordered saturation\<close>
 
 type_synonym 't saturation_rule = "'t \<Rightarrow> 't \<Rightarrow> bool"
@@ -50,6 +51,7 @@ proof -
   have "\<exists>i. P (seq (Suc i)) (seq i) \<longrightarrow> P (seq i) (seq (Suc i))" using assms(1) unfolding wfp_on_def by blast
   then show ?thesis using decreasing by simp
 qed
+
 lemma wfp_saturation_termination:
   assumes "wfp_on (strict P) UNIV"
   assumes "\<And>f f'. rule f f' \<Longrightarrow> strict P f' f"
@@ -128,7 +130,7 @@ lemma wqo_class_no_infinite:
   assumes "\<And>f f' ::('t::wqo). rule f f' \<Longrightarrow> f' < f"
   assumes "\<forall>i :: nat. rule (seq i) (seq (Suc i))"
   shows "False"
-using assms wqo_no_infinite[of "(\<le>)"] wqo_on_class less_le_not_le by metis
+  using assms wqo_no_infinite[of "(\<le>)"] wqo_on_class less_le_not_le by metis
 
 lemma wqo_class_saturation_termination:
   assumes "\<And>f f' ::('t::wqo). rule f f' \<Longrightarrow> f' < f"
@@ -138,7 +140,7 @@ lemma wqo_class_saturation_termination:
 lemma wqo_class_saturation_exi:
   assumes "\<And>f f' ::('t::wqo). rule f f' \<Longrightarrow> f' < f"
   shows "\<exists>f'. saturation rule f f'"
-using assms wqo_saturation_exi[of "(\<le>)"] wqo_on_class less_le_not_le by metis
+  using assms wqo_saturation_exi[of "(\<le>)"] wqo_on_class less_le_not_le by metis
 
 
 subsection \<open>Set saturation\<close>
