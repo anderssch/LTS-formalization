@@ -15,8 +15,6 @@ type_synonym ('state, 'label, 'weight) w_transitions = "('state, 'label) transit
 
 type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list \<times> 'weight)) transition set"
 
-
-(* TODO: Investigate: Would adding only non-zero be advantagous or not? *)
 \<comment> \<open>Embed a weighted automaton into a monoidLTS. All transitions are added. The label is lifted to the list-monoid.\<close>
 definition wts_to_monoidLTS :: "('state, 'label, 'weight::bounded_dioid) w_transitions \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
   "wts_to_monoidLTS ts = {(p, ([\<gamma>],d), q) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
@@ -471,7 +469,6 @@ lemma monoid_rtrancl_wts_to_monoidLTS_cases_rev:
            d = d' * d''"
   using assms monoid_rtrancl_wts_to_monoidLTS_cases_rev' by fastforce
 
-(* Proof adapted from monoid_rtrancl_list_embed_ts_append_split *)
 lemma monoid_rtrancl_wts_to_monoidLTS_append_split:
   assumes "(p\<^sub>1, (w\<^sub>1\<^sub>3@w\<^sub>3\<^sub>4,d\<^sub>1\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
   shows "\<exists>d\<^sub>1\<^sub>3 p\<^sub>3 d\<^sub>3\<^sub>4.
@@ -1100,7 +1097,7 @@ next
       using \<open>d23 = d23p * d23q\<close> .
     have d23p01: "d23p = 1 \<or> d23p = 0"
       using \<open>(p2, (w23, d23p), p3) \<in> wts_to_monoidLTS ts1\<close> using snd_conv wts_label_d' binary_aut_def
-      by (metis step.prems(1)) (* By the corresponding edge being in ts1*)
+      by (metis step.prems(1)) (* By the corresponding transition being in ts1*)
     show ?thesis
     proof (cases "d23p = 0")
       case True

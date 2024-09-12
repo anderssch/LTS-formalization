@@ -174,7 +174,7 @@ proof (induction)
         unfolding sound_wrt_def using order_trans by blast
       then have "\<^bold>\<Sum> {S $ c * l |c l. c \<Midarrow> l \<Rightarrow>\<^sup>* c'} \<le> S'$ c' + S' $ p * d"
         using add_state unfolding sound_wrt_def by auto
-      from  this show ?thesis 
+      from this show ?thesis 
         unfolding True[symmetric]
         by auto
     next

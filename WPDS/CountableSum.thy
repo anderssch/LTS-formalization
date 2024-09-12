@@ -2,7 +2,6 @@ theory CountableSum
   imports "BoundedDioid" "Set_More"
 begin
 
-
 definition path_seq :: "'weight::bounded_dioid set \<Rightarrow> nat \<Rightarrow> 'weight" where
   "path_seq W \<equiv> if W = {} then (\<lambda>_. 0) else SOME f. \<forall>l. l \<in> W \<longleftrightarrow> (\<exists>i. f i = l)"
 
@@ -43,10 +42,8 @@ lemma path_seq_notin_set_zero:
   using path_seq_in_set[OF assms(1)]
   by simp
 
-
 definition SumInf :: "'weight::bounded_dioid set \<Rightarrow> 'weight" ("\<^bold>\<Sum>") where
   "\<^bold>\<Sum> W = suminf (path_seq W)"
-
 
 lemma countable_obtain_seq:
   assumes "countable W"
@@ -205,7 +202,7 @@ proof -
   have finite_D'_img: "finite {w1 * w2 | w2. w2 \<in> W'}"
     by (simp add: fin)
 
-  from fin have sumInf_left_distr2: "w1 * \<Sum> W' \<ge> \<Sum> {w1 * w2 | w2. w2 \<in> W'}" (* extract lemma? *)
+  from fin have sumInf_left_distr2: "w1 * \<Sum> W' \<ge> \<Sum> {w1 * w2 | w2. w2 \<in> W'}"
   proof (induction)
     case empty
     then show ?case
@@ -273,7 +270,7 @@ proof -
   have finite_D'_img: "finite {w2 * w1 | w2. w2 \<in> W'}"
     by (simp add: fin)
 
-  from fin have sumInf_right_distr2: "\<Sum> W' * w1 \<ge> \<Sum> {w2 * w1 | w2. w2 \<in> W'}" (* extract lemma? *)
+  from fin have sumInf_right_distr2: "\<Sum> W' * w1 \<ge> \<Sum> {w2 * w1 | w2. w2 \<in> W'}"
   proof (induction)
     case empty
     then show ?case
@@ -358,7 +355,7 @@ lemma countable_image_prod:
     Collect_cong[of "\<lambda>fxy. \<exists>x. P x y \<and> fxy = f x y" "\<lambda>fxy. \<exists>x. fxy = f x y \<and> P x y"]
   unfolding image_def by fastforce
 
-lemma SumInf_of_SumInf_geq: (* Are the assumptions reasonable? *)
+lemma SumInf_of_SumInf_geq:
   assumes "countable {y. Q y}"
   assumes "\<And>y. Q y \<Longrightarrow> countable {(x, y)| x. P x y}"
   shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f x y| x. P x y} |y. Q y} \<ge> \<^bold>\<Sum> {f x y | x y. P x y \<and> Q y}"
@@ -380,7 +377,7 @@ proof (rule SumInf_bounded_if_set_bounded)
     by auto
 qed
 
-lemma SumInf_of_SumInf_leq: (* Are the assumptions reasonable? *)
+lemma SumInf_of_SumInf_leq:
   assumes "countable {y. Q y}"
   assumes "\<And>y. Q y \<Longrightarrow> countable {(x, y)| x. P x y} "
   shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f x y| x. P x y} |y. Q y} \<le> \<^bold>\<Sum> {f x y | x y. P x y \<and> Q y}"
@@ -413,7 +410,7 @@ lemma SumInf_of_SumInf:
   shows "\<^bold>\<Sum> {\<^bold>\<Sum> {f x y| x. P x y} |y. Q y} = \<^bold>\<Sum> {f x y | x y. P x y \<and> Q y}"
   using SumInf_of_SumInf_geq[of Q P f] SumInf_of_SumInf_leq[of Q P f] assms(1,2) by auto
 
-lemma SumInf_of_SumInf_fst_arg: (* not used... *)
+lemma SumInf_of_SumInf_fst_arg:
   assumes "countable {y. Q y}"
       and "\<And>y. Q y \<Longrightarrow> countable {(w, y)| w. P w y} "
     shows "\<^bold>\<Sum> {\<^bold>\<Sum> {w. P w y} |y. Q y} = \<^bold>\<Sum> {w | w y. P w y \<and> Q y}"
@@ -525,6 +522,7 @@ lemma SumInf_if_1_0_right_is_sum:
   shows "\<^bold>\<Sum>{f a * (if Q a then 1 else 0) | a. P a} = \<^bold>\<Sum>{f a | a. P a \<and> Q a}"
   using SumInf_split_Qor0[OF assms, of Q "\<lambda>a. f a * (if Q a then 1 else 0)" "\<lambda>a. f a"]
   by force
+
 lemma SumInf_if_1_0_left_is_sum:
   assumes "countable {a. P a}"
   shows "\<^bold>\<Sum>{(if Q a then 1 else 0) * f a | a. P a} = \<^bold>\<Sum>{f a | a. P a \<and> Q a}"
@@ -543,6 +541,4 @@ proof -
     using SumInf_if_1_0_right_is_sum[OF c, of f Q2] by presburger
 qed
   
-
-
 end

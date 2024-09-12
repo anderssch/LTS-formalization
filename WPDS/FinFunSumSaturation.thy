@@ -8,6 +8,7 @@ inductive strict_rule :: "'t saturation_rule \<Rightarrow> 't saturation_rule" f
 inductive weak_rule :: "'t::idempotent_ab_semigroup_add_ord saturation_rule \<Rightarrow> 't saturation_rule" for rule where
   rule_to_weak_rule: "rule ts ts'' \<Longrightarrow> ts'' \<le> ts' \<Longrightarrow> ts' < ts \<Longrightarrow> weak_rule rule ts ts'"
 
+
 section \<open>Locale: rule_saturation\<close>
 locale rule_saturation =
   fixes rule :: "'t::idempotent_ab_semigroup_add_ord saturation_rule"
@@ -84,7 +85,6 @@ next
       by blast
   qed
 qed
-
 
 lemma weak_rule_step_mono:
   assumes "ts\<^sub>2 \<le> ts\<^sub>1"
@@ -236,9 +236,13 @@ section \<open>Locale: step_saturation\<close>
 locale step_saturation = 
   fixes step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)"
 begin
-  definition "step_loop = while_option (\<lambda>s. step s \<noteq> s) (step)"
-  definition "step_exec = the o step_loop"
-  definition "step_rule ts ts' \<equiv> step ts = ts'"
+
+definition "step_loop = while_option (\<lambda>s. step s \<noteq> s) (step)"
+
+definition "step_exec = the o step_loop"
+
+definition "step_rule ts ts' \<equiv> step ts = ts'"
+
 end
 
 
@@ -246,9 +250,7 @@ section \<open>Locale: decreasing_step_saturation\<close>
 
 locale decreasing_step_saturation = step_saturation step
   for step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)" +
-(*  assumes weak_rule_star_step: "(weak_rule rule)\<^sup>*\<^sup>* S (step S)"*)
   assumes step_decreasing: "step S \<le> S"
-(*  assumes step_fixpoint_is_rule_saturated: "step t = t \<Longrightarrow> \<forall>ts. \<not> (weak_rule rule) t ts"*)
 begin
 
 lemma step_exec_terminates: 
@@ -277,6 +279,7 @@ proof -
 qed
 
 end
+
 
 section \<open>Locale: sum_saturation\<close>
 

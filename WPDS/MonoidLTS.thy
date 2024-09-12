@@ -2,12 +2,14 @@ theory MonoidLTS
   imports "LTS" "MonoidClosure" "CountableSum"
 begin
 
+
 section \<open>Locale: monoidLTS\<close>
 \<comment> \<open>If the @{typ 'weight} of a LTS is a monoid, we can express the monoid product of labels over a path.\<close>
 
 locale monoidLTS = LTS transition_relation 
   for transition_relation :: "('state::countable, 'weight::monoid_mult) transition set"
 begin
+
 definition l_step_relp  :: "'state \<Rightarrow> 'weight \<Rightarrow> 'state \<Rightarrow> bool" ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80) where
   "c \<Midarrow>l\<Rightarrow> c' \<longleftrightarrow> (c, l, c') \<in> transition_relation"
 

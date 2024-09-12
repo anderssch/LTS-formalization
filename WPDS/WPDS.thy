@@ -563,11 +563,11 @@ lemmas countable_monoid_star_all =
   countable_monoid_star_all countable_push_seq_weight countable_monoid_star_all_triple 
   countable_push_seq_weight1
 
-lemma countable_push_seq_weight2: (* maybe not a good name *)
+lemma countable_push_seq_weight2:
   "countable {d'| d' q. P q d' \<and> (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])}"
   unfolding setcompr_eq_image2 by (auto simp add: dissect_set countable_monoid_star_all)
 
-lemma countable_push_seq_weight3: (* maybe not a good name *)
+lemma countable_push_seq_weight3:
   "countable {f d' q w| d' q w. (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, w)}"
   by (auto simp add: dissect_set countable_monoid_star_all)
 
@@ -580,10 +580,10 @@ lemma sound_intro:
   unfolding sound_def using assms by auto
 
 lemmas monoid_star_relp_induct [consumes 1, case_names monoid_star_refl monoid_star_into_rtrancl] = 
-  MonoidClosure.monoid_rtranclp.induct[of l_step_relp ] (* "(_,_)" _ "(_,_)" *)
+  MonoidClosure.monoid_rtranclp.induct[of l_step_relp ]
 
 lemmas monoid_star_relp_induct_rev [consumes 1, case_names monoid_star_refl monoid_star_into_rtrancl] = 
-  MonoidClosure.monoid_rtranclp_induct_rev[of l_step_relp ] (*"(_,_)" _ "(_,_)" *)
+  MonoidClosure.monoid_rtranclp_induct_rev[of l_step_relp ]
 
 lemma step_rule:
   assumes "(p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w)"
@@ -1356,8 +1356,8 @@ end
 section \<open>Pre* on WAutomata\<close>
 
 datatype ('ctr_loc, 'noninit) state =
-  is_Init: Init (the_Ctr_Loc: 'ctr_loc) (* p \<in> P *)
-  | is_Noninit: Noninit (the_St: 'noninit) (* q \<in> Q \<and> q \<notin> P *)
+  is_Init: Init (the_Ctr_Loc: 'ctr_loc)
+  | is_Noninit: Noninit (the_St: 'noninit)
 
 definition inits_set :: "('ctr_loc::enum, 'noninit::enum) state set" where 
   "inits_set = {q. is_Init q}"

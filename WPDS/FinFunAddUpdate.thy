@@ -5,9 +5,11 @@ begin
 abbreviation finfun_add_update :: "('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add) \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a \<Rightarrow>f 'b)" ("_'(_ $+= _')" [1000,0,0] 1000) where
   "finfun_add_update f a b \<equiv> f(a $:= (f$a) + b)"
 
-lemma finfun_add_update_apply_same: "f(a $+= b) $ a = f $ a + b" by simp
-lemma finfun_add_update_apply_other: "a \<noteq> x \<Longrightarrow> f(x $+= b) $ a = f $ a" by simp
+lemma finfun_add_update_apply_same: 
+  "f(a $+= b) $ a = f $ a + b" by simp
 
+lemma finfun_add_update_apply_other: 
+  "a \<noteq> x \<Longrightarrow> f(x $+= b) $ a = f $ a" by simp
 
 lemma finfun_add_update_same_mono:
   fixes f g :: "('a \<Rightarrow>f 'b::idempotent_comm_monoid_add_ord)"
@@ -16,7 +18,6 @@ lemma finfun_add_update_same_mono:
   shows "f(a $+= b) \<le> g(a $+= c)"
   using assms unfolding less_eq_finfun_def
   by (metis finfun_upd_apply_other finfun_upd_apply_same meet.inf_mono)
-
 
 lemma finfun_add_update_to_zero:
   fixes f :: "'a \<Rightarrow>f 'b::idempotent_comm_monoid_add"
@@ -69,7 +70,6 @@ lemma finfun_different_add_update_nleq_apply_neq:
     by (cases "d = a", simp add: add.commute add.left_commute, simp)
   done
 
-
 lemma finfun_add_update_update_less_eq:
   fixes f :: "'a \<Rightarrow>f 'b::idempotent_comm_monoid_add_ord"
   assumes "b \<le> c"
@@ -85,12 +85,12 @@ lemma finfun_add_update_update_less_eq:
   done
 
 lemma finfun_add_update_neq: "f \<noteq> f(a $+= b) \<Longrightarrow> f $ a \<noteq> f $ a + b" by fastforce
+
 lemma add_finfun_add_update_neq: "f + g \<noteq> f + g(a $+= b) \<Longrightarrow> f $ a + g $ a \<noteq> f $ a + g $ a + b"
   unfolding add_finfun_add_update[symmetric] using finfun_add_update_neq[of "f + g"] by simp
 
 lemma finfun_less_eq_spec: "f \<le> g \<Longrightarrow> f $ a \<le> g $ a"
   unfolding less_eq_finfun_def by simp
-
 
 \<comment> \<open>For the executable pre-star, the saturation rule computes a set of new transition weights, 
     that are updated using the dioid's plus operator to combine with the existing value.\<close>
@@ -99,14 +99,10 @@ definition finfun_update_plus_pair :: "('a \<times> 'b) \<Rightarrow> ('a \<Righ
 
 definition update_wts :: "('a \<Rightarrow>f 'b::idempotent_comm_monoid_add) \<Rightarrow> ('a \<times> 'b) set \<Rightarrow> ('a \<Rightarrow>f 'b)" where
   "update_wts = Finite_Set.fold finfun_update_plus_pair"
-(*
-definition update_1_wts :: "('a \<Rightarrow>f 'b::idempotent_comm_monoid_add) \<Rightarrow> ('a \<times> 'b) set \<Rightarrow> ('a \<Rightarrow>f 'b)" where
-  "update_1_wts ts updates = (let U = {(a,b) \<in> updates. ts$a + b \<noteq> ts$a} in if U = {} then ts else (let x = take_1 U in finfun_update_plus_pair ts x))"*)
-(* finfun_update_plus_pair
-wts $ (p, \<gamma>, q) + d * d' \<noteq> wts $ (p, \<gamma>, q)*)
 
 lemma finfun_update_plus_pair_apply: "finfun_update_plus_pair (a,b) f $ a = f $ a + b"
   unfolding finfun_update_plus_pair_def using finfun_add_update_apply_same by force
+
 lemma finfun_update_plus_pair_apply_other: "a \<noteq> x \<Longrightarrow> finfun_update_plus_pair (x,b) f $ a = f $ a"
   unfolding finfun_update_plus_pair_def using finfun_add_update_apply_other by fastforce
 
@@ -117,6 +113,7 @@ lemma finfun_update_plus_pair_idem: "comp_fun_idem finfun_update_plus_pair"
   subgoal for x
     unfolding finfun_update_plus_pair_def using finfun_add_update_idem by fastforce
   done
+
 lemma finfun_update_plus_pair_idem_on_UNIV: "comp_fun_idem_on UNIV finfun_update_plus_pair"
   using finfun_update_plus_pair_idem by (simp add: comp_fun_idem_def')
 
@@ -139,7 +136,6 @@ qed
 lemma update_wts_code[code]: "update_wts f (set A) = foldr finfun_update_plus_pair A f"
   using folding_idem.fold_code[OF folding_idem_finfun_update_plus_pair, of f A]
   unfolding update_wts_def by blast
-
 
 lemma update_wts_insert:
   assumes "finite S"
@@ -225,16 +221,17 @@ lemma update_wts_insert_unfold:
   apply (rule finfun_ext)
   subgoal for a
     unfolding update_wts_sum[OF assms, of "f(x $+= y)" a] 
-              update_wts_sum[of "(insert (x,y) S)" f a, simplified, OF assms]
-proof (cases "a = x")
-  case True
-  show "f $ a + \<Sum> {b. a = x \<and> b = y \<or> (a, b) \<in> S} = f(x $+= y) $ a + \<Sum> {b. (a, b) \<in> S}" 
-    using sum_snd_insert[OF assms] True by (simp add: ac_simps(1))
-next
-  case False
-  then show "f $ a + \<Sum> {b. a = x \<and> b = y \<or> (a, b) \<in> S} = f(x $+= y) $ a + \<Sum> {b. (a, b) \<in> S}"
-    by simp
-qed done
+      update_wts_sum[of "(insert (x,y) S)" f a, simplified, OF assms]
+  proof (cases "a = x")
+    case True
+    show "f $ a + \<Sum> {b. a = x \<and> b = y \<or> (a, b) \<in> S} = f(x $+= y) $ a + \<Sum> {b. (a, b) \<in> S}" 
+      using sum_snd_insert[OF assms] True by (simp add: ac_simps(1))
+  next
+    case False
+    then show "f $ a + \<Sum> {b. a = x \<and> b = y \<or> (a, b) \<in> S} = f(x $+= y) $ a + \<Sum> {b. (a, b) \<in> S}"
+      by simp
+  qed 
+  done
 
 lemma update_wts_insert_absorb:
   fixes S::"('a \<times> 'b::idempotent_comm_monoid_add) set"
@@ -268,7 +265,6 @@ proof -
   qed
   then show ?thesis using BAC by presburger
 qed
-
 
 lemma update_wts_sum_finfun:
   assumes "finite S"

@@ -6,23 +6,28 @@ begin
 instantiation prod :: (one, one) one begin 
   definition one_prod_def: "1 = (1,1)" instance .. 
 end
+
 instantiation prod :: (times, times) times begin
   definition mult_prod_def[simp]: "a * b \<equiv> (fst a * fst b, snd a * snd b)"
   instance ..
 end
+
 instantiation prod :: (zero, zero) zero begin 
   definition zero_prod_def: "0 = (0,0)" instance .. 
 end
+
 instantiation prod :: (plus, plus) plus begin
   definition add_prod_def: "a + b \<equiv> (fst a + fst b, snd a + snd b)"
   instance ..
 end
+
 instantiation prod :: (ord, ord) ord begin 
   \<comment> \<open>Note: This conjunctive order produces a partial order, even if the elements have a total order\<close>
   definition less_eq_prod_def: "a \<le> b = (fst a \<le> fst b \<and> snd a \<le> snd b)"
   definition less_prod_def: "a < b = (fst a \<le> fst b \<and> snd a \<le> snd b \<and> a\<noteq>b)"
   instance ..
 end
+
 instantiation prod :: (order, order) order begin 
 instance proof
   fix x y z :: "('a::order \<times> 'b::order)"
@@ -37,44 +42,55 @@ instance proof
     using order_antisym[of "fst x" "fst y"] order_antisym[of "snd x" "snd y"] 
     unfolding less_eq_prod_def by (auto intro: prod_eqI)
 qed
-lemma antisymp_on_less_eq: "antisymp_on (A::('a set)) (\<le>)" by simp
+
+lemma antisymp_on_less_eq: "antisymp_on (A::('a set)) (\<le>)" 
+  by simp
+
 lemma prod_le_is_less_eq_prod:
  "(prod_le (\<le>) (\<le>)) = ((\<le>)::('a \<times> 'b) \<Rightarrow> ('a \<times> 'b) \<Rightarrow> bool)"
   unfolding prod_le_def less_eq_prod_def by fastforce
+
 lemma strict_prod_le_is_less_prod:
   "strict (prod_le (\<le>) (\<le>)) a b = ((<)::('a::order \<times> 'b::order) \<Rightarrow> ('a \<times> 'b) \<Rightarrow> bool) a b"
   unfolding prod_le_def less_prod_def by auto
   
 end
+
 \<comment> \<open>Instance proofs\<close>
 instantiation prod :: (semigroup_mult, semigroup_mult) semigroup_mult begin
   instance proof fix a b c :: "('a::semigroup_mult \<times> 'b::semigroup_mult)"
     show "a * b * c = a * (b * c)" unfolding mult_prod_def by(simp add: mult.assoc) qed
 end
+
 instantiation prod :: (monoid_mult, monoid_mult) monoid_mult begin
   instance proof fix a :: "('a::monoid_mult \<times> 'b::monoid_mult)"
       show "1 * a = a" unfolding one_prod_def mult_prod_def by simp
       show "a * 1 = a" unfolding one_prod_def mult_prod_def by simp
   qed
 end
+
 instantiation prod :: (semigroup_add, semigroup_add) semigroup_add begin
   instance proof fix a b c :: "('a::semigroup_add \<times> 'b::semigroup_add)"
     show "a + b + c = a + (b + c)" unfolding add_prod_def by(simp add: add.assoc) qed
 end
+
 instantiation prod :: (ab_semigroup_add, ab_semigroup_add) ab_semigroup_add begin
   instance proof fix a b c :: "('a::ab_semigroup_add \<times> 'b::ab_semigroup_add)"
     show "a + b = b + a" unfolding add_prod_def by(simp add: add.commute) qed
 end
+
 instantiation prod :: (comm_monoid_add, comm_monoid_add) comm_monoid_add begin
   instance proof fix a :: "('a::comm_monoid_add \<times> 'b::comm_monoid_add)"
       show "0 + a = a" unfolding zero_prod_def add_prod_def by simp
   qed
 end
+
 instantiation prod :: (idempotent_ab_semigroup_add, idempotent_ab_semigroup_add) idempotent_ab_semigroup_add begin
   instance proof fix a :: "('a::idempotent_ab_semigroup_add \<times> 'b::idempotent_ab_semigroup_add)"
     show "a + a = a" unfolding add_prod_def by simp
   qed
 end
+
 instantiation prod :: (idempotent_ab_semigroup_add_ord, idempotent_ab_semigroup_add_ord) idempotent_ab_semigroup_add_ord begin
   instance proof fix a b :: "('a::idempotent_ab_semigroup_add_ord \<times> 'b::idempotent_ab_semigroup_add_ord)"
     show "(a \<le> b) = (a + b = a)" unfolding less_eq_prod_def add_prod_def 
@@ -82,6 +98,7 @@ instantiation prod :: (idempotent_ab_semigroup_add_ord, idempotent_ab_semigroup_
     show "(a < b) = (a \<le> b \<and> a \<noteq> b)" unfolding less_prod_def less_eq_prod_def by simp
   qed
 end
+
 instantiation prod :: (semiring, semiring) semiring begin
   instance proof fix a b c :: "('a::semiring \<times> 'b::semiring)"
     show "(a + b) * c = a * c + b * c" unfolding add_prod_def mult_prod_def 
@@ -90,16 +107,22 @@ instantiation prod :: (semiring, semiring) semiring begin
       by (simp add: semiring_class.distrib_left)
   qed
 end
+
 instantiation prod :: (semiring_0, semiring_0) semiring_0 begin
   instance proof fix a :: "('a::semiring_0 \<times> 'b::semiring_0)"
     show "0 * a = 0" unfolding mult_prod_def zero_prod_def by simp
     show "a * 0 = 0" unfolding mult_prod_def zero_prod_def by simp
   qed
 end
+
 instantiation prod :: (idempotent_comm_monoid_add, idempotent_comm_monoid_add) idempotent_comm_monoid_add begin instance .. end
+
 instantiation prod :: (idempotent_comm_monoid_add_ord, idempotent_comm_monoid_add_ord) idempotent_comm_monoid_add_ord begin instance .. end
+
 instantiation prod :: (idempotent_semiring, idempotent_semiring) idempotent_semiring begin instance .. end
+
 instantiation prod :: (idempotent_semiring_ord, idempotent_semiring_ord) idempotent_semiring_ord begin instance .. end
+
 instantiation prod :: (discrete_topology, discrete_topology) discrete_topology begin
 instance proof
     fix A::"('a::discrete_topology \<times> 'b::discrete_topology) set"
@@ -302,7 +325,9 @@ instantiation prod :: (wfp, wfp) wfp begin
     qed
   qed
 end
+
 instantiation prod :: (bounded_idempotent_comm_monoid_add, bounded_idempotent_comm_monoid_add) bounded_idempotent_comm_monoid_add begin instance .. end
+
 instantiation prod :: (bounded_dioid, bounded_dioid) bounded_dioid begin instance .. end
 
 end

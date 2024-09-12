@@ -8,7 +8,9 @@ inductive_set monoid_rtrancl :: "('a \<times> 'b::monoid_mult \<times> 'a) set \
  for r :: "('a \<times> 'b \<times> 'a) set" where
     monoid_rtrancl_refl [intro!, Pure.intro!, simp]: "(a, 1, a) \<in> monoid_rtrancl r"
   | monoid_rtrancl_into_rtrancl [Pure.intro]: "(a, w, b) \<in> monoid_rtrancl r \<Longrightarrow> (b, l, c) \<in> r \<Longrightarrow> (a, w*l, c) \<in> monoid_rtrancl r"
+
 inductive_cases monoid_rtrancl_empty [elim]: "(p, 1, q) \<in> monoid_rtrancl r"
+
 inductive_cases monoid_rtrancl_extend: "(p, w*l, q) \<in> monoid_rtrancl r"
 
 inductive_set semigroup_trancl :: "('a \<times> 'b::semigroup_mult \<times> 'a) set \<Rightarrow> ('a \<times> 'b \<times> 'a) set"
@@ -22,14 +24,14 @@ lemma predicate3I[intro]:
   apply (rule le_funI)+
   apply (rule le_boolI)
   by (rule PQ)
+
 lemma predicate3D[dest]:
   "P \<le> Q \<Longrightarrow> P x y z \<Longrightarrow> Q x y z"
   by (erule le_funE)+ (erule le_boolE)
 
-lemma "(a,b,c) \<in> r \<Longrightarrow> (a,b,c) \<in> monoid_rtrancl r"
+lemma member_if_member_monoid_rtrancl: "(a,b,c) \<in> r \<Longrightarrow> (a,b,c) \<in> monoid_rtrancl r"
   using monoid_rtrancl_into_rtrancl[OF monoid_rtrancl_refl]
   by fastforce
-
 
 lemma monoid_rtranclp_mono: "r \<le> s \<Longrightarrow> monoid_rtranclp r \<le> monoid_rtranclp s"
   \<comment> \<open>monotonicity of \<open>monoid_rtrancl\<close>\<close>
@@ -42,6 +44,7 @@ qed
 
 lemma mono_monoid_rtranclp[mono]: "(\<And>a b c. x a b c \<longrightarrow> y a b c) \<Longrightarrow> (monoid_rtranclp x) a b c \<longrightarrow> (monoid_rtranclp y) a b c"
   using monoid_rtranclp_mono[of x y] by auto
+
 lemmas monoid_rtrancl_mono = monoid_rtranclp_mono [to_set]
 
 lemma mono_monoid_rtrancl[mono]: "(\<And>a b c. (a,b,c) \<in> x \<longrightarrow> (a,b,c) \<in> y) \<Longrightarrow> (a,b,c) \<in> monoid_rtrancl x \<longrightarrow> (a,b,c) \<in> monoid_rtrancl y"
@@ -61,7 +64,6 @@ lemma monoid_rtranclp_trans:
   using assms(2,1)
   by (induct, simp_all) (metis (no_types, opaque_lifting) monoid_rtranclp.monoid_rtrancl_into_rtrancl mult.assoc)
 
-
 fun is_trace_fn :: "'a \<Rightarrow> ('a \<times> 'b::monoid_mult \<times> 'a) list \<Rightarrow> 'a \<Rightarrow> bool" where
   "is_trace_fn p [] q = (p = q)"
 | "is_trace_fn p ((p',l,q')#ts) q = (p = p' \<and> is_trace_fn q' ts q)"
@@ -69,12 +71,14 @@ fun is_trace_fn :: "'a \<Rightarrow> ('a \<times> 'b::monoid_mult \<times> 'a) l
 primrec is_trace :: "'a \<Rightarrow> ('a \<times> 'b::monoid_mult \<times> 'a) list \<Rightarrow> 'a \<Rightarrow> bool" where
   "is_trace p [] q = (p = q)"
 | "is_trace p (t#ts) q = (p = fst t \<and> is_trace (snd (snd t)) ts q)"
+
 primrec trace_weight :: "('a \<times> 'b::monoid_mult \<times> 'a) list \<Rightarrow> 'b" where
   "trace_weight [] = 1"
 | "trace_weight (t#ts) = fst (snd t) * trace_weight ts"
 
 lemma is_trace_append: "is_trace a x b \<and> is_trace b y c \<Longrightarrow> is_trace a (x @ y) c"
   by (induct x arbitrary: a, simp_all)
+
 lemma trace_weight_append: "trace_weight (a @ b) = trace_weight a * trace_weight b"
   by (induct a, simp_all add: mult.assoc[symmetric])
 
@@ -95,6 +99,7 @@ lemma is_trace_inj: "l \<noteq> [] \<and> is_trace a l b \<and> is_trace p l q \
   subgoal for a l aa p
     by force
   done
+
 lemma trace_weight_inj: "trace_weight l = a \<and> trace_weight l = b \<Longrightarrow> a = b"
   by (induct l arbitrary: a b, simp_all)
 
@@ -107,16 +112,20 @@ lemma reduce_monoid_list_append: "reduce_monoid_list a * reduce_monoid_list b = 
 
 definition list_embed_monoid :: "'b::monoid_mult \<Rightarrow> 'b \<times> 'b list" where
   "list_embed_monoid d = (d,[d])"
+
 definition list_embed_ts :: "('a \<times> 'b::monoid_mult \<times> 'a) set \<Rightarrow> ('a \<times> ('b \<times> 'b list) \<times> 'a) set" where
   "list_embed_ts ts \<equiv> {(p, list_embed_monoid d, q) | p d q. (p,d,q) \<in> ts}"
+
 definition list_embed_correct :: "'a::monoid_mult \<times> 'a list \<Rightarrow> bool" where
   "list_embed_correct w \<equiv> fst w = reduce_monoid_list (snd w)"
 
 lemma reduce_monoid_list_base:
   "(d, l) = 1 \<Longrightarrow> d = reduce_monoid_list l"
   by (simp add: one_list_def one_prod_def)
+
 lemma list_embed_correct_one: "list_embed_correct 1"
   unfolding list_embed_correct_def using reduce_monoid_list_base by force
+
 lemma list_embed_ts_mono[mono]: "mono list_embed_ts"
   unfolding list_embed_ts_def list_embed_monoid_def mono_def by blast
 
@@ -208,7 +217,6 @@ next
     by auto
 qed
 
-\<comment> \<open>NOTE: (adapted from monoid_star_w0)\<close>
 lemma monoid_rtrancl_list_embed_w0:
   assumes "(p, dl, q) \<in> monoid_rtrancl (list_embed_ts ts)"
   assumes "snd dl = []"
@@ -233,7 +241,6 @@ lemma length_list_embed:
   shows "length l = 1"
   using assms unfolding list_embed_ts_def unfolding list_embed_monoid_def by auto
 
-\<comment> \<open>NOTE: (adapted from monoid_rtrancl_wts_to_monoidLTS_cases_rev')\<close>
 lemma monoid_rtrancl_list_embed_ts_cases_rev':
   assumes "(p\<^sub>1, d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3, p\<^sub>3) \<in> monoid_rtrancl (list_embed_ts ts)"
   shows "d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3 = (1,[]) \<or> (\<exists>d\<^sub>1\<^sub>3.
@@ -355,8 +362,6 @@ lemma monoid_rtrancl_list_embed_ts_cases_rev:
            (s, (d''',l), p') \<in> monoid_rtrancl (list_embed_ts ts) \<and>
            d = d'' * d'''"
   using assms monoid_rtrancl_list_embed_ts_cases_rev' by fastforce 
-
-
 
 lemma monoid_rtrancl_list_embed_ts_induct_rev:
   assumes "(a, (d, l), b) \<in> monoid_rtrancl (list_embed_ts r)"
@@ -561,8 +566,10 @@ begin
 
 definition monoid_rtrancl_witness :: "'a \<Rightarrow> 'b \<Rightarrow> 'a \<Rightarrow> ('a \<times> ('a \<times> 'b \<times> 'a) list)" where
   "monoid_rtrancl_witness c l c' = (SOME trace. fst trace = c \<and> is_trace c (snd trace) c' \<and> trace_weight (snd trace) = l \<and> (snd trace) \<in> lists ts)"
+
 abbreviation monoid_rtrancl_witness_tuple :: "'a \<times> 'b \<times> 'a \<Rightarrow> ('a \<times> ('a \<times> 'b \<times> 'a) list)" where
   "monoid_rtrancl_witness_tuple \<equiv> (\<lambda>(c,l,c'). monoid_rtrancl_witness c l c')"
+
 lemma monoid_star_witness_unfold:                   
   assumes "(c, l, c') \<in> monoid_rtrancl ts"
   assumes "trace = monoid_rtrancl_witness c l c'"
@@ -594,8 +601,10 @@ lemma monoid_rtrancl_witness_inj_aux:
   using monoid_star_witness_unfold[OF assms(1)] monoid_star_witness_unfold[OF assms(2)] 
         assms(3) is_trace_inj 
   by (cases "snd (monoid_rtrancl_witness c l c') \<noteq> []", fastforce) auto
+
 lemma monoid_rtrancl_witness_inj: "inj_on monoid_rtrancl_witness_tuple (monoid_rtrancl ts)"
   unfolding inj_on_def using monoid_rtrancl_witness_inj_aux by force
+
 lemma monoid_rtrancl_witness_bij_betw: 
   "bij_betw monoid_rtrancl_witness_tuple (monoid_rtrancl ts) (monoid_rtrancl_witness_tuple` (monoid_rtrancl ts))"
   unfolding bij_betw_def using monoid_rtrancl_witness_inj by blast
@@ -608,7 +617,7 @@ proof -
     using countable_subset[OF subset countable_monoid_rtrancl_witness] by blast
   then show ?thesis using monoid_rtrancl_witness_bij_betw countableI_bij2 by fast
 qed
-end
 
+end
 
 end

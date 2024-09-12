@@ -6,6 +6,7 @@ begin
 class idempotent_ab_semigroup_add = ab_semigroup_add +
   assumes add_idem[simp]: "a + a = a"
 begin
+
 lemma add_left_idem [ac_simps]: "x + (x + y) = x + y"
   unfolding add_assoc [symmetric] by simp
 end
@@ -49,8 +50,10 @@ qed
 
 lemma neq_mono: "a \<le> b \<Longrightarrow> c + b \<noteq> c \<Longrightarrow> c + a \<noteq> c"
   by (metis meet.inf.absorb1 meet.inf.coboundedI2)
+
 lemma neq_mono_less: "a \<le> b \<Longrightarrow> c + b \<noteq> c \<Longrightarrow> c + a < c"
   unfolding less_def using neq_mono by simp
+
 lemma add_less_mono: "a \<le> b \<Longrightarrow> c + b < c \<Longrightarrow> c + a < c"
   unfolding less_def using neq_mono by simp
 end
@@ -154,7 +157,6 @@ lemma sum_subset_singleton_0_is_0:
   shows "\<Sum> X = 0"
   using assms by (cases "X = {0}"; cases "X = {}") auto
    
-
 abbreviation sum_seq :: "(nat \<Rightarrow> 'a) \<Rightarrow> nat \<Rightarrow> 'a" where
   "sum_seq f i \<equiv> sum f {x. x < i}"
 
@@ -289,17 +291,21 @@ proof -
     by (simp add: comp_id[unfolded id_def, of "(+)"] fold_image[OF inj, of "(+)" 0, symmetric])
   then show ?thesis using eq img by argo
 qed
+
 end
 
 class idempotent_comm_monoid_add_ord = idempotent_ab_semigroup_add_ord + comm_monoid_add
 begin
 subclass idempotent_comm_monoid_add ..
+
 sublocale meet: bounded_semilattice_inf_top "(+)" "(\<le>)" "(<)" 0
   by unfold_locales (simp add: local.order_prop)
+
 lemma no_trivial_inverse: "x \<noteq> 0 \<Longrightarrow> \<not>(\<exists>y. x + y = 0)"
   by (metis local.add_0_right local.meet.inf_left_idem)
 
 lemma less_eq_zero: "x \<le> 0" unfolding less_eq_def by simp
+
 lemma less_zero: "x \<noteq> 0 \<Longrightarrow> x < 0" unfolding less_def using less_eq_def by simp
 
 lemma sum_prefix_seq_greater_eq:
@@ -434,11 +440,14 @@ proof -
   show ?thesis unfolding eq
     by (rule arg_cong[of _ _ \<Sum>]) auto
 qed
+
 end
 
 class idempotent_semiring_ord = idempotent_semiring + idempotent_ab_semigroup_add_ord
 begin
+
 subclass idempotent_comm_monoid_add_ord ..
+
 lemma mult_isor: "x \<le> y \<Longrightarrow> x * z \<le> y * z"
 proof -
   assume "x \<le> y"
@@ -449,13 +458,17 @@ proof -
   thus "x * z \<le> y * z"
     by (simp add: distrib_right meet.inf.orderI)
 qed
+
 lemma subdistl: "z * (x + y) \<le> z * x"
   by (simp add: distrib_left)
+
 lemma mult_isol_equiv_subdistl:
   "(\<forall>x y z. x \<le> y \<longrightarrow> z * x \<le> z * y) \<longleftrightarrow> (\<forall>x y z. z * (x + y) \<le> z * x)"
   by (metis meet.inf_absorb2 local.meet.inf_le1)
+
 lemma subdistl_var: "z * (x + y) \<le> z * x + z * y"
   using local.mult_isol_equiv_subdistl local.subdistl by simp
+
 lemma mult_isol: "x \<le> y \<Longrightarrow> z * x \<le> z * y"
 proof -
   assume "x \<le> y"
@@ -464,6 +477,7 @@ proof -
   moreover have "z * (x + y) = z * x" by (simp add: calculation)
   ultimately show "z * x \<le> z * y" by auto
 qed
+
 lemma mult_isol_var: "u \<le> x \<Longrightarrow> v \<le> y \<Longrightarrow> u * v \<le> x * y"
   by (meson local.dual_order.trans local.mult_isor mult_isol)
 end
@@ -474,20 +488,27 @@ begin
 
 lemma strict_le_is_less:"strict (\<le>) = (<)"
   using dual_order.strict_iff_not by presburger
+
 lemma transp_on_less_eq: "transp_on A (\<le>)"
   unfolding transp_on_def by fastforce
 
 lemma qo_on_less_eq: "qo_on (\<le>) A"
   unfolding qo_on_def reflp_on_def using transp_on_less_eq by simp
+
 lemma wfp_on_class: "wfp_on (strict (\<le>)) A"
   unfolding wfp_on_def using no_infinite_decending strict_le_is_less by blast
+
 lemma "irreflp_on A (strict (\<le>))" by (fact irreflp_on_strict)
-lemma wfP_strict_class: "wfP (strict (\<le>))" using wfp_on_UNIV wfp_on_class[of UNIV] by blast
+
+lemma wfP_strict_class: "wfP (strict (\<le>))" 
+  using wfp_on_UNIV wfp_on_class[of UNIV] by blast
 
 lemma no_antichain_on_implies_wqo_on: "(\<nexists>f. antichain_on (\<le>) f A) \<Longrightarrow> wqo_on (\<le>) A"
   using wqo_wf_and_no_antichain_conv[OF qo_on_less_eq] wfp_on_class by simp
+
 lemma no_antichain_on_implies_almost_full_on: "(\<nexists>f. antichain_on (\<le>) f A) \<Longrightarrow> almost_full_on (\<le>) A"
   using no_antichain_on_implies_wqo_on wqo_af_conv[OF qo_on_less_eq] by blast
+
 end
 
 class bounded_idempotent_comm_monoid_add = wfp + idempotent_comm_monoid_add_ord
@@ -567,13 +588,13 @@ lemma idempotent_semiring_unfolds:
     and "0 * a = 0" and "a * 0 = 0"
   using idempotent_semiring_unfolded_definition assms by blast+
 
-
 primrec decreasing_sequence_aux :: "(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology) \<Rightarrow> (nat \<Rightarrow> 'a \<times> nat)" where
   "decreasing_sequence_aux f 0 = (0,0)"
 | "decreasing_sequence_aux f (Suc i) = (
     let n = (SOME n. n \<ge> snd (decreasing_sequence_aux f i) \<and> sum f {x. x < n} \<noteq> fst (decreasing_sequence_aux f i)) 
     in (sum f {x. x < n}, n)
   )"
+
 definition decreasing_sequence :: "(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology) \<Rightarrow> (nat \<Rightarrow> 'a)" where
   "decreasing_sequence f i = fst (decreasing_sequence_aux f i)"
 
@@ -644,6 +665,7 @@ lemma sumseq_suminf_obtain_bound:
   fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
   obtains N where "\<forall>n\<ge>N. sum_seq f n = suminf f"
   using stable_sum_is_suminf[of f] by blast
+
 lemma sumseq_suminf_obtain:
   fixes f :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
   obtains n where "sum_seq f n = suminf f"
@@ -684,12 +706,12 @@ proof -
     done
   then show ?thesis by metis
 qed
+
 lemma seqs_same_elems_obtain_map:
   fixes f f' :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
   assumes "\<And>l. (\<exists>i. f i = l) \<longleftrightarrow> (\<exists>i. f' i = l)"
   obtains g where "\<And>i. f i = f' (g i)"
   using seqs_same_elems_exists_map[OF assms] by blast
-
 
 
 \<comment> \<open>Definition 5 from [RSJM'05].\<close>
@@ -724,10 +746,10 @@ lemma bounded_dioid_unfolded_definition:
     class.wfp_def class.wfp_axioms_def
   by (auto simp add: discrete_topology_True class.idempotent_semiring_ord_def idempotent_semiring_with_plus_ord)
 
-
-lemma d_mult_not_zero: assumes "(d::'weight::bounded_dioid) * d' \<noteq> 0" shows "d \<noteq> 0" and "d' \<noteq> 0"
+lemma d_mult_not_zero: 
+  assumes "(d::'weight::bounded_dioid) * d' \<noteq> 0" 
+  shows "d \<noteq> 0" and "d' \<noteq> 0"
   using assms by auto
-
 
 datatype nat_inf = fin nat | infinity
 
@@ -820,12 +842,19 @@ proof
 qed
 
 instantiation nat_inf :: bounded_dioid begin
+
 definition "one_nat_inf == fin 0 :: nat_inf"
+
 definition "times_nat_inf == plus_inf :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> nat_inf"
+
 definition "open_nat_inf == (\<lambda>S. True) :: nat_inf set \<Rightarrow> bool"
+
 definition "zero_nat_inf == infinity :: nat_inf"
+
 definition "less_eq_nat_inf == less_eq_inf :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> bool"
+
 definition "less_nat_inf == less_inf :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> bool"
+
 definition "plus_nat_inf == min_inf :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> nat_inf"
 
 instance proof
@@ -897,7 +926,7 @@ instance proof
       by (metis min_inf.simps(1) min_inf.simps(2) nat_inf.exhaust plus_inf.simps(1) plus_inf.simps(2))
   qed
 qed
-end
 
+end
 
 end

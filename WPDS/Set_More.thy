@@ -40,9 +40,9 @@ lemma countable_f_on_P_Q_set2: "countable {(x, y). Q x y} \<Longrightarrow> coun
 lemma countable_f_on_P_Q_set3: "countable {(x, y, z). Q x y z} \<Longrightarrow> countable {f x y z | x y z. P x y z \<and> Q x y z}"
   by (simp add: dissect_set)
 
-
 lemma finite_f_on_set: "finite X \<Longrightarrow> finite {f x | x. x \<in> X}"
   by (simp add: dissect_set)
+
 lemma finite_f_P_on_set: "finite X \<Longrightarrow> finite {f x | x. P x \<and> x \<in> X}"
   by (simp add: dissect_set)
 
@@ -59,7 +59,6 @@ proof -
   by force
 qed
 
-
 lemma finite_prod2: 
   assumes "finite {(x,z). P x z}"
   assumes "finite {(y,z). Q y z}"
@@ -71,7 +70,6 @@ proof -
     using finite_prod[OF fx fy] finite_subset[of "{(x,y)| x y z. P x z \<and> Q y z}" "{x. Ex (P x)} \<times> {y. Ex (Q y)}"]
     by auto
 qed
-
 
 lemma countable_prod: "countable {x. P x} \<Longrightarrow> countable {y. Q y} \<Longrightarrow> countable {(x,y). P x \<and> Q y}"
   by force
@@ -121,7 +119,6 @@ lemma countable_3_to_3_permutation:
   using countable_subset[OF _ countable_setcompr[OF assms, of "\<lambda>(a,b,c). (c,a,b)", simplified], of "{(c, a, b). X a b c}"]
   by blast
 
-
 lemma exists_set_between:
   assumes "A \<subseteq> B" and "B \<subseteq> A \<union> C"
   shows "\<exists>D \<subseteq> C. B = A \<union> D"
@@ -135,7 +132,6 @@ proof -
   have "(\<Union>x\<in>X. {f y |y. P x y}) = {f y | x y. P x y \<and> x \<in> X}" by blast
   then show ?thesis using assms(2) finite_UN[OF assms(1), of "\<lambda>x. {f y |y. P x y}", symmetric] by auto
 qed
-
 
 lemma countable_cong: "countable a \<Longrightarrow> a = b \<Longrightarrow> countable b"
   using back_subst[of countable] by blast

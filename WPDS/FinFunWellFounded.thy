@@ -9,83 +9,95 @@ unbundle finfun_syntax
    is instance of @{class bounded_idempotent_comm_monoid_add}\<close>
 \<comment> \<open>Definitions\<close>
 instantiation finfun :: (type, one) one begin 
-  definition one_finfun_def: "1 = (K$ 1)" instance .. 
+definition one_finfun_def: "1 = (K$ 1)" instance .. 
 end
+
 instantiation finfun :: (type, zero) zero begin 
-  definition zero_finfun_def: "0 = (K$ 0)" instance .. 
+definition zero_finfun_def: "0 = (K$ 0)" instance .. 
 end
 
 instantiation finfun :: (type, plus) plus begin
-  definition add_finfun_def: "a + b \<equiv> (\<lambda>(x,y). x + y) \<circ>$ ($a, b$)"
+definition add_finfun_def: "a + b \<equiv> (\<lambda>(x,y). x + y) \<circ>$ ($a, b$)"
 instance ..
-  lemma add_finfun_apply[simp]: "(f + g) $ x = f $ x + g $ x"
-    unfolding add_finfun_def by simp
+lemma add_finfun_apply[simp]: "(f + g) $ x = f $ x + g $ x"
+  unfolding add_finfun_def by simp
 end
 
 instantiation finfun :: (type, ord) ord begin 
   \<comment> \<open>Note: This conjunctive order produces a partial order, even if the elements have a total order\<close>
-  definition less_eq_finfun_def: "f \<le> g = (\<forall>a. f $ a \<le> g $ a)"
-  definition less_finfun_def: "(f::'a \<Rightarrow>f 'b) < g = (f \<le> g \<and> \<not> g \<le> f)"
-  instance ..
+definition less_eq_finfun_def: "f \<le> g = (\<forall>a. f $ a \<le> g $ a)"
+definition less_finfun_def: "(f::'a \<Rightarrow>f 'b) < g = (f \<le> g \<and> \<not> g \<le> f)"
+instance ..
 end
+
 \<comment> \<open>First define the order, and prove that it is a partial @{class order} (and @{class preorder})\<close>
 instantiation finfun :: (type, preorder) preorder 
 begin
-  instance proof fix x y z :: "'a \<Rightarrow>f 'b::preorder"
-    show "(x < y) = strict (\<le>) x y" unfolding less_eq_finfun_def less_finfun_def using dual_order.strict_iff_not by blast
-    show "x \<le> x" unfolding less_eq_finfun_def by simp
-    show "x \<le> y \<Longrightarrow> y \<le> z \<Longrightarrow> x \<le> z" unfolding less_eq_finfun_def using order_trans by blast
-  qed
+instance proof fix x y z :: "'a \<Rightarrow>f 'b::preorder"
+  show "(x < y) = strict (\<le>) x y" unfolding less_eq_finfun_def less_finfun_def using dual_order.strict_iff_not by blast
+  show "x \<le> x" unfolding less_eq_finfun_def by simp
+  show "x \<le> y \<Longrightarrow> y \<le> z \<Longrightarrow> x \<le> z" unfolding less_eq_finfun_def using order_trans by blast
+qed
+
 lemma less_eq_strict:  "((<)::('a \<Rightarrow>f 'b::preorder \<Rightarrow> 'a \<Rightarrow>f 'b::preorder \<Rightarrow> bool)) = (strict (\<le>))"
   unfolding less_finfun_def by simp
 end
+
 instantiation finfun :: (type, order) order
 begin
-  instance proof fix x y z :: "'a \<Rightarrow>f 'b::order"
-    show "x \<le> y \<Longrightarrow> y \<le> x \<Longrightarrow> x = y" unfolding less_eq_finfun_def by (simp add: finfun_ext order_class.order_eq_iff)
-  qed
+instance proof fix x y z :: "'a \<Rightarrow>f 'b::order"
+  show "x \<le> y \<Longrightarrow> y \<le> x \<Longrightarrow> x = y" unfolding less_eq_finfun_def by (simp add: finfun_ext order_class.order_eq_iff)
+qed
 end
+
 instantiation finfun :: (type, semigroup_add) semigroup_add begin
-  instance proof fix a b c :: "('a \<Rightarrow>f 'b::semigroup_add)"
-    show "a + b + c = a + (b + c)" unfolding add_finfun_def
-      by (rule finfun_ext) (simp add: add.assoc)
-  qed
+instance proof fix a b c :: "('a \<Rightarrow>f 'b::semigroup_add)"
+  show "a + b + c = a + (b + c)" unfolding add_finfun_def
+    by (rule finfun_ext) (simp add: add.assoc)
+qed
 end
+
 instantiation finfun :: (type, monoid_add) monoid_add begin
-  instance proof fix a :: "('a \<Rightarrow>f 'b::monoid_add)"
-    show "0 + a = a" unfolding zero_finfun_def add_finfun_def
-      by (rule finfun_ext) simp
-    show "a + 0 = a" unfolding zero_finfun_def add_finfun_def
-      by (rule finfun_ext) simp
-  qed
+instance proof fix a :: "('a \<Rightarrow>f 'b::monoid_add)"
+  show "0 + a = a" unfolding zero_finfun_def add_finfun_def
+    by (rule finfun_ext) simp
+  show "a + 0 = a" unfolding zero_finfun_def add_finfun_def
+    by (rule finfun_ext) simp
+qed
 end
+
 instantiation finfun :: (type, ab_semigroup_add) ab_semigroup_add begin
-  instance proof fix a b c :: "('a \<Rightarrow>f 'b::ab_semigroup_add)"
-    show "a + b = b + a" unfolding add_finfun_def
-      by (rule finfun_ext) (simp add: add.commute) 
-  qed
+instance proof fix a b c :: "('a \<Rightarrow>f 'b::ab_semigroup_add)"
+  show "a + b = b + a" unfolding add_finfun_def
+    by (rule finfun_ext) (simp add: add.commute) 
+qed
 end
+
 instantiation finfun :: (type, comm_monoid_add) comm_monoid_add begin
-  instance proof fix a :: "('a \<Rightarrow>f 'b::comm_monoid_add)"
-    show "0 + a = a" unfolding zero_finfun_def add_finfun_def
-      by (rule finfun_ext) simp
-  qed
+instance proof fix a :: "('a \<Rightarrow>f 'b::comm_monoid_add)"
+  show "0 + a = a" unfolding zero_finfun_def add_finfun_def
+    by (rule finfun_ext) simp
+qed
 end
+
 instantiation finfun :: (type, idempotent_ab_semigroup_add) idempotent_ab_semigroup_add begin
-  instance proof fix a :: "('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add)"
-    show "a + a = a" unfolding add_finfun_def 
-      by (rule finfun_ext) simp
-  qed
+instance proof fix a :: "('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add)"
+  show "a + a = a" unfolding add_finfun_def 
+    by (rule finfun_ext) simp
+qed
 end
+
 instantiation finfun :: (type, idempotent_ab_semigroup_add_ord) idempotent_ab_semigroup_add_ord begin
-  instance proof fix a b :: "('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add_ord)"
-    have "(a \<le> b) = (\<forall>x. (a + b) $ x = a $ x)"
-      unfolding less_eq_finfun_def add_finfun_def less_eq_def by simp
-    then show "(a \<le> b) = (a + b = a)" using finfun_ext[of "a + b" a] by fastforce
-    show "(a < b) = (a \<le> b \<and> a \<noteq> b)" unfolding less_finfun_def by fastforce
-  qed
+instance proof fix a b :: "('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add_ord)"
+  have "(a \<le> b) = (\<forall>x. (a + b) $ x = a $ x)"
+    unfolding less_eq_finfun_def add_finfun_def less_eq_def by simp
+  then show "(a \<le> b) = (a + b = a)" using finfun_ext[of "a + b" a] by fastforce
+  show "(a < b) = (a \<le> b \<and> a \<noteq> b)" unfolding less_finfun_def by fastforce
+qed
 end
+
 instantiation finfun :: (type, idempotent_comm_monoid_add) idempotent_comm_monoid_add begin instance .. end
+
 instantiation finfun :: (type, idempotent_comm_monoid_add_ord) idempotent_comm_monoid_add_ord begin instance .. end
 
 lemma sum_finfun_apply:
@@ -111,14 +123,12 @@ lemma sum_finfun_apply_f_P:
   unfolding sum_finfun_apply[OF assms, of a]
   by (rule arg_cong[of _ _ \<Sum>]) blast
 
-
 \<comment> \<open>The proof of wqo goes by induction on the (finite) input domain, 
    so we need to define the set of \<open>finfuns\<close> over a given input domain.\<close>
-  
 
 inductive_set finfuns :: "'a set \<Rightarrow> ('a \<Rightarrow>f ('b::zero)) set"
   for A :: "'a set"
-where
+  where
     Zero [simp]: "finite A \<Longrightarrow> (K$ 0) \<in> finfuns A"
   | Default [simp]: "infinite A \<Longrightarrow> (K$ b) \<in> finfuns A"
   | Assign [simp]: "\<lbrakk>a \<in> A; f \<in> finfuns A\<rbrakk> \<Longrightarrow> f(a $:= b) \<in> finfuns A"
@@ -133,11 +143,12 @@ lemma finfuns_empty: "finfuns {} = {(K$ 0)}"
   subgoal for f
     by (induct f rule: finfuns.induct, simp_all)
   by simp
+
 lemma finfuns_single: "((finfuns {a})::('a \<Rightarrow>f 'b::zero) set) = {(K$ 0)(a $:= b) | b. True}"
   apply auto
   subgoal for f
     apply (induct f rule: finfuns.induct, simp_all)
-    apply (rule exI[of _ 0])
+     apply (rule exI[of _ 0])
      apply (simp add: finfun_update_const_same)
     by force
   done
@@ -146,15 +157,18 @@ lemma finfuns_empty_exist_all:
   "\<lbrakk>f \<in> (finfuns {}); g \<in> (finfuns {}); \<exists>a. P (f $ a) (g $ a)\<rbrakk> \<Longrightarrow> \<forall>a. P (f $ a) (g $ a)"
   unfolding finfun_emb_def
   by (cases rule: finfuns.cases, simp, safe, simp)+
+
 lemma finfuns_insert_sub: "finfuns A \<subseteq> finfuns (insert a A)"
   by safe (erule finfuns.induct, auto)
+
 lemma finfuns_insert_assign: "\<lbrakk>f \<in> finfuns A\<rbrakk> \<Longrightarrow> f(a $:= b) \<in> finfuns (insert a A)"
   apply (erule finfuns.induct, simp_all)
   using finfuns_insert_sub[of A a] by auto
+
 lemma finite_finfuns_insert_undo:
   assumes "finite A"
-      and "f \<in> finfuns (insert a A)"
-    shows "f(a $:= 0) \<in> finfuns A"
+    and "f \<in> finfuns (insert a A)"
+  shows "f(a $:= 0) \<in> finfuns A"
   using assms(2)
   apply (induct rule: finfuns.induct)
   using assms(1)
@@ -189,8 +203,10 @@ lemma finfuns_UNIV: "finfuns (UNIV::('a set)) = UNIV"
 
 lemma wfp_on_spec: "wfp_on P A \<Longrightarrow> (\<And>i. f i \<in> A) \<Longrightarrow> \<exists>i. \<not> P (f (Suc i)) (f i)"
   unfolding wfp_on_def by blast
+
 lemma antisymp_on_spec: "antisymp_on A P \<Longrightarrow> (\<And>a b. a \<in> A \<Longrightarrow> b \<in> A \<Longrightarrow> P a b \<Longrightarrow> P b a \<Longrightarrow> a = b)"
   unfolding antisymp_on_def by fastforce
+
 lemma wfp_onI: "(\<And>f::nat \<Rightarrow> 'a. \<forall>i. f i \<in> A \<Longrightarrow> (\<exists>i. \<not> strict P (f (Suc i)) (f i))) \<Longrightarrow> wfp_on (strict P) A"
   unfolding wfp_on_def by blast
 
@@ -230,9 +246,9 @@ qed
 
 lemma wfp_neg_map:
   assumes "wfp_on (strict P) B"
-      and "h ` A \<subseteq> B"
-      and "\<And>x y. x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> \<not> strict P (h x) (h y) \<Longrightarrow> \<not> strict Q x y"
-    shows "wfp_on (strict Q) A"
+    and "h ` A \<subseteq> B"
+    and "\<And>x y. x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> \<not> strict P (h x) (h y) \<Longrightarrow> \<not> strict Q x y"
+  shows "wfp_on (strict Q) A"
   using wfp_hom_neg[OF _ wfp_map[OF assms(1,2)], where h = id] assms(3) by simp
 
 lemma wfp_on_single: "wfp_on P UNIV \<Longrightarrow> wfp_on P {x}"
@@ -269,9 +285,9 @@ definition single_hom :: "'a \<Rightarrow> 'a \<Rightarrow>f 'b \<Rightarrow> 'b
 
 lemma single_hom_correct:
   assumes "x \<in> finfuns {a}"
-      and "y \<in> finfuns {a}"
-      and "\<not> strict P (single_hom a x) (single_hom a y)"
-    shows "\<not> strict (finfun_emb P) x y"
+    and "y \<in> finfuns {a}"
+    and "\<not> strict P (single_hom a x) (single_hom a y)"
+  shows "\<not> strict (finfun_emb P) x y"
   using assms unfolding single_hom_def finfuns_single finfun_emb_def
   apply simp
   apply auto
@@ -283,7 +299,7 @@ lemma finfuns_single_wfp:
   assumes "wfp_on (strict P) UNIV"
   shows "wfp_on (strict (finfun_emb P)) ((finfuns {a})::('a \<Rightarrow>f 'b::zero) set)"
   using wfp_neg_map[OF assms, of "single_hom a" "finfuns {a}" "finfun_emb P"] 
-        single_hom_correct[of _ a _ P]
+    single_hom_correct[of _ a _ P]
   by blast
 
 \<comment> \<open>In the step of the induction, we use Dickson's lemma for almost-full relations @{thm almost_full_on_Sigma}
@@ -294,7 +310,7 @@ definition step_hom :: "'a \<Rightarrow> 'a \<Rightarrow>f 'b::zero \<Rightarrow
 
 lemma step_hom_img: 
   assumes "finite A"
-    shows "step_hom a ` finfuns (insert a A) \<subseteq> finfuns {a} \<times> finfuns A"
+  shows "step_hom a ` finfuns (insert a A) \<subseteq> finfuns {a} \<times> finfuns A"
   unfolding step_hom_def
   using finite_finfuns_insert_undo[OF assms] by auto
 
@@ -306,7 +322,7 @@ lemma aux_finfun_update_apply_P:
 lemma step_hom_correct:
   assumes "reflp_on UNIV P"
   assumes "\<not> strict (prod_le (finfun_emb P) (finfun_emb P)) (step_hom a x) (step_hom a y)"
-    shows "\<not> strict (finfun_emb P) x y"
+  shows "\<not> strict (finfun_emb P) x y"
   using assms unfolding step_hom_def finfuns_single finfun_emb_def prod_le_def reflp_on_def
   apply simp
   apply safe
@@ -317,28 +333,28 @@ lemma step_hom_correct:
   subgoal for a'
     apply (cases "a' = a")
     using aux_finfun_update_apply_P[of P "K$ 0" a y x]
-    apply simp
+     apply simp
     by (metis finfun_upd_apply_other)  
   done
 
 lemma finfuns_insert_prod_wfp: 
   assumes "wfp_on (strict (prod_le (finfun_emb P) (finfun_emb P))) (finfuns {a} \<times> finfuns A)"
-      and "reflp_on UNIV P"
-      and "finite A"
-    shows "wfp_on (strict (finfun_emb P)) (finfuns (insert a A))"
+    and "reflp_on UNIV P"
+    and "finite A"
+  shows "wfp_on (strict (finfun_emb P)) (finfuns (insert a A))"
   using wfp_neg_map[OF assms(1), of "step_hom a" "(finfuns (insert a A))" "finfun_emb P"] 
-        step_hom_correct[OF assms(2), of a]        
-        step_hom_img[OF assms(3)]
+    step_hom_correct[OF assms(2), of a]        
+    step_hom_img[OF assms(3)]
   by blast
 
 \<comment> \<open>Use the lemmas for singleton input and @{term "insert a A"} input to prove the induction step.\<close>
 lemma finfuns_insert_wfp:
   assumes "wfp_on (strict P) UNIV"
-      and "wfp_on (strict (finfun_emb P)) (finfuns A)"
-      and "antisymp_on UNIV P"
-      and "reflp_on UNIV P"
-      and "finite A"
-    shows "wfp_on (strict (finfun_emb P)) (finfuns (insert a A))"
+    and "wfp_on (strict (finfun_emb P)) (finfuns A)"
+    and "antisymp_on UNIV P"
+    and "reflp_on UNIV P"
+    and "finite A"
+  shows "wfp_on (strict (finfun_emb P)) (finfuns (insert a A))"
   using assms finfun_antisymp_on 
   using wfp_on_Sigma[of "finfuns {a}" "finfun_emb P" "finfuns A" "finfun_emb P"]
   using finfuns_single_wfp[of P a]
@@ -349,10 +365,10 @@ lemma finfuns_insert_wfp:
     This is the main result in this section, and goes by induction on the finite input domain A.\<close>
 lemma finite_finfuns_wfp:
   assumes "finite (A::'a set)"
-      and "antisymp_on (UNIV::'b::zero set) P"
-      and "reflp_on UNIV P"
-      and "wfp_on (strict P) UNIV"
-    shows "wfp_on (strict (finfun_emb P)) ((finfuns A)::(('a \<Rightarrow>f 'b) set))"  
+    and "antisymp_on (UNIV::'b::zero set) P"
+    and "reflp_on UNIV P"
+    and "wfp_on (strict P) UNIV"
+  shows "wfp_on (strict (finfun_emb P)) ((finfuns A)::(('a \<Rightarrow>f 'b) set))"  
   using assms
 proof (induction rule: finite.induct)
   case emptyI
@@ -365,54 +381,28 @@ qed
 \<comment> \<open>Transitivity of the @{term finfun_emb} on @{term finfuns}.\<close>
 lemma finfuns_transp_on:
   assumes "transp_on UNIV P"
-    shows "transp_on (finfuns A) (finfun_emb P)"
+  shows "transp_on (finfuns A) (finfun_emb P)"
   using assms unfolding finfun_emb_def transp_on_def
   by blast
 
 instantiation finfun :: (finite, "{wfp,zero}") wfp
 begin
 instance proof fix f :: "(nat \<Rightarrow> ('a::finite \<Rightarrow>f 'b::{wfp,zero}))"
-    have f:"finite (UNIV::('a set))" by simp
-    have a:"antisymp_on (UNIV::('b::{wfp,zero} set)) (\<le>)" by (fact antisymp_on_less_eq)
-    have r:"reflp_on (UNIV::('b::{wfp,zero} set)) (\<le>)" unfolding reflp_on_def by simp
-    have w:"wfp_on (strict (\<le>)) (UNIV::('b::{wfp,zero} set))" using wfp_on_class .
-    have "wfp_on (strict (\<le>)) (UNIV::(('a \<Rightarrow>f 'b) set))"
-      using finite_finfuns_wfp[of UNIV "(\<le>)", OF f a r w]
-      unfolding finfun_emb_def less_eq_finfun_def by (rule subst[OF finfuns_UNIV])
-    then have "wfp_on (<) (UNIV::(('a \<Rightarrow>f 'b) set))" by (simp add: less_eq_strict[symmetric])
-    then show "\<nexists>f::(nat \<Rightarrow> ('a::finite \<Rightarrow>f 'b::{wfp,zero})). \<forall>i. f (Suc i) < f i" 
-      unfolding wfp_on_def by simp
-  qed
+  have f:"finite (UNIV::('a set))" by simp
+  have a:"antisymp_on (UNIV::('b::{wfp,zero} set)) (\<le>)" by (fact antisymp_on_less_eq)
+  have r:"reflp_on (UNIV::('b::{wfp,zero} set)) (\<le>)" unfolding reflp_on_def by simp
+  have w:"wfp_on (strict (\<le>)) (UNIV::('b::{wfp,zero} set))" using wfp_on_class .
+  have "wfp_on (strict (\<le>)) (UNIV::(('a \<Rightarrow>f 'b) set))"
+    using finite_finfuns_wfp[of UNIV "(\<le>)", OF f a r w]
+    unfolding finfun_emb_def less_eq_finfun_def by (rule subst[OF finfuns_UNIV])
+  then have "wfp_on (<) (UNIV::(('a \<Rightarrow>f 'b) set))" by (simp add: less_eq_strict[symmetric])
+  then show "\<nexists>f::(nat \<Rightarrow> ('a::finite \<Rightarrow>f 'b::{wfp,zero})). \<forall>i. f (Suc i) < f i" 
+    unfolding wfp_on_def by simp
+qed
 end
+
 instantiation finfun :: (finite, bounded_idempotent_comm_monoid_add) bounded_idempotent_comm_monoid_add begin instance .. end
 
-(*
-\<comment> \<open>Finally make the class instantiation.\<close>
-instantiation finfun :: (finite, bounded_idempotent_comm_monoid_add) bounded_idempotent_comm_monoid_add
-begin
-  instance proof fix f :: "(nat \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_idempotent_comm_monoid_add))"
-    have f:"finite (UNIV::('a set))" by simp
-    have w:"wqo_on (\<le>) (UNIV::('b::bounded_idempotent_comm_monoid_add set))" using bounded_idempotent_comm_monoid_add_on_class .
-    have "wqo_on (\<le>) (UNIV::(('a \<Rightarrow>f 'b) set))"
-      using finite_finfuns_wqo[OF f w] finfuns_UNIV 
-      unfolding finfun_emb_def less_eq_finfun_def by metis
-    then show "good (\<le>) f" unfolding wqo_on_def almost_full_on_def less_eq_finfun_def by simp
-  qed
-end
-
-\<comment> \<open>Finally make the class instantiation.\<close>
-instantiation finfun :: (finite, reverse_wqo) reverse_wqo
-begin
-  instance proof fix f :: "(nat \<Rightarrow> ('a::finite \<Rightarrow>f 'b::reverse_wqo))"
-    have f:"finite (UNIV::('a set))" by simp
-    have w:"wqo_on (\<ge>) (UNIV::('b::reverse_wqo set))" using reverse_wqo_on_class .
-    have "wqo_on (\<ge>) (UNIV::(('a \<Rightarrow>f 'b) set))"
-      using finite_finfuns_wqo[OF f w] finfuns_UNIV 
-      unfolding finfun_emb_def less_eq_finfun_def by metis
-    then show "good (\<ge>) f" unfolding wqo_on_def almost_full_on_def less_eq_finfun_def by simp
-  qed
-end
-*)
 \<comment> \<open>Extra lemmas\<close>
 lemma finfun_update_less:
   fixes f f' :: "'a \<Rightarrow>f 'weight::preorder"

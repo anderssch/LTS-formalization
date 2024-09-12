@@ -1,6 +1,8 @@
 theory P_Automata imports LTS begin
 
+
 section \<open>Automata\<close>
+
 
 subsection \<open>P-Automaton locale\<close>
 
@@ -32,14 +34,21 @@ lemma nonempty_alt:
 
 typedef 'a mark_state = "{(Q :: 'a set, I). I \<subseteq> Q}"
   by auto
+
 setup_lifting type_definition_mark_state
+
 lift_definition get_visited :: "'a mark_state \<Rightarrow> 'a set" is fst .
+
 lift_definition get_next :: "'a mark_state \<Rightarrow> 'a set" is snd .
+
 lift_definition make_mark_state :: "'a set \<Rightarrow> 'a set \<Rightarrow> 'a mark_state" is "\<lambda>Q J. (Q \<union> J, J)" by auto
+
 lemma get_next_get_visited: "get_next ms \<subseteq> get_visited ms"
   by transfer auto
+
 lemma get_next_set_next[simp]: "get_next (make_mark_state Q J) = J"
   by transfer auto
+
 lemma get_visited_set_next[simp]: "get_visited (make_mark_state Q J) = Q \<union> J"
   by transfer auto
 
