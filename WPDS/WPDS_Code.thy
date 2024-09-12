@@ -44,7 +44,7 @@ definition run_WPDS_reach' ::
     ('ctr_loc, 'noninit) state set \<Rightarrow> 
     ('ctr_loc, 'noninit) state set \<Rightarrow> 'weight option" where
    "run_WPDS_reach' \<Delta> W ts ts' finals finals' = (if WPDS_Code.checking \<Delta> ts'
-            then Some (weight_reach_sum_exec (wts_to_weightLTS (intersff ts (WPDS_with_W_automata_no_assms.pre_star_exec' (w_rules \<Delta> W) ts'))) {(p, p) |p. p \<in> inits_set} (finals \<times> finals')) 
+            then Some (weight_reach_sum_exec (wts_to_weightLTS (w_inters ts (WPDS_with_W_automata_no_assms.pre_star_exec' (w_rules \<Delta> W) ts'))) {(p, p) |p. p \<in> inits_set} (finals \<times> finals')) 
             else None)"
 definition "run_WPDS_reach \<Delta> W ts ts' = run_WPDS_reach' \<Delta> W (ts_to_wts ts) (ts_to_wts ts')"
 
@@ -119,7 +119,7 @@ lemma WPDS_reach_exec_correct:
   fixes W :: "('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_dioid"
   assumes "run_WPDS_reach \<Delta> W ts ts' finals finals' = Some w"
   shows "w = (WPDS.weight_reach_set' (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
-  using assms big_good_correctness_code[of "ts_to_wts ts" "w_rules \<Delta> W" "ts_to_wts ts'" inits_set finals finals', OF binary_aut_ts_to_wts[of ts]]
+  using assms WPDS_weight_reach'_is_weight_reach_sum_exec[of "ts_to_wts ts" "w_rules \<Delta> W" "ts_to_wts ts'" inits_set finals finals', OF binary_aut_ts_to_wts[of ts]]
     weight_reach_set'_lang_aut_is_weight_reach'_accepts_full[of ts ts' \<Delta> W finals finals'] unfolding WPDS_Code.checking_def
   run_WPDS_reach'_def  inits_set_def mem_Collect_eq run_WPDS_reach_def
    finite_code by (metis (no_types, lifting) WPDS_Code.checking_def assms(1) run_WPDS_reach'_def finite_w_rules option.distinct(1) option.inject run_WPDS_reach_def) 
