@@ -1,5 +1,5 @@
 theory MonoidLTS
-  imports "LTS" "MonoidClosure" "CountableSum"
+  imports "Labeled_Transition_Systems.LTS" "MonoidClosure" "CountableSum"
 begin
 
 

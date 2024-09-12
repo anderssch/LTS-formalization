@@ -1,5 +1,5 @@
 theory WAutomaton
-  imports "LTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "MonoidLTS" "Kleene_Algebra.Dioid_Models" "Set_More" "FinFunOf"
+  imports "Labeled_Transition_Systems.LTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "MonoidLTS" "Kleene_Algebra.Dioid_Models" "Set_More" "FinFunOf"
 begin
 
 section \<open>Basic datatypes and definitions\<close>

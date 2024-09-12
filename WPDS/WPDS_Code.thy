@@ -1,5 +1,5 @@
 theory WPDS_Code
-  imports WPDS "Deriving.Derive" "P_Automata"
+  imports WPDS "Deriving.Derive" "Pushdown_Systems.P_Automata"
 begin
 
 section \<open>Locale: WPDS_Code\<close>

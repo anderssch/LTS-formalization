@@ -3,12 +3,7 @@ theory WExInstances
 begin
 
 (* Define rules of PDS, and the two P-automata *)
-(*definition wpds_rules :: "(ctr_loc, label, nat_inf) w_rule set" where
-  "wpds_rules = {
-  ((p1, y), fin 1,(p1, push x y)),
-  ((p1, x), fin 2,(p2, swap y)),
-  ((p2, x), fin 3,(p3, pop)),
-  ((p3, y), fin 4,(p2, swap x))}"*)
+
 definition pds_rules :: "(ctr_loc, label) rule set" where
   "pds_rules = {
   ((p1, B), (p1, push A B)),
@@ -63,45 +58,14 @@ definition final_100_finals where "final_100_finals = {}"
 
 value "run_WPDS_reach pds_rules_900 pds_rules_900_W initial_100_automaton final_100_automaton initial_100_finals final_100_finals"
 
-(*lemma "wpds_rules = w_rules pds_rules W"
-  unfolding pds_rules_def W_def wpds_rules_def w_rules_def by eval*)
-
-
-term "run_WPDS_reach pds_rules W initial_automaton final_automaton initial_finals final_finals"
-
-
-lemma[code_unfold]: "finite pds_rules"
-  by simp
-  (*unfolding pds_rules_def
-  by simp
- 
-value "finite pds_rules"*)
-
-(* The check function agrees with the encoded answer (Some True) 
-   and therefore the proof succeeds as expected. *)
-
-
-term "($\<circ>)"
-thm finfun_comp2_const
-
-
-
-definition "thing3 == run_WPDS_reach pds_rules W initial_automaton final_automaton initial_finals final_finals"
-
-
-(*export_code thing3 in SML module_name WPDS_Example*)
-
-
-value "thing3"
-
+definition "ex3 == run_WPDS_reach pds_rules W initial_automaton final_automaton initial_finals final_finals"
 
 lemma
-  "thing3 = Some (fin 3)"
+  "ex3 = Some (fin 3)"
   by eval
 
 lemma
-  "thing3 = Some (fin 5)"
+  "(ex3 = Some (fin 5)) \<longleftrightarrow> False"
   by eval
-
 
 end

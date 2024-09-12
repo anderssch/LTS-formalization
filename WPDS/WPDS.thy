@@ -1,5 +1,5 @@
 theory WPDS
-  imports "LTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "WAutomaton" "FiniteMonoidLTS"
+  imports "Labeled_Transition_Systems.LTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "WAutomaton" "FiniteMonoidLTS"
 begin
 
 
