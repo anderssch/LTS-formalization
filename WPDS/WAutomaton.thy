@@ -21,7 +21,8 @@ type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list
 definition wts_to_monoidLTS :: "('state, 'label, 'weight::bounded_dioid) w_transitions \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
   "wts_to_monoidLTS ts = {(p, ([\<gamma>],d), q) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
 
-lemma wts_to_monoidLTS_code[code]: "wts_to_monoidLTS ts = (\<Union>(p,\<gamma>,q). {(p, ([\<gamma>], ts $ (p,\<gamma>,q)), q)})"
+lemma wts_to_monoidLTS_code[code]:
+  "wts_to_monoidLTS ts = (\<Union>(p,\<gamma>,q). {(p, ([\<gamma>], ts $ (p,\<gamma>,q)), q)})"
   unfolding wts_to_monoidLTS_def by blast
 
 definition wts_to_weightLTS :: "('state, 'label, 'weight::bounded_dioid) w_transitions \<Rightarrow> ('state, 'weight) transition set" where
@@ -51,8 +52,10 @@ lemma wts_monoidLTS_star_to_weightLTS_star:
     using monoid_rtrancl_into_rtrancl[of p d p' "wts_to_weightLTS ts" d' p''] wts_monoidLTS_to_weightLTS[of p' w' d' p'' ts]
     by blast
   done
+
 lemma wts_weightLTS_to_monoidLTS: "(p, d, p') \<in> wts_to_weightLTS ts \<Longrightarrow> \<exists>w. (p, (w,d), p') \<in> wts_to_monoidLTS ts"
   unfolding wts_to_monoidLTS_def wts_to_weightLTS_def by blast
+
 lemma wts_weightLTS_star_to_monoidLTS_star:
   "(p, d, q) \<in> monoid_rtrancl (wts_to_weightLTS ts) \<Longrightarrow> \<exists>w. (p, (w,d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)"
   apply (induct rule: monoid_rtrancl.induct)
@@ -68,22 +71,6 @@ lemma wts_weightLTS_star_to_monoidLTS_star:
       by auto
     done
   done
-
-
-lemma "finite (wts_to_weightLTS ts)" oops (* THIS should be true!! *)
-
-lemma finite_wts: 
-  assumes "finfun_default A = 0"
-  shows "finite (wts_to_monoidLTS A)"
-  unfolding wts_to_monoidLTS_def
-  oops
-(* proof -
-  have "finite {x. A $ x \<noteq> 0}" 
-    using finite_finfun_default[of A] assms by simp
-  then show "finite {(p, ([\<gamma>],d), q) | p \<gamma> d q. A $ (p,\<gamma>,q) = d \<and> d \<noteq> 0}"
-    using finite_image_set[of "\<lambda>x. A $ x \<noteq> 0" "\<lambda>(p,\<gamma>,q). (p, ([\<gamma>], A $ (p,\<gamma>,q)), q)"] by simp
-qed
-*)
 
 lemma countable_wts: 
   fixes A :: "(('state::countable, 'label::finite, 'weight::bounded_dioid) w_transitions)"
@@ -103,10 +90,12 @@ lemma monoid_rtrancl_wts_to_monoidLTS_refl:
   "(p, ([], 1), p) \<in> monoid_rtrancl (wts_to_monoidLTS A)"
   by (metis monoid_rtrancl_refl one_list_def one_prod_def)
 
-lemma wts_to_monoidLTS_mono': "ts \<le> ts' \<Longrightarrow> (p, (w, d), q) \<in> wts_to_monoidLTS ts \<Longrightarrow> \<exists>d'. (p, (w, d'), q) \<in> wts_to_monoidLTS ts' \<and> d \<le> d'"
+lemma wts_to_monoidLTS_mono': 
+  "ts \<le> ts' \<Longrightarrow> (p, (w, d), q) \<in> wts_to_monoidLTS ts \<Longrightarrow> \<exists>d'. (p, (w, d'), q) \<in> wts_to_monoidLTS ts' \<and> d \<le> d'"
   unfolding less_eq_finfun_def wts_to_monoidLTS_def by blast
 
-lemma wts_to_monoidLTS_mono: "ts' \<le> ts \<Longrightarrow> (p, (w, d), q) \<in> wts_to_monoidLTS ts \<Longrightarrow> \<exists>d'. (p, (w, d'), q) \<in> wts_to_monoidLTS ts' \<and> d' \<le> d"
+lemma wts_to_monoidLTS_mono: 
+  "ts' \<le> ts \<Longrightarrow> (p, (w, d), q) \<in> wts_to_monoidLTS ts \<Longrightarrow> \<exists>d'. (p, (w, d'), q) \<in> wts_to_monoidLTS ts' \<and> d' \<le> d"
   unfolding less_eq_finfun_def wts_to_monoidLTS_def by blast
 
 lemma wts_monoid_rtrancl_mono: 
@@ -181,6 +170,7 @@ lemma monoidLTS_reach_imp: "(q, d) \<in> monoidLTS_reach (wts_to_monoidLTS ts) p
       by (metis empty_iff singleton_iff fst_eqD snd_eqD)
     done
   done
+
 lemma monoid_star_code[code_unfold]: "(p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<longleftrightarrow> (q,d) \<in> monoidLTS_reach (wts_to_monoidLTS ts) p w"
   using monoidLTS_reach_imp monoid_star_imp_exec by fastforce
 
@@ -281,17 +271,18 @@ next
   then show ?case
     using monoid_rtrancl_into_rtrancl.prems by (simp add: monoid_rtrancl_into_rtrancl.prems one_list_def)
 qed
+
 lemma mstar_wts_empty_one: "(p, ([],d), q) \<in> monoid_rtrancl (wts_to_monoidLTS ts) \<Longrightarrow> d = 1"
   using mstar_wts_one by (simp add: one_list_def, fastforce)
 
-lemma wts_to_monoidLTS_exists: (* TODO: rename *)
+lemma wts_to_monoidLTS_weight_exists: 
   assumes "w23 = [\<gamma>]"
   shows "\<exists>dp23. (p2, (w23, dp23), p3) \<in> wts_to_monoidLTS ts1"
   using assms wts_to_monoidLTS_def by fastforce
 
 lemma wts_to_monoidLTS_exists_iff:
   "(\<exists>dp23. (p2, (w23, dp23), p3) \<in> wts_to_monoidLTS ts1) \<longleftrightarrow> (\<exists>\<gamma>. w23 = [\<gamma>])"
-  using wts_label_exist wts_to_monoidLTS_exists by fastforce
+  using wts_label_exist wts_to_monoidLTS_weight_exists by fastforce
 
 
 
@@ -648,7 +639,7 @@ lemma monoid_rtrancl_one_if_trans_star:
     apply (simp add: monoid_rtrancl_wts_to_monoidLTS_refl)
     done
   subgoal 
-    apply (metis ts_to_wts_1_if_member assms(2) monoid_rtrancl_intros_Cons mult.right_neutral wts_label_d wts_to_monoidLTS_exists)
+    apply (metis ts_to_wts_1_if_member assms(2) monoid_rtrancl_intros_Cons mult.right_neutral wts_label_d wts_to_monoidLTS_weight_exists)
     done
   done
 

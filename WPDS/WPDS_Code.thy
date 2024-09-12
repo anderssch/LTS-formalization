@@ -83,7 +83,7 @@ next
     by simp
 qed
 
-lemma lang_aut_is_accepts_full_new:
+lemma lang_aut_is_accepts_full:
   fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::enum) transition set"
   assumes "finite ts"
   shows "accepts_full (ts_to_wts ts) finals pv = (if pv \<in> P_Automaton.lang_aut ts Init finals then 1 else 0)"
@@ -107,7 +107,7 @@ proof -
   have fin_w_rules: "finite (w_rules \<Delta> W)"
     by (simp add: finite_w_rules)
   show ?thesis
-    unfolding lang_aut_is_accepts_full_new[OF assms(1)] lang_aut_is_accepts_full_new[OF assms(2)]
+    unfolding lang_aut_is_accepts_full[OF assms(1)] lang_aut_is_accepts_full[OF assms(2)]
     using finite_WPDS.weight_reach_set'_is_weight_reach'[of "w_rules \<Delta> W" "P_Automaton.lang_aut ts Init finals" 
         "P_Automaton.lang_aut ts' Init finals'", unfolded finite_WPDS_def, OF fin_w_rules]
     by blast
