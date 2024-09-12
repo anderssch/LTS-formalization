@@ -981,15 +981,15 @@ proof -
 qed
 
 
-lemma pre_star_geq_pred_weight':
+lemma rtranclp_pre_star_geq_pred_weight:
   assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
   shows "accepts A' finals (p,w) \<ge> (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
    using pre_star_rule_rtranclp_sound[OF sound_empty, of A'] assms lemma_3_2_w_alternative[of A' finals] by blast
 
-lemma pre_star_geq_pred_weight:
-  assumes "saturation pre_star_rule (K$ 0) A'"
-  shows "accepts A' finals (p,w) \<ge> (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
-  using assms pre_star_geq_pred_weight' unfolding saturation_def by auto
+lemma saturation_pre_star_geq_pred_weight:
+  assumes "saturation pre_star_rule (K$ 0) A"
+  shows "accepts A finals (p,w) \<ge> (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
+  using assms rtranclp_pre_star_geq_pred_weight unfolding saturation_def by auto
 
 lemma saturated_pre_star_rule_transition:
   assumes "saturated pre_star_rule A"
@@ -1113,22 +1113,27 @@ proof -
     using push_seq_USEFUL_THING by blast
 qed
 
-lemma pre_star_leq_pred_weight:
+lemma saturated_pre_star_leq_pred_weight:
   assumes "saturated pre_star_rule A"
   shows "accepts A finals c \<le> (\<^bold>\<Sigma>\<^sub>sc\<Rightarrow>\<^sup>*finals)"
   using lemma_3_1_w_AUX[OF assms, of _ finals c]
   using push_seq_USEFUL_THING2 by auto
 
-lemma lemma_3_1_w:
+lemma saturation_pre_star_leq_pred_weight':
   assumes "saturation pre_star_rule A A'"
   shows "accepts A' finals c \<le> (\<^bold>\<Sigma>\<^sub>sc\<Rightarrow>\<^sup>*finals)"
-  by (metis (no_types, lifting) assms pre_star_leq_pred_weight saturation_def)
+  by (metis (no_types, lifting) assms saturated_pre_star_leq_pred_weight saturation_def)
 
-corollary correctness:
+lemma saturation_pre_star_leq_pred_weight:
+  assumes "saturation pre_star_rule (K$ 0) A"
+  shows "accepts A finals c \<le> (\<^bold>\<Sigma>\<^sub>sc\<Rightarrow>\<^sup>*finals)"
+  by (metis (no_types, lifting) assms saturated_pre_star_leq_pred_weight saturation_def)
+
+theorem correctness:
   assumes "saturation pre_star_rule (K$ 0) A"
   shows "accepts A finals (p,w) = (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
-  using lemma_3_1_w[of "K$ 0" A finals "(p,w)", OF assms]
-    pre_star_geq_pred_weight[OF assms, of finals p w] by order 
+  using saturation_pre_star_leq_pred_weight[of A finals "(p,w)", OF assms]
+    saturation_pre_star_geq_pred_weight[OF assms, of finals p w] by order 
 
 theorem correctness':
   assumes "saturation pre_star_rule (K$ 0) A"
