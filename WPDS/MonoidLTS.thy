@@ -104,7 +104,7 @@ section \<open>Locale: dioidLTS\<close>
 \<comment> \<open>If the @{typ 'weight} of a LTS is a dioid with additive and multiplicative identities, 
     we can express the meet-over-all-paths value as a generalization of pre-star and post-star.\<close>
 locale dioidLTS = monoidLTS transition_relation
-  for transition_relation :: "('state::countable, 'weight::bounded_idempotent_semiring) transition set"
+  for transition_relation :: "('state::countable, 'weight::bounded_dioid) transition set"
 begin
 
 definition weight_pre_star :: "('state \<Rightarrow> 'weight) \<Rightarrow> ('state \<Rightarrow> 'weight)" where

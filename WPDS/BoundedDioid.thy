@@ -53,7 +53,6 @@ lemma neq_mono_less: "a \<le> b \<Longrightarrow> c + b \<noteq> c \<Longrightar
   unfolding less_def using neq_mono by simp
 lemma add_less_mono: "a \<le> b \<Longrightarrow> c + b < c \<Longrightarrow> c + a < c"
   unfolding less_def using neq_mono by simp
-
 end
 
 \<comment> \<open>Many lemmas and proofs in these classes are heavily inspired from AFP theory Kleene_Algebra.Dioid, 
@@ -292,7 +291,6 @@ proof -
 qed
 end
 
-
 class idempotent_comm_monoid_add_ord = idempotent_ab_semigroup_add_ord + comm_monoid_add
 begin
 subclass idempotent_comm_monoid_add ..
@@ -358,7 +356,6 @@ lemma elem_greater_than_sum:
   shows "\<Sum>{a. P a} \<le> x"
   using assms idem_sum_elem[OF assms(2), of x] unfolding idempotent_ab_semigroup_add_ord_class.less_eq_def
   by (simp add: add.commute)
-
 
 \<comment> \<open>An idempotent semiring that follows the definition of [RSJM'05].\<close>
 class idempotent_semiring = semiring_0 + monoid_mult + idempotent_ab_semigroup_add
@@ -437,14 +434,11 @@ proof -
   show ?thesis unfolding eq
     by (rule arg_cong[of _ _ \<Sum>]) auto
 qed
-
-
 end
-
-
 
 class idempotent_semiring_ord = idempotent_semiring + idempotent_ab_semigroup_add_ord
 begin
+subclass idempotent_comm_monoid_add_ord ..
 lemma mult_isor: "x \<le> y \<Longrightarrow> x * z \<le> y * z"
 proof -
   assume "x \<le> y"
@@ -498,6 +492,7 @@ end
 
 class bounded_idempotent_comm_monoid_add = wfp + idempotent_comm_monoid_add_ord
 begin
+subclass order ..
 
 lemma sum_seq_good: "good (\<le>) (sum_seq f)"
   unfolding good_def
@@ -517,7 +512,6 @@ proof -
       by simp
     done
 qed
-
 end
 
 class bounded_idempotent_comm_monoid_add_topology = discrete_topology + bounded_idempotent_comm_monoid_add
@@ -529,6 +523,49 @@ subclass t2_space proof
     by (intro exI[of _ "{_}"]) (auto intro!: open_discrete)
 qed
 end
+
+\<comment> \<open>For clarity, we here show the unfolded definition of an idempotent_semiring:\<close>
+lemma idempotent_semiring_unfolded_definition:
+   "class.idempotent_semiring (+) 1 (*) (0::'d) \<longleftrightarrow> 
+    (\<forall>a b c::'d::{plus,one,times,zero}.
+  \<comment> \<open>\<^term>\<open>(UNIV::'d set, (+), 0)\<close> is a commutative monoid:\<close>
+    a + b + c = a + (b + c) \<and> 
+    a + b = b + a \<and>    
+    0 + a = a \<and> 
+  \<comment> \<open>\<^term>\<open>(+)\<close> is idempotent:\<close> 
+    a + a = a \<and>
+  \<comment> \<open>\<^term>\<open>(UNIV::'d set, (*), 1)\<close> is a monoid:\<close>
+    a * b * c = a * (b * c) \<and> 
+    1 * a = a \<and> 
+    a * 1 = a \<and> 
+  \<comment> \<open>\<^term>\<open>(*)\<close> distributes over \<^term>\<open>(+)\<close>:\<close> 
+    a * (b + c) = a * b + a * c \<and> 
+    (a + b) * c = a * c + b * c \<and>
+  \<comment> \<open>\<^term>\<open>0\<close> is an annihilator for \<^term>\<open>(*)\<close>:\<close> 
+    0 * a = 0 \<and> 
+    a * 0 = 0
+  )"
+  unfolding class.idempotent_semiring_def class.semiring_0_def
+    class.semiring_0_def
+    class.idempotent_ab_semigroup_add_def class.idempotent_ab_semigroup_add_axioms_def
+    class.ab_semigroup_add_def class.ab_semigroup_add_axioms_def
+    class.semigroup_add_def
+    class.monoid_mult_def class.monoid_mult_axioms_def
+    class.semigroup_mult_def      
+    class.comm_monoid_add_def class.comm_monoid_add_axioms_def
+    class.mult_zero_def
+    class.semiring_def class.semiring_axioms_def
+  by (rule iffI, force, blast)
+
+lemma idempotent_semiring_unfolds:
+  fixes a b c::"'d::{plus,one,times,zero}"
+  assumes "class.idempotent_semiring (+) 1 (*) (0::'d)" 
+  shows "a * b * c = a * (b * c)" and "1 * a = a" and "a * 1 = a"
+    and "a + b + c = a + (b + c)" and "0 + a = a" and "a + b = b + a"
+    and "a + a = a"
+    and "a * (b + c) = a * b + a * c" and "(a + b) * c = a * c + b * c"
+    and "0 * a = 0" and "a * 0 = 0"
+  using idempotent_semiring_unfolded_definition assms by blast+
 
 
 primrec decreasing_sequence_aux :: "(nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology) \<Rightarrow> (nat \<Rightarrow> 'a \<times> nat)" where
@@ -655,36 +692,40 @@ lemma seqs_same_elems_obtain_map:
 
 
 
-lemma 
-  fixes f f' :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
-  assumes "\<And>l. (\<exists>i. f i = l) \<longleftrightarrow> (\<exists>i. f' i = l)"
-  shows "suminf f \<le> l \<Longrightarrow> suminf f' \<le> l"
-  using assms suminf_elem[of f] suminf_elem[of f']
-  unfolding less_eq_def
-  oops
-
-lemma 
-  fixes f f' :: "nat \<Rightarrow> 'a::bounded_idempotent_comm_monoid_add_topology"
-  assumes "\<And>l. (\<exists>i. f i = l) \<longleftrightarrow> (\<exists>i. f' i = l)"
-  shows "suminf f = suminf f'"
-proof -
-  obtain g where "\<And>i. f i = f' (g i)" using seqs_same_elems_obtain_map[OF assms] by blast
-  obtain h where "\<And>i. f' i = f (h i)" using seqs_same_elems_obtain_map[of f' f] assms by blast
-  show ?thesis 
-  using assms suminf_elem 
-  apply -
-  apply (rule stable_sum_eq_to_suminf_eq)
-  using assms eventually_stable_sum[of f] eventually_stable_sum[of f']
-  apply simp
-  oops
-
-
 \<comment> \<open>Definition 5 from [RSJM'05].\<close>
-class bounded_idempotent_semiring = bounded_idempotent_comm_monoid_add_topology + idempotent_semiring_ord
+class bounded_dioid = bounded_idempotent_comm_monoid_add_topology + idempotent_semiring_ord
 begin
 end
 
-lemma d_mult_not_zero: assumes "(d::'weight::bounded_idempotent_semiring) * d' \<noteq> 0" shows "d \<noteq> 0" and "d' \<noteq> 0"
+lemma discrete_topology_True: "class.discrete_topology (\<lambda>S. True)" 
+  unfolding class.discrete_topology_def class.discrete_topology_axioms_def class.topological_space_def by blast
+
+lemma idempotent_semiring_with_plus_ord:
+  assumes "class.idempotent_semiring (+) 1 (*) (0::'d::{plus,one,times,zero})"
+  shows "class.idempotent_comm_monoid_add_ord (+) (\<lambda>a b. a + b = a) (strict (\<lambda>a b. a + b = a)) (0::'d)"
+        "class.idempotent_ab_semigroup_add_ord (+) (\<lambda>a b::'d. a + b = a) (strict (\<lambda>a b. a + b = a))"
+        "class.order (\<lambda>a b::'d. a + b = a) (strict (\<lambda>a b. a + b = a))"
+    apply standard using idempotent_semiring_unfolds[OF assms] 
+          apply auto[7]
+   apply (metis idempotent_semiring_unfolds(4)[OF assms])
+  by (simp add: idempotent_semiring_unfolds(6)[OF assms])
+
+\<comment> \<open>For clarity, we here show how the bounded_dioid extends the definition of idempotent_semiring
+   (When instantiated with the plus-order as it should be):\<close>
+lemma bounded_dioid_unfolded_definition:
+   "class.bounded_dioid (+) (\<lambda>a b::'d. a + b = a) (strict (\<lambda>a b. a + b = a)) 0 (\<lambda>S. True) 1 (*) \<longleftrightarrow>
+  \<comment> \<open>An idempotent semiring\<close>
+    class.idempotent_semiring (+) 1 (*) (0::'d::{plus,one,times,zero}) \<and>
+  \<comment> \<open>where there is no infinite descending chain in the order defined by \<^term>\<open>\<And>a b. a \<le> b \<equiv> a + b = a\<close>\<close>
+    (\<nexists>f::nat\<Rightarrow>'d. \<forall>i. (strict (\<lambda>a b. a + b = a)) (f (i + 1)) (f i))"
+  unfolding class.bounded_dioid_def
+    class.bounded_idempotent_comm_monoid_add_topology_def 
+    class.bounded_idempotent_comm_monoid_add_def
+    class.wfp_def class.wfp_axioms_def
+  by (auto simp add: discrete_topology_True class.idempotent_semiring_ord_def idempotent_semiring_with_plus_ord)
+
+
+lemma d_mult_not_zero: assumes "(d::'weight::bounded_dioid) * d' \<noteq> 0" shows "d \<noteq> 0" and "d' \<noteq> 0"
   using assms by auto
 
 
@@ -710,7 +751,7 @@ fun less_inf :: "nat_inf \<Rightarrow> nat_inf \<Rightarrow> bool" where
 | "less_inf _ infinity = True"
 | "less_inf (fin a) (fin b) = (a < b)"
 
-interpretation min_plus_nat_inf: bounded_idempotent_semiring min_inf less_eq_inf less_inf infinity "\<lambda>S. True" "fin 0" "plus_inf"
+interpretation min_plus_nat_inf: bounded_dioid min_inf less_eq_inf less_inf infinity "\<lambda>S. True" "fin 0" "plus_inf"
 proof
   fix i :: nat
   fix a b c :: nat_inf
@@ -778,7 +819,7 @@ proof
   qed
 qed
 
-instantiation nat_inf :: bounded_idempotent_semiring begin
+instantiation nat_inf :: bounded_dioid begin
 definition "one_nat_inf == fin 0 :: nat_inf"
 definition "times_nat_inf == plus_inf :: nat_inf \<Rightarrow> nat_inf \<Rightarrow> nat_inf"
 definition "open_nat_inf == (\<lambda>S. True) :: nat_inf set \<Rightarrow> bool"
@@ -858,17 +899,5 @@ instance proof
 qed
 end
 
-
-(* TODO *)
-lemma Suminf_lower: "x \<in> A \<Longrightarrow> \<Sum>A \<le> x" oops
-lemma Suminf_greatest: "(\<And>x. x \<in> A \<Longrightarrow> z \<le> x) \<Longrightarrow> z \<le> \<Sum>A" oops
-lemma Suminf_empty [simp]: "\<Sum>{} = 0" oops
-
-class bounded_dioid = Inf + bounded_idempotent_semiring
-begin
-
-(* lemma "(\<Sqinter>x\<in>A. x) = b" *)
-
-end
 
 end

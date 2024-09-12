@@ -10,7 +10,7 @@ declare times_list_def[simp]
 type_synonym ('label, 'weight) wautomaton_label = "('label list \<times> 'weight)" 
 
 \<comment> \<open>Weighted automata transitions are modelled as a @{term finfun} from transitions to their weight, 
-    where @{term "0::('weight::bounded_idempotent_semiring)"} is the default value, indicating no transition.\<close>
+    where @{term "0::('weight::bounded_dioid)"} is the default value, indicating no transition.\<close>
 type_synonym ('state, 'label, 'weight) w_transitions = "('state, 'label) transition \<Rightarrow>f 'weight"
 
 type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list \<times> 'weight)) transition set"
@@ -18,20 +18,20 @@ type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list
 
 (* TODO: Investigate: Would adding only non-zero be advantagous or not? *)
 \<comment> \<open>Embed a weighted automaton into a monoidLTS. All transitions are added. The label is lifted to the list-monoid.\<close>
-definition wts_to_monoidLTS :: "('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
+definition wts_to_monoidLTS :: "('state, 'label, 'weight::bounded_dioid) w_transitions \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
   "wts_to_monoidLTS ts = {(p, ([\<gamma>],d), q) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
 
 lemma wts_to_monoidLTS_code[code]: "wts_to_monoidLTS ts = (\<Union>(p,\<gamma>,q). {(p, ([\<gamma>], ts $ (p,\<gamma>,q)), q)})"
   unfolding wts_to_monoidLTS_def by blast
 
-definition wts_to_weightLTS :: "('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, 'weight) transition set" where
+definition wts_to_weightLTS :: "('state, 'label, 'weight::bounded_dioid) w_transitions \<Rightarrow> ('state, 'weight) transition set" where
   "wts_to_weightLTS ts = {(p, d, q) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
 
 lemma wts_to_weightLTS_code[code]: "wts_to_weightLTS ts = (\<Union>(p,\<gamma>,q). {(p, (ts $ (p,\<gamma>,q)), q)})"
   unfolding wts_to_weightLTS_def by blast
 
 lemma finite_wts: 
-  fixes wts::"('state::enum, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes wts::"('state::enum, 'label::finite, 'weight::bounded_dioid) w_transitions"
   shows "finite (wts_to_monoidLTS wts)"
 proof -
   have "range (\<lambda>t. (fst t, ([fst (snd t)], wts $ t), snd (snd t))) = {t. \<exists>p \<gamma> q. t = (p, ([\<gamma>], wts $ (p, \<gamma>, q)), q)}"
@@ -86,7 +86,7 @@ qed
 *)
 
 lemma countable_wts: 
-  fixes A :: "(('state::countable, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions)"
+  fixes A :: "(('state::countable, 'label::finite, 'weight::bounded_dioid) w_transitions)"
   shows "countable (wts_to_monoidLTS A)"
 proof -
   have count1: "countable (UNIV :: ('state \<times> 'label \<times> 'state) set)"
@@ -134,7 +134,7 @@ qed
 section \<open>Locale: W_automaton\<close>
 
 locale W_automaton = monoidLTS "wts_to_monoidLTS transition_relation"
-  for transition_relation :: "('state::finite, 'label, 'weight::bounded_idempotent_semiring) w_transitions"
+  for transition_relation :: "('state::finite, 'label, 'weight::bounded_dioid) w_transitions"
 begin
 interpretation monoidLTS "wts_to_monoidLTS transition_relation" .
 end
@@ -596,9 +596,9 @@ lemma monoid_star_nonempty:
 
 \<comment> \<open>A weighted automaton is initialized with weights 1 (neutral element along paths) on existing transitions, 
     and a default weight of 0 (neutral element for combining paths) for non-existing transitions.\<close>
-definition ts_to_wts :: "('state, 'label) transition set \<Rightarrow> ('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions" where
+definition ts_to_wts :: "('state, 'label) transition set \<Rightarrow> ('state, 'label, 'weight::bounded_dioid) w_transitions" where
   "ts_to_wts ts = update_wts (K$ 0) {(t,1) | t. t \<in> ts}"
-definition wts_to_ts :: "('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, 'label) transition set" where
+definition wts_to_ts :: "('state, 'label, 'weight::bounded_dioid) w_transitions \<Rightarrow> ('state, 'label) transition set" where
   "wts_to_ts wts = {t | t. wts $ t \<noteq> 0}"
 
 lemma empty_ts_to_wts[simp]: "ts_to_wts {} = (K$ 0)" 
@@ -709,7 +709,7 @@ proof (rule HOL.ext)
     using finfun_apply_pair_weight_transition by (cases t) fastforce
 qed
 
-definition intersff :: "('state, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> ('state, 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions" where
+definition intersff :: "('state, 'label::finite, 'weight::bounded_dioid) w_transitions \<Rightarrow> ('state, 'label, 'weight) w_transitions \<Rightarrow> (('state \<times> 'state), 'label, 'weight) w_transitions" where
   "intersff = (\<lambda>ts1 ts2. (case_prod (*)) \<circ>$ (pair_weight ts1 ts2))"
 
 lemma finfun_apply_intersff_transition:
@@ -719,7 +719,7 @@ lemma finfun_apply_intersff_transition:
   by (auto simp add: fst_weight_apply snd_weight_apply finfun_apply_pair_weight_transition intersff_def)
 
 lemma finfun_apply_intersff:
-  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   shows "(($) (intersff ts1 ts2)) = (\<lambda>t. (ts1 $ (fst_trans t) * ts2 $ (snd_trans t)))"
 proof (rule HOL.ext)
@@ -746,7 +746,7 @@ lemma inftersff_complete_transition:
   unfolding wts_to_monoidLTS_def by auto
 
 lemma intersff_sound_transition:
-  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "((p2, q2), (w23, d23), p3, q3) \<in> wts_to_monoidLTS (intersff ts1 ts2)"
   obtains d23p d23q where
@@ -762,7 +762,7 @@ proof -
     by (metis wts_to_monoidLTS_exists_iff assms list.sel(1) that wts_label_d)
 qed
 
-definition binary_aut :: "('state, 'label, 'weight::bounded_idempotent_semiring) w_transitions \<Rightarrow> bool" where
+definition binary_aut :: "('state, 'label, 'weight::bounded_dioid) w_transitions \<Rightarrow> bool" where
   "binary_aut ts1 \<longleftrightarrow> (\<forall>p1 w p2. ts1 $ (p1, w, p2) = 1 \<or> ts1 $ (p1, w, p2) = 0)"
 
 lemma ts_to_wts_bin:
@@ -819,7 +819,7 @@ next
 qed
 
 lemma intersff_complete_exi:
-  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "(p1, (w,dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
   assumes "(q1, (w,dq), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
@@ -888,7 +888,7 @@ next
 qed
 
 lemma intersff_complete_0:
-  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "(p1, (w,0), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
   assumes "(q1, (w,d), q2) \<in> monoid_rtrancl (wts_to_monoidLTS ts2)"
@@ -964,7 +964,7 @@ next
 qed
 
 lemma intersff_sound_non_zero_fst:
-  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   assumes "binary_aut ts1"
@@ -1019,7 +1019,7 @@ next
 qed
 
 lemma intersff_sound_snd_non_zero:
-  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   assumes "binary_aut ts1"
@@ -1058,7 +1058,7 @@ next
 qed
 
 lemma intersff_sound_zero:
-  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
   assumes "binary_aut ts1"
@@ -1171,7 +1171,7 @@ next
 qed
 
 lemma intersff_sound_and_complete:
-  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "binary_aut ts1"
   shows "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2)) \<longleftrightarrow>
@@ -1224,7 +1224,7 @@ next
 qed
 
 lemma intersff_sound:
-  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "binary_aut ts1"
   assumes "((p1,q1), (w,d), (p2,q2)) \<in> monoid_rtrancl (wts_to_monoidLTS (intersff ts1 ts2))"
@@ -1233,7 +1233,7 @@ lemma intersff_sound:
   using intersff_sound_and_complete assms by metis
 
 lemma intersff_complete:
-  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "binary_aut ts1"
   assumes "(p1, (w,dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"
@@ -1242,7 +1242,7 @@ lemma intersff_complete:
   using intersff_sound_and_complete assms by metis
 
 lemma intersff_sound_wts_to_weightLTS:
-  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "binary_aut ts1"
   assumes "((p1,q1), d, (p2,q2)) \<in> monoid_rtrancl (wts_to_weightLTS (intersff ts1 ts2))"
@@ -1253,7 +1253,7 @@ lemma intersff_sound_wts_to_weightLTS:
   by meson
 
 lemma intersff_sound_wts_to_monoidLTS:
-  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "binary_aut ts1"
   assumes "((p1,q1), d, (p2,q2)) \<in> monoid_rtrancl (wts_to_weightLTS (intersff ts1 ts2))"
@@ -1264,7 +1264,7 @@ lemma intersff_sound_wts_to_monoidLTS:
   by meson
 
 lemma intersff_complete_wts_to_weightLTS:
-  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_idempotent_semiring) w_transitions"
+  fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "binary_aut ts1"
   assumes "(p1, (w, dp), p2) \<in> monoid_rtrancl (wts_to_monoidLTS ts1)"

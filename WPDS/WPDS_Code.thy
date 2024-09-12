@@ -5,8 +5,8 @@ begin
 section \<open>Locale: WPDS_Code\<close>
 locale WPDS_Code =
   fixes \<Delta> :: "('ctr_loc::enum, 'label::enum) rule set"
-    and W :: "('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_idempotent_semiring"
-    and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_idempotent_semiring) w_transitions"
+    and W :: "('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_dioid"
+    and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_dioid) w_transitions"
 begin
 
 definition "wrules = w_rules \<Delta> W"
@@ -38,7 +38,7 @@ section \<open>Various code generation lemmas\<close>
 
 definition run_WPDS_reach' ::
    "('ctr_loc::{enum,card_UNIV}, 'label::enum) rule set \<Rightarrow> 
-    (('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_idempotent_semiring) \<Rightarrow> 
+    (('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_dioid) \<Rightarrow> 
     (('ctr_loc, 'noninit::{enum,card_UNIV}) state, 'label) transition \<Rightarrow>f 'weight \<Rightarrow>
     (('ctr_loc, 'noninit) state, 'label) transition \<Rightarrow>f 'weight \<Rightarrow>
     ('ctr_loc, 'noninit) state set \<Rightarrow> 
@@ -57,7 +57,7 @@ lemma not_in_trans_star_implies_accepts_0:
   fixes ts :: "('s :: enum, 'label::enum) transition set"
   assumes "finite ts"
   assumes "\<forall>q\<in>finals. (p, w, q) \<notin> LTS.trans_star ts"
-  shows "dioidLTS.accepts (ts_to_wts ts) finals (p, w) = (0::'weight::bounded_idempotent_semiring)"
+  shows "dioidLTS.accepts (ts_to_wts ts) finals (p, w) = (0::'weight::bounded_dioid)"
   using assms(2)
 proof (induct w arbitrary: p)
   case Nil
@@ -70,11 +70,11 @@ next
     using ts_to_wts_not_member_is_0[OF assms(1)] by blast
   have "\<And>p'. \<forall>q\<in>finals. (p, a # w, q) \<notin> LTS.trans_star ts \<Longrightarrow> (p, a, p') \<in> ts \<Longrightarrow> \<forall>q\<in>finals. (p', w, q) \<notin> LTS.trans_star ts"
     by (meson LTS.trans_star.trans_star_step)
-  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> dioidLTS.accepts (ts_to_wts ts) finals (p', w) = (0::'weight::bounded_idempotent_semiring)"
+  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> dioidLTS.accepts (ts_to_wts ts) finals (p', w) = (0::'weight::bounded_dioid)"
     using Cons by blast
-  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> ts_to_wts ts $ (p, a, p') * dioidLTS.accepts (ts_to_wts ts) finals (p', w) = (0::'weight::bounded_idempotent_semiring)"
+  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> ts_to_wts ts $ (p, a, p') * dioidLTS.accepts (ts_to_wts ts) finals (p', w) = (0::'weight::bounded_dioid)"
     using mult_zero_right by fastforce
-  then have B:"{ts_to_wts ts $ (p, a, x) * dioidLTS.accepts (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<in> ts} \<subseteq> {0::'weight::bounded_idempotent_semiring}"
+  then have B:"{ts_to_wts ts $ (p, a, x) * dioidLTS.accepts (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<in> ts} \<subseteq> {0::'weight::bounded_dioid}"
     by blast
   show ?case
     apply (simp add: dioidLTS.dioidLTS_accepts_code_Cons)
@@ -116,7 +116,7 @@ qed
 lemma WPDS_reach_exec_correct:
   fixes ts :: "(('ctr_loc :: {card_UNIV,enum}, 'noninit::{card_UNIV,enum}) state, 'label::enum) transition set"
   fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
-  fixes W :: "('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_idempotent_semiring"
+  fixes W :: "('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_dioid"
   assumes "run_WPDS_reach \<Delta> W ts ts' finals finals' = Some w"
   shows "w = (WPDS.weight_reach_set' (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
   using assms big_good_correctness_code[of "ts_to_wts ts" "w_rules \<Delta> W" "ts_to_wts ts'" inits_set finals finals', OF binary_aut_ts_to_wts[of ts]]

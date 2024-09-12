@@ -97,6 +97,7 @@ instantiation prod :: (semiring_0, semiring_0) semiring_0 begin
   qed
 end
 instantiation prod :: (idempotent_comm_monoid_add, idempotent_comm_monoid_add) idempotent_comm_monoid_add begin instance .. end
+instantiation prod :: (idempotent_comm_monoid_add_ord, idempotent_comm_monoid_add_ord) idempotent_comm_monoid_add_ord begin instance .. end
 instantiation prod :: (idempotent_semiring, idempotent_semiring) idempotent_semiring begin instance .. end
 instantiation prod :: (idempotent_semiring_ord, idempotent_semiring_ord) idempotent_semiring_ord begin instance .. end
 instantiation prod :: (discrete_topology, discrete_topology) discrete_topology begin
@@ -162,9 +163,6 @@ lemma eq_in_between:
   subgoal for x y
     apply simp
     by (metis Suc_diff_le Suc_mono le_SucI le_eq_less_or_eq less_antisym old.nat.inject)
-  (* Other sledge_hammer suggestions:
-    by (metis diff_Suc_Suc diff_diff_cancel diff_le_self less_Suc_eq_le not_less_eq not_less_less_Suc_eq)
-    by (metis Suc_diff_le Suc_le_eq diff_Suc_1 diff_le_self le_antisym not_less_eq_eq)  *)
   done
 
 lemma Suc_i_eq_least_j:
@@ -305,13 +303,6 @@ instantiation prod :: (wfp, wfp) wfp begin
   qed
 end
 instantiation prod :: (bounded_idempotent_comm_monoid_add, bounded_idempotent_comm_monoid_add) bounded_idempotent_comm_monoid_add begin instance .. end
-(*instantiation prod :: (bounded_idempotent_comm_monoid_add, bounded_idempotent_comm_monoid_add) bounded_idempotent_comm_monoid_add begin
-  instance proof
-    show "almost_full_on (\<le>) (UNIV::('a\<times>'b) set)"
-      using almost_full_on_Sigma[OF no_infinite_decending_chains no_infinite_decending_chains]
-      unfolding prod_le_def less_eq_prod_def by (simp add: case_prod_beta')
-  qed
-end*)
-instantiation prod :: (bounded_idempotent_semiring, bounded_idempotent_semiring) bounded_idempotent_semiring begin instance .. end
+instantiation prod :: (bounded_dioid, bounded_dioid) bounded_dioid begin instance .. end
 
 end
