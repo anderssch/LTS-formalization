@@ -55,6 +55,7 @@ lemma wfp_saturation_termination:
   assumes "\<And>f f'. rule f f' \<Longrightarrow> strict P f' f"
   shows "\<not>(\<exists>seq. (\<forall>i :: nat. rule (seq i) (seq (Suc i))))"
   using assms wfp_no_infinite by blast 
+
 lemma wfp_saturation_exi:
   assumes "wfp_on (strict P) UNIV"
   assumes "\<And>f f'. rule f f' \<Longrightarrow> strict P f' f"
@@ -79,7 +80,6 @@ lemma wfp_class_saturation_exi:
   shows "\<exists>f'. saturation rule f f'"
   using assms wfp_saturation_exi[of "(\<le>)" rule] wfp_on_class[of UNIV] less_le_not_le 
   by fastforce
-
 
 lemma wqo_no_infinite: 
   assumes "wqo_on P UNIV"
@@ -169,8 +169,6 @@ lemma saturation_exi:
   shows "\<exists>ts'. saturation rule ts ts'"
   using assms wqo_saturation_exi[of "\<lambda>x y. card x \<ge> card y" "rule" "ts"] finite_card_le_wqo
   by (metis (mono_tags, lifting) finite_class.finite_UNIV nle_le not_less_eq_eq)
-
-
 
 lemma saturation_invariant_property:
   assumes "\<And>val val'. rule val val' \<Longrightarrow> P (f val) = P (f val')"
