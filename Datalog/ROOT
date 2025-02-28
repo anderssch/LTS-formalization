@@ -1,0 +1,12 @@
+
+session Datalog = "LTS" +
+  options [timeout = 300]
+  theories
+    Available_Expressions
+    Bit_Vector_Framework
+    Datalog
+    Live_Variables
+    Program_Graph
+    Reachable_Nodes
+    Reaching_Definitions
+    Very_Busy_Expressions

@@ -1,0 +1,4 @@
+session LTS =  "Deriving" +
+  options [timeout = 300]
+  theories
+    LTS

@@ -1,4 +1,4 @@
-theory Program_Graph imports "../LTS/LTS" Datalog begin
+theory Program_Graph imports LTS.LTS Datalog begin
 
 
 section \<open>Actions\<close>
