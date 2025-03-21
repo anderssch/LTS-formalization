@@ -443,6 +443,6 @@ lemma less_eq_finfun_not_zero:
   by metis                                                      
 
 lemma wf_less_finfun: "wf ({(x, y). x < y}::('a::finite \<Rightarrow>f 'weight::bounded_dioid \<times> 'a \<Rightarrow>f 'weight) set)"
-  unfolding less_finfun_def using wfp_on_class[of UNIV] unfolding wfp_on_UNIV[of "strict (\<le>)"] wfP_def[of "strict (\<le>)"] by blast
+  unfolding less_finfun_def using wfp_on_class[of UNIV] unfolding wfp_on_UNIV[of "strict (\<le>)"] wfp_def[of "strict (\<le>)"] by blast
 
 end
