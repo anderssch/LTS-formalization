@@ -103,7 +103,7 @@ lemma finite_w_rules: "finite rules \<Longrightarrow> finite (w_rules rules W)"
   unfolding w_rules_def by fast
 
 
-section \<open>Locale: diodLTS -- acceptance\<close>
+section \<open>Locale: dioidLTS -- acceptance\<close>
 \<comment> \<open>Generalization of PDS_with_P_automata.accepts that computes the meet-over-all-paths in the W-automaton.\<close>
 
 context dioidLTS begin
@@ -1338,17 +1338,118 @@ proof -
     using non_strict_pre_star_rule.intros[OF ts2(2) d''(1)] by blast
 qed
 
+lemma sum_saturation_pre_star:"sum_saturation (pre_star_step \<Delta>) non_strict_pre_star_rule"
+  apply standard
+  using pure_pre_star_rule_less_eq pure_pre_star_rule_mono finite_pre_star_rule_set pre_star_step_to_pre_star_rule_sum 
+        pre_star_rule_is_non_equal_pure pre_star_step_to_pre_star_rule_sum
+  by auto
+
 lemma saturation_pre_star_exec: "saturation pre_star_rule ts (pre_star_exec ts)"
-  using sum_saturation_step_exec[of non_strict_pre_star_rule "pre_star_step \<Delta>" ts]
-        pure_pre_star_rule_less_eq pure_pre_star_rule_mono finite_pre_star_rule_set pre_star_step_to_pre_star_rule_sum
-  unfolding pre_star_rule_is_non_equal_pure pre_star_exec_def step_saturation.step_exec_def pre_star_loop_def step_saturation.step_loop_def
-  by fastforce
+  using sum_saturation.saturation_step_exec[OF sum_saturation_pre_star]
+  unfolding pre_star_rule_is_non_equal_pure pre_star_exec_def step_saturation.step_exec_def 
+            pre_star_loop_def step_saturation.step_loop_def
+  by blast
 
 lemma pre_star_exec0_simp: "pre_star_exec0 = pre_star_exec (K$0)" 
   by (simp add: pre_star_exec0_def pre_star_exec_def pre_star_loop0_def)
 
 lemma saturation_pre_star_exec0: "saturation pre_star_rule (ts_to_wts {}) pre_star_exec0"
   using saturation_pre_star_exec pre_star_exec0_simp by simp
+
+
+context
+  fixes rule_partition
+  assumes rule_partition_def: "\<Union>rule_partition = \<Delta>"
+  assumes finite_rule_partition: "finite rule_partition"
+begin
+definition "parallel_pre_star_step ts = ts + (\<Sum>r\<in>rule_partition. WPDS.pre_star_exec_fast r ts)"
+definition "parallel_pre_star_exec = step_saturation.step_exec parallel_pre_star_step"
+
+lemma r_sub: "r\<in>rule_partition \<Longrightarrow> r \<subseteq> \<Delta>"
+  using rule_partition_def by blast
+lemma finite_r: "r\<in>rule_partition \<Longrightarrow> finite r"
+  by (fact finite_subset[OF r_sub finite_rules])
+lemma finite_WPDS_r: "r\<in>rule_partition \<Longrightarrow> finite_WPDS r"
+  unfolding finite_WPDS_def by (fact finite_r)
+
+lemma exec_def2:"r\<in>rule_partition \<Longrightarrow> WPDS.pre_star_exec_fast r ts = step_saturation.step_exec (pre_star_step r) ts"
+  apply (simp add: finite_WPDS.pre_star_exec_fast_correct[symmetric, of r ts, OF finite_WPDS_r])
+  unfolding WPDS.pre_star_exec_def WPDS.pre_star_loop_def step_saturation.step_exec_def step_saturation.step_loop_def
+  by blast
+lemma parallel_pre_star_step_def2':
+  "ts + (\<Sum>r\<in>rule_partition. WPDS.pre_star_exec_fast r ts) = ts + (\<Sum>step\<^sub>i\<in>{pre_star_step r |r. r \<in> rule_partition}. step_saturation.step_exec step\<^sub>i ts)" (is "ts + ?A = ts + ?B")
+proof -
+  have F:"finite {pre_star_step r |r. r \<in> rule_partition}" using finite_rule_partition by simp
+  have "?B = (\<Sum>r \<in> rule_partition. step_saturation.step_exec (pre_star_step r) ts)"
+    unfolding idem_sum_image[OF finite_rule_partition, of "\<lambda>r. step_saturation.step_exec (pre_star_step r) ts", symmetric]
+              idem_sum_image[OF F, of "\<lambda>step\<^sub>i. step_saturation.step_exec step\<^sub>i ts", symmetric]
+    by (rule arg_cong[of _ _ "\<Sum>"]) blast
+  moreover have "... = ?A" 
+    using exec_def2[of _ ts] by simp
+  ultimately show ?thesis by argo
+qed
+lemma parallel_pre_star_step_def2: "parallel_pre_star_step ts = ts + (\<Sum>step\<^sub>i\<in>{pre_star_step r |r. r \<in> rule_partition}. step_saturation.step_exec step\<^sub>i ts)"
+  unfolding parallel_pre_star_step_def by (fact parallel_pre_star_step_def2')
+
+lemma non_strict_pre_star_rule_sub_le:
+  assumes "r\<in>rule_partition"
+  shows "finite_WPDS.non_strict_pre_star_rule r \<le> non_strict_pre_star_rule"
+  using r_sub[OF assms(1)] non_strict_pre_star_rule.simps 
+        finite_WPDS.non_strict_pre_star_rule.simps[OF finite_WPDS_r[OF assms(1)]]
+  by fast
+
+lemma partition_steps_are_rules: "r \<in> rule_partition \<Longrightarrow> (weak_rule non_strict_pre_star_rule)\<^sup>*\<^sup>* ts (pre_star_step r ts)"
+  using weak_star_mono[OF non_strict_pre_star_rule_sub_le]
+        sum_saturation.weak_star_step[OF finite_WPDS.sum_saturation_pre_star[OF finite_WPDS_r]]
+  by blast
+
+lemma pre_star_rule_mono: "r \<subseteq> r' \<Longrightarrow> WPDS.pre_star_rule r \<le> WPDS.pre_star_rule r'"
+  unfolding WPDS.pre_star_rule.simps by blast
+
+lemma partition_sum_less_eq_sum: "ts + \<Sum>{pre_star_step r ts |r. r \<in> rule_partition} \<le> ts + \<Sum>{ts'. pre_star_rule ts ts'}"
+proof -
+  have "finite {Collect (WPDS.pre_star_rule r ts) |r. r \<in> rule_partition}"
+    using finite_imageI[OF finite_rule_partition] by (simp add: setcompr_eq_image)
+  moreover have "\<Union>{Collect (WPDS.pre_star_rule r ts) |r. r\<in>rule_partition} = Collect (pre_star_rule ts)"
+    using rule_partition_def unfolding WPDS.pre_star_rule.simps by blast
+  ultimately have eq:"\<Sum> {(\<Sum> x) |x. x \<in> {Collect (WPDS.pre_star_rule r ts) |r. r \<in> rule_partition}} = \<Sum> (Collect (pre_star_rule ts))" 
+    using idem_sum_sum finite_pre_star_rule_set by fastforce
+  have "ts + \<Sum> {ts + \<Sum> (Collect (WPDS.pre_star_rule r ts)) |r. r \<in> rule_partition} = ts + \<Sum> {\<Sum> (Collect (WPDS.pre_star_rule r ts)) |r. r\<in>rule_partition}"
+    using idem_sum_distrib'[OF finite_imageI[OF finite_rule_partition], of ts "\<lambda>r. \<Sum> (Collect (WPDS.pre_star_rule r ts))"]
+    by (simp add: image_image setcompr_eq_image)
+  moreover have "... \<le> ts + \<Sum> (Collect (pre_star_rule ts))"
+    unfolding eq[symmetric] by (simp add: image_image setcompr_eq_image)
+  ultimately show ?thesis
+    by (simp add: sum_set_image_cong'[OF finite_rule_partition finite_WPDS.pre_star_step_to_pre_star_rule_sum[OF finite_WPDS_r, of _ ts], of id, simplified])
+qed
+
+lemma partition_fixp_implies_fixp:
+  assumes "ts = ts + (\<Sum>step\<^sub>i\<in>{pre_star_step r |r. r \<in> rule_partition}. step\<^sub>i ts)"
+  shows "ts = ts + \<Sum> {ts'. pre_star_rule ts ts'}"
+proof -
+  have F:"finite {pre_star_step r |r. r \<in> rule_partition}" using finite_rule_partition by simp
+  have "(\<Sum>step\<^sub>i\<in>{pre_star_step r |r. r \<in> rule_partition}. step\<^sub>i ts) = \<Sum> {pre_star_step r ts | r. r \<in> rule_partition}"
+    unfolding idem_sum_image[OF F, of "\<lambda>step\<^sub>i. step\<^sub>i ts", symmetric]
+    by (rule arg_cong[of _ _ "\<Sum>"]) blast
+  then have "ts = ts + \<Sum> {pre_star_step r ts | r. r \<in> rule_partition}"
+    using assms by argo
+  then show ?thesis using partition_sum_less_eq_sum[of ts]
+    by (simp add: meet.inf_absorb1)
+qed
+
+lemma rule_partition_ok: "par_saturation parallel_pre_star_step non_strict_pre_star_rule {pre_star_step r |r. r\<in>rule_partition}"
+  apply standard
+  using pure_pre_star_rule_less_eq  pure_pre_star_rule_mono pre_star_rule_is_non_equal_pure
+        finite_pre_star_rule_set finite_rule_partition parallel_pre_star_step_def2
+        partition_steps_are_rules partition_fixp_implies_fixp by auto
+
+lemma saturation_parallel_pre_star_exec: "saturation pre_star_rule ts (parallel_pre_star_exec ts)"
+  using par_saturation.saturation_step_exec[OF rule_partition_ok]
+  unfolding pre_star_rule_is_non_equal_pure parallel_pre_star_exec_def
+  by blast
+
+end
+
 
 end
 

@@ -87,6 +87,34 @@ lemma idem_sum_image:
     by fastforce
   done
 
+lemma sum_insert_f:
+  assumes "finite S"
+  shows  "\<Sum> {f x |x. x \<in> insert s S} = f s + \<Sum> {f x |x. x \<in> S}"
+proof -
+  have f1:"finite (insert s S)" using assms by simp
+  have f2:"finite (f ` S)" using assms by fast
+  have u1:"{x. x \<in> insert s S} = insert s S" and u2:"{x. x \<in> S} = S" by auto
+  have "\<Sum> (f ` (insert s S)) = f s + \<Sum> (f ` S)"
+    unfolding idem_sum_image[of "insert s S" f, OF f1] idem_sum_image[of S f, OF assms]
+    using sum.insert_if[of S f s, OF assms] idem_sum_elem[OF f2, of "f s", unfolded idem_sum_image[OF assms]]
+    by simp
+  then show ?thesis
+    unfolding setcompr_eq_image[of f "\<lambda>x. x \<in> insert s S"] setcompr_eq_image[of f "\<lambda>x. x \<in> S"] u1 u2 by blast
+qed
+
+lemma sum_set_image_cong:
+  assumes "finite S"
+  assumes "\<And>s. s \<in> S \<Longrightarrow> f s = g s"
+  shows "\<Sum> (f ` S) = \<Sum> (g ` S)"
+  using assms(2) by (induct rule: finite_subset_induct'[OF assms(1), of S, simplified]) simp_all
+lemma sum_set_image_cong':
+  assumes "finite S"
+  assumes "\<And>s. s \<in> S \<Longrightarrow> f s = g s"
+  shows "\<Sum>{f s |s. s\<in>S} = \<Sum>{g s |s. s\<in>S}"
+  using sum_set_image_cong[OF assms, of id, simplified]
+        setcompr_eq_image[symmetric, of _ "\<lambda>s. s\<in>S", simplified]
+  by metis
+
 lemma idem_sum_const:
   assumes "finite S"
       and "S \<noteq> {}"
@@ -156,7 +184,23 @@ lemma sum_subset_singleton_0_is_0:
   assumes "X \<subseteq> {0}"
   shows "\<Sum> X = 0"
   using assms by (cases "X = {0}"; cases "X = {}") auto
-   
+
+lemma idem_sum_sum:
+  assumes "finite X"
+  assumes "finite (\<Union>X)"
+  shows "\<Sum>{(\<Sum>x) |x. x\<in>X} = \<Sum>(\<Union>X)"
+  using assms
+proof (induct rule: finite_induct)
+  case empty
+  then show ?case by simp
+next
+  case (insert x F)
+  then show ?case
+    using sum_insert_f[OF insert(1), of "\<lambda>x'. \<Sum>x'" x] idem_sum_union[of x "\<Union> F"]
+    by force
+qed
+
+
 abbreviation sum_seq :: "(nat \<Rightarrow> 'a) \<Rightarrow> nat \<Rightarrow> 'a" where
   "sum_seq f i \<equiv> sum f {x. x < i}"
 
@@ -334,6 +378,12 @@ lemma sum_superset_less_eq:
     shows "\<Sum> A \<le> \<Sum> B"
   unfolding less_eq_def using sum.subset_diff[OF assms, of id] by force
 
+lemma sum_collect_mono:
+  assumes "finite {x. Q x}"
+  assumes "P \<le> Q"
+  shows "\<Sum> (Collect P) \<ge> \<Sum> (Collect Q)"
+  using sum_superset_less_eq[OF Collect_mono assms(1)] assms(2) by blast
+
 lemma sum_greater_elem:
   assumes "\<And>a. a \<in> A \<Longrightarrow> b \<le> a"
       and "finite A"
@@ -362,6 +412,7 @@ lemma elem_greater_than_sum:
   shows "\<Sum>{a. P a} \<le> x"
   using assms idem_sum_elem[OF assms(2), of x] unfolding idempotent_ab_semigroup_add_ord_class.less_eq_def
   by (simp add: add.commute)
+
 
 \<comment> \<open>An idempotent semiring that follows the definition of [RSJM'05].\<close>
 class idempotent_semiring = semiring_0 + monoid_mult + idempotent_ab_semigroup_add

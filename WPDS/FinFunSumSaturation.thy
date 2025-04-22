@@ -8,6 +8,22 @@ inductive strict_rule :: "'t saturation_rule \<Rightarrow> 't saturation_rule" f
 inductive weak_rule :: "'t::idempotent_ab_semigroup_add_ord saturation_rule \<Rightarrow> 't saturation_rule" for rule where
   rule_to_weak_rule: "rule ts ts'' \<Longrightarrow> ts'' \<le> ts' \<Longrightarrow> ts' < ts \<Longrightarrow> weak_rule rule ts ts'"
 
+lemma rule_star_eq_strict_rule_star: "rule\<^sup>*\<^sup>* = (strict_rule rule)\<^sup>*\<^sup>*"
+  unfolding eq_iff
+  apply safe
+  using mono_rtranclp[of rule "(strict_rule rule)\<^sup>*\<^sup>*", simplified]
+        r_into_rtranclp[of "strict_rule rule", OF rule_to_strict_rule[of rule]]
+   apply blast
+  subgoal for x y
+    apply (induct rule: rtranclp_induct, simp)
+    by (metis rtranclp.rtrancl_into_rtrancl strict_rule.cases)
+  done
+
+lemma weak_rule_mono: "rule \<le> rule' \<Longrightarrow> weak_rule rule \<le> weak_rule rule'"
+  by safe (metis rev_predicate2D weak_rule.simps)
+lemma weak_star_mono: "rule \<le> rule' \<Longrightarrow> (weak_rule rule)\<^sup>*\<^sup>* \<le> (weak_rule rule')\<^sup>*\<^sup>*"
+  by (fact rtranclp_mono[OF weak_rule_mono])
+
 
 section \<open>Locale: rule_saturation\<close>
 locale rule_saturation =
@@ -15,6 +31,10 @@ locale rule_saturation =
   assumes rule_less_eq: "rule ts ts' \<Longrightarrow> ts' \<le> ts"
   assumes rule_mono: "ts\<^sub>3 \<le> ts\<^sub>1 \<Longrightarrow> rule ts\<^sub>1 ts\<^sub>2 \<Longrightarrow> \<exists>ts'. rule ts\<^sub>3 ts' \<and> ts' \<le> ts\<^sub>2"
 begin
+
+lemma rule_star_less_eq: "rule\<^sup>*\<^sup>* ts ts' \<Longrightarrow> ts' \<le> ts"
+  apply (induct rule: rtranclp_induct, simp)
+  using rule_less_eq by fastforce
 
 lemma rule_exists_addition: "rule ts ts' \<Longrightarrow> \<exists>a. ts' = ts + a"
   using order_prop rule_less_eq add.commute by metis
@@ -62,10 +82,17 @@ lemma weak_rule_star_less_eq: "(weak_rule rule)\<^sup>*\<^sup>* ts ts' \<Longrig
 lemma weak_rule_intro: "strict_rule rule ts ts' \<Longrightarrow> weak_rule rule ts ts'"
   using rule_to_weak_rule[of rule ts ts'] strict_rule.cases[of rule ts ts'] order_refl
   by (metis strict_rule_less)
-
+lemma strict_le_weak: "strict_rule rule \<le> weak_rule rule"
+  using weak_rule_intro by blast
+lemma strict_star_le_weak_star: "(strict_rule rule)\<^sup>*\<^sup>* \<le> (weak_rule rule)\<^sup>*\<^sup>*"
+  by (fact rtranclp_mono[OF strict_le_weak])
 lemma weak_rule_star_intro: "(strict_rule rule)\<^sup>*\<^sup>* ts ts' \<Longrightarrow> (weak_rule rule)\<^sup>*\<^sup>* ts ts'"
-  apply(induct rule: rtranclp_induct, simp)
-  using weak_rule_intro by fastforce
+  using strict_star_le_weak_star by blast
+lemma rule_to_weak_rule_star: "rule \<le> (weak_rule rule)\<^sup>*\<^sup>*"
+  using r_into_rtranclp[of rule] rule_star_eq_strict_rule_star[of rule] strict_star_le_weak_star
+  by auto
+lemma rule_star_to_weak_rule_star: "rule\<^sup>*\<^sup>* \<le> (weak_rule rule)\<^sup>*\<^sup>*"
+  using rule_star_eq_strict_rule_star strict_star_le_weak_star by metis
 
 lemma weak_rule_star_to_strict_rule_star:
   assumes "(weak_rule rule)\<^sup>*\<^sup>* ts ts'"
@@ -452,7 +479,7 @@ locale par_saturation = add_saturation rule
   and rule :: "('a::finite \<Rightarrow>f 'b::bounded_dioid) saturation_rule"
   and step_partition::"(('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)) set" +
   assumes step_is_partition_saturation: "step ts = ts + (\<Sum>step\<^sub>i\<in>step_partition. step_saturation.step_exec step\<^sub>i ts)"
-  assumes partitions_are_rules: "\<forall>step\<^sub>i\<in>step_partition. rule ts (step\<^sub>i ts)"
+  assumes partitions_are_rules: "\<forall>step\<^sub>i\<in>step_partition. (weak_rule rule)\<^sup>*\<^sup>* ts (step\<^sub>i ts)" (* more general than: rule ts (step\<^sub>i ts) *)
   assumes partitions_cover_rules: "ts = ts + (\<Sum>step\<^sub>i\<in>step_partition. step\<^sub>i ts) \<Longrightarrow> ts = ts + \<Sum>{ts'. strict_rule rule ts ts'}"
   assumes finite_step_partition: "finite step_partition"
 begin
@@ -460,12 +487,19 @@ sublocale decreasing_step_saturation step by standard (simp add: step_is_partiti
 
 lemma step\<^sub>i_is_decreasing: "step\<^sub>i\<in>step_partition \<Longrightarrow> decreasing_step_saturation step\<^sub>i"
   apply standard
-  using partitions_are_rules rule_less_eq 
+  using partitions_are_rules weak_rule_star_less_eq 
   by blast
 
-lemma step_partition_to_rule: "step\<^sub>i\<in>step_partition \<Longrightarrow> strict_rule (step_saturation.step_rule step\<^sub>i) ts ts' \<Longrightarrow> strict_rule rule ts ts'"
-  using partitions_are_rules unfolding step_saturation.step_rule_def strict_rule.simps by blast
-lemma step_partition_to_rule_star: "(strict_rule (step_saturation.step_rule step\<^sub>i))\<^sup>*\<^sup>* ts ts' \<Longrightarrow> step\<^sub>i\<in>step_partition \<Longrightarrow> (strict_rule rule)\<^sup>*\<^sup>* ts ts'"
+lemma step_partition_to_rule: 
+  assumes "step\<^sub>i\<in>step_partition"
+  assumes "strict_rule (step_saturation.step_rule step\<^sub>i) ts ts'"
+  shows "(weak_rule rule)\<^sup>*\<^sup>* ts ts'"
+proof -
+  have "(weak_rule rule)\<^sup>*\<^sup>* ts (step\<^sub>i ts)" using assms(1) partitions_are_rules by blast
+  then show ?thesis using assms(2)[unfolded strict_rule.simps] unfolding step_saturation.step_rule_def
+    using weak_rule_star_to_strict_rule_star by simp
+qed
+lemma step_partition_to_rule_star: "(strict_rule (step_saturation.step_rule step\<^sub>i))\<^sup>*\<^sup>* ts ts' \<Longrightarrow> step\<^sub>i\<in>step_partition \<Longrightarrow> (weak_rule rule)\<^sup>*\<^sup>* ts ts'"
   apply (induct rule: rtranclp_induct, simp)
   using step_partition_to_rule[of step\<^sub>i]
   by fastforce
@@ -479,7 +513,7 @@ next
   case (2 step step_partition)
   have "(weak_rule rule)\<^sup>*\<^sup>* ts (step_saturation.step_exec step ts)" 
     using decreasing_step_saturation.saturation_step_exec'[OF step\<^sub>i_is_decreasing]
-    unfolding saturation_def using weak_rule_star_intro[OF step_partition_to_rule_star] 2(2)
+    unfolding saturation_def using step_partition_to_rule_star 2(2)
     by blast
   then have B:"(weak_rule rule)\<^sup>*\<^sup>* ts (ts + (step_saturation.step_exec step ts))"
     by (simp add: weak_rule_add_star_mono)
