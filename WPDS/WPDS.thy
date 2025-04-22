@@ -1339,8 +1339,8 @@ proof -
 qed
 
 lemma saturation_pre_star_exec: "saturation pre_star_rule ts (pre_star_exec ts)"
-  using sum_saturation_step_exec[of non_strict_pre_star_rule "pre_star_step \<Delta>" ts, OF pure_pre_star_rule_less_eq]
-        pure_pre_star_rule_mono finite_pre_star_rule_set pre_star_step_to_pre_star_rule_sum
+  using sum_saturation_step_exec[of non_strict_pre_star_rule "pre_star_step \<Delta>" ts]
+        pure_pre_star_rule_less_eq pure_pre_star_rule_mono finite_pre_star_rule_set pre_star_step_to_pre_star_rule_sum
   unfolding pre_star_rule_is_non_equal_pure pre_star_exec_def step_saturation.step_exec_def pre_star_loop_def step_saturation.step_loop_def
   by fastforce
 

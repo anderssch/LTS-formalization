@@ -39,6 +39,16 @@ lemma strict_rule_less: "strict_rule rule a b \<Longrightarrow> b < a"
 lemma strict_rule_less_eq: "strict_rule rule a b \<Longrightarrow> b \<le> a"
   using strict_rule_less by fastforce
 
+lemma strict_rule_star_less_eq: "(strict_rule rule)\<^sup>*\<^sup>* ts ts' \<Longrightarrow> ts' \<le> ts"
+  apply (induct rule: rtranclp_induct, simp)
+  using strict_rule_less_eq by fastforce
+
+lemma eq_some_strict_not_exists:
+  "ts = ts + Eps (strict_rule rule ts) \<Longrightarrow> \<not> Ex (strict_rule rule ts)"
+  using strict_rule_less[OF someI[of "strict_rule rule ts"]]
+        less_eq_def[of ts "Eps (strict_rule rule ts)"]
+  by force
+
 lemma weak_rule_less: "weak_rule rule ts ts' \<Longrightarrow> ts' < ts"
   using weak_rule.simps by blast
 
@@ -231,6 +241,68 @@ qed
 end
 
 
+section \<open>Locale: add_saturation\<close>
+
+locale add_saturation = rule_saturation rule
+  for rule :: "'t::idempotent_comm_monoid_add_ord saturation_rule" +
+  assumes finite_rule_set: "finite {ts'. strict_rule rule ts ts'}"
+begin
+
+lemma strict_rule_subset_not_fixp:
+  assumes "X \<subseteq> {ts'. strict_rule rule ts ts'}"
+  assumes "X \<noteq> {}"
+  shows "ts + \<Sum>X \<noteq> ts"
+proof -
+  have finite_X: "finite X" by (fact finite_subset[OF assms(1) finite_rule_set])
+  obtain ts' where ts'_X:"ts'\<in>X" and ts'_rule:"strict_rule rule ts ts'" using assms by blast
+  have le:"\<Sum>X \<le> ts" 
+    using assms sum_smaller_elem[of X ts] finite_X strict_rule_less_eq by blast
+  have le':"\<Sum>X \<le> ts'"
+    unfolding BoundedDioid.idempotent_ab_semigroup_add_ord_class.less_eq_def 
+    using idem_sum_elem[OF finite_X, of ts'] ts'_X by (simp add: add.commute)
+  obtain a where "ts' = ts + a" and "ts' \<noteq> ts"
+    using ts'_rule[unfolded strict_rule.simps[of rule]] strict_rule_less_eq[OF ts'_rule] 
+          order_prop[of ts' ts] add.commute 
+    by metis
+  then have "ts + ts' \<noteq> ts" by simp
+  then show ?thesis 
+    using le le' unfolding less_eq_def using add.commute 
+    by metis
+qed
+
+lemma sum_fixp_implies_rule_fixp:
+  assumes "ts + \<Sum>{ts'. strict_rule rule ts ts'} = ts"
+  assumes "rule ts ts'"
+  shows "ts = ts'" 
+proof -
+  have "{ts'. strict_rule rule ts ts'} = {}" 
+    using assms(1,2) using strict_rule_subset_not_fixp by blast
+  then show ?thesis using assms(2)
+    unfolding strict_rule.simps by simp
+qed
+
+lemma weak_star_subset_sum:
+  assumes "X \<subseteq> {ts'. strict_rule rule ts ts'}"
+  shows "(weak_rule rule)\<^sup>*\<^sup>* ts (ts + \<Sum>X)"
+proof -
+  have "finite X" by (fact finite_subset[OF assms finite_rule_set])
+  then show ?thesis using assms
+  proof (induct rule: finite_induct)
+    case empty
+    then show ?case by simp
+  next
+    case (insert x F)
+    then have A:"(weak_rule rule)\<^sup>*\<^sup>* ts (ts + \<Sum> F)" and B: "(strict_rule rule) ts x" by auto
+    have "(weak_rule rule)\<^sup>*\<^sup>* ts (ts + \<Sum> F + x)"
+      using weak_rule_step_mono'[OF A weak_rule_intro[OF B]] by blast
+    then show ?case       
+      by (simp add: insert.hyps(1) meet.inf_commute meet.inf_left_commute)
+  qed
+qed
+
+end
+
+
 section \<open>Locale: step_saturation\<close>
 
 locale step_saturation = 
@@ -278,75 +350,43 @@ proof -
     by (simp_all add: weak_rule_star_step_k k)
 qed
 
+lemma step_exec_less_eq: "step_exec S \<le> S"
+  unfolding step_exec_def using step_exec_terminates[of S]
+  apply safe
+  apply simp
+  unfolding step_loop_def
+  subgoal for t
+    apply (rule while_option_rule[of _ "(\<lambda>s. step s \<noteq> s)" step S t])
+    using step_decreasing dual_order.trans
+    by auto
+  done
+
+lemma step_exec_fixp_to_step_fixp: "step_exec S = S \<Longrightarrow> step S = S"
+  using step_exec_terminates while_option_stop[of "\<lambda>s. step s \<noteq> s" step S]
+  unfolding step_exec_def step_loop_def by force
+
+lemma step_exec_fixp_to_step_fixp': "S \<le> step_exec S \<Longrightarrow> S = step S"
+  using step_exec_less_eq[of S] step_exec_fixp_to_step_fixp by simp
+
 end
 
 
-section \<open>Locale: sum_saturation\<close>
+section \<open>Locale: single_step_saturation\<close>
 
-locale sum_saturation = decreasing_step_saturation step + rule_saturation rule
+lemma some_subset: "Ex P \<Longrightarrow> {Eps P} \<subseteq> {x. P x}"
+  using some_eq_imp by force
+
+locale single_step_saturation = add_saturation rule
   for step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)"
   and rule :: "('a::finite \<Rightarrow>f 'b::bounded_dioid) saturation_rule" +
-  assumes step_is_sum: "step ts = ts + \<Sum>{ts'. strict_rule rule ts ts'}"
-  assumes finite_rule_set: "finite {ts'. strict_rule rule ts ts'}"
+  assumes step_is_single_step: "step ts = ts + (if Ex (strict_rule rule ts) then Eps (strict_rule rule ts) else 0)"
 begin
-
-lemma strict_rule_step_not_fixp:
-  assumes "strict_rule rule ts ts'"
-  shows "ts + \<Sum> {ts'. strict_rule rule ts ts'} \<noteq> ts"
-proof (cases "{ts'. strict_rule rule ts ts'} = {}")
-  case True
-  then show ?thesis using assms by blast
-next
-  case False
-  have le:"\<Sum> {ts'. strict_rule rule ts ts'} \<le> ts" 
-    using sum_smaller_elem[of "{ts'. strict_rule rule ts ts'}" ts, OF _ finite_rule_set False] strict_rule_less_eq 
-    by blast
-  have le':"\<Sum> {ts'. strict_rule rule ts ts'} \<le> ts'"
-    unfolding BoundedDioid.idempotent_ab_semigroup_add_ord_class.less_eq_def 
-    using idem_sum_elem[OF finite_rule_set, of ts'] assms 
-    by (simp add: add.commute)
-  obtain a where "ts' = ts + a" and "ts' \<noteq> ts"
-    using assms unfolding strict_rule.simps[of rule] 
-    using strict_rule_less_eq[OF assms] order_prop[of ts' ts] add.commute
-    by metis
-  then have "ts + ts' \<noteq> ts" by simp
-  then show ?thesis 
-    using le le' unfolding less_eq_def using add.commute
-    by metis
-qed
-
-lemma step_fixp_implies_rule_fixp: 
-  assumes "step ts = ts"
-  assumes "rule ts ts'"
-  shows "ts = ts'" 
-proof -
-  have "Collect (strict_rule rule ts) = {}" 
-    using assms(1) unfolding step_is_sum using strict_rule_step_not_fixp
-    by fast
-  then show ?thesis using assms(2) 
-    unfolding strict_rule.simps by simp
-qed
+sublocale decreasing_step_saturation step by standard (simp add: step_is_single_step)
 
 lemma weak_star_step: "(weak_rule rule)\<^sup>*\<^sup>* ts (step ts)"
-proof -
-  {
-    fix X
-    assume "finite X" and "X \<subseteq> {ts'. strict_rule rule ts ts'}"
-    then have "(weak_rule rule)\<^sup>*\<^sup>* ts (ts + \<Sum>X)"
-    proof (induct rule: finite_induct)
-      case empty
-      then show ?case by simp
-    next
-      case (insert x F)
-      then have A:"(weak_rule rule)\<^sup>*\<^sup>* ts (ts + \<Sum> F)" and B: "(strict_rule rule) ts x" by auto
-      have "(weak_rule rule)\<^sup>*\<^sup>* ts (ts + \<Sum> F + x)"
-        using weak_rule_step_mono'[OF A weak_rule_intro[OF B]] by blast
-      then show ?case
-        by (simp add: insert.hyps(1) meet.inf_commute meet.inf_left_commute)
-    qed
-  } 
-  then show ?thesis unfolding step_is_sum using finite_rule_set by blast
-qed
+  unfolding step_is_single_step 
+  using weak_star_subset_sum[OF some_subset[of "strict_rule rule ts"]]
+  by auto
 
 lemma weak_star_intro: "(strict_rule step_rule)\<^sup>*\<^sup>* ts ts' \<Longrightarrow> (weak_rule rule)\<^sup>*\<^sup>* ts ts'"
   apply (induct rule: rtranclp_induct, simp)
@@ -354,7 +394,37 @@ lemma weak_star_intro: "(strict_rule step_rule)\<^sup>*\<^sup>* ts ts' \<Longrig
   by metis
 
 lemma preserves_saturated: "saturated (strict_rule step_rule) ts \<Longrightarrow> saturated (strict_rule rule) ts"
-  unfolding saturated_def step_rule_def strict_rule.simps using step_fixp_implies_rule_fixp by presburger
+  unfolding saturated_def step_rule_def strict_rule.simps
+  using step_is_single_step eq_some_strict_not_exists strict_rule.simps
+  by (cases "Ex (strict_rule rule ts)") (auto simp add: strict_rule.simps)
+  
+lemma saturation_step_exec: "saturation (strict_rule rule) S (step_exec S)"
+  using rule_saturation.preserves_saturation[unfolded rule_saturation_def, of rule step_rule]
+        rule_less_eq rule_mono weak_star_intro preserves_saturated saturation_step_exec'
+  by auto
+
+end
+
+section \<open>Locale: sum_saturation\<close>
+
+locale sum_saturation = add_saturation rule
+  for step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)"
+  and rule :: "('a::finite \<Rightarrow>f 'b::bounded_dioid) saturation_rule" +
+  assumes step_is_sum: "step ts = ts + \<Sum>{ts'. strict_rule rule ts ts'}"
+begin
+sublocale decreasing_step_saturation step by standard (simp add: step_is_sum)
+
+lemma weak_star_step: "(weak_rule rule)\<^sup>*\<^sup>* ts (step ts)"
+  unfolding step_is_sum using weak_star_subset_sum by blast
+
+lemma weak_star_intro: "(strict_rule step_rule)\<^sup>*\<^sup>* ts ts' \<Longrightarrow> (weak_rule rule)\<^sup>*\<^sup>* ts ts'"
+  apply (induct rule: rtranclp_induct, simp)
+  unfolding step_rule_def strict_rule.simps using weak_star_step rtranclp_trans 
+  by metis
+
+lemma preserves_saturated: "saturated (strict_rule step_rule) ts \<Longrightarrow> saturated (strict_rule rule) ts"
+  unfolding saturated_def step_rule_def strict_rule.simps using step_is_sum sum_fixp_implies_rule_fixp
+  by metis
 
 lemma saturation_step_exec: "saturation (strict_rule rule) S (step_exec S)"
   using rule_saturation.preserves_saturation[unfolded rule_saturation_def, of rule step_rule]
@@ -366,12 +436,87 @@ end
 lemma sum_saturation_step_exec:
   assumes "\<And>ts ts'. rule ts ts' \<Longrightarrow> ts' \<le> ts"
   assumes "\<And>ts\<^sub>3 ts\<^sub>1 ts\<^sub>2. ts\<^sub>3 \<le> ts\<^sub>1 \<Longrightarrow> rule ts\<^sub>1 ts\<^sub>2 \<Longrightarrow> \<exists>ts'. rule ts\<^sub>3 ts' \<and> ts' \<le> ts\<^sub>2"
-  assumes "\<And>s. step ts \<le> ts"
   assumes "\<And>ts. step ts = ts + \<Sum>{ts'. strict_rule rule ts ts'}"
   assumes "\<And>ts. finite {ts'. strict_rule rule ts ts'}"
   shows "saturation (strict_rule rule) ts (step_saturation.step_exec step ts)"
   using sum_saturation.saturation_step_exec[of step rule ts]
-  unfolding sum_saturation_def decreasing_step_saturation_def rule_saturation_def sum_saturation_axioms_def
+  unfolding sum_saturation_def add_saturation_def rule_saturation_def
+            sum_saturation_axioms_def add_saturation_axioms_def
   using assms by auto
+
+
+section \<open>Locale: par_saturation\<close>
+
+locale par_saturation = add_saturation rule
+  for step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)"
+  and rule :: "('a::finite \<Rightarrow>f 'b::bounded_dioid) saturation_rule"
+  and step_partition::"(('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)) set" +
+  assumes step_is_partition_saturation: "step ts = ts + (\<Sum>step\<^sub>i\<in>step_partition. step_saturation.step_exec step\<^sub>i ts)"
+  assumes partitions_are_rules: "\<forall>step\<^sub>i\<in>step_partition. rule ts (step\<^sub>i ts)"
+  assumes partitions_cover_rules: "ts = ts + (\<Sum>step\<^sub>i\<in>step_partition. step\<^sub>i ts) \<Longrightarrow> ts = ts + \<Sum>{ts'. strict_rule rule ts ts'}"
+  assumes finite_step_partition: "finite step_partition"
+begin
+sublocale decreasing_step_saturation step by standard (simp add: step_is_partition_saturation)
+
+lemma step\<^sub>i_is_decreasing: "step\<^sub>i\<in>step_partition \<Longrightarrow> decreasing_step_saturation step\<^sub>i"
+  apply standard
+  using partitions_are_rules rule_less_eq 
+  by blast
+
+lemma step_partition_to_rule: "step\<^sub>i\<in>step_partition \<Longrightarrow> strict_rule (step_saturation.step_rule step\<^sub>i) ts ts' \<Longrightarrow> strict_rule rule ts ts'"
+  using partitions_are_rules unfolding step_saturation.step_rule_def strict_rule.simps by blast
+lemma step_partition_to_rule_star: "(strict_rule (step_saturation.step_rule step\<^sub>i))\<^sup>*\<^sup>* ts ts' \<Longrightarrow> step\<^sub>i\<in>step_partition \<Longrightarrow> (strict_rule rule)\<^sup>*\<^sup>* ts ts'"
+  apply (induct rule: rtranclp_induct, simp)
+  using step_partition_to_rule[of step\<^sub>i]
+  by fastforce
+
+lemma weak_star_step: "(weak_rule rule)\<^sup>*\<^sup>* ts (step ts)"
+  unfolding step_is_partition_saturation
+proof (induct rule: finite_subset_induct'[OF finite_step_partition, of step_partition, simplified])
+  case 1
+  then show ?case by simp
+next
+  case (2 step step_partition)
+  have "(weak_rule rule)\<^sup>*\<^sup>* ts (step_saturation.step_exec step ts)" 
+    using decreasing_step_saturation.saturation_step_exec'[OF step\<^sub>i_is_decreasing]
+    unfolding saturation_def using weak_rule_star_intro[OF step_partition_to_rule_star] 2(2)
+    by blast
+  then have B:"(weak_rule rule)\<^sup>*\<^sup>* ts (ts + (step_saturation.step_exec step ts))"
+    by (simp add: weak_rule_add_star_mono)
+  have C:"(weak_rule rule)\<^sup>*\<^sup>* ts (ts + (\<Sum>step\<^sub>i\<in>step_partition. step_saturation.step_exec step\<^sub>i ts))"
+    using 2(5) by fastforce
+  show ?case using weak_rule_star_mono[OF B C] 2(1,4) B by (simp add: add.assoc add.left_commute)
+qed
+
+lemma weak_star_intro: "(strict_rule step_rule)\<^sup>*\<^sup>* ts ts' \<Longrightarrow> (weak_rule rule)\<^sup>*\<^sup>* ts ts'"
+  apply (induct rule: rtranclp_induct, simp)
+  unfolding step_rule_def strict_rule.simps using weak_star_step rtranclp_trans 
+  by metis
+
+lemma exec_fixp_to_step_fixp: "ts \<le> (\<Sum>step\<^sub>i\<in>step_partition. step_saturation.step_exec step\<^sub>i ts) \<Longrightarrow> ts \<le> (\<Sum>step\<^sub>i\<in>step_partition. step\<^sub>i ts)"
+  using decreasing_step_saturation.step_exec_fixp_to_step_fixp'[OF step\<^sub>i_is_decreasing, of _ ts]
+proof (induct rule: finite_induct[OF finite_step_partition])
+  case 1
+  then show ?case by simp
+next
+  case (2 step step_partition)
+  then have "ts \<le> (\<Sum>step\<^sub>i\<in>step_partition. step\<^sub>i ts)" by (simp add: order_class.order_eq_iff)
+  have "ts \<le> step ts" using 2(1,2,4) 2(5)[of step] by simp
+  then show ?case using 2 by simp
+qed
+
+lemma preserves_saturated: "saturated (strict_rule step_rule) ts \<Longrightarrow> saturated (strict_rule rule) ts"
+  unfolding saturated_def step_rule_def strict_rule.simps 
+  unfolding step_is_partition_saturation
+  using partitions_cover_rules exec_fixp_to_step_fixp[unfolded less_eq_def] sum_fixp_implies_rule_fixp
+  by metis
+
+lemma saturation_step_exec: "saturation (strict_rule rule) S (step_exec S)"
+  using rule_saturation.preserves_saturation[unfolded rule_saturation_def, of rule step_rule]
+        rule_less_eq rule_mono weak_star_intro preserves_saturated saturation_step_exec'
+  by auto
+
+end
+
 
 end

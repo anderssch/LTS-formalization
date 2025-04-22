@@ -246,11 +246,6 @@ definition "weight_reach_exec ts = the o weight_reach_loop ts"
 
 context finite_dioidLTS begin
 
-lemma weight_reach_step_decreasing: "weight_reach_step transition_relation S \<le> S"
-  unfolding weight_reach_step_def 
-  using update_wts_less_eq[of "\<Union>(p,d,q)\<in>transition_relation. {(q,S $ p * d)}" S] ts_finite
-  by fast
-
 lemma weight_reach_step_to_weight_reach_rule: "weight_reach_step transition_relation S = S + \<Sum> {S'. weight_reach_rule S S'}" (is "?A = ?B")
 proof -
   have f1:"finite (\<Union>(p, d, q)\<in>transition_relation. {(q, S $ p * d)})" using ts_finite by fast
@@ -307,7 +302,7 @@ lemma saturation_weight_reach_exec:
   "saturation weight_reach_rule S (weight_reach_exec transition_relation S)"
   unfolding weight_reach_rule_is_non_equal_pure weight_reach_exec_is_step_exec
   using sum_saturation_step_exec[of non_strict_weight_reach_rule "weight_reach_step transition_relation" S]
-        pure_weight_reach_rule_less_eq pure_weight_reach_rule_mono weight_reach_step_decreasing 
+        pure_weight_reach_rule_less_eq pure_weight_reach_rule_mono
         weight_reach_step_to_weight_reach_rule finite_weight_reach_rule_set 
   unfolding weight_reach_rule_is_non_equal_pure by fast
 
