@@ -1,5 +1,5 @@
 
-session Datalog = "LTS" +
+session Datalog = "Labeled_Transition_Systems" +
   options [timeout = 300]
   theories
     Available_Expressions
@@ -10,3 +10,7 @@ session Datalog = "LTS" +
     Reachable_Nodes
     Reaching_Definitions
     Very_Busy_Expressions
+  document_files
+    "root.bib"
+    "root.tex"
+
