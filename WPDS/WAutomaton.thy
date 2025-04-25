@@ -16,15 +16,17 @@ type_synonym ('state, 'label, 'weight) w_transitions = "('state, 'label) transit
 type_synonym ('state, 'label, 'weight) w_transition_set = "('state, ('label list \<times> 'weight)) transition set"
 
 \<comment> \<open>Embed a weighted automaton into a monoidLTS. All transitions are added. The label is lifted to the list-monoid.\<close>
-definition wts_to_monoidLTS :: "('state, 'label, 'weight::bounded_dioid) w_transitions \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" where
-  "wts_to_monoidLTS ts = {(p, ([\<gamma>],d), q) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
+definition wts_to_monoidLTS :: "('state, 'label, 'weight::bounded_dioid) w_transitions 
+                             \<Rightarrow> ('state, ('label list \<times> 'weight)) transition set" ("\<lbrakk>_\<rbrakk>") where
+  "\<lbrakk>ts\<rbrakk> = {(p, ([\<gamma>],d), q) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
 
 lemma wts_to_monoidLTS_code[code]:
   "wts_to_monoidLTS ts = (\<Union>(p,\<gamma>,q). {(p, ([\<gamma>], ts $ (p,\<gamma>,q)), q)})"
   unfolding wts_to_monoidLTS_def by blast
 
-definition wts_to_weightLTS :: "('state, 'label, 'weight::bounded_dioid) w_transitions \<Rightarrow> ('state, 'weight) transition set" where
-  "wts_to_weightLTS ts = {(p, d, q) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
+definition wts_to_weightLTS :: "('state, 'label, 'weight::bounded_dioid) w_transitions 
+                             \<Rightarrow> ('state, 'weight) transition set" ("\<lbrakk>_\<rbrakk>\<^sub>w") where
+  "\<lbrakk>ts\<rbrakk>\<^sub>w = {(p, d, q) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
 
 lemma wts_to_weightLTS_code[code]: "wts_to_weightLTS ts = (\<Union>(p,\<gamma>,q). {(p, (ts $ (p,\<gamma>,q)), q)})"
   unfolding wts_to_weightLTS_def by blast

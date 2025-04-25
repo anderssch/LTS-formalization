@@ -112,7 +112,7 @@ definition accepts :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> '
   "accepts ts finals \<equiv> \<lambda>(p,w). (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> monoid_rtrancl (wts_to_monoidLTS ts)})"
 
 context fixes finals :: "'ctr_loc::enum set" begin
-abbreviation accepts'("\<L> (_)" [1000] 1000) where "\<L>(ts) \<equiv> accepts ts finals"
+abbreviation accepts' ("\<L> (_)" [1000] 1000) where "\<L>(ts) \<equiv> accepts ts finals"
 
 lemma accepts_step_distrib:
   fixes ts :: "('ctr_loc, 'label::finite, 'weight::bounded_dioid) w_transitions"

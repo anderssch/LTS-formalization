@@ -4,14 +4,14 @@ begin
 
 \<comment> \<open>Preliminary definition of reflexive and transitive closure over a relation labelled with a monoid, 
     (and transitive closure over a semigroup-labelled relation)\<close>
-inductive_set monoid_rtrancl :: "('a \<times> 'b::monoid_mult \<times> 'a) set \<Rightarrow> ('a \<times> 'b \<times> 'a) set"
+inductive_set monoid_rtrancl :: "('a \<times> 'b::monoid_mult \<times> 'a) set \<Rightarrow> ('a \<times> 'b \<times> 'a) set"  ("_\<^sup>\<odot>" [1000] 999)
  for r :: "('a \<times> 'b \<times> 'a) set" where
-    monoid_rtrancl_refl [intro!, Pure.intro!, simp]: "(a, 1, a) \<in> monoid_rtrancl r"
-  | monoid_rtrancl_into_rtrancl [Pure.intro]: "(a, w, b) \<in> monoid_rtrancl r \<Longrightarrow> (b, l, c) \<in> r \<Longrightarrow> (a, w*l, c) \<in> monoid_rtrancl r"
+    monoid_rtrancl_refl [intro!, Pure.intro!, simp]: "(a, 1, a) \<in> r\<^sup>\<odot>"
+  | monoid_rtrancl_into_rtrancl [Pure.intro]: "(a, w, b) \<in> r\<^sup>\<odot> \<Longrightarrow> (b, l, c) \<in> r \<Longrightarrow> (a, w*l, c) \<in> r\<^sup>\<odot>"
 
-inductive_cases monoid_rtrancl_empty [elim]: "(p, 1, q) \<in> monoid_rtrancl r"
+inductive_cases monoid_rtrancl_empty [elim]: "(p, 1, q) \<in> r\<^sup>\<odot>"
 
-inductive_cases monoid_rtrancl_extend: "(p, w*l, q) \<in> monoid_rtrancl r"
+inductive_cases monoid_rtrancl_extend: "(p, w*l, q) \<in> r\<^sup>\<odot>"
 
 inductive_set semigroup_trancl :: "('a \<times> 'b::semigroup_mult \<times> 'a) set \<Rightarrow> ('a \<times> 'b \<times> 'a) set"
  for r :: "('a \<times> 'b \<times> 'a) set" where
@@ -29,7 +29,7 @@ lemma predicate3D[dest]:
   "P \<le> Q \<Longrightarrow> P x y z \<Longrightarrow> Q x y z"
   by (erule le_funE)+ (erule le_boolE)
 
-lemma member_if_member_monoid_rtrancl: "(a,b,c) \<in> r \<Longrightarrow> (a,b,c) \<in> monoid_rtrancl r"
+lemma member_if_member_monoid_rtrancl: "(a,b,c) \<in> r \<Longrightarrow> (a,b,c) \<in> r\<^sup>\<odot>"
   using monoid_rtrancl_into_rtrancl[OF monoid_rtrancl_refl]
   by fastforce
 
