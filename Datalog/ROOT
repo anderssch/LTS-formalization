@@ -2,14 +2,14 @@
 session Datalog = "Labeled_Transition_Systems" +
   options [timeout = 300]
   theories
-    Available_Expressions
-    Bit_Vector_Framework
     Datalog
-    Live_Variables
+    Bit_Vector_Framework
     Program_Graph
-    Reachable_Nodes
-    Reaching_Definitions
+    Reaching_Definitions   
+    Live_Variables
+    Available_Expressions
     Very_Busy_Expressions
+    Reachable_Nodes
   document_files
     "root.bib"
     "root.tex"

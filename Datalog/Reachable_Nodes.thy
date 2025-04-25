@@ -1,5 +1,9 @@
 theory Reachable_Nodes imports Bit_Vector_Framework begin
 
+\<comment> \<open>We define an analysis for collecting the reachable nodes in a program graph.
+    First we define it analysis, and then we encode it into Datalog using our
+    Bit-Vector Framework locale. We also prove the encoding correct. \<close>
+
 
 section \<open>Reachable Nodes\<close>
 

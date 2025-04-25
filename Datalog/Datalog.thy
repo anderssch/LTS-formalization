@@ -100,7 +100,7 @@ definition compose :: "('x,'c) subst \<Rightarrow> ('x,'c) var_val \<Rightarrow>
   "(\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) x = \<lbrakk>(\<eta> x)\<rbrakk>\<^sub>i\<^sub>d \<sigma>"
 
 
-section \<open>Substiting variable valuations\<close>
+section \<open>Substituting variable valuations\<close>
 
 fun substv_id :: "('x,'c) id \<Rightarrow> ('x,'c) var_val \<Rightarrow> ('x,'c) id" (infix "\<cdot>\<^sub>v\<^sub>i\<^sub>d" 70) where
   "(Var x) \<cdot>\<^sub>v\<^sub>i\<^sub>d \<sigma> = Cst (\<sigma> x)"

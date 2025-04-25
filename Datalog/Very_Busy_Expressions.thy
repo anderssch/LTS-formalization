@@ -1,5 +1,8 @@
 theory Very_Busy_Expressions imports Available_Expressions begin
 
+\<comment> \<open>We encode the Very Busy Expressions analysis into Datalog. First we define the analysis, then
+    we encode it into Datalog using our Bit-Vector Framework locale. We also prove 
+    the encoding correct. \<close>
 
 section \<open>Very Busy Expressions\<close>
 

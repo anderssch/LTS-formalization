@@ -1,5 +1,8 @@
 theory Available_Expressions imports Reaching_Definitions begin
 
+\<comment> \<open>We encode the Available Expressions analysis into Datalog. First we define the analysis, then
+    we encode it into Datalog using our Bit-Vector Framework locale. We also prove 
+    the encoding correct. \<close>
 
 section \<open>Available Expressions\<close>
 

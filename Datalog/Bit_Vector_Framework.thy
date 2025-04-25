@@ -1,7 +1,10 @@
 theory Bit_Vector_Framework imports Program_Graph begin
 
+\<comment> \<open>We encode the Bit Vector Framework into Datalog. \<close>
 
 section \<open>Bit-Vector Framework\<close>
+
+subsection \<open>Definitions\<close>
 
 datatype pred =
   the_may
@@ -99,7 +102,7 @@ abbreviation is_Action\<^sub>i\<^sub>d :: "(var, ('n, 'a, 'd) cst) id \<Rightarr
   "is_Action\<^sub>i\<^sub>d ident == is_Cst ident \<and> is_Action (the_Cst ident)"
 
 
-section \<open>Forward may-analysis\<close>       
+subsection \<open>Forward may-analysis\<close>       
 
 locale analysis_BV_forward_may = finite_program_graph pg 
   for pg :: "('n::finite,'a) program_graph" +
@@ -484,7 +487,7 @@ theorem sound_ana_pg_fw_may:
 end
 
 
-section \<open>Backward may-analysis\<close>
+subsection \<open>Backward may-analysis\<close>
 
 locale analysis_BV_backward_may = finite_program_graph pg
   for pg :: "('n::finite,'a) program_graph" +
@@ -650,7 +653,7 @@ theorem sound_ana_pg_bw_may:
 end
 
 
-section \<open>Forward must-analysis\<close>
+subsection \<open>Forward must-analysis\<close>
                                             
 locale analysis_BV_forward_must = finite_program_graph pg
   for pg :: "('n::finite,'a) program_graph" +
@@ -1302,7 +1305,7 @@ theorem sound_ana_pg_fw_must:
 end
 
 
-section \<open>Backward must-analysis\<close>
+subsection \<open>Backward must-analysis\<close>
 
 locale analysis_BV_backward_must = finite_program_graph pg
   for pg :: "('n::finite,'a) program_graph" +

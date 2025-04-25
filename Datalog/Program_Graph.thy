@@ -80,7 +80,7 @@ definition pg_rev :: "('n,'a) program_graph" where
 
 end
 
-subsection \<open>Finite Program Graph Locales\<close>
+subsection \<open>Finite Program Graph Locale\<close>
 
 locale finite_program_graph = program_graph pg
   for pg :: "('n::finite,'v) program_graph" +
@@ -92,14 +92,13 @@ lemma finite_pg_rev: "finite (fst pg_rev)"
 
 end
 
-
 locale finite_action_program_graph = 
   fixes pg :: "('n,'v action) program_graph"
 begin
 
 interpretation program_graph pg .
 
-subsubsection \<open>Execution Sequences\<close>
+\<comment> \<open>Execution Sequences:\<close>
 
 fun initial_config_of :: "('n,'v) config \<Rightarrow> bool" where
   "initial_config_of (q,\<sigma>) \<longleftrightarrow> q = start"

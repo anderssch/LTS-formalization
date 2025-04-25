@@ -3,7 +3,7 @@ theory Reaching_Definitions imports Bit_Vector_Framework begin
 \<comment> \<open>We encode the Reaching Definitions analysis into Datalog. First we define the analysis, then
     we encode the analysis directly into Datalog and prove the encoding correct. Hereafter we
     encode it into Datalog again, but this time using our Bit-Vector Framework locale. We also prove 
-    this encoding correct. This latter encoding is described in our submission. \<close>
+    this encoding correct. This latter encoding is described in our SAC 2024 paper. \<close>
 
 
 section \<open>Reaching Definitions\<close>
@@ -35,7 +35,7 @@ definition def_path :: "('n list \<times> 'v action list) \<Rightarrow> 'n \<Rig
   "def_path \<pi> start = ((\<lambda>x. def_var (LTS.transition_list \<pi>) x start) ` UNIV)"
 
 
-section \<open>Reaching Definitions in Datalog\<close>
+subsection \<open>Reaching Definitions in Datalog\<close>
 
 \<comment> \<open>Direct encoding of Reaching Definitions into Datalog.\<close>
 
@@ -353,7 +353,7 @@ theorem RD_sound:
   using assms RD_sound' by (cases pg) force
 
 
-section \<open>Reaching Definitions as Bit-Vector Framework analysis\<close>
+subsection \<open>Reaching Definitions as Bit-Vector Framework analysis\<close>
 
 \<comment> \<open>Encoding of Reaching Definitions into Datalog using the Bit-Vector Framework.\<close>
 
