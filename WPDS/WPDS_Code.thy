@@ -100,32 +100,40 @@ lemma lang_aut_is_accepts_full:
     by blast
   using not_in_trans_star_implies_accepts_0[OF assms] by blast
 
+context
+  fixes \<Delta> :: "('ctr_loc::{card_UNIV,enum}, 'label::enum) rule set"
+    and W :: "('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_dioid"
+begin
+
+lemma fin_w_rules: "finite (w_rules \<Delta> W)"
+    by (simp add: finite_w_rules)
+
+interpretation finite_WPDS "(w_rules \<Delta> W)" 
+  using finite_WPDS_def fin_w_rules by auto
+
+interpretation countable_dioidLTS transition_rel apply standard
+  using countable_transition_rel .
+
 lemma weight_reach_set'_lang_aut_is_weight_reach'_accepts_full:
-  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::enum) transition set"
+  fixes ts :: "(('ctr_loc, 'noninit::enum) state, 'label) transition set"
   fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
   assumes "finite ts"
   assumes "finite ts'"
-  shows "WPDS.weight_reach_set' (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals') =
-         WPDS.weight_reach' (w_rules \<Delta> W) (accepts_full (ts_to_wts ts) finals) (accepts_full (ts_to_wts ts') finals')"
-proof -
-  have fin_w_rules: "finite (w_rules \<Delta> W)"
-    by (simp add: finite_w_rules)
-  show ?thesis
-    unfolding lang_aut_is_accepts_full[OF assms(1)] lang_aut_is_accepts_full[OF assms(2)]
-    using finite_WPDS.weight_reach_set'_is_weight_reach'[of "w_rules \<Delta> W" "P_Automaton.lang_aut ts Init finals" 
-        "P_Automaton.lang_aut ts' Init finals'", unfolded finite_WPDS_def, OF fin_w_rules]
-    by blast
-qed
+  shows "weight_reach_set (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals') =
+         weight_reach (accepts_full (ts_to_wts ts) finals) (accepts_full (ts_to_wts ts') finals')"
+  unfolding lang_aut_is_accepts_full[OF assms(1)] lang_aut_is_accepts_full[OF assms(2)]
+  using weight_reach_set_is_weight_reach by blast
 
 lemma WPDS_reach_exec_correct:
   fixes ts :: "(('ctr_loc :: {card_UNIV,enum}, 'noninit::{card_UNIV,enum}) state, 'label::enum) transition set"
   fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
-  fixes W :: "('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_dioid"
   assumes "run_WPDS_reach \<Delta> W ts ts' finals finals' = Some w"
-  shows "w = (WPDS.weight_reach_set' (w_rules \<Delta> W) (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
-  using assms WPDS_weight_reach'_is_weight_reach_sum_exec[of "ts_to_wts ts" "w_rules \<Delta> W" "ts_to_wts ts'" inits_set finals finals', OF binary_aut_ts_to_wts[of ts]]
-    weight_reach_set'_lang_aut_is_weight_reach'_accepts_full[of ts ts' \<Delta> W finals finals'] unfolding WPDS_Code.checking_def
+  shows "w = (weight_reach_set (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
+  using assms WPDS_weight_reach'_is_weight_reach_sum_exec[of "ts_to_wts ts" "ts_to_wts ts'" inits_set finals finals', OF binary_aut_ts_to_wts[of ts]]
+  using weight_reach_set'_lang_aut_is_weight_reach'_accepts_full[of ts ts' finals finals'] unfolding WPDS_Code.checking_def
   run_WPDS_reach'_def  inits_set_def mem_Collect_eq run_WPDS_reach_def
    finite_code by (metis (no_types, lifting) WPDS_Code.checking_def assms(1) run_WPDS_reach'_def finite_w_rules option.distinct(1) option.inject run_WPDS_reach_def) 
+
+end
 
 end

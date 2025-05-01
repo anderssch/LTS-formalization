@@ -334,7 +334,7 @@ declare dioidLTS.accepts_code_Cons[code]
 section \<open>Locale: WPDS\<close>
 
 locale WPDS =
-  fixes \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_dioid) w_rule set"
+  fixes \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set"
 begin
 
 primrec lbl :: "'label operation \<Rightarrow> 'label list" where
@@ -348,11 +348,6 @@ abbreviation is_rule :: "'ctr_loc \<times> 'label \<Rightarrow> 'weight \<Righta
 inductive_set transition_rel :: "(('ctr_loc, 'label) conf \<times> 'weight \<times> ('ctr_loc, 'label) conf) set" where
   "(p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w) \<Longrightarrow> ((p, \<gamma>#w'), d, (p', (lbl w)@w')) \<in> transition_rel"
 
-definition weight_reach' where 
-  "weight_reach' = dioidLTS.weight_reach transition_rel"
-
-definition weight_reach_set' where
-  "weight_reach_set' = dioidLTS.weight_reach_set transition_rel"
 
 \<comment> \<open>Weighted pre-star rule updates the finfun of transition weights.\<close>
 inductive pre_star_rule :: "('ctr_loc, 'label, 'weight) w_transitions saturation_rule" where
@@ -362,6 +357,8 @@ inductive pre_star_rule :: "('ctr_loc, 'label, 'weight) w_transitions saturation
       \<Longrightarrow> pre_star_rule ts ts((p, \<gamma>, q) $:= ts $ (p, \<gamma>, q) + (d * d'))"
 
 interpretation dioidLTS transition_rel .
+
+
 
 notation l_step_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80)
 
@@ -462,7 +459,7 @@ end
 section \<open>Locale: finite_WPDS -- pre* algorithm\<close>
 
 locale finite_WPDS = WPDS \<Delta>
-  for \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_dioid) w_rule set" +
+  for \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set" +
   assumes finite_rules: "finite \<Delta>"
 begin
 
@@ -519,11 +516,6 @@ proof -
                             (p, \<gamma>) \<midarrow>d\<hookrightarrow> (p', w) \<and> (p', (lbl w, d'), q) \<in> \<lbrakk>ts\<rbrakk>\<^sup>\<odot>}"]
     by blast
 qed
-
-lemma weight_reach_set'_is_weight_reach':
-  "weight_reach_set' C C' = weight_reach' (\<lambda>c. if c \<in> C then 1 else 0) (\<lambda>c. if c \<in> C' then 1 else 0)"
-  unfolding weight_reach_set'_def weight_reach'_def 
-  using weight_reach_set_is_weight_reach by auto
 
 
 subsection \<open>Pre* correctness\<close>
@@ -1147,23 +1139,23 @@ end
 section \<open>Pre* code\<close>
 
 \<comment> \<open>Definition of executable pre_star\<close>
-definition pre_star_updates :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> (('ctr_loc, 'label) transition \<times> 'weight) set" where
+definition pre_star_updates :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> (('ctr_loc, 'label) transition \<times> 'weight) set" where
   "pre_star_updates \<Delta> wts =
     (\<Union>((p, \<gamma>), d, (p', w)) \<in> \<Delta>.
         \<Union>(q,d') \<in> monoidLTS_reach \<lbrakk>wts\<rbrakk> p' (WPDS.lbl w).
             {((p, \<gamma>, q), d * d')})"
 
-definition pre_star_step :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions" where
+definition pre_star_step :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions" where
   "pre_star_step \<Delta> wts = update_wts wts (pre_star_updates \<Delta> wts)"
 
 \<comment> \<open>Faster version that does not include 0 weights.\<close>
-definition pre_star_updates_not0 :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> (('ctr_loc, 'label) transition \<times> 'weight) set" where
+definition pre_star_updates_not0 :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> (('ctr_loc, 'label) transition \<times> 'weight) set" where
   "pre_star_updates_not0 \<Delta> wts =
     (\<Union>((p, \<gamma>), d, (p', w)) \<in> \<Delta>.
         \<Union>(q,d') \<in> monoidLTS_reach_not0 \<lbrakk>wts\<rbrakk> p' (WPDS.lbl w).
             {((p, \<gamma>, q), d * d')})"
 
-definition pre_star_step_not0 :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions" where
+definition pre_star_step_not0 :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions" where
   "pre_star_step_not0 \<Delta> wts = update_wts wts (pre_star_updates_not0 \<Delta> wts)"
 
 section \<open>Locale: WPDS -- Pre* code\<close>
@@ -2248,17 +2240,17 @@ proof -
     by simp metis
 qed
 
-abbreviation accepts_ts :: "('ctr_loc,'label) conf \<Rightarrow> 'weight" where
-  "accepts_ts \<equiv> (\<lambda>(p,w). accepts ts finals (Init p, w))"
+abbreviation language_ts :: "('ctr_loc,'label) conf \<Rightarrow> 'weight" where
+  "language_ts \<equiv> (\<lambda>(p,w). accepts ts finals (Init p, w))"
 
 lemma augmented_rules_correct:
-  "dioidLTS.weight_pre_star augmented_WPDS.transition_rel \<L>(K$ 0) (Init p, w) = weight_pre_star accepts_ts (p, w)"
+  "dioidLTS.weight_pre_star augmented_WPDS.transition_rel \<L>(K$ 0) (Init p, w) = weight_pre_star language_ts (p, w)"
   using unfold_pre_star_accepts_empty_automaton augmented_rules_match_W_automaton[of finals p w]
   unfolding weight_pre_star_def reach_conf_in_W_automaton_def by simp meson
 
 lemma pre_star_correctness: 
   assumes "saturation (augmented_WPDS.pre_star_rule) (K$ 0) A"
-  shows "\<L>(A) (Init p, w) = weight_pre_star accepts_ts (p,w)"
+  shows "\<L>(A) (Init p, w) = weight_pre_star language_ts (p,w)"
   using assms augmented_rules_correct augmented_WPDS.correctness' by auto 
 
 
@@ -2268,7 +2260,7 @@ lemma pre_star_exec'_saturation: "saturation augmented_WPDS.pre_star_rule (K$ 0)
   unfolding pre_star_exec'_def2 using augmented_WPDS.saturation_pre_star_exec0 by simp
 
 lemma pre_star_exec_correctness: 
-  "\<L>(pre_star_exec') (Init p, w) = weight_pre_star accepts_ts (p,w)"
+  "\<L>(pre_star_exec') (Init p, w) = weight_pre_star language_ts (p,w)"
   using pre_star_correctness pre_star_exec'_saturation by blast
 end
 end
@@ -2409,12 +2401,15 @@ proof -
   ultimately show ?thesis by argo
 qed
 
+context WPDS begin
+interpretation dioidLTS transition_rel .
+
 lemma WPDS_weight_reach'_is_weight_reach_sum_exec:
   fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::enum, 'weight::bounded_dioid) w_transitions"
   assumes "binary_aut ts"
       and "finite \<Delta> \<and> (\<forall>q p \<gamma>. is_Init q \<longrightarrow> ts' $ (p, \<gamma>, q) = 0)"
       and "\<And>p. is_Init p \<longleftrightarrow> p \<in> inits"
-  shows "WPDS.weight_reach' \<Delta> (accepts_full ts finals) (accepts_full ts' finals') = 
+  shows "weight_reach (accepts_full ts finals) (accepts_full ts' finals') = 
          weight_reach_sum_exec \<lbrakk>w_inters ts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')\<rbrakk>\<^sub>w {(p, p) |p. p \<in> inits} (finals \<times> finals')" (is "?A = ?B")
 proof -
   have f:"finite \<Delta>" using assms(2) by simp
@@ -2424,8 +2419,7 @@ proof -
     dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (\<lambda>(p, w). dioidLTS.accepts ts' finals' (Init p, w)) (p, w)"
     unfolding accepts_full_def
     by (smt (verit, best) Collect_cong assms(3) dioidLTS.weight_pre_star_def split_cong state.disc(1))
-  have "?A = \<^bold>\<Sum>{dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (accepts_full ts' finals') (p, w) |p w. Init p \<in> inits} " 
-    unfolding WPDS.weight_reach'_def
+  have "?A = \<^bold>\<Sum>{dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (accepts_full ts' finals') (p, w) |p w. Init p \<in> inits}" 
     unfolding countable_dioidLTS.weight_reach_to_pre_star[
                 unfolded countable_dioidLTS_def countable_monoidLTS_def, 
                 OF finite_WPDS.countable_transition_rel[unfolded finite_WPDS_def, OF f],
@@ -2480,5 +2474,7 @@ proof -
       by (cases "(p1, w, p2) \<in> ts", simp_all)
     done
 qed
+
+end
 
 end
