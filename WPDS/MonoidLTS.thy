@@ -19,10 +19,10 @@ abbreviation monoid_star_relp :: "'state \<Rightarrow> 'weight \<Rightarrow> 'st
 definition monoid_star :: "('state \<times> 'weight \<times> 'state) set" where
   "monoid_star = {(c,l,c'). c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
 
-lemma monoid_star_is_monoid_rtrancl[simp]: "monoid_star = monoid_rtrancl transition_relation"
+lemma monoid_star_is_monoid_rtrancl[simp]: "monoid_star = transition_relation\<^sup>\<odot>"
   unfolding monoid_star_def l_step_relp_def monoid_rtrancl_def by simp
 
-lemma star_to_closure: "c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<Longrightarrow> (c, l, c') \<in> monoid_rtrancl transition_relation"
+lemma star_to_closure: "c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<Longrightarrow> (c, l, c') \<in> transition_relation\<^sup>\<odot>"
   unfolding l_step_relp_def monoid_rtrancl_def by simp
 
 end

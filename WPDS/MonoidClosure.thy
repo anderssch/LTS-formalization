@@ -47,7 +47,7 @@ lemma mono_monoid_rtranclp[mono]: "(\<And>a b c. x a b c \<longrightarrow> y a b
 
 lemmas monoid_rtrancl_mono = monoid_rtranclp_mono [to_set]
 
-lemma mono_monoid_rtrancl[mono]: "(\<And>a b c. (a,b,c) \<in> x \<longrightarrow> (a,b,c) \<in> y) \<Longrightarrow> (a,b,c) \<in> monoid_rtrancl x \<longrightarrow> (a,b,c) \<in> monoid_rtrancl y"
+lemma mono_monoid_rtrancl[mono]: "(\<And>a b c. (a,b,c) \<in> x \<longrightarrow> (a,b,c) \<in> y) \<Longrightarrow> (a,b,c) \<in> x\<^sup>\<odot> \<longrightarrow> (a,b,c) \<in> y\<^sup>\<odot>"
   using monoid_rtrancl_mono[of x y] by auto
 
 lemma monoid_rtrancl_is_mono: "mono monoid_rtrancl"
@@ -83,7 +83,7 @@ lemma trace_weight_append: "trace_weight (a @ b) = trace_weight a * trace_weight
   by (induct a, simp_all add: mult.assoc[symmetric])
 
 lemma monoid_rtrancl_exists_trace: 
-  assumes "(p, w, q) \<in> monoid_rtrancl ts"
+  assumes "(p, w, q) \<in> ts\<^sup>\<odot>"
   shows "\<exists>l. is_trace p l q \<and> trace_weight l = w \<and> l \<in> lists ts"
   using assms
   apply (induct rule: monoid_rtrancl.induct)
