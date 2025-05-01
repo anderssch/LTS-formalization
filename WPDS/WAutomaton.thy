@@ -28,7 +28,7 @@ definition wts_to_weightLTS :: "('state, 'label, 'weight::bounded_dioid) w_trans
                              \<Rightarrow> ('state, 'weight) transition set" ("\<lbrakk>_\<rbrakk>\<^sub>w") where
   "\<lbrakk>ts\<rbrakk>\<^sub>w = {(p, d, q) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
 
-lemma wts_to_weightLTS_code[code]: "wts_to_weightLTS ts = (\<Union>(p,\<gamma>,q). {(p, (ts $ (p,\<gamma>,q)), q)})"
+lemma wts_to_weightLTS_code[code]: "\<lbrakk>ts\<rbrakk>\<^sub>w = (\<Union>(p,\<gamma>,q). {(p, (ts $ (p,\<gamma>,q)), q)})"
   unfolding wts_to_weightLTS_def by blast
 
 lemma finite_wts: 
@@ -42,22 +42,22 @@ proof -
   then show ?thesis unfolding wts_to_monoidLTS_def by presburger
 qed
 
-lemma wts_monoidLTS_to_weightLTS: "(p, (w, d), p') \<in> \<lbrakk>ts\<rbrakk> \<Longrightarrow> (p, d, p') \<in> wts_to_weightLTS ts"
+lemma wts_monoidLTS_to_weightLTS: "(p, (w, d), p') \<in> \<lbrakk>ts\<rbrakk> \<Longrightarrow> (p, d, p') \<in> \<lbrakk>ts\<rbrakk>\<^sub>w"
   unfolding wts_to_monoidLTS_def wts_to_weightLTS_def by blast
 
 lemma wts_monoidLTS_star_to_weightLTS_star:
-  "(p, (w,d), q) \<in> \<lbrakk>ts\<rbrakk>\<^sup>\<odot> \<Longrightarrow> (p, d, q) \<in> (wts_to_weightLTS ts)\<^sup>\<odot>"
+  "(p, (w,d), q) \<in> \<lbrakk>ts\<rbrakk>\<^sup>\<odot> \<Longrightarrow> (p, d, q) \<in> \<lbrakk>ts\<rbrakk>\<^sub>w\<^sup>\<odot>"
   apply (induct rule: monoid_rtrancl_pair_weight_induct, simp)
   subgoal for p w d p' w' d' p''
-    using monoid_rtrancl_into_rtrancl[of p d p' "wts_to_weightLTS ts" d' p''] wts_monoidLTS_to_weightLTS[of p' w' d' p'' ts]
+    using monoid_rtrancl_into_rtrancl[of p d p' "\<lbrakk>ts\<rbrakk>\<^sub>w" d' p''] wts_monoidLTS_to_weightLTS[of p' w' d' p'' ts]
     by blast
   done
 
-lemma wts_weightLTS_to_monoidLTS: "(p, d, p') \<in> wts_to_weightLTS ts \<Longrightarrow> \<exists>w. (p, (w,d), p') \<in> \<lbrakk>ts\<rbrakk>"
+lemma wts_weightLTS_to_monoidLTS: "(p, d, p') \<in> \<lbrakk>ts\<rbrakk>\<^sub>w \<Longrightarrow> \<exists>w. (p, (w,d), p') \<in> \<lbrakk>ts\<rbrakk>"
   unfolding wts_to_monoidLTS_def wts_to_weightLTS_def by blast
 
 lemma wts_weightLTS_star_to_monoidLTS_star:
-  "(p, d, q) \<in> (wts_to_weightLTS ts)\<^sup>\<odot> \<Longrightarrow> \<exists>w. (p, (w,d), q) \<in> \<lbrakk>ts\<rbrakk>\<^sup>\<odot>"
+  "(p, d, q) \<in> \<lbrakk>ts\<rbrakk>\<^sub>w\<^sup>\<odot> \<Longrightarrow> \<exists>w. (p, (w,d), q) \<in> \<lbrakk>ts\<rbrakk>\<^sup>\<odot>"
   apply (induct rule: monoid_rtrancl.induct)
    apply (rule exI[of _ 1])
    apply (metis one_prod_def monoid_rtrancl_refl)
@@ -1231,9 +1231,9 @@ lemma w_inters_sound_wts_to_weightLTS:
   fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "binary_aut ts1"
-  assumes "((p1,q1), d, (p2,q2)) \<in> (wts_to_weightLTS (w_inters ts1 ts2))\<^sup>\<odot>"
-  shows "(\<exists>dp dq. (p1, dp, p2) \<in> (wts_to_weightLTS ts1)\<^sup>\<odot> \<and>
-         (q1, dq, q2) \<in> (wts_to_weightLTS ts2)\<^sup>\<odot> \<and> dp * dq = d)"  
+  assumes "((p1,q1), d, (p2,q2)) \<in> \<lbrakk>w_inters ts1 ts2\<rbrakk>\<^sub>w\<^sup>\<odot>"
+  shows "(\<exists>dp dq. (p1, dp, p2) \<in> (\<lbrakk>ts1\<rbrakk>\<^sub>w)\<^sup>\<odot> \<and>
+         (q1, dq, q2) \<in> (\<lbrakk>ts2\<rbrakk>\<^sub>w)\<^sup>\<odot> \<and> dp * dq = d)"  
   using assms wts_weightLTS_star_to_monoidLTS_star[of "(p1,q1)" d "(p2,q2)" "w_inters ts1 ts2"]
         w_inters_sound[OF assms(1), of p1 q1 _ d p2 q2 ts2] wts_monoidLTS_star_to_weightLTS_star
   by meson
@@ -1242,7 +1242,7 @@ lemma w_inters_sound_wts_to_monoidLTS:
   fixes ts1::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts2::"('state::finite, 'label, 'weight) w_transitions"
   assumes "binary_aut ts1"
-  assumes "((p1,q1), d, (p2,q2)) \<in> (wts_to_weightLTS (w_inters ts1 ts2))\<^sup>\<odot>"
+  assumes "((p1,q1), d, (p2,q2)) \<in> \<lbrakk>w_inters ts1 ts2\<rbrakk>\<^sub>w\<^sup>\<odot>"
   shows "(\<exists>w dp dq. (p1, (w,dp), p2) \<in> \<lbrakk>ts1\<rbrakk>\<^sup>\<odot> \<and>
                     (q1, (w,dq), q2) \<in> \<lbrakk>ts2\<rbrakk>\<^sup>\<odot> \<and> dp * dq = d)"
   using wts_weightLTS_star_to_monoidLTS_star[of "(p1,q1)" d "(p2,q2)" "w_inters ts1 ts2"]
@@ -1255,7 +1255,7 @@ lemma w_inters_complete_wts_to_weightLTS:
   assumes "binary_aut ts1"
   assumes "(p1, (w, dp), p2) \<in> \<lbrakk>ts1\<rbrakk>\<^sup>\<odot>"
   assumes "(q1, (w, dq), q2) \<in> \<lbrakk>ts2\<rbrakk>\<^sup>\<odot>"
-  shows "((p1, q1), dp * dq, (p2, q2)) \<in> (wts_to_weightLTS (w_inters ts1 ts2))\<^sup>\<odot>"
+  shows "((p1, q1), dp * dq, (p2, q2)) \<in> \<lbrakk>w_inters ts1 ts2\<rbrakk>\<^sub>w\<^sup>\<odot>"
   using w_inters_complete[OF assms(1)] assms(2,3)
         wts_monoidLTS_star_to_weightLTS_star[of "(p1,q1)" w "dp * dq" "(p2,q2)" "w_inters ts1 ts2"]
   by fast

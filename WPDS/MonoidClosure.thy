@@ -141,7 +141,7 @@ lemma list_embed_ts_step:
   by (simp add: reduce_monoid_list_append)
 
 lemma embed_monoid_star_empty:
-  assumes "(p, (d,l), q) \<in> monoid_rtrancl {}"
+  assumes "(p, (d,l), q) \<in> {}\<^sup>\<odot>"
   shows "d = reduce_monoid_list l"
   using assms
   by (rule monoid_rtrancl.cases, simp)
@@ -154,8 +154,8 @@ lemma list_embed_ts_project:
   unfolding list_embed_monoid_def by auto
 
 lemma monoid_rtrancl_if_monoid_rtrancl_list_embed_ts':
-  assumes "(p, dl, q) \<in> monoid_rtrancl (list_embed_ts ts)"
-  shows "(p, fst dl, q) \<in> monoid_rtrancl ts"
+  assumes "(p, dl, q) \<in> (list_embed_ts ts)\<^sup>\<odot>"
+  shows "(p, fst dl, q) \<in> ts\<^sup>\<odot>"
   using assms
 proof (induction)
   case (monoid_rtrancl_refl p)
@@ -172,7 +172,7 @@ next
   have "(p\<^sub>2, d\<^sub>1\<^sub>3, p\<^sub>3) \<in> ts" 
     using list_embed_ts_project[of p\<^sub>2 d\<^sub>1\<^sub>3 l\<^sub>1\<^sub>3 p\<^sub>3 ts] dl\<^sub>1\<^sub>3_split monoid_rtrancl_into_rtrancl(2)
     by fastforce
-  then have "(p\<^sub>1, d\<^sub>1\<^sub>2 * d\<^sub>1\<^sub>3, p\<^sub>3) \<in> monoid_rtrancl ts"
+  then have "(p\<^sub>1, d\<^sub>1\<^sub>2 * d\<^sub>1\<^sub>3, p\<^sub>3) \<in> ts\<^sup>\<odot>"
     using monoid_rtrancl.monoid_rtrancl_into_rtrancl monoid_rtrancl_into_rtrancl d\<^sub>1\<^sub>2l\<^sub>1\<^sub>2_split 
     by fastforce
   then show ?case
@@ -180,32 +180,32 @@ next
 qed
 
 lemma monoid_rtrancl_if_monoid_rtrancl_list_embed_ts:
-  assumes "(p, (d,l), q) \<in> monoid_rtrancl (list_embed_ts ts)"
-  shows "(p, d, q) \<in> monoid_rtrancl ts"
+  assumes "(p, (d,l), q) \<in> (list_embed_ts ts)\<^sup>\<odot>"
+  shows "(p, d, q) \<in> ts\<^sup>\<odot>"
   using assms monoid_rtrancl_if_monoid_rtrancl_list_embed_ts' by fastforce
 
 lemma monoid_rtrancl_list_embed_ts_if_monoid_rtrancl:
-  assumes "(p, d, q) \<in> monoid_rtrancl ts"
-  shows "\<exists>l. (p, (d,l), q) \<in> monoid_rtrancl (list_embed_ts ts) \<and> reduce_monoid_list l = d"
+  assumes "(p, d, q) \<in> ts\<^sup>\<odot>"
+  shows "\<exists>l. (p, (d,l), q) \<in> (list_embed_ts ts)\<^sup>\<odot> \<and> reduce_monoid_list l = d"
   using assms
 proof (induction)
   case (monoid_rtrancl_refl p)
-  then have "(p, (1, []), p) \<in> monoid_rtrancl (list_embed_ts ts) \<and> reduce_monoid_list [] = 1"
+  then have "(p, (1, []), p) \<in> (list_embed_ts ts)\<^sup>\<odot> \<and> reduce_monoid_list [] = 1"
     by (metis monoid_rtrancl.monoid_rtrancl_refl one_list_def one_prod_def reduce_monoid_list.simps(1))
   then show ?case  
     by auto
 next
   case (monoid_rtrancl_into_rtrancl p d p' l p'')
   then obtain l' where 
-    "(p, (d, l'), p') \<in> monoid_rtrancl (list_embed_ts ts)" 
+    "(p, (d, l'), p') \<in> (list_embed_ts ts)\<^sup>\<odot>" 
     "reduce_monoid_list l' = d"
     by auto
 
   have "(p', (l,[l]), p'') \<in> list_embed_ts ts"
     by (simp add: list_embed_monoid_def list_embed_ts_def monoid_rtrancl_into_rtrancl.hyps(2))
 
-  have "(p, (d * l, l' * [l]), p'') \<in> monoid_rtrancl (list_embed_ts ts)"
-    by (metis (no_types, lifting) \<open>(p, (d, l'), p') \<in> monoid_rtrancl (list_embed_ts ts)\<close>
+  have "(p, (d * l, l' * [l]), p'') \<in> (list_embed_ts ts)\<^sup>\<odot>"
+    by (metis (no_types, lifting) \<open>(p, (d, l'), p') \<in> (list_embed_ts ts)\<^sup>\<odot>\<close>
         \<open>(p', (l, [l]), p'') \<in> list_embed_ts ts\<close> monoid_rtrancl.monoid_rtrancl_into_rtrancl 
         mult_prod_def prod.sel(1) prod.sel(2))
   moreover
@@ -218,7 +218,7 @@ next
 qed
 
 lemma monoid_rtrancl_list_embed_w0:
-  assumes "(p, dl, q) \<in> monoid_rtrancl (list_embed_ts ts)"
+  assumes "(p, dl, q) \<in> (list_embed_ts ts)\<^sup>\<odot>"
   assumes "snd dl = []"
   shows "p = q \<and> fst dl = 1"
   using assms
@@ -242,12 +242,12 @@ lemma length_list_embed:
   using assms unfolding list_embed_ts_def unfolding list_embed_monoid_def by auto
 
 lemma monoid_rtrancl_list_embed_ts_cases_rev':
-  assumes "(p\<^sub>1, d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3, p\<^sub>3) \<in> monoid_rtrancl (list_embed_ts ts)"
+  assumes "(p\<^sub>1, d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3, p\<^sub>3) \<in> (list_embed_ts ts)\<^sup>\<odot>"
   shows "d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3 = (1,[]) \<or> (\<exists>d\<^sub>1\<^sub>3.
            (\<exists>p\<^sub>2 d\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2 l\<^sub>2\<^sub>3 d\<^sub>1\<^sub>2.
                d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3 = (d\<^sub>1\<^sub>3,d\<^sub>1\<^sub>2#l\<^sub>2\<^sub>3) \<and>
                (p\<^sub>1, (d\<^sub>1\<^sub>2, [d\<^sub>1\<^sub>2]), p\<^sub>2) \<in> list_embed_ts ts \<and>
-               (p\<^sub>2, (d\<^sub>2\<^sub>3,l\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (list_embed_ts ts) \<and>
+               (p\<^sub>2, (d\<^sub>2\<^sub>3,l\<^sub>2\<^sub>3), p\<^sub>3) \<in> (list_embed_ts ts)\<^sup>\<odot> \<and>
                d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3))"
   using assms
 proof (induction rule: monoid_rtrancl.induct)
@@ -275,19 +275,19 @@ next
     then have "\<exists>p\<^sub>2 d\<^sub>2\<^sub>3.
                    d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3 = (d\<^sub>1\<^sub>3, d\<^sub>1\<^sub>2 # l\<^sub>2\<^sub>3) \<and>
                    (p\<^sub>1, (d\<^sub>1\<^sub>2,[d\<^sub>1\<^sub>2]), p\<^sub>2) \<in> list_embed_ts ts \<and> 
-                   (p\<^sub>2, (d\<^sub>2\<^sub>3, l\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (list_embed_ts ts) \<and> 
+                   (p\<^sub>2, (d\<^sub>2\<^sub>3, l\<^sub>2\<^sub>3), p\<^sub>3) \<in> (list_embed_ts ts)\<^sup>\<odot> \<and> 
                    d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3"
       using monoid_rtrancl_into_rtrancl.IH by auto
     then obtain p\<^sub>2 d\<^sub>2\<^sub>3 where props:
       "d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3 = (d\<^sub>1\<^sub>3,d\<^sub>1\<^sub>2 # l\<^sub>2\<^sub>3)"
       "(p\<^sub>1, (d\<^sub>1\<^sub>2,[d\<^sub>1\<^sub>2]), p\<^sub>2) \<in> list_embed_ts ts"
-      "(p\<^sub>2, (d\<^sub>2\<^sub>3,l\<^sub>2\<^sub>3), p\<^sub>3) \<in> monoid_rtrancl (list_embed_ts ts)"
+      "(p\<^sub>2, (d\<^sub>2\<^sub>3,l\<^sub>2\<^sub>3), p\<^sub>3) \<in> (list_embed_ts ts)\<^sup>\<odot>"
       "d\<^sub>1\<^sub>3 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>3"
       using d\<^sub>1\<^sub>3_def Cons by auto
 
     define d\<^sub>2\<^sub>4 where "d\<^sub>2\<^sub>4 = d\<^sub>2\<^sub>3 * d\<^sub>3\<^sub>4"
 
-    have "(p\<^sub>2, (d\<^sub>2\<^sub>4,l\<^sub>2\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (list_embed_ts ts)"
+    have "(p\<^sub>2, (d\<^sub>2\<^sub>4,l\<^sub>2\<^sub>4), p\<^sub>4) \<in> (list_embed_ts ts)\<^sup>\<odot>"
       using local.Cons monoid_rtrancl_into_rtrancl.hyps(2) d\<^sub>3\<^sub>4l\<^sub>3\<^sub>4_split d\<^sub>2\<^sub>4_def props(3)
         monoid_rtrancl.monoid_rtrancl_into_rtrancl[of p\<^sub>2 "(d\<^sub>2\<^sub>3, l\<^sub>2\<^sub>3)" p\<^sub>3 "list_embed_ts ts" "(d\<^sub>3\<^sub>4, l\<^sub>3\<^sub>4)" p\<^sub>4]
       unfolding d\<^sub>1\<^sub>3_def[symmetric] d\<^sub>2\<^sub>4_def l\<^sub>2\<^sub>4_def by (simp add: mult_prod_def times_list_def)
@@ -339,7 +339,7 @@ next
     have "(p\<^sub>1, (d\<^sub>1\<^sub>2, [d\<^sub>1\<^sub>2]), p\<^sub>2) \<in> list_embed_ts ts"
       by (metis \<open>p\<^sub>1 = p\<^sub>3\<close> \<open>l\<^sub>3\<^sub>4 = [d\<^sub>3\<^sub>4]\<close> d\<^sub>1\<^sub>2_def d\<^sub>3\<^sub>4_def monoid_rtrancl_into_rtrancl.hyps(2) p\<^sub>2_def 
           prod.exhaust_sel l\<^sub>3\<^sub>4_def)
-    have "(p\<^sub>2, (d\<^sub>2\<^sub>4, l\<^sub>2\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (list_embed_ts ts)"
+    have "(p\<^sub>2, (d\<^sub>2\<^sub>4, l\<^sub>2\<^sub>4), p\<^sub>4) \<in> (list_embed_ts ts)\<^sup>\<odot>"
       by (metis d\<^sub>2\<^sub>4_def monoid_rtrancl.monoid_rtrancl_refl one_prod_def p\<^sub>2_def l\<^sub>2\<^sub>4_def)
 
     have "d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3 * d\<^sub>3\<^sub>4l\<^sub>3\<^sub>4 = (1, []) \<or> (\<exists>d\<^sub>1\<^sub>4. 
@@ -348,7 +348,7 @@ next
               (p\<^sub>1, (d\<^sub>1\<^sub>2, [d\<^sub>1\<^sub>2]), p\<^sub>2) \<in> list_embed_ts ts \<and>
               (p\<^sub>2, (d\<^sub>2\<^sub>4, l\<^sub>2\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (list_embed_ts ts) \<and> d\<^sub>1\<^sub>4 = d\<^sub>1\<^sub>2 * d\<^sub>2\<^sub>4))"
       using \<open>(p\<^sub>1, (d\<^sub>1\<^sub>2, [d\<^sub>1\<^sub>2]), p\<^sub>2) \<in> list_embed_ts ts\<close> 
-        \<open>(p\<^sub>2, (d\<^sub>2\<^sub>4, l\<^sub>2\<^sub>4), p\<^sub>4) \<in> monoid_rtrancl (list_embed_ts ts)\<close> 
+        \<open>(p\<^sub>2, (d\<^sub>2\<^sub>4, l\<^sub>2\<^sub>4), p\<^sub>4) \<in> (list_embed_ts ts)\<^sup>\<odot>\<close> 
         \<open>d\<^sub>1\<^sub>3l\<^sub>1\<^sub>3 * d\<^sub>3\<^sub>4l\<^sub>3\<^sub>4 = (d\<^sub>1\<^sub>4, d\<^sub>1\<^sub>2 # l\<^sub>2\<^sub>4)\<close> d\<^sub>1\<^sub>4_def by blast
     then show ?thesis
       . 
@@ -356,18 +356,18 @@ next
 qed
 
 lemma monoid_rtrancl_list_embed_ts_cases_rev:
-  assumes "(p, (d,d'#l), p') \<in> monoid_rtrancl (list_embed_ts ts)"
+  assumes "(p, (d,d'#l), p') \<in> (list_embed_ts ts)\<^sup>\<odot>"
   shows "\<exists>d'' s d'''.
            (p, (d'',[d']), s) \<in> list_embed_ts ts \<and>
-           (s, (d''',l), p') \<in> monoid_rtrancl (list_embed_ts ts) \<and>
+           (s, (d''',l), p') \<in> (list_embed_ts ts)\<^sup>\<odot> \<and>
            d = d'' * d'''"
   using assms monoid_rtrancl_list_embed_ts_cases_rev' by fastforce 
 
 lemma monoid_rtrancl_list_embed_ts_induct_rev:
-  assumes "(a, (d, l), b) \<in> monoid_rtrancl (list_embed_ts r)"
+  assumes "(a, (d, l), b) \<in> (list_embed_ts r)\<^sup>\<odot>"
   assumes "(\<And>a. P a 1 a)"
   assumes "(\<And>a d b l c d' l'. (a, (d,l), b) \<in> list_embed_ts r \<Longrightarrow> P b d' c \<Longrightarrow> 
-              (b, (d',l'), c) \<in> monoid_rtrancl (list_embed_ts r) \<Longrightarrow> P a (d * d') c)"
+              (b, (d',l'), c) \<in> (list_embed_ts r)\<^sup>\<odot> \<Longrightarrow> P a (d * d') c)"
   shows "P a d b"
   using assms
 proof (induction "length l" arbitrary: a b l d)
@@ -379,7 +379,7 @@ next
 
   obtain d' l' a' l'' d'' where p:
     "(a,(d',l'),a') \<in> (list_embed_ts r)" 
-    "(a', (d'', l''), b) \<in> monoid_rtrancl (list_embed_ts r)"
+    "(a', (d'', l''), b) \<in> (list_embed_ts r)\<^sup>\<odot>"
     "n = length l''" 
     "l = l' @ l''" 
     "d = d' * d''"
@@ -393,18 +393,18 @@ next
 qed
 
 lemma monoid_rtrancl_induct_rev [consumes 1, case_names monoid_rtrancl_refl monoid_rtrancl_into_rtrancl]:
-  assumes "(a, w, b) \<in> monoid_rtrancl r"
+  assumes "(a, w, b) \<in> r\<^sup>\<odot>"
   assumes "(\<And>a. P a 1 a)"
-  assumes "(\<And>a w b c w'. (a, w, b) \<in> r \<Longrightarrow> P b w' c \<Longrightarrow> (b, w', c) \<in> monoid_rtrancl r  \<Longrightarrow> 
+  assumes "(\<And>a w b c w'. (a, w, b) \<in> r \<Longrightarrow> P b w' c \<Longrightarrow> (b, w', c) \<in> r\<^sup>\<odot>  \<Longrightarrow> 
               P a (w * w') c)"
   shows "P a w b"
 proof -
-  obtain l where l_p: "(a, (w, l), b) \<in> monoid_rtrancl (list_embed_ts r)"
+  obtain l where l_p: "(a, (w, l), b) \<in> (list_embed_ts r)\<^sup>\<odot>"
     using assms(1) monoid_rtrancl_list_embed_ts_if_monoid_rtrancl by metis
 
   show ?thesis
   proof (rule monoid_rtrancl_list_embed_ts_induct_rev[of _ _ l _r])
-    show "(a, (w, l), b) \<in> monoid_rtrancl (list_embed_ts r)"
+    show "(a, (w, l), b) \<in> (list_embed_ts r)\<^sup>\<odot>"
       using l_p by auto
   next
     fix a
@@ -416,7 +416,7 @@ proof -
     moreover
     assume "P b d' c"
     moreover
-    assume "(b, (d', l'), c) \<in> monoid_rtrancl (list_embed_ts r)"
+    assume "(b, (d', l'), c) \<in> (list_embed_ts r)\<^sup>\<odot>"
     ultimately
     show "P a (d * d') c"
       using assms(3) by (meson list_embed_ts_project monoid_rtrancl_if_monoid_rtrancl_list_embed_ts)
@@ -432,14 +432,14 @@ lemma monoid_rtranclp_induct_rev [consumes 1, case_names monoid_rtranclp_refl mo
 proof -
   define r' where "r' = {(a,w,b). r a w b}"
 
-  have A: "(a, w, b) \<in> monoid_rtrancl r'"
+  have A: "(a, w, b) \<in> r'\<^sup>\<odot>"
     by (metis (no_types, lifting) \<open>r' \<equiv> {(a, x, y). r a x y}\<close> assms(1) mem_Collect_eq 
         mono_monoid_rtranclp monoid_rtranclp_monoid_rtrancl_eq split_conv)
 
   have B: "(\<And>a. P a 1 a)"
     using assms(2) by auto
   have C: "(\<And>a w b l c w' l'. (a, w, b) \<in> r' \<Longrightarrow> P b w' c \<Longrightarrow>
-           (b, w', c) \<in> monoid_rtrancl r' \<Longrightarrow> P a (w * w') c)"
+           (b, w', c) \<in> r'\<^sup>\<odot> \<Longrightarrow> P a (w * w') c)"
     by (metis (no_types, lifting) \<open>r' \<equiv> {(a, x, y). r a x y}\<close> assms(3) mem_Collect_eq 
         mono_monoid_rtranclp monoid_rtranclp_monoid_rtrancl_eq split_conv)
 
@@ -448,9 +448,9 @@ proof -
 qed
 
 lemma monoid_rtrancl_rtrancl_into_rtrancl:
-  assumes "(a, w, b) \<in> monoid_rtrancl r"
-  assumes "(b, l, c) \<in> monoid_rtrancl r"
-  shows "(a, w*l, c) \<in> monoid_rtrancl r"
+  assumes "(a, w, b) \<in> r\<^sup>\<odot>"
+  assumes "(b, l, c) \<in> r\<^sup>\<odot>"
+  shows "(a, w*l, c) \<in> r\<^sup>\<odot>"
   using assms(2) assms(1) 
 proof (induction rule: monoid_rtrancl.induct)
   case (monoid_rtrancl_refl b)
@@ -464,17 +464,17 @@ qed
 
 lemma monoid_rtrancl_into_rtrancl_rev:
   assumes "(a, w, b) \<in> r"
-  assumes "(b, l, c) \<in> monoid_rtrancl r"
-  shows "(a, w*l, c) \<in> monoid_rtrancl r"
+  assumes "(b, l, c) \<in> r\<^sup>\<odot>"
+  shows "(a, w*l, c) \<in> r\<^sup>\<odot>"
   using monoid_rtrancl_rtrancl_into_rtrancl
   using assms(2) assms(1)
   by (metis lambda_one monoid_rtrancl.monoid_rtrancl_into_rtrancl monoid_rtrancl.monoid_rtrancl_refl)
 
 lemma monoid_rtrancl_list_embed_ts_append_split:
-  assumes "(p, (d,d'@l), p') \<in> monoid_rtrancl (list_embed_ts ts)"
+  assumes "(p, (d,d'@l), p') \<in> (list_embed_ts ts)\<^sup>\<odot>"
   shows "\<exists>d'' s d'''.
-           (p, (d'',d'), s) \<in> monoid_rtrancl (list_embed_ts ts) \<and>
-           (s, (d''',l), p') \<in> monoid_rtrancl (list_embed_ts ts) \<and>
+           (p, (d'',d'), s) \<in> (list_embed_ts ts)\<^sup>\<odot> \<and>
+           (s, (d''',l), p') \<in> (list_embed_ts ts)\<^sup>\<odot> \<and>
            d = d'' * d'''"
 using assms proof(induction d' arbitrary: p d)
   case Nil
@@ -483,42 +483,42 @@ using assms proof(induction d' arbitrary: p d)
 next
   case (Cons a u1)
   then have "\<exists>du0 q du1. (p, (du0, [a]), q) \<in> list_embed_ts ts \<and> 
-                         (q, (du1, u1 @ l), p') \<in> monoid_rtrancl (list_embed_ts ts) \<and> d = du0 * du1"
+                         (q, (du1, u1 @ l), p') \<in> (list_embed_ts ts)\<^sup>\<odot> \<and> d = du0 * du1"
     using Cons(2) monoid_rtrancl_list_embed_ts_cases_rev[of p d a "u1 @ l" p' ts] by auto
   then obtain q du0 du1 where e:
     "(p, (du0, [a]), q) \<in> list_embed_ts ts" 
-    "(q, (du1, u1 @ l), p') \<in> monoid_rtrancl (list_embed_ts ts)" 
+    "(q, (du1, u1 @ l), p') \<in> (list_embed_ts ts)\<^sup>\<odot>" 
     "d = du0 * du1"
     by auto
 
-  have "\<exists>d'' s d'''. (q, (d'', u1), s) \<in> monoid_rtrancl (list_embed_ts ts) \<and>
-                     (s, (d''', l), p') \<in> monoid_rtrancl (list_embed_ts ts) \<and> du1 = d'' * d'''"
+  have "\<exists>d'' s d'''. (q, (d'', u1), s) \<in> (list_embed_ts ts)\<^sup>\<odot> \<and>
+                     (s, (d''', l), p') \<in> (list_embed_ts ts)\<^sup>\<odot> \<and> du1 = d'' * d'''"
     using Cons.IH[OF e(2)] .
   then obtain d'' s d''' where
-    "(q, (d'', u1), s) \<in> monoid_rtrancl (list_embed_ts ts)"
-    "(s, (d''', l), p') \<in> monoid_rtrancl (list_embed_ts ts)" 
+    "(q, (d'', u1), s) \<in> (list_embed_ts ts)\<^sup>\<odot>"
+    "(s, (d''', l), p') \<in> (list_embed_ts ts)\<^sup>\<odot>" 
     "du1 = d'' * d'''"
     by auto
-  from this(1) have "(p, (du0 * d'', a # u1), s) \<in> monoid_rtrancl (list_embed_ts ts)"
+  from this(1) have "(p, (du0 * d'', a # u1), s) \<in> (list_embed_ts ts)\<^sup>\<odot>"
     using monoid_rtrancl_into_rtrancl_rev[of p "(du0, [a])" q "list_embed_ts ts" "(d'', u1)" s] e(1)
     by (simp add: mult_prod_def times_list_def)
   then show ?case
-    by (metis (mono_tags, lifting) \<open>(s, (d''', l), p') \<in> monoid_rtrancl (list_embed_ts ts)\<close> 
+    by (metis (mono_tags, lifting) \<open>(s, (d''', l), p') \<in> (list_embed_ts ts)\<^sup>\<odot>\<close> 
         \<open>du1 = d'' * d'''\<close> e(3) mult.assoc)
 qed
 
 lemma monoid_rtrancl_cases_rev:
-  assumes "(p, d, p') \<in> monoid_rtrancl r"
+  assumes "(p, d, p') \<in> r\<^sup>\<odot>"
   assumes "\<And>a. p = a \<Longrightarrow> d = 1 \<Longrightarrow> p' = a \<Longrightarrow> P"
-  assumes "\<And>a l b w c. p = a \<Longrightarrow> d = l * w \<Longrightarrow> p' = c \<Longrightarrow> (a, l, b) \<in> r \<Longrightarrow> (b, w, c) \<in> monoid_rtrancl r \<Longrightarrow> P"
+  assumes "\<And>a l b w c. p = a \<Longrightarrow> d = l * w \<Longrightarrow> p' = c \<Longrightarrow> (a, l, b) \<in> r \<Longrightarrow> (b, w, c) \<in> r\<^sup>\<odot> \<Longrightarrow> P"
   shows "P"
   using assms by (induct rule: monoid_rtrancl_induct_rev, simp_all)
 
 lemma monoid_rtrancl_pair_induct [consumes 1, case_names base step]:
-  assumes "((p, w), d, (p', w')) \<in> monoid_rtrancl r"
+  assumes "((p, w), d, (p', w')) \<in> r\<^sup>\<odot>"
   assumes "(\<And>p w. P p w 1 p w)"
   assumes "\<And>p w d p' w' d' p'' w''. 
-              ((p, w), d, (p', w')) \<in> monoid_rtrancl r \<Longrightarrow> 
+              ((p, w), d, (p', w')) \<in> r\<^sup>\<odot> \<Longrightarrow> 
               P p w d p' w' \<Longrightarrow> 
               ((p', w'), d', (p'', w'')) \<in> r \<Longrightarrow> 
               P p w (d * d') p'' w''"
@@ -528,12 +528,12 @@ lemma monoid_rtrancl_pair_induct [consumes 1, case_names base step]:
   using assms by force
 
 lemma monoid_rtrancl_pair_induct_rev [consumes 1, case_names base step]:
-  assumes "((p, w), d, (p', w')) \<in> monoid_rtrancl r"
+  assumes "((p, w), d, (p', w')) \<in> r\<^sup>\<odot>"
   assumes "(\<And>p w. P p w 1 p w)"
   assumes "\<And>p w d p' w' d' p'' w''. 
               ((p, w), d, (p', w')) \<in> r \<Longrightarrow> 
               P p' w' d' p'' w'' \<Longrightarrow> 
-              ((p', w'), d', (p'', w'')) \<in> monoid_rtrancl r \<Longrightarrow> 
+              ((p', w'), d', (p'', w'')) \<in> r\<^sup>\<odot> \<Longrightarrow> 
               P p w (d * d') p'' w''"
   shows "P p w d p' w'"
   using monoid_rtrancl_induct_rev[of "(p, w)" d "(p', w')" r
@@ -541,10 +541,10 @@ lemma monoid_rtrancl_pair_induct_rev [consumes 1, case_names base step]:
         assms by force
 
 lemma monoid_rtrancl_pair_weight_induct [consumes 1, case_names base step]:
-  assumes "(p, (w,d), p') \<in> monoid_rtrancl r"
+  assumes "(p, (w,d), p') \<in> r\<^sup>\<odot>"
   assumes "(\<And>p. P p 1 1 p)"
   assumes "\<And>p w d p' w' d' p''. 
-              (p, (w,d), p') \<in> monoid_rtrancl r \<Longrightarrow> 
+              (p, (w,d), p') \<in> r\<^sup>\<odot> \<Longrightarrow> 
               P p w d p' \<Longrightarrow> 
               (p', (w', d'), p'') \<in> r \<Longrightarrow> 
               P p (w * w') (d * d') p''"
@@ -554,8 +554,8 @@ lemma monoid_rtrancl_pair_weight_induct [consumes 1, case_names base step]:
   unfolding one_prod_def mult_prod_def using assms by simp
 
 lemma monoid_rtrancl_simps_rev:
-  "((x, y, z) \<in> monoid_rtrancl r) =
-   ((\<exists>a. x = a \<and> y = 1 \<and> z = a) \<or> (\<exists>a l b w c. x = a \<and> y = l * w \<and> z = c \<and> (a, l, b) \<in> r \<and> (b, w, c) \<in> monoid_rtrancl r))"
+  "((x, y, z) \<in> r\<^sup>\<odot>) =
+   ((\<exists>a. x = a \<and> y = 1 \<and> z = a) \<or> (\<exists>a l b w c. x = a \<and> y = l * w \<and> z = c \<and> (a, l, b) \<in> r \<and> (b, w, c) \<in> r\<^sup>\<odot>))"
   using monoid_rtrancl_cases_rev[of x y z r] monoid_rtrancl_into_rtrancl_rev[of x _ _ r] by auto
 
 
@@ -571,19 +571,19 @@ abbreviation monoid_rtrancl_witness_tuple :: "'a \<times> 'b \<times> 'a \<Right
   "monoid_rtrancl_witness_tuple \<equiv> (\<lambda>(c,l,c'). monoid_rtrancl_witness c l c')"
 
 lemma monoid_star_witness_unfold:                   
-  assumes "(c, l, c') \<in> monoid_rtrancl ts"
+  assumes "(c, l, c') \<in> ts\<^sup>\<odot>"
   assumes "trace = monoid_rtrancl_witness c l c'"
   shows "fst trace = c \<and> is_trace c (snd trace) c' \<and> trace_weight (snd trace) = l \<and> (snd trace) \<in> lists ts"
   using monoid_rtrancl_exists_trace[OF assms(1)] assms(2)
   unfolding monoid_rtrancl_witness_def
   by simp (rule someI_ex, simp)
 
-lemma countable_monoid_rtrancl_witness: "countable {monoid_rtrancl_witness c l c' | c l c'. (c, l, c') \<in> monoid_rtrancl ts}"
+lemma countable_monoid_rtrancl_witness: "countable {monoid_rtrancl_witness c l c' | c l c'. (c, l, c') \<in> ts\<^sup>\<odot>}"
 proof -
-  have subset: "{monoid_rtrancl_witness c l c' | c l c'. (c, l, c') \<in> monoid_rtrancl ts} \<subseteq> (UNIV::'a set) \<times> (lists ts)"
+  have subset: "{monoid_rtrancl_witness c l c' | c l c'. (c, l, c') \<in> ts\<^sup>\<odot>} \<subseteq> (UNIV::'a set) \<times> (lists ts)"
   proof
     fix x
-    assume assms: "x \<in> {monoid_rtrancl_witness c l c' | c l c'. (c, l, c') \<in> monoid_rtrancl ts}"
+    assume assms: "x \<in> {monoid_rtrancl_witness c l c' | c l c'. (c, l, c') \<in> ts\<^sup>\<odot>}"
     have "fst x \<in> (UNIV::'a set)" by fast
     moreover have "snd x \<in> lists ts" using assms monoid_star_witness_unfold by blast
     ultimately show "x \<in> UNIV \<times> lists ts" by (simp add: mem_Times_iff)
@@ -594,26 +594,26 @@ proof -
 qed
 
 lemma monoid_rtrancl_witness_inj_aux:
-  assumes "(c, l, c') \<in> monoid_rtrancl ts"
-    and "(c1, l1, c1') \<in> monoid_rtrancl ts"
+  assumes "(c, l, c') \<in> ts\<^sup>\<odot>"
+    and "(c1, l1, c1') \<in> ts\<^sup>\<odot>"
     and "monoid_rtrancl_witness c l c' = monoid_rtrancl_witness c1 l1 c1'"
   shows "c = c1 \<and> l = l1 \<and> c' = c1'"
   using monoid_star_witness_unfold[OF assms(1)] monoid_star_witness_unfold[OF assms(2)] 
         assms(3) is_trace_inj 
   by (cases "snd (monoid_rtrancl_witness c l c') \<noteq> []", fastforce) auto
 
-lemma monoid_rtrancl_witness_inj: "inj_on monoid_rtrancl_witness_tuple (monoid_rtrancl ts)"
+lemma monoid_rtrancl_witness_inj: "inj_on monoid_rtrancl_witness_tuple (ts\<^sup>\<odot>)"
   unfolding inj_on_def using monoid_rtrancl_witness_inj_aux by force
 
 lemma monoid_rtrancl_witness_bij_betw: 
-  "bij_betw monoid_rtrancl_witness_tuple (monoid_rtrancl ts) (monoid_rtrancl_witness_tuple` (monoid_rtrancl ts))"
+  "bij_betw monoid_rtrancl_witness_tuple (ts\<^sup>\<odot>) (monoid_rtrancl_witness_tuple` (ts\<^sup>\<odot>))"
   unfolding bij_betw_def using monoid_rtrancl_witness_inj by blast
 
-lemma countable_monoid_rtrancl: "countable (monoid_rtrancl ts)"
+lemma countable_monoid_rtrancl: "countable (ts\<^sup>\<odot>)"
 proof -
-  have subset:"(monoid_rtrancl_witness_tuple` (monoid_rtrancl ts)) \<subseteq> {monoid_rtrancl_witness c l c' | c l c'. (c, l, c') \<in> monoid_rtrancl ts}"
+  have subset:"(monoid_rtrancl_witness_tuple` (ts\<^sup>\<odot>)) \<subseteq> {monoid_rtrancl_witness c l c' | c l c'. (c, l, c') \<in> ts\<^sup>\<odot>}"
     by fast
-  then have "countable (monoid_rtrancl_witness_tuple` (monoid_rtrancl ts))"
+  then have "countable (monoid_rtrancl_witness_tuple` (ts\<^sup>\<odot>))"
     using countable_subset[OF subset countable_monoid_rtrancl_witness] by blast
   then show ?thesis using monoid_rtrancl_witness_bij_betw countableI_bij2 by fast
 qed

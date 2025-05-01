@@ -46,7 +46,7 @@ definition run_WPDS_reach' ::
     ('ctr_loc, 'noninit) state set \<Rightarrow> 
     ('ctr_loc, 'noninit) state set \<Rightarrow> 'weight option" where
    "run_WPDS_reach' \<Delta> W ts ts' finals finals' = (if WPDS_Code.checking \<Delta> ts'
-            then Some (weight_reach_sum_exec (wts_to_weightLTS (w_inters ts (WPDS_with_W_automata_no_assms.pre_star_exec' (w_rules \<Delta> W) ts'))) {(p, p) |p. p \<in> inits_set} (finals \<times> finals')) 
+            then Some (weight_reach_sum_exec \<lbrakk>w_inters ts (WPDS_with_W_automata_no_assms.pre_star_exec' (w_rules \<Delta> W) ts')\<rbrakk>\<^sub>w {(p, p) |p. p \<in> inits_set} (finals \<times> finals')) 
             else None)"
 
 definition "run_WPDS_reach \<Delta> W ts ts' = run_WPDS_reach' \<Delta> W (ts_to_wts ts) (ts_to_wts ts')"

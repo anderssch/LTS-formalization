@@ -27,7 +27,7 @@ lemma star_to_closure: "c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<Longrightarrow>
 
 end
 
-lemma monoid_rtranclp_unfold: "monoid_rtranclp (monoidLTS.l_step_relp ts) c l c' \<longleftrightarrow> (c, l, c') \<in> monoid_rtrancl ts"
+lemma monoid_rtranclp_unfold: "monoid_rtranclp (monoidLTS.l_step_relp ts) c l c' \<longleftrightarrow> (c, l, c') \<in> ts\<^sup>\<odot>"
   unfolding monoidLTS.l_step_relp_def monoid_rtranclp_monoid_rtrancl_eq by simp
 
 
