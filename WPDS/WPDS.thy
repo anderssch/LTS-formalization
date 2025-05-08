@@ -96,12 +96,6 @@ qed
 
 end
 
-definition w_rules :: "('ctr_loc, 'label) rule set \<Rightarrow> (('ctr_loc, 'label) rule \<Rightarrow> 'weight) \<Rightarrow> ('ctr_loc, 'label, 'weight) w_rule set" where
-  "w_rules rules W = (\<Union>((p,\<gamma>),(p',w))\<in>rules. {((p,\<gamma>),W ((p,\<gamma>),(p',w)),(p',w))})"
-
-lemma finite_w_rules: "finite rules \<Longrightarrow> finite (w_rules rules W)"
-  unfolding w_rules_def by fast
-
 
 section \<open>Locale: dioidLTS -- acceptance\<close>
 \<comment> \<open>Generalization of PDS_with_P_automata.accepts that computes the meet-over-all-paths in the W-automaton.\<close>

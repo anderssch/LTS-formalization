@@ -4,18 +4,14 @@ begin
 
 section \<open>Locale: WPDS_Code\<close>
 locale WPDS_Code =
-  fixes \<Delta> :: "('ctr_loc::enum, 'label::enum) rule set"
-    and W :: "('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_dioid"
-    and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_dioid) w_transitions"
+  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::enum, 'weight::bounded_dioid) w_transitions"
 begin
 
-definition "wrules = w_rules \<Delta> W"
+definition "checking \<longleftrightarrow> (\<forall>q. is_Init q \<longrightarrow> (\<forall>p \<gamma>. ts $ (p, \<gamma>, q) = 0))"
 
-definition "checking \<longleftrightarrow> (finite \<Delta> \<and> (\<forall>q. is_Init q \<longrightarrow> (\<forall>p \<gamma>. ts $ (p, \<gamma>, q) = 0)))"
-
-lemma checking_implies: "checking \<Longrightarrow> WPDS_with_W_automata wrules ts"
+lemma checking_implies: "checking \<Longrightarrow> WPDS_with_W_automata (set \<Delta>) ts"
   unfolding checking_def WPDS_with_W_automata_def finite_WPDS_def WPDS_with_W_automata_axioms_def 
-  using finite_w_rules unfolding wrules_def by blast
+  by blast
 
 definition "lbl = WPDS.lbl"
 
@@ -29,27 +25,32 @@ context fixes finals :: "('ctr_loc, 'noninit) state set" begin
 abbreviation accepts ("\<L>(_)" [1000] 1000) where "\<L>(ts') \<equiv> dioidLTS.accepts ts' finals"
 lemma pre_star_exec_correctness:
   assumes "checking"
-  shows "\<L>(WPDS_with_W_automata_no_assms.pre_star_exec' (w_rules \<Delta> W) ts) (Init p, w) =
-         dioidLTS.weight_pre_star (WPDS.transition_rel wrules) (\<lambda>(p, w). \<L>(ts) (Init p, w)) (p, w)"
-  using WPDS_with_W_automata.pre_star_exec_correctness[of "wrules" ts _ p w] checking_implies[OF assms]
-  unfolding wrules_def by blast
+  shows "\<L>(WPDS_with_W_automata_no_assms.pre_star_exec' (set \<Delta>) ts) (Init p, w) =
+         dioidLTS.weight_pre_star (WPDS.transition_rel (set \<Delta>)) (\<lambda>(p, w). \<L>(ts) (Init p, w)) (p, w)"
+  using WPDS_with_W_automata.pre_star_exec_correctness[of "set \<Delta>" ts _ p w] checking_implies[OF assms]
+  by blast
 end
 end
 
 section \<open>Various code generation lemmas\<close>
 
 definition run_WPDS_reach' ::
-   "('ctr_loc::{enum,card_UNIV}, 'label::enum) rule set \<Rightarrow> 
-    (('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_dioid) \<Rightarrow> 
-    (('ctr_loc, 'noninit::{enum,card_UNIV}) state, 'label) transition \<Rightarrow>f 'weight \<Rightarrow>
-    (('ctr_loc, 'noninit) state, 'label) transition \<Rightarrow>f 'weight \<Rightarrow>
+   "('ctr_loc::{enum,card_UNIV}, 'label::enum, 'weight::bounded_dioid) w_rule list \<Rightarrow> 
+    (('ctr_loc, 'noninit::{enum,card_UNIV}) state, 'label, 'weight) w_transitions \<Rightarrow>
+    (('ctr_loc, 'noninit) state, 'label, 'weight) w_transitions \<Rightarrow>
     ('ctr_loc, 'noninit) state set \<Rightarrow> 
     ('ctr_loc, 'noninit) state set \<Rightarrow> 'weight option" where
-   "run_WPDS_reach' \<Delta> W ts ts' finals finals' = (if WPDS_Code.checking \<Delta> ts'
-            then Some (weight_reach_sum_exec \<lbrakk>w_inters ts (WPDS_with_W_automata_no_assms.pre_star_exec' (w_rules \<Delta> W) ts')\<rbrakk>\<^sub>w {(p, p) |p. p \<in> inits_set} (finals \<times> finals')) 
+   "run_WPDS_reach' \<Delta> ts ts' finals finals' = (if WPDS_Code.checking ts'
+            then Some (weight_reach_sum_exec \<lbrakk>w_inters ts (WPDS_with_W_automata_no_assms.pre_star_exec' (set \<Delta>) ts')\<rbrakk>\<^sub>w {(p, p) |p. p \<in> inits_set} (finals \<times> finals')) 
             else None)"
 
-definition "run_WPDS_reach \<Delta> W ts ts' = run_WPDS_reach' \<Delta> W (ts_to_wts ts) (ts_to_wts ts')"
+definition run_WPDS_reach ::
+   "('ctr_loc::{enum,card_UNIV}, 'label::enum, 'weight::bounded_dioid) w_rule list \<Rightarrow> 
+    (('ctr_loc, 'noninit::{enum,card_UNIV}) state, 'label) transition set \<Rightarrow>
+    (('ctr_loc, 'noninit::{enum,card_UNIV}) state, 'label) transition set \<Rightarrow>
+    ('ctr_loc, 'noninit) state set \<Rightarrow> 
+    ('ctr_loc, 'noninit) state set \<Rightarrow> 'weight option" where
+ "run_WPDS_reach \<Delta> ts ts' = run_WPDS_reach' \<Delta> (ts_to_wts ts) (ts_to_wts ts')"
 
 declare WPDS_Code.checking_def[code]
 declare WPDS_Code.accept_pre_star_exec0'_def[code]
@@ -100,16 +101,13 @@ lemma lang_aut_is_accepts_full:
     by blast
   using not_in_trans_star_implies_accepts_0[OF assms] by blast
 
+
 context
-  fixes \<Delta> :: "('ctr_loc::{card_UNIV,enum}, 'label::enum) rule set"
-    and W :: "('ctr_loc, 'label) rule \<Rightarrow> 'weight::bounded_dioid"
+  fixes \<Delta> :: "('ctr_loc::{card_UNIV,enum}, 'label::enum, 'weight::bounded_dioid) w_rule list"
 begin
 
-lemma fin_w_rules: "finite (w_rules \<Delta> W)"
-    by (simp add: finite_w_rules)
-
-interpretation finite_WPDS "(w_rules \<Delta> W)" 
-  using finite_WPDS_def fin_w_rules by auto
+interpretation finite_WPDS "(set \<Delta>)" 
+  using finite_WPDS_def by auto
 
 interpretation countable_dioidLTS transition_rel apply standard
   using countable_transition_rel .
@@ -125,15 +123,24 @@ lemma weight_reach_set'_lang_aut_is_weight_reach'_accepts_full:
   using weight_reach_set_is_weight_reach by blast
 
 lemma WPDS_reach_exec_correct:
-  fixes ts :: "(('ctr_loc :: {card_UNIV,enum}, 'noninit::{card_UNIV,enum}) state, 'label::enum) transition set"
+  fixes ts :: "(('ctr_loc, 'noninit::{card_UNIV,enum}) state, 'label::enum) transition set"
   fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
-  assumes "run_WPDS_reach \<Delta> W ts ts' finals finals' = Some w"
+  assumes "run_WPDS_reach \<Delta> ts ts' finals finals' = Some w"
   shows "w = (weight_reach_set (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
-  using assms WPDS_weight_reach'_is_weight_reach_sum_exec[of "ts_to_wts ts" "ts_to_wts ts'" inits_set finals finals', OF binary_aut_ts_to_wts[of ts]]
-  using weight_reach_set'_lang_aut_is_weight_reach'_accepts_full[of ts ts' finals finals'] unfolding WPDS_Code.checking_def
-  run_WPDS_reach'_def  inits_set_def mem_Collect_eq run_WPDS_reach_def
-   finite_code by (metis (no_types, lifting) WPDS_Code.checking_def assms(1) run_WPDS_reach'_def finite_w_rules option.distinct(1) option.inject run_WPDS_reach_def) 
-
+proof -
+  have "WPDS_Code.checking ((ts_to_wts ts')::(('ctr_loc, 'noninit) state, 'label, 'weight::bounded_dioid) w_transitions)"
+    using assms unfolding run_WPDS_reach_def run_WPDS_reach'_def
+    by (metis (no_types, lifting) option.distinct(1))
+  then have "weight_reach_sum_exec \<lbrakk>w_inters (ts_to_wts ts) (WPDS_with_W_automata_no_assms.pre_star_exec' (set \<Delta>) (ts_to_wts ts'))\<rbrakk>\<^sub>w {(p, p) |p. p \<in> inits_set} (finals \<times> finals')
+        = weight_reach (accepts_full (ts_to_wts ts) finals) (accepts_full (ts_to_wts ts') finals')"
+    using WPDS_weight_reach'_is_weight_reach_sum_exec[of "ts_to_wts ts" "ts_to_wts ts'" inits_set finals finals', OF binary_aut_ts_to_wts[of ts]]
+    unfolding inits_set_def mem_Collect_eq WPDS_Code.checking_def
+    by simp
+  then show ?thesis
+    unfolding weight_reach_set'_lang_aut_is_weight_reach'_accepts_full[of ts ts' finals finals', unfolded finite_code, simplified]
+    using assms unfolding run_WPDS_reach_def run_WPDS_reach'_def
+    by (metis (lifting) option.distinct(1) option.inject)
+qed
 end
 
 end
