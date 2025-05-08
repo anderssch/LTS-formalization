@@ -2235,18 +2235,23 @@ proof -
 qed
 
 abbreviation language_ts :: "('ctr_loc,'label) conf \<Rightarrow> 'weight" where
-  "language_ts \<equiv> (\<lambda>(p,w). accepts ts finals (Init p, w))"
+  "language_ts \<equiv> (\<lambda>(p,w). \<L>(ts) (Init p, w))"
 
 lemma augmented_rules_correct:
   "dioidLTS.weight_pre_star augmented_WPDS.transition_rel \<L>(K$ 0) (Init p, w) = weight_pre_star language_ts (p, w)"
   using unfold_pre_star_accepts_empty_automaton augmented_rules_match_W_automaton[of finals p w]
   unfolding weight_pre_star_def reach_conf_in_W_automaton_def by simp meson
 
-lemma pre_star_correctness: 
-  assumes "saturation (augmented_WPDS.pre_star_rule) (K$ 0) A"
-  shows "\<L>(A) (Init p, w) = weight_pre_star language_ts (p,w)"
+lemma pre_star_correctness:
+  assumes "saturation augmented_WPDS.pre_star_rule (K$ 0) A"
+  shows "\<L>(A) (Init p, w) = weight_pre_star language_ts (p, w)"
   using assms augmented_rules_correct augmented_WPDS.correctness' by auto 
 
+abbreviation "pre_star_rule' \<equiv> WPDS.pre_star_rule (init_rules \<union> pop_ts_rules)"
+lemma pre_star_correctness': (* This version is used in the paper, since it relies on fewer definitions *)
+  assumes "saturation pre_star_rule' (K$ 0) A"
+  shows "\<L>(A) (Init p, w) = weight_pre_star language_ts (p, w)"
+  using assms augmented_rules_correct augmented_WPDS.correctness' augmented_WPDS_rules_def by auto 
 
 subsection \<open>Code generation 2\<close>
 
