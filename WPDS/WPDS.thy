@@ -1639,13 +1639,14 @@ definition accept_pre_star_exec0' where
 
 end
 
-
 section \<open>Code declarations\<close>
 declare WPDS_with_W_automata_no_assms.init_rules_def2[code]
 declare WPDS_with_W_automata_no_assms.pop_ts_rules_def2[code]
 declare WPDS_with_W_automata_no_assms.augmented_WPDS_rules_def[code]
 declare WPDS_with_W_automata_no_assms.pre_star_exec'_def[code]
 declare WPDS_with_W_automata_no_assms.accept_pre_star_exec0'_def[code]
+
+abbreviation "pre_star_exec \<Delta> ts \<equiv> WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts"
 
 
 section \<open>Locale: WPDS_with_W_automata\<close>
