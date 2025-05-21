@@ -14,7 +14,7 @@ definition l_step_relp  :: "'state \<Rightarrow> 'weight \<Rightarrow> 'state \<
   "c \<Midarrow>l\<Rightarrow> c' \<longleftrightarrow> (c, l, c') \<in> transition_relation"
 
 abbreviation monoid_star_relp :: "'state \<Rightarrow> 'weight \<Rightarrow> 'state \<Rightarrow> bool" ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [90,90,100] 100) where
-  "c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<equiv> (monoid_rtranclp l_step_relp) c l c'"
+  "c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<equiv> l_step_relp\<^sup>\<odot>\<^sup>\<odot> c l c'"
 
 definition monoid_star :: "('state \<times> 'weight \<times> 'state) set" where
   "monoid_star = {(c,l,c'). c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
@@ -27,7 +27,7 @@ lemma star_to_closure: "c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<Longrightarrow>
 
 end
 
-lemma monoid_rtranclp_unfold: "monoid_rtranclp (monoidLTS.l_step_relp ts) c l c' \<longleftrightarrow> (c, l, c') \<in> ts\<^sup>\<odot>"
+lemma monoid_rtranclp_unfold: "(monoidLTS.l_step_relp ts)\<^sup>\<odot>\<^sup>\<odot> c l c' \<longleftrightarrow> (c, l, c') \<in> ts\<^sup>\<odot>"
   unfolding monoidLTS.l_step_relp_def monoid_rtranclp_monoid_rtrancl_eq by simp
 
 

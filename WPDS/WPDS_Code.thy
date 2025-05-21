@@ -41,7 +41,7 @@ definition run_WPDS_reach' ::
     ('ctr_loc, 'noninit) state set \<Rightarrow> 
     ('ctr_loc, 'noninit) state set \<Rightarrow> 'weight option" where
    "run_WPDS_reach' \<Delta> ts ts' finals finals' = (if WPDS_Code.checking ts'
-            then Some (weight_reach_sum_exec \<lbrakk>w_inters ts (WPDS_with_W_automata_no_assms.pre_star_exec' (set \<Delta>) ts')\<rbrakk>\<^sub>w {(p, p) |p. p \<in> inits_set} (finals \<times> finals')) 
+            then Some (weight_reach_sum_exec \<lbrakk>ts \<inter>\<^sub>w (WPDS_with_W_automata_no_assms.pre_star_exec' (set \<Delta>) ts')\<rbrakk>\<^sub>w {(p, p) |p. p \<in> inits_set} (finals \<times> finals')) 
             else None)"
 
 definition run_WPDS_reach ::
@@ -131,7 +131,7 @@ proof -
   have "WPDS_Code.checking ((ts_to_wts ts')::(('ctr_loc, 'noninit) state, 'label, 'weight::bounded_dioid) w_transitions)"
     using assms unfolding run_WPDS_reach_def run_WPDS_reach'_def
     by (metis (no_types, lifting) option.distinct(1))
-  then have "weight_reach_sum_exec \<lbrakk>w_inters (ts_to_wts ts) (WPDS_with_W_automata_no_assms.pre_star_exec' (set \<Delta>) (ts_to_wts ts'))\<rbrakk>\<^sub>w {(p, p) |p. p \<in> inits_set} (finals \<times> finals')
+  then have "weight_reach_sum_exec \<lbrakk>(ts_to_wts ts) \<inter>\<^sub>w (WPDS_with_W_automata_no_assms.pre_star_exec' (set \<Delta>) (ts_to_wts ts'))\<rbrakk>\<^sub>w {(p, p) |p. p \<in> inits_set} (finals \<times> finals')
         = weight_reach (accepts_full (ts_to_wts ts) finals) (accepts_full (ts_to_wts ts') finals')"
     using WPDS_weight_reach'_is_weight_reach_sum_exec[of "ts_to_wts ts" "ts_to_wts ts'" inits_set finals finals', OF binary_aut_ts_to_wts[of ts]]
     unfolding inits_set_def mem_Collect_eq WPDS_Code.checking_def

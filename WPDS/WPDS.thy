@@ -236,7 +236,7 @@ lemma accepts_K0_is_zero_if_nonfinal:
   assumes "p \<notin> finals"
   shows "\<L>(K$ 0) (p,w) = 0"
 proof -
-  have "{d :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, d), q) \<in> monoid_rtrancl \<lbrakk>K$ 0\<rbrakk>} \<subseteq> {0}"
+  have "{d :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, d), q) \<in> \<lbrakk>K$ 0\<rbrakk>\<^sup>\<odot>} \<subseteq> {0}"
     using zero_weight_if_nonrefl_path_in_K0[of p "(w,_)" _] assms by auto
   then show ?thesis
     unfolding accepts_def by auto
@@ -246,7 +246,7 @@ lemma accepts_K0_is_zero_if_nonempty:
   assumes "w \<noteq> []"
   shows "\<L>(K$ 0) (p,w) = 0"
 proof -
-  have "{d :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, d), q) \<in> monoid_rtrancl \<lbrakk>K$ 0\<rbrakk>} \<subseteq> {0}"
+  have "{d :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, d), q) \<in> \<lbrakk>K$ 0\<rbrakk>\<^sup>\<odot>} \<subseteq> {0}"
     using zero_weight_if_nonempty_word_in_K0[of p "(w,_)" _] assms by auto
   then show ?thesis
     unfolding accepts_def by auto
@@ -582,21 +582,20 @@ lemma step_relp_append:
         step_rule step_relp_def2 by fastforce
 
 lemma step_relp_seq:
-  assumes "(p, w') \<Midarrow>d1\<Rightarrow>\<^sup>* (p\<^sub>i, [])"
-  assumes "(p\<^sub>i, w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p', [])"
-  shows "(p, w' @ w) \<Midarrow>(d1 * d')\<Rightarrow>\<^sup>* (p', [])"
+  assumes "(p, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p', [])"
+  assumes "(p', w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p'', [])"
+  shows "(p, w @ w') \<Midarrow>(d * d')\<Rightarrow>\<^sup>* (p'', [])"
 proof -
-  have "(p, w' @ w) \<Midarrow> d1 \<Rightarrow>\<^sup>* (p\<^sub>i, w)"
+  have "(p, w @ w') \<Midarrow> d \<Rightarrow>\<^sup>* (p', w')"
     using assms(1) using step_relp_append by fastforce
-  show ?thesis
-    by (meson \<open>(p, w' @ w) \<Midarrow> d1 \<Rightarrow>\<^sup>* (p\<^sub>i, w)\<close> assms(2) monoid_rtranclp_trans)
+  then show ?thesis
+    by (meson assms(2) monoid_rtranclp_trans)
 qed
 
 lemma monoid_star_relp_if_l_step_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow> (p',[])"
   shows "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])"
-  by (metis assms monoid_rtranclp.monoid_rtrancl_into_rtrancl monoid_rtranclp.monoid_rtrancl_refl 
-      mult_1)
+  by (fact r_into_monoid_rtranclp[of l_step_relp, OF assms])
 
 lemma push_seq_weight_if_monoid_star_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])"
@@ -2186,7 +2185,7 @@ proof -
   have y2:"countable {(d',p',w'). (p, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', w')}"
     using countable_monoid_rtrancl[OF countable_transition_rel] 
     unfolding l_step_relp_def monoid_rtrancl_def
-    using countable_3_to_2[of "monoid_rtranclp (\<lambda>x xa xb. (x, xa, xb) \<in> transition_rel)" "(p,w)"]
+    using countable_3_to_2[of "(\<lambda>x xa xb. (x, xa, xb) \<in> transition_rel)\<^sup>\<odot>\<^sup>\<odot>" "(p,w)"]
     by fastforce
   have cY:"countable ?Y"
     using countable_subset[OF _ countable_setcompr[OF countable_prod3[OF y1 y2], of "\<lambda>(d,d'). d'*d"], of ?Y]
@@ -2215,16 +2214,16 @@ lemma unfold_pre_star_accepts_empty_automaton:
   "dioidLTS.weight_pre_star augmented_WPDS.transition_rel \<L>(K$ 0) (Init p, w) =
    \<^bold>\<Sum>{d. augmented_rules_reach_empty finals p w d}"
 proof -
-  have "countable {d. monoid_rtranclp (monoidLTS.l_step_relp (WPDS.transition_rel augmented_WPDS_rules)) (Init p, w) (fst d) (snd d)}"
+  have "countable {d. (monoidLTS.l_step_relp (WPDS.transition_rel augmented_WPDS_rules))\<^sup>\<odot>\<^sup>\<odot> (Init p, w) (fst d) (snd d)}"
     using countable_monoidLTS.countable_monoid_star_variant1[OF monoidLTS_instance, of "(Init p, w)"]
     by (metis (no_types, lifting) Collect_cong case_prod_beta)
   moreover have "\<And>(q::('ctr_loc, 'noninit) state) (b::'label list) d::'weight. q \<notin> finals \<or> b \<noteq> [] \<Longrightarrow> d * \<L>(K$ 0) (q,b) = 0" 
     by fastforce
   ultimately have 
      "\<^bold>\<Sum> {a * \<L>(K$ 0) (aa, b) |a aa b.
-          monoid_rtranclp (monoidLTS.l_step_relp (WPDS.transition_rel augmented_WPDS_rules)) (Init p, w) a (aa, b)} =
-      \<^bold>\<Sum> {d' |d' a b. a \<in> finals \<and> b = [] \<and> monoid_rtranclp (monoidLTS.l_step_relp (WPDS.transition_rel augmented_WPDS_rules)) (Init p, w) d' (a,b)}"
-    using SumInf_split_Qor0[of "\<lambda>t. monoid_rtranclp (monoidLTS.l_step_relp (WPDS.transition_rel augmented_WPDS_rules)) (Init p, w) (fst t) (snd t)"
+          (monoidLTS.l_step_relp (WPDS.transition_rel augmented_WPDS_rules))\<^sup>\<odot>\<^sup>\<odot> (Init p, w) a (aa, b)} =
+      \<^bold>\<Sum> {d' |d' a b. a \<in> finals \<and> b = [] \<and> (monoidLTS.l_step_relp (WPDS.transition_rel augmented_WPDS_rules))\<^sup>\<odot>\<^sup>\<odot> (Init p, w) d' (a,b)}"
+    using SumInf_split_Qor0[of "\<lambda>t. (monoidLTS.l_step_relp (WPDS.transition_rel augmented_WPDS_rules))\<^sup>\<odot>\<^sup>\<odot> (Init p, w) (fst t) (snd t)"
                                "\<lambda>t. (fst (snd t)) \<in> finals \<and> (snd (snd t)) = []"
                                "\<lambda>t. fst t * \<L>(K$ 0) (snd t)"
                                "\<lambda>t. fst t"]
@@ -2329,20 +2328,20 @@ qed
 lemma finite_w_inters:
   fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts':: "(('ctr_loc, 'noninit) state, 'label, 'weight) w_transitions"
-  shows "finite \<lbrakk>w_inters ts ts'\<rbrakk>\<^sub>w"
+  shows "finite \<lbrakk>ts\<inter>\<^sub>wts'\<rbrakk>\<^sub>w"
   using finite_wts_to_weightLTS by auto
 
 lemma countable_monoid_rtrancl_w_inters:
   fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts':: "(('ctr_loc, 'noninit) state, 'label, 'weight) w_transitions"
-  shows "countable {t|t. t \<in> \<lbrakk>w_inters ts ts'\<rbrakk>\<^sub>w\<^sup>\<odot>}"
+  shows "countable {t|t. t \<in> \<lbrakk>ts\<inter>\<^sub>wts'\<rbrakk>\<^sub>w\<^sup>\<odot>}"
   using countable_monoidLTS.countable_monoid_star[unfolded countable_monoidLTS_def, OF countable_finite[OF finite_w_inters[of ts ts']]]
   unfolding monoidLTS.monoid_star_is_monoid_rtrancl by simp
 
 lemma weight_reach_intersection_correct:    
   fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_dioid) w_transitions"
   assumes "binary_aut ts"
-  shows "dioidLTS.weight_reach \<lbrakk>w_inters ts ts'\<rbrakk>\<^sub>w (\<lambda>p. if p \<in> {(q,q)|q. q\<in>inits} then 1 else 0) (\<lambda>p. if p \<in> finals \<times> finals' then 1 else 0) =  
+  shows "dioidLTS.weight_reach \<lbrakk>ts\<inter>\<^sub>wts'\<rbrakk>\<^sub>w (\<lambda>p. if p \<in> {(q,q)|q. q\<in>inits} then 1 else 0) (\<lambda>p. if p \<in> finals \<times> finals' then 1 else 0) =  
          \<^bold>\<Sum> {dioidLTS.accepts ts finals (p, w) * dioidLTS.accepts ts' finals' (p, w) |p w. p \<in> inits}" (is "?A = ?B")
 proof -
   have c1: "countable {y:: ('ctr_loc, 'noninit) state \<times> 'label list. fst y \<in> inits}" 
@@ -2384,7 +2383,7 @@ proof -
       by (rule rev_countable_subset) (auto simp add: image_def)
   qed
 
-  have "?A = \<^bold>\<Sum> {d |c d c'. (c, d, c') \<in> \<lbrakk>w_inters ts ts'\<rbrakk>\<^sub>w\<^sup>\<odot> \<and> c \<in> {(p,p)|p. p\<in>inits} \<and> c' \<in> finals \<times> finals'}"
+  have "?A = \<^bold>\<Sum> {d |c d c'. (c, d, c') \<in> \<lbrakk>ts\<inter>\<^sub>wts'\<rbrakk>\<^sub>w\<^sup>\<odot> \<and> c \<in> {(p,p)|p. p\<in>inits} \<and> c' \<in> finals \<times> finals'}"
     unfolding dioidLTS.weight_reach_def monoid_rtranclp_unfold
     using SumInf_if_1_0_both_is_sum[OF countable_monoid_rtrancl_w_inters[of ts ts'], of "\<lambda>clc'. fst clc' \<in> {(p,p)|p. p\<in>inits}" "\<lambda>clc'. fst (snd clc')" "\<lambda>clc'. snd (snd clc') \<in> finals \<times> finals'"]
     by simp
@@ -2409,7 +2408,7 @@ lemma WPDS_weight_reach'_is_weight_reach_sum_exec:
       and "finite \<Delta> \<and> (\<forall>q p \<gamma>. is_Init q \<longrightarrow> ts' $ (p, \<gamma>, q) = 0)"
       and "\<And>p. is_Init p \<longleftrightarrow> p \<in> inits"
   shows "weight_reach (accepts_full ts finals) (accepts_full ts' finals') = 
-         weight_reach_sum_exec \<lbrakk>w_inters ts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')\<rbrakk>\<^sub>w {(p, p) |p. p \<in> inits} (finals \<times> finals')" (is "?A = ?B")
+         weight_reach_sum_exec \<lbrakk>ts \<inter>\<^sub>w (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')\<rbrakk>\<^sub>w {(p, p) |p. p \<in> inits} (finals \<times> finals')" (is "?A = ?B")
 proof -
   have f:"finite \<Delta>" using assms(2) by simp
   have W:"WPDS_with_W_automata \<Delta> ts'" unfolding WPDS_with_W_automata_def finite_WPDS_def WPDS_with_W_automata_axioms_def using assms(2) by blast
@@ -2451,7 +2450,7 @@ proof -
       apply (simp add: assms(3)[of p])
       by metis
     done
-  moreover have "... = dioidLTS.weight_reach \<lbrakk>w_inters ts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')\<rbrakk>\<^sub>w
+  moreover have "... = dioidLTS.weight_reach \<lbrakk>ts \<inter>\<^sub>w (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')\<rbrakk>\<^sub>w
                         (\<lambda>p. if p \<in> {(q, q) |q. q \<in> inits} then 1 else 0) (\<lambda>p. if p \<in> finals \<times> finals' then 1 else 0)"
     using weight_reach_intersection_correct[OF assms(1), of "WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts'" inits finals finals'] by presburger
   moreover have "... = ?B"

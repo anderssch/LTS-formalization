@@ -10,8 +10,9 @@ inductive_set monoid_rtrancl :: "('a \<times> 'b::monoid_mult \<times> 'a) set \
   | monoid_rtrancl_into_rtrancl [Pure.intro]: "(a, w, b) \<in> r\<^sup>\<odot> \<Longrightarrow> (b, l, c) \<in> r \<Longrightarrow> (a, w*l, c) \<in> r\<^sup>\<odot>"
 
 inductive_cases monoid_rtrancl_empty [elim]: "(p, 1, q) \<in> r\<^sup>\<odot>"
-
 inductive_cases monoid_rtrancl_extend: "(p, w*l, q) \<in> r\<^sup>\<odot>"
+
+notation monoid_rtranclp  (\<open>(_\<^sup>\<odot>\<^sup>\<odot>)\<close> [1000] 1000)
 
 inductive_set semigroup_trancl :: "('a \<times> 'b::semigroup_mult \<times> 'a) set \<Rightarrow> ('a \<times> 'b \<times> 'a) set"
  for r :: "('a \<times> 'b \<times> 'a) set" where
@@ -29,20 +30,21 @@ lemma predicate3D[dest]:
   "P \<le> Q \<Longrightarrow> P x y z \<Longrightarrow> Q x y z"
   by (erule le_funE)+ (erule le_boolE)
 
-lemma member_if_member_monoid_rtrancl: "(a,b,c) \<in> r \<Longrightarrow> (a,b,c) \<in> r\<^sup>\<odot>"
-  using monoid_rtrancl_into_rtrancl[OF monoid_rtrancl_refl]
+lemma r_into_monoid_rtranclp: "r a b c \<Longrightarrow> r\<^sup>\<odot>\<^sup>\<odot> a b c"
+  using monoid_rtranclp.monoid_rtrancl_into_rtrancl[OF monoid_rtranclp.monoid_rtrancl_refl]
   by fastforce
+lemmas r_into_monoid_rtrancl = r_into_monoid_rtranclp[to_set]
 
-lemma monoid_rtranclp_mono: "r \<le> s \<Longrightarrow> monoid_rtranclp r \<le> monoid_rtranclp s"
+lemma monoid_rtranclp_mono: "r \<le> s \<Longrightarrow> r\<^sup>\<odot>\<^sup>\<odot> \<le> s\<^sup>\<odot>\<^sup>\<odot>"
   \<comment> \<open>monotonicity of \<open>monoid_rtrancl\<close>\<close>
 proof (rule predicate3I)
-  show "(monoid_rtranclp s) x y z" if "r \<le> s" "(monoid_rtranclp) r x y z" for x y z
-    using \<open>(monoid_rtranclp r) x y z\<close> \<open>r \<le> s\<close>
+  show "s\<^sup>\<odot>\<^sup>\<odot> x y z" if "r \<le> s" "r\<^sup>\<odot>\<^sup>\<odot> x y z" for x y z
+    using \<open>r\<^sup>\<odot>\<^sup>\<odot> x y z\<close> \<open>r \<le> s\<close>
     by (induction rule: monoid_rtranclp.induct) 
        (blast intro: monoid_rtranclp.monoid_rtrancl_into_rtrancl)+
 qed
 
-lemma mono_monoid_rtranclp[mono]: "(\<And>a b c. x a b c \<longrightarrow> y a b c) \<Longrightarrow> (monoid_rtranclp x) a b c \<longrightarrow> (monoid_rtranclp y) a b c"
+lemma mono_monoid_rtranclp[mono]: "(\<And>a b c. x a b c \<longrightarrow> y a b c) \<Longrightarrow> x\<^sup>\<odot>\<^sup>\<odot> a b c \<longrightarrow> y\<^sup>\<odot>\<^sup>\<odot> a b c"
   using monoid_rtranclp_mono[of x y] by auto
 
 lemmas monoid_rtrancl_mono = monoid_rtranclp_mono [to_set]
@@ -58,9 +60,9 @@ lemma monoid_rtrancl_is_mono: "mono monoid_rtrancl"
   done
 
 lemma monoid_rtranclp_trans:
-  assumes "monoid_rtranclp r x u y"
-  assumes "monoid_rtranclp r y v z"
-  shows "monoid_rtranclp r x (u*v) z"
+  assumes "r\<^sup>\<odot>\<^sup>\<odot> x u y"
+  assumes "r\<^sup>\<odot>\<^sup>\<odot> y v z"
+  shows "r\<^sup>\<odot>\<^sup>\<odot> x (u*v) z"
   using assms(2,1)
   by (induct, simp_all) (metis (no_types, opaque_lifting) monoid_rtranclp.monoid_rtrancl_into_rtrancl mult.assoc)
 
@@ -424,9 +426,9 @@ proof -
 qed
 
 lemma monoid_rtranclp_induct_rev [consumes 1, case_names monoid_rtranclp_refl monoid_rtranclp_into_rtrancl]: (*the name shouldn't say "list" *)
-  assumes "monoid_rtranclp r a w b"
+  assumes "r\<^sup>\<odot>\<^sup>\<odot> a w b"
   assumes "(\<And>a. P a 1 a)"
-  assumes "(\<And>a w b c w'. r a w b \<Longrightarrow> P b w' c \<Longrightarrow> monoid_rtranclp r b w' c \<Longrightarrow> 
+  assumes "(\<And>a w b c w'. r a w b \<Longrightarrow> P b w' c \<Longrightarrow> r\<^sup>\<odot>\<^sup>\<odot> b w' c \<Longrightarrow> 
               P a (w * w') c)"
   shows "P a w b"
 proof -
