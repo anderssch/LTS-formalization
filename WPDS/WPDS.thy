@@ -1,5 +1,5 @@
 theory WPDS
-  imports "Labeled_Transition_Systems.LTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "WAutomaton" "FiniteMonoidLTS"
+  imports "Labeled_Transition_Systems.LTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "WAutomaton" "FiniteMonoidLTS" "Pushdown_Systems.P_Automata"
 begin
 
 
@@ -2263,6 +2263,41 @@ lemma pre_star_exec_correctness:
   using pre_star_correctness pre_star_exec'_saturation by blast
 end
 end
+
+context
+  fixes \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set"
+begin
+definition pre_star_saturation :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight) w_transitions \<Rightarrow> (('ctr_loc, 'noninit) state, 'label, 'weight) w_transitions \<Rightarrow> bool" where
+  "pre_star_saturation ts ts' = saturation (WPDS_with_W_automata.pre_star_rule' \<Delta> ts) (K$ 0) ts'"
+end
+
+context
+  fixes \<Delta> :: "('ctr_loc::{card_UNIV,enum}, 'label::enum, 'weight::bounded_dioid) w_rule set"
+  assumes finite_rules: "finite \<Delta>"
+begin
+
+interpretation finite_WPDS \<Delta> 
+  using finite_WPDS_def finite_rules by auto
+
+interpretation countable_dioidLTS transition_rel apply standard
+  using countable_transition_rel .
+(*
+lemma pre_star_correct: 
+  fixes ts :: "(('ctr_loc, 'noninit::{card_UNIV,enum}) state, 'label::enum) transition set"
+  fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
+  assumes "pre_star_saturation \<Delta> ts A"
+  shows "dioidLTS.accepts A finals = weight_pre_star (dioidLTS.accepts ts finals)"
+*)
+lemma pre_star_correctness_full: 
+  fixes ts :: "(('ctr_loc, 'noninit::{card_UNIV,enum}) state, 'label::enum) transition set"
+  fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
+  assumes "pre_star_saturation \<Delta> (ts_to_wts ts') A"
+  shows "\<Sum>{d |c d. d = dioidLTS.accepts ((ts_to_wts ts) \<inter>\<^sub>w A) (finals\<times>finals') c}
+      = (weight_reach_set (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
+  oops 
+
+end
+
 
 
 section \<open>Weight reach code\<close>
