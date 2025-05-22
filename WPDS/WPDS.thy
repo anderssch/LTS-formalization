@@ -1652,7 +1652,7 @@ abbreviation "pre_star_exec \<Delta> ts \<equiv> WPDS_with_W_automata_no_assms.p
 section \<open>Locale: WPDS_with_W_automata\<close>
 locale WPDS_with_W_automata = WPDS_with_W_automata_no_assms \<Delta> ts + finite_WPDS \<Delta>
   for \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set"
-  and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_dioid) w_transitions" +
+  and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight) w_transitions" +
   assumes no_transition_to_init: "is_Init q \<Longrightarrow> ts $ (p, \<gamma>, q) = 0"
 begin
 
