@@ -3,7 +3,7 @@ theory FinFunAddUpdate
 begin
 
 abbreviation finfun_add_update :: "('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add) \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a \<Rightarrow>f 'b)" ("_'(_ $+= _')" [1000,0,0] 1000) where
-  "finfun_add_update f a b \<equiv> f(a $:= (f$a) + b)"
+  "f(a $+= b) \<equiv> f(a $:= (f$a) + b)"
 
 lemma finfun_add_update_apply_same: 
   "f(a $+= b) $ a = f $ a + b" by simp
