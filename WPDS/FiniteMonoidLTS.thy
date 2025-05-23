@@ -233,6 +233,11 @@ theorem weight_reach_saturation_sum_correct:
   using weight_reach_distrib[of S C' UNIV] weight_reach_saturation_correct[OF assms]
   by simp
 
+theorem weight_reach_saturation_sum_correct_variant:
+  assumes "saturation weight_reach_rule S S'"
+  shows "weight_reach (($)S) (($)S'') = \<Sum>{S'$c' * (S'' $ c') | c'. True}"
+  using weight_reach_saturation_sum_correct assms by auto
+
 end
 
 
