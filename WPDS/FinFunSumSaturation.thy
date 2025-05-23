@@ -333,7 +333,7 @@ end
 section \<open>Locale: step_saturation\<close>
 
 locale step_saturation = 
-  fixes step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)"
+  fixes step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a \<Rightarrow>f 'b)"
 begin
 
 definition "step_loop = while_option (\<lambda>s. step s \<noteq> s) (step)"
@@ -348,7 +348,7 @@ end
 section \<open>Locale: decreasing_step_saturation\<close>
 
 locale decreasing_step_saturation = step_saturation step
-  for step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)" +
+  for step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a \<Rightarrow>f 'b)" +
   assumes step_decreasing: "step S \<le> S"
 begin
 
@@ -397,6 +397,62 @@ lemma step_exec_fixp_to_step_fixp': "S \<le> step_exec S \<Longrightarrow> S = s
 
 end
 
+section \<open>Locale: subset_step_saturation\<close>
+
+locale subset_step_saturation = add_saturation rule
+  for step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)"
+  and rule :: "('a::finite \<Rightarrow>f 'b::bounded_dioid) saturation_rule" +
+  assumes step_done: "\<not> Ex (strict_rule rule ts) \<Longrightarrow> step ts = ts"
+  assumes step_is_subset: "Ex (strict_rule rule ts) \<Longrightarrow> \<exists>X \<subseteq> {ts'. strict_rule rule ts ts'}. step ts = ts + \<Sum>X \<and> X \<noteq> {}"
+begin
+sublocale decreasing_step_saturation step
+proof 
+  fix ts
+  show "step ts \<le> ts"
+  proof (cases "Ex (strict_rule rule ts)")
+    case True
+    then show ?thesis using step_is_subset by fastforce
+  next
+    case False
+    then show ?thesis using step_done by simp
+  qed
+qed
+
+lemma weak_star_step: "(weak_rule rule)\<^sup>*\<^sup>* ts (step ts)"
+proof (cases "Ex (strict_rule rule ts)")
+  case True
+  then obtain X where "step ts = ts + \<Sum> X" "X\<subseteq>{ts'. strict_rule rule ts ts'}"
+    using step_is_subset by blast
+  then show ?thesis
+    using weak_star_subset_sum by presburger
+next
+  case False
+  then show ?thesis using step_done by simp
+qed
+
+lemma weak_star_intro: "(strict_rule step_rule)\<^sup>*\<^sup>* ts ts' \<Longrightarrow> (weak_rule rule)\<^sup>*\<^sup>* ts ts'"
+  apply (induct rule: rtranclp_induct, simp)
+  unfolding step_rule_def strict_rule.simps using weak_star_step rtranclp_trans 
+  by metis
+
+lemma exists_strict_step_not_fixp: "Ex (strict_rule rule ts) \<Longrightarrow> step ts \<noteq> ts"
+proof -
+  assume "Ex (strict_rule rule ts)"
+  then obtain X where "step ts = ts + \<Sum> X" "X\<subseteq>{ts'. strict_rule rule ts ts'}" "X \<noteq> {}"
+    using step_is_subset by blast
+  then show ?thesis 
+    using strict_rule_subset_not_fixp by presburger
+qed
+
+lemma preserves_saturated: "saturated (strict_rule step_rule) ts \<Longrightarrow> saturated (strict_rule rule) ts"
+  unfolding saturated_def step_rule_def strict_rule.simps using exists_strict_step_not_fixp[of ts]
+  by (cases "Ex (strict_rule rule ts)") (auto simp add: strict_rule.simps)
+
+lemma saturation_step_exec: "saturation (strict_rule rule) S (step_exec S)"
+  using preserves_saturation[OF weak_star_intro preserves_saturated] saturation_step_exec'
+  by blast
+end
+
 
 section \<open>Locale: single_step_saturation\<close>
 
@@ -408,56 +464,27 @@ locale single_step_saturation = add_saturation rule
   and rule :: "('a::finite \<Rightarrow>f 'b::bounded_dioid) saturation_rule" +
   assumes step_is_single_step: "step ts = ts + (if Ex (strict_rule rule ts) then Eps (strict_rule rule ts) else 0)"
 begin
-sublocale decreasing_step_saturation step by standard (simp add: step_is_single_step)
-
-lemma weak_star_step: "(weak_rule rule)\<^sup>*\<^sup>* ts (step ts)"
-  unfolding step_is_single_step 
-  using weak_star_subset_sum[OF some_subset[of "strict_rule rule ts"]]
-  by auto
-
-lemma weak_star_intro: "(strict_rule step_rule)\<^sup>*\<^sup>* ts ts' \<Longrightarrow> (weak_rule rule)\<^sup>*\<^sup>* ts ts'"
-  apply (induct rule: rtranclp_induct, simp)
-  unfolding step_rule_def strict_rule.simps using weak_star_step rtranclp_trans 
-  by metis
-
-lemma preserves_saturated: "saturated (strict_rule step_rule) ts \<Longrightarrow> saturated (strict_rule rule) ts"
-  unfolding saturated_def step_rule_def strict_rule.simps
-  using step_is_single_step eq_some_strict_not_exists strict_rule.simps
-  by (cases "Ex (strict_rule rule ts)") (auto simp add: strict_rule.simps)
-  
-lemma saturation_step_exec: "saturation (strict_rule rule) S (step_exec S)"
-  using rule_saturation.preserves_saturation[unfolded rule_saturation_def, of rule step_rule]
-        rule_less_eq rule_mono weak_star_intro preserves_saturated saturation_step_exec'
-  by auto
-
+sublocale subset_step_saturation step rule 
+proof
+  fix ts
+  show "\<not> Ex (strict_rule rule ts) \<Longrightarrow> step ts = ts" 
+    using step_is_single_step by auto
+  show "Ex (strict_rule rule ts) \<Longrightarrow> \<exists>X\<subseteq>{ts'. strict_rule rule ts ts'}. step ts = ts + \<Sum> X \<and> X \<noteq> {}"
+    unfolding step_is_single_step using some_subset[of "strict_rule rule ts"] by auto
+qed
+lemmas saturation_step_exec = saturation_step_exec
 end
 
 section \<open>Locale: sum_saturation\<close>
 
 locale sum_saturation = add_saturation rule
-  for step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a::finite \<Rightarrow>f 'b::bounded_dioid)"
-  and rule :: "('a::finite \<Rightarrow>f 'b::bounded_dioid) saturation_rule" +
+  for step::"('a::finite \<Rightarrow>f 'b::bounded_dioid) \<Rightarrow> ('a \<Rightarrow>f 'b)"
+  and rule :: "('a \<Rightarrow>f 'b) saturation_rule" +
   assumes step_is_sum: "step ts = ts + \<Sum>{ts'. strict_rule rule ts ts'}"
 begin
-sublocale decreasing_step_saturation step by standard (simp add: step_is_sum)
-
-lemma weak_star_step: "(weak_rule rule)\<^sup>*\<^sup>* ts (step ts)"
-  unfolding step_is_sum using weak_star_subset_sum by blast
-
-lemma weak_star_intro: "(strict_rule step_rule)\<^sup>*\<^sup>* ts ts' \<Longrightarrow> (weak_rule rule)\<^sup>*\<^sup>* ts ts'"
-  apply (induct rule: rtranclp_induct, simp)
-  unfolding step_rule_def strict_rule.simps using weak_star_step rtranclp_trans 
-  by metis
-
-lemma preserves_saturated: "saturated (strict_rule step_rule) ts \<Longrightarrow> saturated (strict_rule rule) ts"
-  unfolding saturated_def step_rule_def strict_rule.simps using step_is_sum sum_fixp_implies_rule_fixp
-  by metis
-
-lemma saturation_step_exec: "saturation (strict_rule rule) S (step_exec S)"
-  using rule_saturation.preserves_saturation[unfolded rule_saturation_def, of rule step_rule]
-        rule_less_eq rule_mono weak_star_intro preserves_saturated saturation_step_exec'
-  by auto
-
+sublocale subset_step_saturation step rule by standard (auto simp add: step_is_sum)
+lemmas weak_star_step = weak_star_step
+lemmas saturation_step_exec = saturation_step_exec
 end
 
 lemma sum_saturation_step_exec:
@@ -549,7 +576,6 @@ lemma saturation_step_exec: "saturation (strict_rule rule) S (step_exec S)"
   using rule_saturation.preserves_saturation[unfolded rule_saturation_def, of rule step_rule]
         rule_less_eq rule_mono weak_star_intro preserves_saturated saturation_step_exec'
   by auto
-
 end
 
 
