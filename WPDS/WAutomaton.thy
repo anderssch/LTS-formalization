@@ -32,7 +32,7 @@ lemma wts_to_weightLTS_code[code]: "\<lbrakk>ts\<rbrakk>\<^sub>w = (\<Union>(p,\
   unfolding wts_to_weightLTS_def by blast
 
 lemma finite_wts: 
-  fixes wts::"('state::enum, 'label::finite, 'weight::bounded_dioid) w_transitions"
+  fixes wts::"('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
   shows "finite \<lbrakk>wts\<rbrakk>"
 proof -
   have "range (\<lambda>t. (fst t, ([fst (snd t)], wts $ t), snd (snd t))) = {t. \<exists>p \<gamma> q. t = (p, ([\<gamma>], wts $ (p, \<gamma>, q)), q)}"

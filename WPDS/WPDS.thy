@@ -15,30 +15,32 @@ type_synonym ('ctr_loc, 'label, 'weight) w_rule = "('ctr_loc \<times> 'label) \<
 type_synonym ('ctr_loc, 'label) conf = "'ctr_loc \<times> 'label list"
 
 \<comment> \<open>Instantiation: Enumerability of operations\<close>
+instance operation :: (finite) finite proof
+  have "finite (UNIV::'a::finite set)" by simp
+  then have "finite ({pop} \<union> range swap \<union> range (\<lambda>(a::'a,b). push a b))" by simp
+  moreover have "(UNIV::'a operation set) = {pop} \<union> range swap \<union> range (\<lambda>(a,b). push a b)"
+    by (auto, metis prod.case operation.exhaust rangeI)
+  ultimately show "finite (UNIV::'a operation set)" by argo
+qed
+
 instantiation operation :: (enum) enum begin
 
 definition enum_a :: "'a list" where 
   "enum_a = enum_class.enum"
-
 definition enum_all_a :: "('a \<Rightarrow> bool) \<Rightarrow> bool" where
   "enum_all_a = enum_class.enum_all"
-
 definition enum_ex_a :: "('a \<Rightarrow> bool) \<Rightarrow> bool" where
   "enum_ex_a = enum_class.enum_ex"
-
 definition enum_operation :: "'a operation list" where
   "enum_operation = pop # map swap enum_a @ map (\<lambda>(x,y). push x y) (List.product enum_a enum_a)"
-
 definition enum_all_operation :: "('a operation \<Rightarrow> bool) \<Rightarrow> bool" where
   "enum_all_operation P \<equiv> P pop \<and> enum_all_a (\<lambda>x. P (swap x)) \<and> enum_all_a (\<lambda>x. enum_all_a (\<lambda>y. P (push x y)))"
-
 definition enum_ex_operation :: "('a operation \<Rightarrow> bool) \<Rightarrow> bool" where
   "enum_ex_operation P \<equiv> P pop \<or> enum_ex_a (\<lambda>x. P (swap x)) \<or> enum_ex_a (\<lambda>x. enum_ex_a (\<lambda>y. P (push x y)))"
 
 instance proof
   have swap_enum: "\<forall>x. swap x \<in> swap ` set enum_a"
     unfolding local.enum_a_def using UNIV_enum by auto
-
   show "(UNIV :: 'a operation set) = set enum_class.enum"
   proof
     show "(UNIV :: 'a operation set) \<subseteq> set enum_class.enum"
@@ -93,7 +95,6 @@ instance proof
       by (metis operation.exhaust)
   qed
 qed
-
 end
 
 
@@ -105,7 +106,7 @@ context dioidLTS begin
 definition accepts :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> 'ctr_loc set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
   "accepts ts finals \<equiv> \<lambda>(p,w). (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> \<lbrakk>ts\<rbrakk>\<^sup>\<odot>})"
 
-context fixes finals :: "'ctr_loc::enum set" begin
+context fixes finals :: "'ctr_loc::finite set" begin
 abbreviation accepts' ("\<L> (_)" [1000] 1000) where "\<L>(ts) \<equiv> accepts ts finals"
 
 lemma accepts_step_distrib:
@@ -261,7 +262,7 @@ lemma accepts_K0_iff[simp]: "\<L>(K$ 0) (p,w) = (if p\<in>finals \<and> w = [] t
   by (metis accept_is_one_if_final_empty accepts_K0_is_zero_if_nonfinal accepts_K0_is_zero_if_nonempty)
 
 lemma accepts_1_if_monoid_rtrancl_1:
-  fixes ts :: "('ctr_loc :: enum, 'label::finite) transition set"
+  fixes ts :: "('ctr_loc::finite, 'label::finite) transition set"
   assumes "finite ts"
   assumes "(p, (v, 1 :: 'weight::bounded_dioid), q) \<in> \<lbrakk>ts_to_wts ts\<rbrakk>\<^sup>\<odot>"
   assumes "q \<in> finals"
@@ -294,7 +295,7 @@ qed
 
 subsection \<open>accepts code\<close>
 lemma accepts_code_Cons:
-  fixes ts :: "('ctr_loc \<times> ('label::finite) \<times> ('ctr_loc::enum)) \<Rightarrow>f 'weight::bounded_dioid"
+  fixes ts :: "('ctr_loc \<times> ('label::finite) \<times> ('ctr_loc::finite)) \<Rightarrow>f 'weight::bounded_dioid"
   shows "\<L> ts (p,(\<gamma>#w)) = (\<Sum>{(ts $ (p,\<gamma>,q) * (\<L> ts (q,w))) | q. ts $ (p,\<gamma>,q) \<noteq> 0})"
 proof -
   have "finite ({d * \<L>(ts) (q1, w) |q1 d. (p, ([\<gamma>], d), q1) \<in> \<lbrakk>ts\<rbrakk>})"
@@ -328,7 +329,7 @@ declare dioidLTS.accepts_code_Cons[code]
 section \<open>Locale: WPDS\<close>
 
 locale WPDS =
-  fixes \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set"
+  fixes \<Delta> :: "('ctr_loc::finite, 'label::finite, 'weight::bounded_dioid) w_rule set"
 begin
 
 primrec lbl :: "'label operation \<Rightarrow> 'label list" where
@@ -453,7 +454,7 @@ end
 section \<open>Locale: finite_WPDS -- pre* algorithm\<close>
 
 locale finite_WPDS = WPDS \<Delta>
-  for \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set" +
+  for \<Delta> :: "('ctr_loc::finite, 'label::finite, 'weight::bounded_dioid) w_rule set" +
   assumes finite_rules: "finite \<Delta>"
 begin
 
@@ -897,7 +898,7 @@ lemma countable_monoid_rtrancl_wts_to_monoidLTS_P:
   shows "countable {f d q |d q. P d q \<and> (p, (w, d), q) \<in> \<lbrakk>A\<rbrakk>\<^sup>\<odot>}"
   using countable_monoid_rtrancl_wts_to_monoidLTS_all by (simp add: dissect_set)
 
-context fixes finals :: "'ctr_loc::enum set" begin
+context fixes finals :: "'ctr_loc::finite set" begin
 abbreviation accepts'' ("\<L>(_)" [1000] 1000) where "accepts'' \<equiv> accepts' finals" 
 
 lemma weight_pre_star_K0_is_pred_weight:
@@ -1132,23 +1133,23 @@ end
 section \<open>Pre* code\<close>
 
 \<comment> \<open>Definition of executable pre_star\<close>
-definition pre_star_updates :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> (('ctr_loc, 'label) transition \<times> 'weight) set" where
+definition pre_star_updates :: "('ctr_loc::finite, 'label::finite, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> (('ctr_loc, 'label) transition \<times> 'weight) set" where
   "pre_star_updates \<Delta> wts =
     (\<Union>((p, \<gamma>), d, (p', w)) \<in> \<Delta>.
         \<Union>(q,d') \<in> monoidLTS_reach \<lbrakk>wts\<rbrakk> p' (WPDS.lbl w).
             {((p, \<gamma>, q), d * d')})"
 
-definition pre_star_step :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions" where
+definition pre_star_step :: "('ctr_loc::finite, 'label::finite, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions" where
   "pre_star_step \<Delta> wts = update_wts wts (pre_star_updates \<Delta> wts)"
 
 \<comment> \<open>Faster version that does not include 0 weights.\<close>
-definition pre_star_updates_not0 :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> (('ctr_loc, 'label) transition \<times> 'weight) set" where
+definition pre_star_updates_not0 :: "('ctr_loc::finite, 'label::finite, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> (('ctr_loc, 'label) transition \<times> 'weight) set" where
   "pre_star_updates_not0 \<Delta> wts =
     (\<Union>((p, \<gamma>), d, (p', w)) \<in> \<Delta>.
         \<Union>(q,d') \<in> monoidLTS_reach_not0 \<lbrakk>wts\<rbrakk> p' (WPDS.lbl w).
             {((p, \<gamma>, q), d * d')})"
 
-definition pre_star_step_not0 :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions" where
+definition pre_star_step_not0 :: "('ctr_loc::finite, 'label::finite, 'weight::bounded_dioid) w_rule set \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> ('ctr_loc, 'label, 'weight) w_transitions" where
   "pre_star_step_not0 \<Delta> wts = update_wts wts (pre_star_updates_not0 \<Delta> wts)"
 
 section \<open>Locale: WPDS -- Pre* code\<close>
@@ -1446,12 +1447,12 @@ datatype ('ctr_loc, 'noninit) state =
   is_Init: Init (the_Ctr_Loc: 'ctr_loc)
   | is_Noninit: Noninit (the_St: 'noninit)
 
-definition inits_set :: "('ctr_loc::enum, 'noninit::enum) state set" where 
+definition inits_set :: "('ctr_loc::finite, 'noninit::finite) state set" where 
   "inits_set = {q. is_Init q}"
 
 lemma finite_card_states':
-  assumes "finite (X :: 'ctr_loc::enum set)"
-  assumes "finite (Y :: 'noninit::enum set)"
+  assumes "finite (X :: 'ctr_loc::finite set)"
+  assumes "finite (Y :: 'noninit::finite set)"
   shows "card (Init ` X \<union> Noninit ` Y) = card X + card Y"
   using assms
 proof (induction "card X + card Y" arbitrary: X Y)
@@ -1519,8 +1520,8 @@ next
 qed
 
 lemma finite_card_states:
-  assumes "finite (UNIV :: 'ctr_loc::enum set)"
-  assumes "finite (UNIV :: 'noninit::enum set)"
+  assumes "finite (UNIV :: 'ctr_loc::finite set)"
+  assumes "finite (UNIV :: 'noninit::finite set)"
   shows "card (UNIV :: ('ctr_loc, 'noninit) state set) = card (UNIV :: 'ctr_loc set) + card (UNIV :: 'noninit set)"
 proof -
   define Init' :: "'ctr_loc \<Rightarrow> ('ctr_loc, 'noninit) state" where
@@ -1555,7 +1556,11 @@ proof -
   then show ?thesis by auto
 qed
 
-\<comment> \<open>instantiation: Enumerability of states\<close>
+instance state :: (finite, finite) finite proof
+  show "finite (UNIV::('a,'b) state set)" unfolding UNIV_state by fastforce
+qed
+
+\<comment> \<open>instantiation: Enumerability of states\<close> 
 instantiation state :: (enum, enum) enum begin
 definition "enum_class.enum = map Init enum_class.enum @ map Noninit enum_class.enum"
 
@@ -1608,24 +1613,21 @@ end
 section \<open>Locale: WPDS_with_W_automata_no_assms\<close>
 
 locale WPDS_with_W_automata_no_assms = WPDS \<Delta>
-  for \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set"
-  and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight::bounded_dioid) w_transitions"
+  for \<Delta> :: "('ctr_loc::finite, 'label::finite, 'weight::bounded_dioid) w_rule set"
+  and ts :: "(('ctr_loc, 'noninit::finite) state, 'label, 'weight) w_transitions"
 begin 
 
-definition init_rules :: "(('ctr_loc, 'noninit) state, 'label::enum, 'weight::bounded_dioid) w_rule set" where 
+definition init_rules :: "(('ctr_loc, 'noninit) state, 'label, 'weight) w_rule set" where 
   "init_rules = {((Init p, \<gamma>), d, (Init p', w)) | p \<gamma> d p' w. (p,\<gamma>) \<midarrow>d\<hookrightarrow> (p',w)}"
 
-definition pop_ts_rules :: "(('ctr_loc, 'noninit) state, 'label::enum, 'weight::bounded_dioid) w_rule set" where 
+definition pop_ts_rules :: "(('ctr_loc, 'noninit) state, 'label, 'weight) w_rule set" where 
   "pop_ts_rules = {((p,\<gamma>), d, (q, pop)) | p \<gamma> d q. ts $ (p,\<gamma>,q) = d}"
 
-definition augmented_WPDS_rules :: "(('ctr_loc, 'noninit) state, 'label::enum, 'weight::bounded_dioid) w_rule set" where 
+definition augmented_WPDS_rules :: "(('ctr_loc, 'noninit) state, 'label, 'weight) w_rule set" where 
  "augmented_WPDS_rules = init_rules \<union> pop_ts_rules"
 
 lemma init_rules_def2: "init_rules = (\<Union>((p, \<gamma>), d, (p', w)) \<in> \<Delta>. {((Init p, \<gamma>), d, (Init p', w))})"
   unfolding WPDS_with_W_automata_no_assms.init_rules_def by fast
-
-lemma pop_ts_rules_def2: "pop_ts_rules = (\<Union>(p, \<gamma>, q) \<in> set Enum.enum. {((p,\<gamma>), ts $ (p,\<gamma>,q), (q, pop))})"
-  unfolding pop_ts_rules_def using Enum.enum_class.UNIV_enum by blast
 
 interpretation augmented_WPDS: WPDS augmented_WPDS_rules .
 
@@ -1641,7 +1643,12 @@ end
 
 section \<open>Code declarations\<close>
 declare WPDS_with_W_automata_no_assms.init_rules_def2[code]
-declare WPDS_with_W_automata_no_assms.pop_ts_rules_def2[code]
+
+lemma pop_ts_rules_def2[code]: 
+  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::enum, 'weight::bounded_dioid) w_transitions"
+  shows "WPDS_with_W_automata_no_assms.pop_ts_rules ts = (\<Union>(p, \<gamma>, q) \<in> set Enum.enum. {((p,\<gamma>), ts $ (p,\<gamma>,q), (q, pop))})"
+  unfolding WPDS_with_W_automata_no_assms.pop_ts_rules_def using Enum.enum_class.UNIV_enum by blast
+
 declare WPDS_with_W_automata_no_assms.augmented_WPDS_rules_def[code]
 declare WPDS_with_W_automata_no_assms.pre_star_exec'_def[code]
 declare WPDS_with_W_automata_no_assms.accept_pre_star_exec0'_def[code]
@@ -1651,8 +1658,8 @@ abbreviation "pre_star_exec \<Delta> ts \<equiv> WPDS_with_W_automata_no_assms.p
 
 section \<open>Locale: WPDS_with_W_automata\<close>
 locale WPDS_with_W_automata = WPDS_with_W_automata_no_assms \<Delta> ts + finite_WPDS \<Delta>
-  for \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set"
-  and ts :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight) w_transitions" +
+  for \<Delta> :: "('ctr_loc::finite, 'label::finite, 'weight::bounded_dioid) w_rule set"
+  and ts :: "(('ctr_loc, 'noninit::finite) state, 'label, 'weight) w_transitions" +
   assumes no_transition_to_init: "is_Init q \<Longrightarrow> ts $ (p, \<gamma>, q) = 0"
 begin
 
@@ -2265,14 +2272,15 @@ end
 end
 
 context
-  fixes \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set"
+  fixes \<Delta> :: "('ctr_loc::finite, 'label::finite, 'weight::bounded_dioid) w_rule set"
 begin
-definition pre_star_saturation :: "(('ctr_loc, 'noninit::enum) state, 'label, 'weight) w_transitions \<Rightarrow> (('ctr_loc, 'noninit) state, 'label, 'weight) w_transitions \<Rightarrow> bool" where
+definition pre_star_saturation :: "(('ctr_loc, 'noninit::finite) state, 'label, 'weight) w_transitions \<Rightarrow> (('ctr_loc, 'noninit) state, 'label, 'weight) w_transitions \<Rightarrow> bool" where
   "pre_star_saturation ts ts' = saturation (WPDS_with_W_automata.pre_star_rule' \<Delta> ts) (K$ 0) ts'"
+
 end
 
 context
-  fixes \<Delta> :: "('ctr_loc::{card_UNIV,enum}, 'label::enum, 'weight::bounded_dioid) w_rule set"
+  fixes \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set"
   assumes finite_rules: "finite \<Delta>"
 begin
 
@@ -2345,7 +2353,7 @@ lemma weight_reach_sum_exec_correct:
         ]
   by force
 
-definition accepts_full :: "(('ctr_loc::enum, 'noninit::enum) state, 'label, 'weight::bounded_dioid) w_transitions \<Rightarrow> ('ctr_loc, 'noninit) state set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
+definition accepts_full :: "(('ctr_loc::finite, 'noninit::finite) state, 'label, 'weight::bounded_dioid) w_transitions \<Rightarrow> ('ctr_loc, 'noninit) state set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
   "accepts_full ts finals \<equiv> \<lambda>(p, w). dioidLTS.accepts ts finals (Init p, w)"
 
 lemma finite_wts_to_weightLTS:
@@ -2362,20 +2370,20 @@ proof -
 qed
 
 lemma finite_w_inters:
-  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_dioid) w_transitions"
+  fixes ts :: "(('ctr_loc::finite, 'noninit::finite) state, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts':: "(('ctr_loc, 'noninit) state, 'label, 'weight) w_transitions"
   shows "finite \<lbrakk>ts\<inter>\<^sub>wts'\<rbrakk>\<^sub>w"
   using finite_wts_to_weightLTS by auto
 
 lemma countable_monoid_rtrancl_w_inters:
-  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_dioid) w_transitions"
+  fixes ts :: "(('ctr_loc::finite, 'noninit::finite) state, 'label::finite, 'weight::bounded_dioid) w_transitions"
   fixes ts':: "(('ctr_loc, 'noninit) state, 'label, 'weight) w_transitions"
   shows "countable {t|t. t \<in> \<lbrakk>ts\<inter>\<^sub>wts'\<rbrakk>\<^sub>w\<^sup>\<odot>}"
   using countable_monoidLTS.countable_monoid_star[unfolded countable_monoidLTS_def, OF countable_finite[OF finite_w_inters[of ts ts']]]
   unfolding monoidLTS.monoid_star_is_monoid_rtrancl by simp
 
 lemma weight_reach_intersection_correct:    
-  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_dioid) w_transitions"
+  fixes ts :: "(('ctr_loc::finite, 'noninit::finite) state, 'label::finite, 'weight::bounded_dioid) w_transitions"
   assumes "binary_aut ts"
   shows "dioidLTS.weight_reach \<lbrakk>ts\<inter>\<^sub>wts'\<rbrakk>\<^sub>w (\<lambda>p. if p \<in> {(q,q)|q. q\<in>inits} then 1 else 0) (\<lambda>p. if p \<in> finals \<times> finals' then 1 else 0) =  
          \<^bold>\<Sum> {dioidLTS.accepts ts finals (p, w) * dioidLTS.accepts ts' finals' (p, w) |p w. p \<in> inits}" (is "?A = ?B")
@@ -2439,7 +2447,7 @@ context WPDS begin
 interpretation dioidLTS transition_rel .
 
 lemma WPDS_weight_reach'_is_weight_reach_sum_exec:
-  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::enum, 'weight::bounded_dioid) w_transitions"
+  fixes ts :: "(('ctr_loc::finite, 'noninit::finite) state, 'label::finite, 'weight::bounded_dioid) w_transitions"
   assumes "binary_aut ts"
       and "finite \<Delta> \<and> (\<forall>q p \<gamma>. is_Init q \<longrightarrow> ts' $ (p, \<gamma>, q) = 0)"
       and "\<And>p. is_Init p \<longleftrightarrow> p \<in> inits"
@@ -2495,7 +2503,7 @@ proof -
 qed
 
 lemma binary_aut_ts_to_wts:
-  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::enum) transition set"
+  fixes ts :: "(('ctr_loc::finite, 'noninit::finite) state, 'label::finite) transition set"
   shows "binary_aut (ts_to_wts ts)"
 proof -
   have f1:"finite ts" by simp
