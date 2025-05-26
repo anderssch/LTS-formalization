@@ -226,17 +226,17 @@ proof -
   show ?thesis using finite_SumInf_is_sum[OF f] distr by argo
 qed
 
-theorem weight_reach_saturation_sum_correct: 
+theorem weight_reach_saturation_sum_correct': 
   assumes "saturation weight_reach_rule S S'"
   shows "weight_reach (($)S) C' = \<Sum>{S'$c' * (C' c') | c'. True}"
   unfolding weight_reach_def
   using weight_reach_distrib[of S C' UNIV] weight_reach_saturation_correct[OF assms]
   by simp
 
-theorem weight_reach_saturation_sum_correct_variant:
+theorem weight_reach_saturation_sum_correct:
   assumes "saturation weight_reach_rule S S'"
-  shows "weight_reach (($)S) (($)S'') = \<Sum>{S'$c' * (S'' $ c') | c'. True}"
-  using weight_reach_saturation_sum_correct assms by auto
+  shows "weight_reach (($)S) (($)S'') = \<Sum>{(S' $ c') * (S'' $ c') | c'. True}"
+  using weight_reach_saturation_sum_correct' assms by auto
 
 end
 

@@ -2339,7 +2339,7 @@ lemma weight_reach_saturation_correct:
   assumes "finite ts"
   assumes "saturation (finite_dioidLTS.weight_reach_rule ts) (update_wts (K$ 0) {(p,1) |p. p \<in> inits}) S"
   shows "dioidLTS.weight_reach ts (\<lambda>p. if p \<in> inits then 1 else 0) (\<lambda>p. if p \<in> finals then 1 else 0) = finfun_sum S finals"
-  using finite_dioidLTS.weight_reach_saturation_sum_correct[unfolded finite_dioidLTS_def finite_monoidLTS_def, OF assms, of "\<lambda>p. if p \<in> finals then 1 else 0"]
+  using finite_dioidLTS.weight_reach_saturation_sum_correct'[unfolded finite_dioidLTS_def finite_monoidLTS_def, OF assms, of "\<lambda>p. if p \<in> finals then 1 else 0"]
   unfolding update_wts_inits_apply finfun_sum_def sum_finals_1_0 
   by blast
 
