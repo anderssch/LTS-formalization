@@ -23,6 +23,13 @@ lemma add_finfun_apply[simp]: "(f + g) $ x = f $ x + g $ x"
   unfolding add_finfun_def by simp
 end
 
+instantiation finfun :: (type, times) times begin
+definition times_finfun_def: "a * b \<equiv> (\<lambda>(x,y). x * y) \<circ>$ ($a, b$)"
+instance ..
+lemma times_finfun_apply[simp]: "(f * g) $ x = f $ x * g $ x"
+  unfolding times_finfun_def by simp
+end
+
 instantiation finfun :: (type, ord) ord begin 
   \<comment> \<open>Note: This conjunctive order produces a partial order, even if the elements have a total order\<close>
 definition less_eq_finfun_def: "f \<le> g = (\<forall>a. f $ a \<le> g $ a)"
@@ -66,6 +73,22 @@ instance proof fix a :: "('a \<Rightarrow>f 'b::monoid_add)"
 qed
 end
 
+instantiation finfun :: (type, semigroup_mult) semigroup_mult begin
+instance proof fix a b c :: "('a \<Rightarrow>f 'b::semigroup_mult)"
+  show "a * b * c = a * (b * c)"
+    by (simp add: finfun_ext mult.assoc)
+qed
+end
+
+instantiation finfun :: (type, monoid_mult) monoid_mult begin
+instance proof fix a :: "('a \<Rightarrow>f 'b::monoid_mult)"
+  show "1 * a = a" 
+    by (simp add: finfun_ext one_finfun_def)
+  show "a * 1 = a"
+    by (simp add: finfun_ext one_finfun_def)
+qed
+end
+
 instantiation finfun :: (type, ab_semigroup_add) ab_semigroup_add begin
 instance proof fix a b c :: "('a \<Rightarrow>f 'b::ab_semigroup_add)"
   show "a + b = b + a" unfolding add_finfun_def
@@ -79,6 +102,25 @@ instance proof fix a :: "('a \<Rightarrow>f 'b::comm_monoid_add)"
     by (rule finfun_ext) simp
 qed
 end
+
+instantiation finfun :: (type, semiring) semiring begin
+instance proof fix a b c :: "('a \<Rightarrow>f 'b::semiring)"
+  show "(a + b) * c = a * c + b * c" unfolding times_finfun_def
+    by (rule finfun_ext) (simp add: distrib_right)
+  show "a * (b + c) = a * b + a * c" unfolding times_finfun_def
+    by (rule finfun_ext) (simp add: distrib_left)
+qed
+end
+
+instantiation finfun :: (type, mult_zero) mult_zero begin
+instance proof fix a b c :: "('a \<Rightarrow>f 'b::mult_zero)"
+  show "0 * a = 0" unfolding zero_finfun_def times_finfun_def
+    by (rule finfun_ext) simp
+  show "a * 0 = 0" unfolding zero_finfun_def times_finfun_def
+    by (rule finfun_ext) simp
+qed
+end                                         
+instance finfun :: (type, semiring_0) semiring_0 ..
 
 instantiation finfun :: (type, idempotent_ab_semigroup_add) idempotent_ab_semigroup_add begin
 instance proof fix a :: "('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add)"
@@ -96,9 +138,10 @@ instance proof fix a b :: "('a \<Rightarrow>f 'b::idempotent_ab_semigroup_add_or
 qed
 end
 
-instantiation finfun :: (type, idempotent_comm_monoid_add) idempotent_comm_monoid_add begin instance .. end
-
-instantiation finfun :: (type, idempotent_comm_monoid_add_ord) idempotent_comm_monoid_add_ord begin instance .. end
+instance finfun :: (type, idempotent_comm_monoid_add) idempotent_comm_monoid_add ..
+instance finfun :: (type, idempotent_comm_monoid_add_ord) idempotent_comm_monoid_add_ord ..
+instance finfun :: (type, idempotent_semiring) idempotent_semiring ..
+instance finfun :: (type, idempotent_semiring_ord) idempotent_semiring_ord ..
 
 lemma sum_finfun_apply:
   fixes S :: "('a \<Rightarrow>f 'b::idempotent_comm_monoid_add) set"
@@ -401,7 +444,14 @@ instance proof fix f :: "(nat \<Rightarrow> ('a::finite \<Rightarrow>f 'b::{wfp,
 qed
 end
 
-instantiation finfun :: (finite, bounded_idempotent_comm_monoid_add) bounded_idempotent_comm_monoid_add begin instance .. end
+instance finfun :: (finite, bounded_idempotent_comm_monoid_add) bounded_idempotent_comm_monoid_add ..
+
+instantiation finfun :: (type, type) discrete_topology begin
+definition "open_finfun \<equiv> (\<lambda>S. True)::('a\<Rightarrow>f'b) set \<Rightarrow> bool"
+instance by standard (auto simp add: open_finfun_def)
+end
+
+instance finfun :: (finite, "{bounded_idempotent_comm_monoid_add,idempotent_semiring_ord}") bounded_dioid ..
 
 \<comment> \<open>Extra lemmas\<close>
 lemma finfun_update_less:

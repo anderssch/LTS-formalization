@@ -1,5 +1,5 @@
 theory FiniteMonoidLTS 
-  imports "MonoidLTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "FinFunSumSaturation"
+  imports "MonoidLTS" "Saturation" "FinFunWellFounded" "FinFunAddUpdate" "BoundedDioidSaturation"
 begin
 
 
@@ -297,16 +297,16 @@ lemma pure_weight_reach_rule_mono: "ts\<^sub>3 \<le> ts\<^sub>1 \<Longrightarrow
   unfolding non_strict_weight_reach_rule.simps 
   by simp (metis add_finfun_apply finfun_add_update_same_mono idempotent_ab_semigroup_add_ord_class.order_prop idempotent_semiring_ord_class.mult_isor)
 
-lemma weight_reach_exec_is_step_exec: 
-  "weight_reach_exec transition_relation = step_saturation.step_exec (weight_reach_step transition_relation)"
-  unfolding weight_reach_exec_def step_saturation.step_exec_def
+lemma weight_reach_exec_is_saturation_exec: 
+  "weight_reach_exec transition_relation = step_saturation.saturation_exec (weight_reach_step transition_relation)"
+  unfolding weight_reach_exec_def step_saturation.saturation_exec_def
             weight_reach_loop_def step_saturation.step_loop_def 
   by auto
 
 lemma saturation_weight_reach_exec:
   "saturation weight_reach_rule S (weight_reach_exec transition_relation S)"
-  unfolding weight_reach_rule_is_non_equal_pure weight_reach_exec_is_step_exec
-  using sum_saturation_step_exec[of non_strict_weight_reach_rule "weight_reach_step transition_relation" S]
+  unfolding weight_reach_rule_is_non_equal_pure weight_reach_exec_is_saturation_exec
+  using sum_saturation_exec_correct[of non_strict_weight_reach_rule "weight_reach_step transition_relation" S]
         pure_weight_reach_rule_less_eq pure_weight_reach_rule_mono
         weight_reach_step_to_weight_reach_rule finite_weight_reach_rule_set 
   unfolding weight_reach_rule_is_non_equal_pure by fast

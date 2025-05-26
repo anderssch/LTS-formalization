@@ -562,6 +562,9 @@ lemma no_antichain_on_implies_almost_full_on: "(\<nexists>f. antichain_on (\<le>
 
 end
 
+lemma wf_less_wfp: "wf ({(x, y). x < y}::('a::wfp \<times> 'a) set)"
+  unfolding less_le_not_le using wfP_strict_class wfp_def[of "strict (\<le>)"] by blast
+
 class bounded_idempotent_comm_monoid_add = wfp + idempotent_comm_monoid_add_ord
 begin
 subclass order ..
@@ -770,8 +773,7 @@ class bounded_dioid = bounded_idempotent_comm_monoid_add_topology + idempotent_s
 begin
 end
 
-lemma discrete_topology_True: "class.discrete_topology (\<lambda>S. True)" 
-  unfolding class.discrete_topology_def class.discrete_topology_axioms_def class.topological_space_def by blast
+lemma discrete_topology_True: "class.discrete_topology (\<lambda>S. True)" by standard auto
 
 lemma idempotent_semiring_with_plus_ord:
   assumes "class.idempotent_semiring (+) 1 (*) (0::'d::{plus,one,times,zero})"
