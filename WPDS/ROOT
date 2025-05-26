@@ -1,38 +1,37 @@
-chapter AFP
+chapter WPDS
 
-session Dev_Weighted_Pushdown_Systems = Main +
+session Dev_Weighted_Pushdown_Systems (WPDS) in dep = Main +
   options [timeout = 300]
   sessions
     "Kleene_Algebra"
     "Well_Quasi_Orders"
     "Deriving"
     "FinFun"
+    "Pushdown_Systems"
   theories
-    PDS
-    PDS_Code
-    P_Automata
+    "Pushdown_Systems.PDS"
+    "Pushdown_Systems.PDS_Code"
+    "Pushdown_Systems.P_Automata"
     "Well_Quasi_Orders.Well_Quasi_Orders"
     "Deriving.Derive"
     "Kleene_Algebra.Dioid_Models"
     "FinFun.FinFun"
 
-session Weighted_Pushdown_Systems = Main +
+session Weighted_Pushdown_Systems (WPDS) = Main +
   options [timeout = 3000]
   sessions
     "Dev_Weighted_Pushdown_Systems"
   theories
-    FinFunOf
     BoundedDioid
+    BoundedDioidSaturation
     CountableSum
     FinFunAddUpdate
+    FinFunOf
     FinFunWellFounded
-    FinFunWellQuasiOrder
     FiniteMonoidLTS
-    LTS
     MonoidClosure
     MonoidLTS
     ProdDioid
-    ReverseWellQuasiOrder
     Saturation
     Set_More
     WAutomaton
@@ -43,7 +42,7 @@ session Weighted_Pushdown_Systems = Main +
     "root.bib"
     "root.tex"
 
-session Weighted_Pushdown_Systems_TestCases in TestCases = Main +
+session Weighted_Pushdown_Systems_TestCases (WPDS) in TestCases = Main +
   sessions 
     "Weighted_Pushdown_Systems"
   theories [document = false]
