@@ -15,7 +15,7 @@ lemma checking_implies: "checking \<Longrightarrow> WPDS_with_W_automata (set \<
 
 definition "lbl = WPDS.lbl"
 
-definition "augmented_WPDS_rules = WPDS_with_W_automata_no_assms.augmented_WPDS_rules"
+definition "augmented_WPDS_rules = WPDS_with_W_automata_no_assms.\<Delta>\<^sub>t\<^sub>s\<^sub>0"
 
 definition "pre_star_exec' = WPDS_with_W_automata_no_assms.pre_star_exec'"
 
