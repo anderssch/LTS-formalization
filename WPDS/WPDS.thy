@@ -2279,7 +2279,7 @@ context
   fixes \<Delta> :: "('ctr_loc::finite, 'label::finite, 'weight::bounded_dioid) w_rule set"
 begin
 definition pre_star_saturation :: "(('ctr_loc, 'noninit::finite) state, 'label, 'weight) w_transitions \<Rightarrow> (('ctr_loc, 'noninit) state, 'label, 'weight) w_transitions \<Rightarrow> bool" where
-  "pre_star_saturation ts0 ts' = saturation (WPDS_with_W_automata.pre_star_rule\<^sub>t\<^sub>s\<^sub>0 \<Delta> ts0) (K$ 0) ts'"
+  "pre_star_saturation ts0 ts0\<^sub>s\<^sub>a\<^sub>t = saturation (WPDS_with_W_automata.pre_star_rule\<^sub>t\<^sub>s\<^sub>0 \<Delta> ts0) (K$ 0) ts0\<^sub>s\<^sub>a\<^sub>t"
 
 end
 
@@ -2303,8 +2303,8 @@ lemma pre_star_correct:
 lemma pre_star_correctness_full: 
   fixes ts :: "(('ctr_loc, 'noninit::{card_UNIV,enum}) state, 'label::enum) transition set"
   fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
-  assumes "pre_star_saturation \<Delta> (ts_to_wts ts') A"
-  shows "\<Sum>{d |c d. d = dioidLTS.accepts ((ts_to_wts ts) \<inter>\<^sub>w A) (finals\<times>finals') c}
+  assumes "pre_star_saturation \<Delta> (ts_to_wts ts') ts'\<^sub>s\<^sub>a\<^sub>t"
+  shows "\<Sum>{d |c d. d = dioidLTS.accepts ((ts_to_wts ts) \<inter>\<^sub>w ts'\<^sub>s\<^sub>a\<^sub>t) (finals\<times>finals') c}
       = (weight_reach_set (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
   oops 
 
