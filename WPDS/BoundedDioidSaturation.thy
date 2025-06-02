@@ -365,7 +365,7 @@ lemma saturation_exec_terminates:
 lemma step_rule_star_step: "step_rule\<^sup>*\<^sup>* s (step s)"
   unfolding step_rule_def by (cases "s = step s") auto
 
-lemma weak_rule_star_step_k: "step_rule\<^sup>*\<^sup>* s ((step ^^ k) s)"
+lemma step_rule_star_step_k: "step_rule\<^sup>*\<^sup>* s ((step ^^ k) s)"
   by (induct k) (auto elim!: rtranclp_trans intro: step_rule_star_step)
 
 lemma saturation_exec_correct': "saturation step_rule s (saturation_exec s)"
@@ -377,7 +377,7 @@ proof -
     using eq unfolding strict_rule.simps step_rule_def by presburger
   then show ?thesis
     unfolding saturation_def saturated_def saturation_exec_def o_apply t
-    by (simp_all add: weak_rule_star_step_k k)
+    by (simp_all add: step_rule_star_step_k k)
 qed
 
 lemma saturation_exec_less_eq: "saturation_exec s \<le> s"
