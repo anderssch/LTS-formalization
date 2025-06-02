@@ -2304,7 +2304,9 @@ lemma pre_star_correctness_full:
   fixes ts :: "(('ctr_loc, 'noninit::{card_UNIV,enum}) state, 'label::enum) transition set"
   fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
   assumes "pre_star_saturation \<Delta> (ts_to_wts ts') ts'\<^sub>s\<^sub>a\<^sub>t"
-  shows "\<Sum>{d |c d. d = dioidLTS.accepts ((ts_to_wts ts) \<inter>\<^sub>w ts'\<^sub>s\<^sub>a\<^sub>t) (finals\<times>finals') c}
+  assumes "prod_ts = (ts_to_wts ts) \<inter>\<^sub>w ts'\<^sub>s\<^sub>a\<^sub>t"
+  assumes "prod_finals = finals\<times>finals'"
+  shows "\<Sum>{d |c d. d = dioidLTS.accepts prod_ts prod_finals c}
       = (weight_reach_set (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
   oops 
 
