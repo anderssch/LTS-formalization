@@ -2259,7 +2259,7 @@ lemma pre_star_correctness:
   using assms augmented_rules_correct augmented_WPDS.correctness' by auto 
 
 abbreviation "pre_star_rule\<^sub>t\<^sub>s\<^sub>0 \<equiv> WPDS.pre_star_rule \<Delta>\<^sub>t\<^sub>s\<^sub>0"
-lemma pre_star_correctness': (* This version is used in the paper, since it relies on fewer definitions *)
+lemma pre_star_correctness':
   assumes "saturation pre_star_rule\<^sub>t\<^sub>s\<^sub>0 (K$ 0) A"
   shows "\<L>(A) (Init p, w) = weight_pre_star language_ts0 (p, w)"
   using assms augmented_rules_correct augmented_WPDS.correctness' \<Delta>\<^sub>t\<^sub>s\<^sub>0_def by auto 
