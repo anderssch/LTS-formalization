@@ -98,18 +98,18 @@ qed
 end
 
 
-section \<open>Locale: dioidLTS -- acceptance\<close>
-\<comment> \<open>Generalization of PDS_with_P_automata.accepts that computes the meet-over-all-paths in the W-automaton.\<close>
+section \<open>Locale: dioidLTS -- language\<close>
+\<comment> \<open>Generalization of PDS_with_P_automata.language that computes the meet-over-all-paths in the W-automaton.\<close>
 
 context dioidLTS begin
 
-definition accepts :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> 'ctr_loc set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
-  "accepts ts finals \<equiv> \<lambda>(p,w). (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> \<lbrakk>ts\<rbrakk>\<^sup>\<odot>})"
+definition language :: "('ctr_loc, 'label, 'weight) w_transitions \<Rightarrow> 'ctr_loc set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
+  "language ts finals \<equiv> \<lambda>(p,w). (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> \<lbrakk>ts\<rbrakk>\<^sup>\<odot>})"
 
 context fixes finals :: "'ctr_loc::finite set" begin
-abbreviation accepts' ("\<L> (_)" [1000] 1000) where "\<L>(ts) \<equiv> accepts ts finals"
+abbreviation language' ("\<L> (_)" [1000] 1000) where "\<L>(ts) \<equiv> language ts finals"
 
-lemma accepts_step_distrib:
+lemma language_step_distrib:
   fixes ts :: "('ctr_loc, 'label::finite, 'weight::bounded_dioid) w_transitions"
   shows "\<^bold>\<Sum>{d * (\<L>(ts) (q1,w))| q1 d. (p,([\<gamma>],d),q1) \<in> \<lbrakk>ts\<rbrakk>} = \<L>(ts) (p,\<gamma>#w)"
 proof -
@@ -142,7 +142,7 @@ proof -
 
   have "\<^bold>\<Sum>{d * (\<L>(ts) (q,w))| q d. (p,([\<gamma>],d),q) \<in> \<lbrakk>ts\<rbrakk>} =
         \<^bold>\<Sum> {d * (\<^bold>\<Sum> {u | q u. q \<in> finals \<and> (q1, (w, u), q) \<in> \<lbrakk>ts\<rbrakk>\<^sup>\<odot>}) |q1 d. (p, ([\<gamma>], d), q1) \<in> \<lbrakk>ts\<rbrakk>}"
-    unfolding dioidLTS.accepts_def by auto
+    unfolding dioidLTS.language_def by auto
   also
   have "... = \<^bold>\<Sum> {d * u | q u q1 d. q \<in> finals \<and> (q1, (w, u), q) \<in> \<lbrakk>ts\<rbrakk>\<^sup>\<odot> \<and> (p, ([\<gamma>], d), q1) \<in> \<lbrakk>ts\<rbrakk>}"
     using SumInf_of_SumInf_left_distr[of "\<lambda>(q1,d). (p, ([\<gamma>], d), q1) \<in> \<lbrakk>ts\<rbrakk>" "\<lambda>(q,u) (q1,d). q \<in> finals \<and> (q1, (w, u), q) \<in> \<lbrakk>ts\<rbrakk>\<^sup>\<odot>"
@@ -157,18 +157,18 @@ proof -
     done
   also
   have "... = \<L>(ts) (p,\<gamma>#w)"
-    unfolding accepts_def by auto
+    unfolding language_def by auto
 
   finally show ?thesis 
     by auto
 qed
 
 
-lemma accepts_def2:
+lemma language_def2:
   "\<L>(ts) (p,w) = (\<^bold>\<Sum>{d | d q. q \<in> finals \<and> (p,(w,d),q) \<in> \<lbrakk>ts\<rbrakk>\<^sup>\<odot>})"
-  using accepts_def[of ts] by auto
+  using language_def[of ts] by auto
 
-lemma accept_is_one_if_final_empty:
+lemma language_is_one_if_final_empty:
   assumes "p \<in> finals"
   shows "\<L>(A) (p,[]) = 1"
 proof -
@@ -176,10 +176,10 @@ proof -
     using Collect_cong[of "\<lambda>d. \<exists>q. q \<in> finals \<and> (p, ([], d), q) \<in> \<lbrakk>A\<rbrakk>\<^sup>\<odot>" "\<lambda>d. d = 1"]
       assms monoid_rtrancl_wts_to_monoidLTS_refl mstar_wts_empty_one by force
   then show ?thesis
-    by (simp add: accepts_def)
+    by (simp add: language_def)
 qed
 
-lemma accept_is_zero_if_nonfinal_empty:
+lemma language_is_zero_if_nonfinal_empty:
   fixes A::"('ctr_loc \<times> 'label \<times> 'ctr_loc) \<Rightarrow>f 'weight"
   assumes "p \<notin> finals"
   shows "\<L>(A) (p,[]) = 0"
@@ -187,7 +187,7 @@ proof -
   have "{d | d q. q \<in> finals \<and> (p,([],d),q) \<in> \<lbrakk>A\<rbrakk>\<^sup>\<odot>} = {}"
     using assms monoid_star_w0[of p _ _ A] by fastforce
   then show ?thesis
-    unfolding accepts_def2 using SumInf_empty 
+    unfolding language_def2 using SumInf_empty 
       Collect_cong[of "\<lambda>d. \<exists>q. q \<in> finals \<and> (p, ([], d), q) \<in> \<lbrakk>A\<rbrakk>\<^sup>\<odot>"
         "\<lambda>d. \<exists>q. q \<in> finals \<and> (p, ([], d), q) \<in> \<lbrakk>A\<rbrakk>\<^sup>\<odot>"] by metis
 qed
@@ -233,35 +233,35 @@ next
   qed
 qed
 
-lemma accepts_K0_is_zero_if_nonfinal:
+lemma language_K0_is_zero_if_nonfinal:
   assumes "p \<notin> finals"
   shows "\<L>(K$ 0) (p,w) = 0"
 proof -
   have "{d :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, d), q) \<in> \<lbrakk>K$ 0\<rbrakk>\<^sup>\<odot>} \<subseteq> {0}"
     using zero_weight_if_nonrefl_path_in_K0[of p "(w,_)" _] assms by auto
   then show ?thesis
-    unfolding accepts_def by auto
+    unfolding language_def by auto
 qed
 
-lemma accepts_K0_is_zero_if_nonempty:
+lemma language_K0_is_zero_if_nonempty:
   assumes "w \<noteq> []"
   shows "\<L>(K$ 0) (p,w) = 0"
 proof -
   have "{d :: 'weight. \<exists>q. q \<in> finals \<and> (p, (w, d), q) \<in> \<lbrakk>K$ 0\<rbrakk>\<^sup>\<odot>} \<subseteq> {0}"
     using zero_weight_if_nonempty_word_in_K0[of p "(w,_)" _] assms by auto
   then show ?thesis
-    unfolding accepts_def by auto
+    unfolding language_def by auto
 qed
 
-lemma accepts_empty_iff: 
+lemma language_empty_iff: 
   fixes A::"('ctr_loc \<times> 'label \<times> 'ctr_loc) \<Rightarrow>f 'weight"
   shows "\<L>(A) (p,[]) = (if p\<in>finals then 1 else 0)"
-  by (simp add: accept_is_one_if_final_empty accept_is_zero_if_nonfinal_empty)
+  by (simp add: language_is_one_if_final_empty language_is_zero_if_nonfinal_empty)
 
-lemma accepts_K0_iff[simp]: "\<L>(K$ 0) (p,w) = (if p\<in>finals \<and> w = [] then 1 else 0)"
-  by (metis accept_is_one_if_final_empty accepts_K0_is_zero_if_nonfinal accepts_K0_is_zero_if_nonempty)
+lemma language_K0_iff[simp]: "\<L>(K$ 0) (p,w) = (if p\<in>finals \<and> w = [] then 1 else 0)"
+  by (metis language_is_one_if_final_empty language_K0_is_zero_if_nonfinal language_K0_is_zero_if_nonempty)
 
-lemma accepts_1_if_monoid_rtrancl_1:
+lemma language_1_if_monoid_rtrancl_1:
   fixes ts :: "('ctr_loc::finite, 'label::finite) transition set"
   assumes "finite ts"
   assumes "(p, (v, 1 :: 'weight::bounded_dioid), q) \<in> \<lbrakk>ts_to_wts ts\<rbrakk>\<^sup>\<odot>"
@@ -290,11 +290,11 @@ proof -
   have "\<^bold>\<Sum> {d. \<exists>q.  q \<in> finals \<and> (p, (v, d), q) \<in> \<lbrakk>ts_to_wts ts\<rbrakk>\<^sup>\<odot>} = (1::'weight)"
     by (auto simp add: finite_SumInf_is_sum)
   then show ?thesis
-    by (simp add: dioidLTS.accepts_def2)
+    by (simp add: dioidLTS.language_def2)
 qed
 
-subsection \<open>accepts code\<close>
-lemma accepts_code_Cons:
+subsection \<open>language code\<close>
+lemma language_code_Cons:
   fixes ts :: "('ctr_loc \<times> ('label::finite) \<times> ('ctr_loc::finite)) \<Rightarrow>f 'weight::bounded_dioid"
   shows "\<L> ts (p,(\<gamma>#w)) = (\<Sum>{(ts $ (p,\<gamma>,q) * (\<L> ts (q,w))) | q. ts $ (p,\<gamma>,q) \<noteq> 0})"
 proof -
@@ -318,12 +318,12 @@ proof -
     by auto
   ultimately
   show ?thesis
-    unfolding accepts_step_distrib by auto
+    unfolding language_step_distrib by auto
 qed
 end
 end
-declare dioidLTS.accepts_empty_iff[code]
-declare dioidLTS.accepts_code_Cons[code]
+declare dioidLTS.language_empty_iff[code]
+declare dioidLTS.language_code_Cons[code]
 
 
 section \<open>Locale: WPDS\<close>
@@ -899,7 +899,7 @@ lemma countable_monoid_rtrancl_wts_to_monoidLTS_P:
   using countable_monoid_rtrancl_wts_to_monoidLTS_all by (simp add: dissect_set)
 
 context fixes finals :: "'ctr_loc::finite set" begin
-abbreviation accepts'' ("\<L>(_)" [1000] 1000) where "accepts'' \<equiv> accepts' finals" 
+abbreviation language'' ("\<L>(_)" [1000] 1000) where "language'' \<equiv> language' finals" 
 
 lemma weight_pre_star_K0_is_pred_weight:
    "weight_pre_star \<L>(K$ 0) (p, w) = (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
@@ -912,7 +912,7 @@ proof -
   also have "... = \<^bold>\<Sum> {l * \<L>(K$ 0) (q,v) |l q v. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q,v)}"
     by auto
   also have "... = \<^bold>\<Sum> {l * (if q \<in> finals \<and> v = [] then 1 else 0) |l q v. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)}"
-    unfolding accepts_K0_iff by auto
+    unfolding language_K0_iff by auto
   also have "... = \<^bold>\<Sum> ({l * 1 |l q v. q \<in> finals \<and> v = [] \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)} \<union>
                        {l * 0 |l q v. \<not>(q \<in> finals \<and> v = []) \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)})"
     apply -
@@ -942,7 +942,7 @@ proof -
     by blast
 qed
 
-lemma sound_accepts_geq_pred_weight:
+lemma sound_language_geq_pred_weight:
   assumes soundA': "sound A'"
   shows "\<L>(A') pv \<ge> (\<^bold>\<Sigma>\<^sub>spv\<Rightarrow>\<^sup>*finals)"
 proof -
@@ -962,7 +962,7 @@ proof -
     using soundA' sound_def2 countable_monoid_rtrancl_wts_to_monoidLTS 
     by (force simp add: countable_monoid_rtrancl_wts_to_monoidLTS_all dissect_set)
   also have "... = \<L>(A') (p,v)"
-    unfolding accepts_def by (simp split: prod.split)
+    unfolding language_def by (simp split: prod.split)
   finally show ?thesis
     unfolding pv_split by auto
 qed
@@ -970,7 +970,7 @@ qed
 lemma rtranclp_pre_star_geq_pred_weight:
   assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
   shows "\<L>(A') (p,w) \<ge> (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
-  using pre_star_rule_rtranclp_sound[OF sound_empty, of A'] assms sound_accepts_geq_pred_weight 
+  using pre_star_rule_rtranclp_sound[OF sound_empty, of A'] assms sound_language_geq_pred_weight 
   by presburger 
 
 lemma saturation_pre_star_geq_pred_weight:
@@ -1029,7 +1029,7 @@ proof -
     by (simp add: t(3) mult.assoc)
 qed
 
-lemma accepts_if_is_rule:
+lemma language_if_is_rule:
   assumes "(p', \<gamma>) \<midarrow>d\<hookrightarrow> (p'', u1)"
     and "saturated pre_star_rule A"
   shows "\<L>(A) (p',(\<gamma> # w1)) \<le> d * \<L>(A) (p'', (lbl u1) @ w1)"
@@ -1045,16 +1045,16 @@ proof -
     using SumInf_left_distr[of "{is_d'. \<exists>d' q. is_d' = d' \<and> q \<in> finals \<and> (p'', (lbl u1 @ w1, d'), q) \<in> \<lbrakk>A\<rbrakk>\<^sup>\<odot>}" d] 
       countable_monoid_rtrancl_wts_to_monoidLTS_P by fastforce
   finally show ?thesis
-    using accepts_def[of A finals] by force
+    using language_def[of A finals] by force
 qed
 
-lemma accepts_if_saturated_monoid_star_relp:
+lemma language_if_saturated_monoid_star_relp:
   assumes "(p', w) \<Midarrow>d\<Rightarrow> (p'', u)"
       and "saturated pre_star_rule A"
     shows "\<L>(A) (p',w) \<le> d * \<L>(A) (p'', u)"
-  using assms(1) assms(2) accepts_if_is_rule[of _ _ _ _ _ A] step_relp_elim2 by blast
+  using assms(1) assms(2) language_if_is_rule[of _ _ _ _ _ A] step_relp_elim2 by blast
 
-lemma accepts_if_saturated_monoid_star_relp_final':
+lemma language_if_saturated_monoid_star_relp_final':
   assumes "saturated pre_star_rule A"
   assumes "c \<Midarrow>d\<Rightarrow>\<^sup>* c'" and "fst c' \<in> finals" and "snd c' = []"
   shows "\<L>(A) c \<le> d"
@@ -1062,7 +1062,7 @@ lemma accepts_if_saturated_monoid_star_relp_final':
 proof (induction rule: monoid_star_relp_induct_rev)
   case (monoid_star_refl c)
   then show ?case
-    by (metis dual_order.eq_iff accept_is_one_if_final_empty prod.exhaust_sel)
+    by (metis dual_order.eq_iff language_is_one_if_final_empty prod.exhaust_sel)
 next
   case (monoid_star_into_rtrancl p'w d p''u c d')
   then have accpt: "\<L>(A) p''u \<le> d'"
@@ -1077,15 +1077,15 @@ next
     using p'_def w_def by auto
 
   show ?case
-    using accpt assms(1) accepts_if_saturated_monoid_star_relp idempotent_semiring_ord_class.mult_isol 
+    using accpt assms(1) language_if_saturated_monoid_star_relp idempotent_semiring_ord_class.mult_isol 
       monoid_star_into_rtrancl.hyps(1) order_trans p''u_split p'w_split by blast
 qed
 
-lemma accepts_if_saturated_monoid_star_relp_final:
+lemma language_if_saturated_monoid_star_relp_final:
   assumes "saturated pre_star_rule A"
   assumes "c \<Midarrow>d\<Rightarrow>\<^sup>* (p,[])" and "p \<in> finals"
   shows "\<L>(A) c \<le> d"
-  using accepts_if_saturated_monoid_star_relp_final' assms by simp 
+  using language_if_saturated_monoid_star_relp_final' assms by simp 
 
 lemma saturated_pre_star_leq_ctr_loc_pred_weight:
   assumes "saturated pre_star_rule A"
@@ -1095,7 +1095,7 @@ proof -
   define X where "X = \<L>(A) c"
   show ?thesis
     using 
-      accepts_if_saturated_monoid_star_relp_final[OF assms(1) _ assms(2), of c]  unfolding X_def[symmetric]
+      language_if_saturated_monoid_star_relp_final[OF assms(1) _ assms(2), of c]  unfolding X_def[symmetric]
     using leq_ctr_loc_pred_weight_if_leq_all_paths by blast
 qed
 
@@ -1169,7 +1169,7 @@ definition "pre_star_exec_fast = the o while_option (\<lambda>s. pre_star_step_n
 
 definition "pre_star_exec_fast0 = pre_star_exec_fast (ts_to_wts {})"
 
-definition "accept_pre_star_exec0 = dioidLTS.accepts pre_star_exec_fast0"
+definition "language_pre_star_exec0 = dioidLTS.language pre_star_exec_fast0"
 
 end
 
@@ -1640,8 +1640,8 @@ interpretation augmented_dioidLTS: dioidLTS augmented_WPDS.transition_rel .
 definition pre_star_exec' where
   "pre_star_exec' = augmented_WPDS.pre_star_exec_fast0"
 
-definition accept_pre_star_exec0' where
-  "accept_pre_star_exec0' = augmented_WPDS.accept_pre_star_exec0"
+definition language_pre_star_exec0' where
+  "language_pre_star_exec0' = augmented_WPDS.language_pre_star_exec0"
 
 end
 
@@ -1655,7 +1655,7 @@ lemma pop_ts0_rules_def2[code]:
 
 declare WPDS_with_W_automata_no_assms.\<Delta>\<^sub>t\<^sub>s\<^sub>0_def[code]
 declare WPDS_with_W_automata_no_assms.pre_star_exec'_def[code]
-declare WPDS_with_W_automata_no_assms.accept_pre_star_exec0'_def[code]
+declare WPDS_with_W_automata_no_assms.language_pre_star_exec0'_def[code]
 
 abbreviation "pre_star_exec \<Delta> ts \<equiv> WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts"
 
@@ -1724,7 +1724,7 @@ definition augmented_rules_reach_empty where
   "augmented_rules_reach_empty finals p w d = (\<exists>p' \<in> finals. ((Init p, w), d, (p',[])) \<in> monoidLTS.monoid_star (WPDS.transition_rel \<Delta>\<^sub>t\<^sub>s\<^sub>0))"
 
 definition reach_conf_in_W_automaton where
-  "reach_conf_in_W_automaton finals p w d = (\<exists>d' p' w'. (p, w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p', w') \<and> d = d' * accepts ts0 finals (Init p',w'))"
+  "reach_conf_in_W_automaton finals p w d = (\<exists>d' p' w'. (p, w) \<Midarrow>d'\<Rightarrow>\<^sup>* (p', w') \<and> d = d' * language ts0 finals (Init p',w'))"
 
 lemma reach_conf_in_W_automaton_unfold:
   "\<^bold>\<Sum>{d. reach_conf_in_W_automaton finals p w d} = 
@@ -1740,7 +1740,7 @@ proof -
   have 
     "\<^bold>\<Sum>{d. reach_conf_in_W_automaton finals p w d} =
      \<^bold>\<Sum> {d' * \<^bold>\<Sum> {d. \<exists>q. q \<in> finals \<and> (Init p', (w', d), q) \<in> \<lbrakk>ts0\<rbrakk>\<^sup>\<odot>} | d' p' w'. (p, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', w')}"
-    unfolding reach_conf_in_W_automaton_def accepts_def by simp meson
+    unfolding reach_conf_in_W_automaton_def language_def by simp meson
   moreover have 
     "\<^bold>\<Sum> {d' * \<^bold>\<Sum> {d. \<exists>q. q \<in> finals \<and> (Init p', (w', d), q) \<in> \<lbrakk>ts0\<rbrakk>\<^sup>\<odot>} | d' p' w'. (p, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', w')} = 
      \<^bold>\<Sum> {d' * d | d d' p' w' q. q \<in> finals \<and> (Init p', (w', d), q) \<in> \<lbrakk>ts0\<rbrakk>\<^sup>\<odot> \<and> (p, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', w')}"
@@ -2216,13 +2216,13 @@ qed
 
 lemma augmented_rules_match_W_automaton:
   "\<^bold>\<Sum>{d. augmented_rules_reach_empty finals p w d} = \<^bold>\<Sum>{d. reach_conf_in_W_automaton finals p w d}"
-  using augmented_rules_equal reach_conf_in_W_automaton_unfold unfolding augmented_rules_reach_empty_def accepts_def
+  using augmented_rules_equal reach_conf_in_W_automaton_unfold unfolding augmented_rules_reach_empty_def language_def
   by (simp add: monoidLTS.monoid_star_is_monoid_rtrancl) meson
 
 context fixes finals :: "('ctr_loc, 'noninit) state set" begin
-abbreviation accepts''' ("\<L> _" [1000] 1000) where "accepts''' \<equiv> accepts' finals"
+abbreviation language''' ("\<L> _" [1000] 1000) where "language''' \<equiv> language' finals"
 
-lemma unfold_pre_star_accepts_empty_automaton:
+lemma unfold_pre_star_language_empty_automaton:
   "dioidLTS.weight_pre_star augmented_WPDS.transition_rel \<L>(K$ 0) (Init p, w) =
    \<^bold>\<Sum>{d. augmented_rules_reach_empty finals p w d}"
 proof -
@@ -2250,7 +2250,7 @@ abbreviation language_ts0 :: "('ctr_loc,'label) conf \<Rightarrow> 'weight" wher
 
 lemma augmented_rules_correct:
   "dioidLTS.weight_pre_star augmented_WPDS.transition_rel \<L>(K$ 0) (Init p, w) = weight_pre_star language_ts0 (p, w)"
-  using unfold_pre_star_accepts_empty_automaton augmented_rules_match_W_automaton[of finals p w]
+  using unfold_pre_star_language_empty_automaton augmented_rules_match_W_automaton[of finals p w]
   unfolding weight_pre_star_def reach_conf_in_W_automaton_def by simp meson
 
 lemma pre_star_correctness:
@@ -2330,8 +2330,8 @@ lemma weight_reach_sum_exec_correct:
         ]
   by force
 
-definition accepts_full :: "(('ctr_loc::finite, 'noninit::finite) state, 'label, 'weight::bounded_dioid) w_transitions \<Rightarrow> ('ctr_loc, 'noninit) state set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
-  "accepts_full ts finals \<equiv> \<lambda>(p, w). dioidLTS.accepts ts finals (Init p, w)"
+definition language_full :: "(('ctr_loc::finite, 'noninit::finite) state, 'label, 'weight::bounded_dioid) w_transitions \<Rightarrow> ('ctr_loc, 'noninit) state set \<Rightarrow> ('ctr_loc, 'label) conf \<Rightarrow> 'weight" where
+  "language_full ts finals \<equiv> \<lambda>(p, w). dioidLTS.language ts finals (Init p, w)"
 
 lemma finite_wts_to_weightLTS:
   fixes ts :: "('state::finite, 'label::finite, 'weight::bounded_dioid) w_transitions"
@@ -2363,7 +2363,7 @@ lemma weight_reach_intersection_correct:
   fixes ts :: "(('ctr_loc::finite, 'noninit::finite) state, 'label::finite, 'weight::bounded_dioid) w_transitions"
   assumes "binary_aut ts"
   shows "dioidLTS.weight_reach \<lbrakk>ts\<inter>\<^sub>wts'\<rbrakk>\<^sub>w (\<lambda>p. if p \<in> {(q,q)|q. q\<in>inits} then 1 else 0) (\<lambda>p. if p \<in> finals \<times> finals' then 1 else 0) =  
-         \<^bold>\<Sum> {dioidLTS.accepts ts finals (p, w) * dioidLTS.accepts ts' finals' (p, w) |p w. p \<in> inits}" (is "?A = ?B")
+         \<^bold>\<Sum> {dioidLTS.language ts finals (p, w) * dioidLTS.language ts' finals' (p, w) |p w. p \<in> inits}" (is "?A = ?B")
 proof -
   have c1: "countable {y:: ('ctr_loc, 'noninit) state \<times> 'label list. fst y \<in> inits}" 
     by auto
@@ -2413,7 +2413,7 @@ proof -
     using w_inters_sound_wts_to_monoidLTS[OF assms(1)] w_inters_complete_wts_to_weightLTS[OF assms(1)]
     by blast
   moreover have B:"... = ?B"
-    unfolding dioidLTS.accepts_def
+    unfolding dioidLTS.language_def
     using SumInf_of_SumInf_left_distr[OF c1 c2, of "\<lambda>pw. \<^bold>\<Sum>{d | d q. q \<in> finals \<and> (fst pw,(snd pw,d),q) \<in> \<lbrakk>ts\<rbrakk>\<^sup>\<odot>}" "\<lambda>dq pw. fst dq"]
     using SumInf_of_SumInf_right_distr[OF c3 c4, of "\<lambda>dq pw. fst dq" "\<lambda>d'q'pw. fst d'q'pw"]
     by simp
@@ -2428,36 +2428,36 @@ lemma WPDS_weight_reach'_is_weight_reach_sum_exec:
   assumes "binary_aut ts"
       and "finite \<Delta> \<and> (\<forall>q p \<gamma>. is_Init q \<longrightarrow> ts' $ (p, \<gamma>, q) = 0)"
       and "\<And>p. is_Init p \<longleftrightarrow> p \<in> inits"
-  shows "weight_reach (accepts_full ts finals) (accepts_full ts' finals') = 
+  shows "weight_reach (language_full ts finals) (language_full ts' finals') = 
          weight_reach_sum_exec \<lbrakk>ts \<inter>\<^sub>w (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts')\<rbrakk>\<^sub>w {(p, p) |p. p \<in> inits} (finals \<times> finals')" (is "?A = ?B")
 proof -
   have f:"finite \<Delta>" using assms(2) by simp
   have W:"WPDS_with_W_automata \<Delta> ts'" unfolding WPDS_with_W_automata_def finite_WPDS_def WPDS_with_W_automata_axioms_def using assms(2) by blast
   have aux:"\<And>p w. Init p \<in> inits \<Longrightarrow>
-    dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (accepts_full ts' finals') (p, w) =
-    dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (\<lambda>(p, w). dioidLTS.accepts ts' finals' (Init p, w)) (p, w)"
-    unfolding accepts_full_def
+    dioidLTS.language ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (language_full ts' finals') (p, w) =
+    dioidLTS.language ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (\<lambda>(p, w). dioidLTS.language ts' finals' (Init p, w)) (p, w)"
+    unfolding language_full_def
     by (smt (verit, best) Collect_cong assms(3) dioidLTS.weight_pre_star_def split_cong state.disc(1))
-  have "?A = \<^bold>\<Sum>{dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (accepts_full ts' finals') (p, w) |p w. Init p \<in> inits}" 
+  have "?A = \<^bold>\<Sum>{dioidLTS.language ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (language_full ts' finals') (p, w) |p w. Init p \<in> inits}" 
     unfolding countable_dioidLTS.weight_reach_to_pre_star[
                 unfolded countable_dioidLTS_def countable_monoidLTS_def, 
                 OF finite_WPDS.countable_transition_rel[unfolded finite_WPDS_def, OF f],
-                of "accepts_full ts finals" "accepts_full ts' finals'"
+                of "language_full ts finals" "language_full ts' finals'"
               ]
     using SumInf_split_Qor0[
             of "\<lambda>c. True" "\<lambda>pw. Init (fst pw) \<in> inits" 
-               "\<lambda>c. accepts_full ts finals c * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (accepts_full ts' finals') c"
-               "\<lambda>pw. dioidLTS.accepts ts finals (Init (fst pw), snd pw) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (accepts_full ts' finals') pw"
+               "\<lambda>c. language_full ts finals c * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (language_full ts' finals') c"
+               "\<lambda>pw. dioidLTS.language ts finals (Init (fst pw), snd pw) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (language_full ts' finals') pw"
           ]
-    unfolding accepts_full_def[of ts]
+    unfolding language_full_def[of ts]
     using assms(3) by fastforce
-  moreover have "... = \<^bold>\<Sum>{dioidLTS.accepts ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (\<lambda>(p, w). dioidLTS.accepts ts' finals' (Init p, w)) (p, w) |p w. Init p \<in> inits}"
+  moreover have "... = \<^bold>\<Sum>{dioidLTS.language ts finals (Init p, w) * dioidLTS.weight_pre_star (WPDS.transition_rel \<Delta>) (\<lambda>(p, w). dioidLTS.language ts' finals' (Init p, w)) (p, w) |p w. Init p \<in> inits}"
     apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
     using aux
     apply safe
      apply blast
     by metis
-  moreover have "... = \<^bold>\<Sum> {dioidLTS.accepts ts finals (p, w) * dioidLTS.accepts (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts') finals' (p, w) |p w. p \<in> inits}" 
+  moreover have "... = \<^bold>\<Sum> {dioidLTS.language ts finals (p, w) * dioidLTS.language (WPDS_with_W_automata_no_assms.pre_star_exec' \<Delta> ts') finals' (p, w) |p w. p \<in> inits}" 
     apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
     apply safe
      apply simp
@@ -2496,48 +2496,48 @@ qed
 end
 
 
-lemma not_in_trans_star_implies_accepts_0:
+lemma not_in_trans_star_implies_language_0:
   fixes ts :: "('s :: enum, 'label::finite) transition set"
   assumes "finite ts"
   assumes "\<forall>q\<in>finals. (p, w, q) \<notin> LTS.trans_star ts"
-  shows "dioidLTS.accepts (ts_to_wts ts) finals (p, w) = (0::'weight::bounded_dioid)"
+  shows "dioidLTS.language (ts_to_wts ts) finals (p, w) = (0::'weight::bounded_dioid)"
   using assms(2)
 proof (induct w arbitrary: p)
   case Nil
-  then show ?case by (simp add: dioidLTS.accepts_empty_iff) (metis LTS.trans_star.trans_star_refl)
+  then show ?case by (simp add: dioidLTS.language_empty_iff) (metis LTS.trans_star.trans_star_refl)
 next
   case (Cons a w)
-  have f:"finite {ts_to_wts ts $ (p, a, q) * dioidLTS.accepts (ts_to_wts ts) finals (q, w) |q. ts_to_wts ts $ (p, a, q) \<noteq> 0}"
+  have f:"finite {ts_to_wts ts $ (p, a, q) * dioidLTS.language (ts_to_wts ts) finals (q, w) |q. ts_to_wts ts $ (p, a, q) \<noteq> 0}"
     by fastforce
-  have A:"{ts_to_wts ts $ (p, a, x) * dioidLTS.accepts (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<notin> ts} = {}"
+  have A:"{ts_to_wts ts $ (p, a, x) * dioidLTS.language (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<notin> ts} = {}"
     using ts_to_wts_not_member_is_0[OF assms(1)] by blast
   have "\<And>p'. \<forall>q\<in>finals. (p, a # w, q) \<notin> LTS.trans_star ts \<Longrightarrow> (p, a, p') \<in> ts \<Longrightarrow> \<forall>q\<in>finals. (p', w, q) \<notin> LTS.trans_star ts"
     by (meson LTS.trans_star.trans_star_step)
-  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> dioidLTS.accepts (ts_to_wts ts) finals (p', w) = (0::'weight::bounded_dioid)"
+  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> dioidLTS.language (ts_to_wts ts) finals (p', w) = (0::'weight::bounded_dioid)"
     using Cons by blast
-  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> ts_to_wts ts $ (p, a, p') * dioidLTS.accepts (ts_to_wts ts) finals (p', w) = (0::'weight::bounded_dioid)"
+  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> ts_to_wts ts $ (p, a, p') * dioidLTS.language (ts_to_wts ts) finals (p', w) = (0::'weight::bounded_dioid)"
     using mult_zero_right by fastforce
-  then have B:"{ts_to_wts ts $ (p, a, x) * dioidLTS.accepts (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<in> ts} \<subseteq> {0::'weight::bounded_dioid}"
+  then have B:"{ts_to_wts ts $ (p, a, x) * dioidLTS.language (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<in> ts} \<subseteq> {0::'weight::bounded_dioid}"
     by blast
   show ?case
-    apply (simp add: dioidLTS.accepts_code_Cons)
+    apply (simp add: dioidLTS.language_code_Cons)
     unfolding sum_split_f_P[OF f, of "\<lambda>q. (p, a, q) \<in> ts"] A
     using B sum_subset_singleton_0_is_0
     by simp
 qed
 
-lemma lang_aut_is_accepts_full:
+lemma lang_aut_is_language_full:
   fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite) transition set"
   assumes "finite ts"
-  shows "accepts_full (ts_to_wts ts) finals pv = (if pv \<in> P_Automaton.lang_aut ts Init finals then 1 else 0)"
-  unfolding accepts_full_def P_Automaton.lang_aut_def P_Automaton.accepts_aut_def inits_set_def 
+  shows "language_full (ts_to_wts ts) finals pv = (if pv \<in> P_Automaton.lang_aut ts Init finals then 1 else 0)"
+  unfolding language_full_def P_Automaton.lang_aut_def P_Automaton.language_aut_def inits_set_def 
   apply simp
   apply safe
   subgoal for p w q
     using monoid_rtrancl_one_if_trans_star[of "Init p" w q ts, OF _ assms]
-          dioidLTS.accepts_1_if_monoid_rtrancl_1[of ts "Init p" w q finals, OF assms]
+          dioidLTS.language_1_if_monoid_rtrancl_1[of ts "Init p" w q finals, OF assms]
     by blast
-  using not_in_trans_star_implies_accepts_0[OF assms] by blast
+  using not_in_trans_star_implies_language_0[OF assms] by blast
 
 
 context
@@ -2554,7 +2554,7 @@ lemma pre_star_correctness_full:
   assumes "pre_star_saturation \<Delta> (ts_to_wts ts') ts'\<^sub>s\<^sub>a\<^sub>t"
   assumes "prod_ts = (ts_to_wts ts) \<inter>\<^sub>w ts'\<^sub>s\<^sub>a\<^sub>t"
   assumes "prod_finals = finals\<times>finals'"
-  shows "\<^bold>\<Sum>{d |p w d. d = dioidLTS.accepts prod_ts prod_finals ((p,p),w) \<and> is_Init p}
+  shows "\<^bold>\<Sum>{d |p w d. d = dioidLTS.language prod_ts prod_finals ((p,p),w) \<and> is_Init p}
        = weight_reach_set (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals')" (is "?A = ?B")
 proof -
   have c0:"\<And>y. is_Init (fst y) \<Longrightarrow> countable {(x, y) |x. fst (snd x) \<in> finals \<and> snd (snd x) \<in> finals' \<and> ((fst y, fst y), (snd y, fst x), fst (snd x), snd (snd x)) \<in> \<lbrakk>(ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>}"
@@ -2616,13 +2616,13 @@ proof -
   from assms(1) have assms1':"\<And>q p \<gamma>. is_Init q \<Longrightarrow> ((ts_to_wts ts')::(('ctr_loc, 'noninit) state, 'label, 'weight) w_transitions) $ (p, \<gamma>, q) = 0"
     by (simp add: ts_to_wts_not_member_is_0)
   have W:"WPDS_with_W_automata \<Delta> (ts_to_wts ts')" by standard (simp add: assms1')
-  have prestar:"weight_pre_star (accepts_full (ts_to_wts ts') finals') = accepts_full ts'\<^sub>s\<^sub>a\<^sub>t finals'"
+  have prestar:"weight_pre_star (language_full (ts_to_wts ts') finals') = language_full ts'\<^sub>s\<^sub>a\<^sub>t finals'"
     using WPDS_with_W_automata.pre_star_correctness[OF W assms(2)[unfolded pre_star_saturation_def], of finals']
-    unfolding accepts_full_def by simp
-  have "?A = \<^bold>\<Sum>{accepts' (finals \<times> finals') (ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t ((p, p), w) |p w. is_Init p}" 
+    unfolding language_full_def by simp
+  have "?A = \<^bold>\<Sum>{language' (finals \<times> finals') (ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t ((p, p), w) |p w. is_Init p}" 
     unfolding assms(3,4) by presburger
   moreover have "... = \<^bold>\<Sum>{d |p w d q q'. ((p, p), (w, d), q, q') \<in> \<lbrakk>(ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot> \<and> q \<in> finals \<and> q' \<in> finals' \<and> is_Init p}"
-    unfolding accepts_def
+    unfolding language_def
     apply simp
     unfolding SumInf_of_SumInf[of "\<lambda>pw. is_Init (fst pw)"
                               "\<lambda>dq pw. fst (snd dq) \<in> finals \<and> snd (snd dq) \<in> finals' \<and> ((fst pw, fst pw), (snd pw, fst dq), fst (snd dq), snd (snd dq)) \<in> \<lbrakk>(ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>"
@@ -2645,14 +2645,14 @@ proof -
     apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
     using w_inters_sound_and_complete[OF binary_aut_ts_to_wts[of ts], of _ _ _ _ _ _ ts'\<^sub>s\<^sub>a\<^sub>t]
     by fastforce
-  moreover have "... = weight_reach (accepts_full (ts_to_wts ts) finals) (accepts_full (ts_to_wts ts') finals')"
+  moreover have "... = weight_reach (language_full (ts_to_wts ts) finals) (language_full (ts_to_wts ts') finals')"
     unfolding weight_reach_to_pre_star prestar
-    unfolding accepts_def accepts_full_def
+    unfolding language_def language_full_def
     using SumInf_of_SumInf_left_distr[OF c1 c2, of "\<lambda>pw. \<^bold>\<Sum>{d | d q. q \<in> finals \<and> (Init (fst pw),(snd pw,d),q) \<in> \<lbrakk>ts_to_wts ts\<rbrakk>\<^sup>\<odot>}" "\<lambda>dq pw. fst dq"]
     using SumInf_of_SumInf_right_distr[OF c3 c4, of "\<lambda>dq pw. (fst dq)" "\<lambda>d'q'pw. fst d'q'pw"]
     by simp meson
   moreover have "... = ?B"
-    unfolding lang_aut_is_accepts_full[unfolded finite_code, simplified] lang_aut_is_accepts_full[unfolded finite_code, simplified]
+    unfolding lang_aut_is_language_full[unfolded finite_code, simplified] lang_aut_is_language_full[unfolded finite_code, simplified]
     using weight_reach_set_is_weight_reach by simp
   ultimately show ?thesis by order
 qed
