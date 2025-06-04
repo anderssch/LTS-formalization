@@ -2530,7 +2530,7 @@ lemma lang_aut_is_language_full:
   fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite) transition set"
   assumes "finite ts"
   shows "language_full (ts_to_wts ts) finals pv = (if pv \<in> P_Automaton.lang_aut ts Init finals then 1 else 0)"
-  unfolding language_full_def P_Automaton.lang_aut_def P_Automaton.language_aut_def inits_set_def 
+  unfolding language_full_def P_Automaton.lang_aut_def P_Automaton.accepts_aut_def inits_set_def 
   apply simp
   apply safe
   subgoal for p w q
