@@ -2283,35 +2283,6 @@ definition pre_star_saturation :: "(('ctr_loc, 'noninit::finite) state, 'label, 
 
 end
 
-context
-  fixes \<Delta> :: "('ctr_loc::enum, 'label::enum, 'weight::bounded_dioid) w_rule set"
-  assumes finite_rules: "finite \<Delta>"
-begin
-
-interpretation finite_WPDS \<Delta> 
-  using finite_WPDS_def finite_rules by auto
-
-interpretation countable_dioidLTS transition_rel apply standard
-  using countable_transition_rel .
-(*
-lemma pre_star_correct: 
-  fixes ts :: "(('ctr_loc, 'noninit::{card_UNIV,enum}) state, 'label::enum) transition set"
-  fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
-  assumes "pre_star_saturation \<Delta> ts A"
-  shows "dioidLTS.accepts A finals = weight_pre_star (dioidLTS.accepts ts finals)"
-*)
-lemma pre_star_correctness_full: 
-  fixes ts :: "(('ctr_loc, 'noninit::{card_UNIV,enum}) state, 'label::enum) transition set"
-  fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
-  assumes "pre_star_saturation \<Delta> (ts_to_wts ts') ts'\<^sub>s\<^sub>a\<^sub>t"
-  assumes "prod_ts = (ts_to_wts ts) \<inter>\<^sub>w ts'\<^sub>s\<^sub>a\<^sub>t"
-  assumes "prod_finals = finals\<times>finals'"
-  shows "\<Sum>{d |p w d. d = dioidLTS.accepts prod_ts prod_finals ((p,p),w) \<and> is_Init p}
-      = (weight_reach_set (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
-  oops 
-
-end
-
 
 
 section \<open>Weight reach code\<close>
@@ -2522,7 +2493,169 @@ proof -
       by (cases "(p1, w, p2) \<in> ts", simp_all)
     done
 qed
+end
 
+
+lemma not_in_trans_star_implies_accepts_0:
+  fixes ts :: "('s :: enum, 'label::finite) transition set"
+  assumes "finite ts"
+  assumes "\<forall>q\<in>finals. (p, w, q) \<notin> LTS.trans_star ts"
+  shows "dioidLTS.accepts (ts_to_wts ts) finals (p, w) = (0::'weight::bounded_dioid)"
+  using assms(2)
+proof (induct w arbitrary: p)
+  case Nil
+  then show ?case by (simp add: dioidLTS.accepts_empty_iff) (metis LTS.trans_star.trans_star_refl)
+next
+  case (Cons a w)
+  have f:"finite {ts_to_wts ts $ (p, a, q) * dioidLTS.accepts (ts_to_wts ts) finals (q, w) |q. ts_to_wts ts $ (p, a, q) \<noteq> 0}"
+    by fastforce
+  have A:"{ts_to_wts ts $ (p, a, x) * dioidLTS.accepts (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<notin> ts} = {}"
+    using ts_to_wts_not_member_is_0[OF assms(1)] by blast
+  have "\<And>p'. \<forall>q\<in>finals. (p, a # w, q) \<notin> LTS.trans_star ts \<Longrightarrow> (p, a, p') \<in> ts \<Longrightarrow> \<forall>q\<in>finals. (p', w, q) \<notin> LTS.trans_star ts"
+    by (meson LTS.trans_star.trans_star_step)
+  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> dioidLTS.accepts (ts_to_wts ts) finals (p', w) = (0::'weight::bounded_dioid)"
+    using Cons by blast
+  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> ts_to_wts ts $ (p, a, p') * dioidLTS.accepts (ts_to_wts ts) finals (p', w) = (0::'weight::bounded_dioid)"
+    using mult_zero_right by fastforce
+  then have B:"{ts_to_wts ts $ (p, a, x) * dioidLTS.accepts (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<in> ts} \<subseteq> {0::'weight::bounded_dioid}"
+    by blast
+  show ?case
+    apply (simp add: dioidLTS.accepts_code_Cons)
+    unfolding sum_split_f_P[OF f, of "\<lambda>q. (p, a, q) \<in> ts"] A
+    using B sum_subset_singleton_0_is_0
+    by simp
+qed
+
+lemma lang_aut_is_accepts_full:
+  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite) transition set"
+  assumes "finite ts"
+  shows "accepts_full (ts_to_wts ts) finals pv = (if pv \<in> P_Automaton.lang_aut ts Init finals then 1 else 0)"
+  unfolding accepts_full_def P_Automaton.lang_aut_def P_Automaton.accepts_aut_def inits_set_def 
+  apply simp
+  apply safe
+  subgoal for p w q
+    using monoid_rtrancl_one_if_trans_star[of "Init p" w q ts, OF _ assms]
+          dioidLTS.accepts_1_if_monoid_rtrancl_1[of ts "Init p" w q finals, OF assms]
+    by blast
+  using not_in_trans_star_implies_accepts_0[OF assms] by blast
+
+
+context
+  fixes \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_dioid) w_rule set"
+  assumes finite_rules: "finite \<Delta>"
+begin
+interpretation finite_WPDS \<Delta> using finite_WPDS_def finite_rules by auto
+interpretation countable_dioidLTS transition_rel apply standard using countable_transition_rel .
+
+lemma pre_star_correctness_full: 
+  fixes ts :: "(('ctr_loc, 'noninit::enum) state, 'label) transition set"
+  fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
+  assumes "\<And>p \<gamma> q. is_Init q \<Longrightarrow> (p, \<gamma>, q) \<notin> ts'"
+  assumes "pre_star_saturation \<Delta> (ts_to_wts ts') ts'\<^sub>s\<^sub>a\<^sub>t"
+  assumes "prod_ts = (ts_to_wts ts) \<inter>\<^sub>w ts'\<^sub>s\<^sub>a\<^sub>t"
+  assumes "prod_finals = finals\<times>finals'"
+  shows "\<^bold>\<Sum>{d |p w d. d = dioidLTS.accepts prod_ts prod_finals ((p,p),w) \<and> is_Init p}
+       = weight_reach_set (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals')" (is "?A = ?B")
+proof -
+  have c0:"\<And>y. is_Init (fst y) \<Longrightarrow> countable {(x, y) |x. fst (snd x) \<in> finals \<and> snd (snd x) \<in> finals' \<and> ((fst y, fst y), (snd y, fst x), fst (snd x), snd (snd x)) \<in> \<lbrakk>(ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>}"
+  proof -
+    fix y :: "('ctr_loc, 'noninit) state \<times> 'label list"
+    have "countable (\<lbrakk>(ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>)"
+      by (simp add: countable_monoid_rtrancl countable_wts)
+    then have "countable {(z1, (z2, x1), x2) |z1 z2 x1 x2. (z1, (z2, x1), x2) \<in> \<lbrakk>(ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>}"
+      by (rule rev_countable_subset) auto
+    then have "countable ((\<lambda>(z1, (z2, x1), x2). ((x1, x2), y)) ` {(z1, (z2, x1), x2) |z1 z2 x1 x2. (z1, (z2, x1), x2) \<in> \<lbrakk>(ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>})"
+      using countable_image by auto
+    then have "countable {((w, q, q'), y) |w q q'. q \<in> finals \<and> q' \<in> finals' \<and> ((fst y, fst y), (snd y, w), q, q') \<in> \<lbrakk>(ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>}"
+      apply (rule rev_countable_subset)
+      by force
+    then show "countable {(x, y) |x. fst (snd x) \<in> finals \<and> snd (snd x) \<in> finals' \<and> ((fst y, fst y), (snd y, fst x), fst (snd x), snd (snd x)) \<in> \<lbrakk>(ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>}"
+      by simp
+  qed
+  have c1: "countable {y:: 'ctr_loc \<times> 'label list. True}" 
+    by auto
+  have c2:"\<And>y:: 'ctr_loc \<times> 'label list. True \<Longrightarrow> countable {(x, y) |x. snd x \<in> finals' \<and> (Init (fst y), (snd y, fst x), snd x) \<in> \<lbrakk>ts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>}" 
+  proof -
+    fix y :: "'ctr_loc \<times> 'label list"
+    have "countable (\<lbrakk>ts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>)"
+      by (simp add: countable_monoid_rtrancl countable_wts)
+    then have "countable {(y1, (y2, x1), x2) |x1 x2 y1 y2. (y1, (y2, x1), x2) \<in> \<lbrakk>ts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>}"
+      by (rule rev_countable_subset) auto
+    then have "countable ((\<lambda>(y1, (y2, x1), x2). ((x1,x2), y)) ` {(y1, (y2, x1), x2) |x1 x2 y1 y2. (y1, (y2, x1), x2) \<in> \<lbrakk>ts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>})"
+      using countable_image by fastforce
+    then show "countable {(x, y) |x. snd x \<in> finals' \<and> (Init (fst y), (snd y, fst x), snd x) \<in> \<lbrakk>ts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>}"
+      by (rule rev_countable_subset) (auto simp add: image_def)
+  qed
+  have c3: "countable {y. fst (snd y) \<in> finals' \<and> (Init (fst (snd (snd y))), (snd (snd (snd y)), fst y), fst (snd y)) \<in> \<lbrakk>ts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>}" 
+  proof -
+    have "countable (\<lbrakk>ts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>)"
+      by (simp add: countable_monoid_rtrancl countable_wts)
+    then have "countable {(y31, (y32, y1), y2) | y1 y2 y31 y32 . (y31, (y32, y1), y2) \<in> \<lbrakk>ts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>}"
+      by (rule rev_countable_subset) auto
+    then have a:"countable ((\<lambda>(y31, (y32, y1), y2). (y1, y2, (the_Ctr_Loc y31,y32))) ` {(y31, (y32, y1), y2) | y1 y2 y31 y32 . (y31, (y32, y1), y2) \<in> \<lbrakk>ts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>})"
+      using countable_image by fastforce
+    then show "countable {y . fst (snd y) \<in> finals' \<and> (Init (fst (snd (snd y))), (snd (snd (snd y)), fst y), fst (snd y)) \<in> \<lbrakk>ts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>}"
+      apply (rule rev_countable_subset)
+      apply (simp add: image_def)
+      by fastforce
+  qed
+  have c4:"\<And>y. fst (snd y) \<in> finals' \<and> (Init (fst (snd (snd y))), (snd (snd (snd y)), fst y), fst (snd y)) \<in> \<lbrakk>ts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot> \<Longrightarrow>
+               countable {(x, y) |x. snd x \<in> finals \<and> (Init (fst (snd (snd y))), (snd (snd (snd y)), fst x), snd x) \<in> \<lbrakk>ts_to_wts ts\<rbrakk>\<^sup>\<odot>}" 
+  proof -
+    fix y :: "'weight \<times> ('ctr_loc, 'noninit) state \<times> 'ctr_loc \<times> 'label list"
+    have "countable (\<lbrakk>ts_to_wts ts\<rbrakk>\<^sup>\<odot>)"
+      by (simp add: countable_monoid_rtrancl countable_wts)
+    then have "countable {(z1, (z2, x1), x2) |z1 z2 x1 x2. (z1, (z2, x1), x2) \<in> \<lbrakk>ts_to_wts ts\<rbrakk>\<^sup>\<odot>}"
+      by (rule rev_countable_subset) auto
+    then have "countable ((\<lambda>(z1, (z2, x1), x2). ((x1, x2), y)) ` {(z1, (z2, x1), x2) |z1 z2 x1 x2. (z1, (z2, x1), x2) \<in> \<lbrakk>ts_to_wts ts\<rbrakk>\<^sup>\<odot>})"
+      using countable_image by auto
+    then show "countable {(x, y) |x. snd x \<in> finals \<and> (Init (fst (snd (snd y))), (snd (snd (snd y)), fst x), snd x) \<in> \<lbrakk>ts_to_wts ts\<rbrakk>\<^sup>\<odot>}"
+      by (rule rev_countable_subset) (auto simp add: image_def)
+  qed
+
+  from assms(1) have assms1':"\<And>q p \<gamma>. is_Init q \<Longrightarrow> ((ts_to_wts ts')::(('ctr_loc, 'noninit) state, 'label, 'weight) w_transitions) $ (p, \<gamma>, q) = 0"
+    by (simp add: ts_to_wts_not_member_is_0)
+  have W:"WPDS_with_W_automata \<Delta> (ts_to_wts ts')" by standard (simp add: assms1')
+  have prestar:"weight_pre_star (accepts_full (ts_to_wts ts') finals') = accepts_full ts'\<^sub>s\<^sub>a\<^sub>t finals'"
+    using WPDS_with_W_automata.pre_star_correctness[OF W assms(2)[unfolded pre_star_saturation_def], of finals']
+    unfolding accepts_full_def by simp
+  have "?A = \<^bold>\<Sum>{accepts' (finals \<times> finals') (ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t ((p, p), w) |p w. is_Init p}" 
+    unfolding assms(3,4) by presburger
+  moreover have "... = \<^bold>\<Sum>{d |p w d q q'. ((p, p), (w, d), q, q') \<in> \<lbrakk>(ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot> \<and> q \<in> finals \<and> q' \<in> finals' \<and> is_Init p}"
+    unfolding accepts_def
+    apply simp
+    unfolding SumInf_of_SumInf[of "\<lambda>pw. is_Init (fst pw)"
+                              "\<lambda>dq pw. fst (snd dq) \<in> finals \<and> snd (snd dq) \<in> finals' \<and> ((fst pw, fst pw), (snd pw, fst dq), fst (snd dq), snd (snd dq)) \<in> \<lbrakk>(ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>"
+                              "\<lambda>dq pw. fst dq", OF _ c0, simplified]
+    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
+    by blast
+  moreover have "... = \<^bold>\<Sum>{d |p w d q q'. ((Init p, Init p), (w, d), q, q') \<in> \<lbrakk>(ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot> \<and> q \<in> finals \<and> q' \<in> finals'}"
+    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
+    apply safe
+     apply simp
+    subgoal for p w d q q'
+      apply (rule exI[of _ "the_Ctr_Loc p"])
+      by auto
+    apply simp
+    subgoal for p w d q q'
+      apply (rule exI[of _ "Init p"])
+      by auto
+    done
+  moreover have "... = \<^bold>\<Sum> {d * d'| p d q d' q' w. q \<in> finals \<and> (Init p, (w, d), q) \<in> \<lbrakk>ts_to_wts ts\<rbrakk>\<^sup>\<odot> \<and> q' \<in> finals' \<and> (Init p, (w, d'), q') \<in> \<lbrakk>ts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>}"
+    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
+    using w_inters_sound_and_complete[OF binary_aut_ts_to_wts[of ts], of _ _ _ _ _ _ ts'\<^sub>s\<^sub>a\<^sub>t]
+    by fastforce
+  moreover have "... = weight_reach (accepts_full (ts_to_wts ts) finals) (accepts_full (ts_to_wts ts') finals')"
+    unfolding weight_reach_to_pre_star prestar
+    unfolding accepts_def accepts_full_def
+    using SumInf_of_SumInf_left_distr[OF c1 c2, of "\<lambda>pw. \<^bold>\<Sum>{d | d q. q \<in> finals \<and> (Init (fst pw),(snd pw,d),q) \<in> \<lbrakk>ts_to_wts ts\<rbrakk>\<^sup>\<odot>}" "\<lambda>dq pw. fst dq"]
+    using SumInf_of_SumInf_right_distr[OF c3 c4, of "\<lambda>dq pw. (fst dq)" "\<lambda>d'q'pw. fst d'q'pw"]
+    by simp meson
+  moreover have "... = ?B"
+    unfolding lang_aut_is_accepts_full[unfolded finite_code, simplified] lang_aut_is_accepts_full[unfolded finite_code, simplified]
+    using weight_reach_set_is_weight_reach by simp
+  ultimately show ?thesis by order
+qed
 end
 
 end

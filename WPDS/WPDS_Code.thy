@@ -4,7 +4,7 @@ begin
 
 section \<open>Locale: WPDS_Code\<close>
 locale WPDS_Code =
-  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::enum, 'weight::bounded_dioid) w_transitions"
+  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::finite, 'weight::bounded_dioid) w_transitions"
 begin
 
 definition "checking \<longleftrightarrow> (\<forall>q. is_Init q \<longrightarrow> (\<forall>p \<gamma>. ts $ (p, \<gamma>, q) = 0))"
@@ -35,8 +35,8 @@ end
 section \<open>Various code generation lemmas\<close>
 
 definition run_WPDS_reach' ::
-   "('ctr_loc::{enum,card_UNIV}, 'label::enum, 'weight::bounded_dioid) w_rule list \<Rightarrow> 
-    (('ctr_loc, 'noninit::{enum,card_UNIV}) state, 'label, 'weight) w_transitions \<Rightarrow>
+   "('ctr_loc::enum, 'label::finite, 'weight::bounded_dioid) w_rule list \<Rightarrow> 
+    (('ctr_loc, 'noninit::enum) state, 'label, 'weight) w_transitions \<Rightarrow>
     (('ctr_loc, 'noninit) state, 'label, 'weight) w_transitions \<Rightarrow>
     ('ctr_loc, 'noninit) state set \<Rightarrow> 
     ('ctr_loc, 'noninit) state set \<Rightarrow> 'weight option" where
@@ -45,9 +45,9 @@ definition run_WPDS_reach' ::
             else None)"
 
 definition run_WPDS_reach ::
-   "('ctr_loc::{enum,card_UNIV}, 'label::enum, 'weight::bounded_dioid) w_rule list \<Rightarrow> 
-    (('ctr_loc, 'noninit::{enum,card_UNIV}) state, 'label) transition set \<Rightarrow>
-    (('ctr_loc, 'noninit::{enum,card_UNIV}) state, 'label) transition set \<Rightarrow>
+   "('ctr_loc::enum, 'label::finite, 'weight::bounded_dioid) w_rule list \<Rightarrow> 
+    (('ctr_loc, 'noninit::enum) state, 'label) transition set \<Rightarrow>
+    (('ctr_loc, 'noninit::enum) state, 'label) transition set \<Rightarrow>
     ('ctr_loc, 'noninit) state set \<Rightarrow> 
     ('ctr_loc, 'noninit) state set \<Rightarrow> 'weight option" where
  "run_WPDS_reach \<Delta> ts ts' = run_WPDS_reach' \<Delta> (ts_to_wts ts) (ts_to_wts ts')"
@@ -58,52 +58,9 @@ declare WPDS.lbl.simps[code]
 declare WPDS.accept_pre_star_exec0_def[code]
 declare Enum.enum_class.UNIV_enum[code]
 
-lemma not_in_trans_star_implies_accepts_0:
-  fixes ts :: "('s :: enum, 'label::enum) transition set"
-  assumes "finite ts"
-  assumes "\<forall>q\<in>finals. (p, w, q) \<notin> LTS.trans_star ts"
-  shows "dioidLTS.accepts (ts_to_wts ts) finals (p, w) = (0::'weight::bounded_dioid)"
-  using assms(2)
-proof (induct w arbitrary: p)
-  case Nil
-  then show ?case by (simp add: dioidLTS.accepts_empty_iff) (metis LTS.trans_star.trans_star_refl)
-next
-  case (Cons a w)
-  have f:"finite {ts_to_wts ts $ (p, a, q) * dioidLTS.accepts (ts_to_wts ts) finals (q, w) |q. ts_to_wts ts $ (p, a, q) \<noteq> 0}"
-    by fastforce
-  have A:"{ts_to_wts ts $ (p, a, x) * dioidLTS.accepts (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<notin> ts} = {}"
-    using ts_to_wts_not_member_is_0[OF assms(1)] by blast
-  have "\<And>p'. \<forall>q\<in>finals. (p, a # w, q) \<notin> LTS.trans_star ts \<Longrightarrow> (p, a, p') \<in> ts \<Longrightarrow> \<forall>q\<in>finals. (p', w, q) \<notin> LTS.trans_star ts"
-    by (meson LTS.trans_star.trans_star_step)
-  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> dioidLTS.accepts (ts_to_wts ts) finals (p', w) = (0::'weight::bounded_dioid)"
-    using Cons by blast
-  then have "\<And>p'. (p, a, p') \<in> ts \<Longrightarrow> ts_to_wts ts $ (p, a, p') * dioidLTS.accepts (ts_to_wts ts) finals (p', w) = (0::'weight::bounded_dioid)"
-    using mult_zero_right by fastforce
-  then have B:"{ts_to_wts ts $ (p, a, x) * dioidLTS.accepts (ts_to_wts ts) finals (x, w) |x. ts_to_wts ts $ (p, a, x) \<noteq> 0 \<and> (p, a, x) \<in> ts} \<subseteq> {0::'weight::bounded_dioid}"
-    by blast
-  show ?case
-    apply (simp add: dioidLTS.accepts_code_Cons)
-    unfolding sum_split_f_P[OF f, of "\<lambda>q. (p, a, q) \<in> ts"] A
-    using B sum_subset_singleton_0_is_0
-    by simp
-qed
-
-lemma lang_aut_is_accepts_full:
-  fixes ts :: "(('ctr_loc::enum, 'noninit::enum) state, 'label::enum) transition set"
-  assumes "finite ts"
-  shows "accepts_full (ts_to_wts ts) finals pv = (if pv \<in> P_Automaton.lang_aut ts Init finals then 1 else 0)"
-  unfolding accepts_full_def P_Automaton.lang_aut_def P_Automaton.accepts_aut_def inits_set_def 
-  apply simp
-  apply safe
-  subgoal for p w q
-    using monoid_rtrancl_one_if_trans_star[of "Init p" w q ts, OF _ assms]
-          dioidLTS.accepts_1_if_monoid_rtrancl_1[of ts "Init p" w q finals, OF assms]
-    by blast
-  using not_in_trans_star_implies_accepts_0[OF assms] by blast
-
 
 context
-  fixes \<Delta> :: "('ctr_loc::{card_UNIV,enum}, 'label::enum, 'weight::bounded_dioid) w_rule list"
+  fixes \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_dioid) w_rule list"
 begin
 
 interpretation finite_WPDS "(set \<Delta>)" 
@@ -123,7 +80,7 @@ lemma weight_reach_set'_lang_aut_is_weight_reach'_accepts_full:
   using weight_reach_set_is_weight_reach by blast
 
 lemma WPDS_reach_exec_correct:
-  fixes ts :: "(('ctr_loc, 'noninit::{card_UNIV,enum}) state, 'label::enum) transition set"
+  fixes ts :: "(('ctr_loc, 'noninit::enum) state, 'label) transition set"
   fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
   assumes "run_WPDS_reach \<Delta> ts ts' finals finals' = Some w"
   shows "w = (weight_reach_set (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
