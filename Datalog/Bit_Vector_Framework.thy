@@ -392,13 +392,14 @@ proof -
 qed
 
 lemma S_hat_edge_list_subset_analysis_dom:
-  "d \<in> S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> d_init \<Longrightarrow> d \<in> analysis_dom"
+  assumes "d \<in> S^\<^sub>E\<^sub>s\<lbrakk>\<pi>\<rbrakk> d_init"
+  shows "d \<in> analysis_dom"
+  using assms
 proof(induction \<pi> rule: List.rev_induct)
   case Nil
   then show ?case
     by (metis S_hat_edge_list.simps(1) analysis_BV_forward_may.axioms(2) 
         analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def subsetD)
-
 next
   case (snoc e \<pi>)
   have "gen_set e \<inter> analysis_dom \<subseteq> analysis_dom"
@@ -408,8 +409,9 @@ next
 qed
 
 lemma S_hat_path_subset_analysis_dom:
-  "d \<in> S^\<^sub>P\<lbrakk>(ss,w)\<rbrakk> d_init \<Longrightarrow> d \<in> analysis_dom"
-  using S_hat_path_def S_hat_edge_list_subset_analysis_dom by auto
+  assumes "d \<in> S^\<^sub>P\<lbrakk>(ss,w)\<rbrakk> d_init"
+  shows "d \<in> analysis_dom"
+  using assms S_hat_path_def S_hat_edge_list_subset_analysis_dom by auto
 
 lemma S_hat_path_last:
   assumes "length qs = length w"
@@ -586,8 +588,9 @@ definition S_hat_path :: "('n list \<times> 'a list) \<Rightarrow> 'd set \<Righ
   "S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> R = S^\<^sub>E\<^sub>s\<lbrakk>(transition_list \<pi>)\<rbrakk> R"
 
 definition summarizes_bw_may :: "(pred, ('n, 'a, 'd) cst) pred_val \<Rightarrow> bool" where
-  "summarizes_bw_may \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> path_with_word_to end \<longrightarrow> d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init \<longrightarrow> 
-                             \<rho> \<Turnstile>\<^sub>l\<^sub>h may\<langle>[Cst\<^sub>N (start_of \<pi>), Cst\<^sub>E d]\<rangle>.)"
+  "summarizes_bw_may \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> path_with_word_to end \<longrightarrow> 
+                                  d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init \<longrightarrow> 
+                                  \<rho> \<Turnstile>\<^sub>l\<^sub>h may\<langle>[Cst\<^sub>N (start_of \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
 lemma kill_subs_analysis_dom: "(kill_set (rev_edge e)) \<subseteq> analysis_dom"
   by (meson analysis_BV_backward_may_axioms analysis_BV_backward_may_axioms_def 
@@ -928,13 +931,13 @@ lemma is_Cst_if_init:
   shows "is_Cst d"
 proof (rule ccontr)
   assume "\<not> is_Cst d"
-  then have qu: "d = \<uu>"
+  then have du: "d = \<uu>"
     by (metis (full_types) id.disc(1) id.exhaust_disc id.expand var.exhaust)
   then have "\<lbrakk>init\<langle>[d]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> (\<lambda>x. Action undefined)" 
     using assms
     by auto
   then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[d \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined)]\<rangle>."
-    using solves_lh_substv_lh_if_meaning_lh[of "init\<langle>[d]\<rangle>." \<rho> "(\<lambda>x. Action undefined)"] qu by auto
+    using solves_lh_substv_lh_if_meaning_lh[of "init\<langle>[d]\<rangle>." \<rho> "(\<lambda>x. Action undefined)"] du by auto
   moreover
   have "is_Cst (Cst\<^sub>A undefined)"
     by auto
@@ -943,7 +946,7 @@ proof (rule ccontr)
     by (metis id.disc(4) substv_id.elims)
   ultimately
   have "\<exists>c \<in> ana_pg_fw_must. lh_consequence \<rho> c (init\<langle>[Cst\<^sub>A undefined]\<rangle>.)"
-    using solves_lh_least[of ana_pg_fw_must \<rho> s_BV] qu
+    using solves_lh_least[of ana_pg_fw_must \<rho> s_BV] du
     by (simp add: assms(1) fw_may.ana_pg_fw_may_finite fw_may.ana_pg_fw_may_stratified)
   then show False
     unfolding fw_may.ana_pg_fw_may_def fw_may.ana_entry_node_def lh_consequence_def
@@ -957,13 +960,13 @@ lemma is_Cst_if_anadom:
   shows "is_Cst d"
 proof (rule ccontr)
   assume "\<not> is_Cst d"
-  then have qu: "d = \<uu>"
+  then have du: "d = \<uu>"
     by (metis (full_types) id.disc(1) id.exhaust_disc id.expand var.exhaust)
   then have "\<lbrakk>anadom\<langle>[d]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> (\<lambda>x. Action undefined)" 
     using assms
     by auto
   then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[d \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined)]\<rangle>."
-    using solves_lh_substv_lh_if_meaning_lh[of "anadom\<langle>[d]\<rangle>." \<rho> "(\<lambda>x. Action undefined)"] qu by auto
+    using solves_lh_substv_lh_if_meaning_lh[of "anadom\<langle>[d]\<rangle>." \<rho> "(\<lambda>x. Action undefined)"] du by auto
   moreover
   have "is_Cst (Cst\<^sub>A undefined)"
     by auto
@@ -972,7 +975,7 @@ proof (rule ccontr)
     by (metis id.disc(4) substv_id.elims)
   ultimately
   have "\<exists>c \<in> ana_pg_fw_must. lh_consequence \<rho> c (anadom\<langle>[Cst\<^sub>A undefined]\<rangle>.)"
-    using solves_lh_least[of ana_pg_fw_must \<rho> s_BV] qu
+    using solves_lh_least[of ana_pg_fw_must \<rho> s_BV] du
     by (simp add: assms(1) fw_may.ana_pg_fw_may_finite fw_may.ana_pg_fw_may_stratified)
   then show False
     unfolding fw_may.ana_pg_fw_may_def fw_may.ana_entry_node_def lh_consequence_def
@@ -985,10 +988,10 @@ lemma if_init:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h init\<langle>[d]\<rangle>."
   shows "is_Elem\<^sub>i\<^sub>d d \<and> the_Elem\<^sub>i\<^sub>d d \<in> (analysis_dom - d_init)"
 proof -
-  have Csts: "is_Cst d"
+  have d_Cst: "is_Cst d"
     using assms(1) assms(2) is_Cst_if_init by blast
 
-  from assms(1,2) Csts have "\<exists>c \<in> ana_pg_fw_must. lh_consequence \<rho> c (init\<langle>[d]\<rangle>.)"
+  from assms(1,2) d_Cst have "\<exists>c \<in> ana_pg_fw_must. lh_consequence \<rho> c (init\<langle>[d]\<rangle>.)"
     using solves_lh_least[of ana_pg_fw_must \<rho> s_BV "[d]"] fw_may.ana_pg_fw_may_finite
       fw_may.ana_pg_fw_may_stratified by fastforce
 
@@ -1023,10 +1026,10 @@ lemma if_anadom:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[d]\<rangle>."
   shows "is_Elem\<^sub>i\<^sub>d d \<and> the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom"
 proof -
-  have Csts: "is_Cst d"
+  have d_Cst: "is_Cst d"
     using assms(1) assms(2) is_Cst_if_anadom by blast
 
-  from assms(1,2) Csts have "\<exists>c \<in> ana_pg_fw_must. lh_consequence \<rho> c (anadom\<langle>[d]\<rangle>.)"
+  from assms(1,2) d_Cst have "\<exists>c \<in> ana_pg_fw_must. lh_consequence \<rho> c (anadom\<langle>[d]\<rangle>.)"
     using solves_lh_least[of ana_pg_fw_must \<rho> s_BV "[d]"] fw_may.ana_pg_fw_may_finite
       fw_may.ana_pg_fw_may_stratified by fastforce
   then obtain c where 
@@ -1141,13 +1144,13 @@ lemma must_snd_id_is_Cst:
   shows "is_Cst d"
 proof (rule ccontr)
   assume "\<not> is_Cst d"
-  then have qu: "d = \<uu>"
+  then have du: "d = \<uu>"
     by (metis (full_types) id.disc(1) id.exhaust_disc id.expand var.exhaust)
   then have "\<lbrakk>must\<langle>[q,d]\<rangle>.\<rbrakk>\<^sub>l\<^sub>h \<rho> (\<lambda>x. Action undefined)" 
     using assms
     by auto
   then have "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined), Cst\<^sub>A undefined]\<rangle>."
-    using solves_lh_substv_lh_if_meaning_lh[of "must\<langle>[q, d]\<rangle>." \<rho> "(\<lambda>x. Action undefined)"] qu by auto
+    using solves_lh_substv_lh_if_meaning_lh[of "must\<langle>[q, d]\<rangle>." \<rho> "(\<lambda>x. Action undefined)"] du by auto
   moreover
   have "is_Cst (Cst\<^sub>A undefined)"
     by auto
@@ -1191,7 +1194,7 @@ lemma if_must:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q,d]\<rangle>."
   shows 
-    "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>may[q, d] \<and> \<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[d]\<rangle>." "is_Node\<^sub>i\<^sub>d q" "is_Elem\<^sub>i\<^sub>d d" "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom"
+    "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>may[q, d] \<and> \<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[d]\<rangle>. \<and> is_Node\<^sub>i\<^sub>d q \<and>is_Elem\<^sub>i\<^sub>d d \<and> the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom"
 proof -
   have Csts: "is_Cst q" "is_Cst d"
     using must_fst_id_is_Cst must_snd_id_is_Cst using assms by auto
@@ -1200,7 +1203,7 @@ proof -
     using solves_lh_least[of ana_pg_fw_must \<rho> s_BV "[q,d]" the_must] fw_may.ana_pg_fw_may_finite
       fw_may.ana_pg_fw_may_stratified by fastforce
 
-  then obtain c where 
+  then obtain c where
     "c \<in> ana_pg_fw_must"
     "lh_consequence \<rho> c (must\<langle>[q,d]\<rangle>.)"
     by auto
@@ -1238,8 +1241,7 @@ proof -
     using solves_rh_substv_rh_if_meaning_rh \<open>\<sigma> the_\<uu> = d'\<close> \<open>d = Cst d'\<close> \<open>q = Cst\<^sub>N q'\<close> by force
   then have "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom \<and> is_Elem\<^sub>i\<^sub>d d"
     using in_analysis_dom_if_anadom[of \<rho> d] assms by fastforce
-  show 
-    "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>may[q, d] \<and> \<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[d]\<rangle>." "is_Node\<^sub>i\<^sub>d q" "is_Elem\<^sub>i\<^sub>d d" "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom"
+  show ?thesis
     using \<open>\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>may [q, d]\<close> \<open>\<rho> \<Turnstile>\<^sub>r\<^sub>h anadom [d]\<close> \<open>q = Cst\<^sub>N q'\<close>
       \<open>the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom \<and> is_Elem\<^sub>i\<^sub>d d\<close> by auto
 qed
@@ -1247,7 +1249,7 @@ qed
 lemma not_must_and_may:
   assumes "[Node q, Elem d] \<in> \<rho> the_must"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
-  assumes a: "[Node q, Elem d] \<in> \<rho> the_may"                  
+  assumes "[Node q, Elem d] \<in> \<rho> the_may"                  
   shows False
 proof -
   have "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[Cst\<^sub>N q, Cst\<^sub>E d]\<rangle>."
@@ -1255,7 +1257,7 @@ proof -
   then have "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>may [Cst\<^sub>N q, Cst\<^sub>E d]"
     using if_must assms(2) by metis
   then show False
-    using a by auto
+    using assms(3) by auto
 qed
 
 lemma not_solves_must_and_may:
