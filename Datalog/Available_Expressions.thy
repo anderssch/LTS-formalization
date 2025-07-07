@@ -43,7 +43,9 @@ fun aexp_pg :: "('n,'v action) program_graph \<Rightarrow> 'v arith set" where
   "aexp_pg pg = \<Union>(aexp_edge ` (fst pg))"
 
 definition aexp_edge_list :: "('n,'v action) edge list \<Rightarrow> 'v arith \<Rightarrow> bool" where
-  "aexp_edge_list \<pi> a = (\<exists>\<pi>1 \<pi>2 e. \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and> a \<in> aexp_edge e \<and> (\<forall>e' \<in> set ([e] @ \<pi>2). fv_arith a \<inter> def_edge e' = {}))"
+  "aexp_edge_list \<pi> a = (\<exists>\<pi>1 \<pi>2 e. \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and>
+                                   a \<in> aexp_edge e \<and>
+                                   (\<forall>e' \<in> set ([e] @ \<pi>2). fv_arith a \<inter> def_edge e' = {}))"
 
 definition aexp_path :: "'n list \<times> 'v action list \<Rightarrow> 'v arith set" where
   "aexp_path \<pi> = {a. aexp_edge_list (transition_list \<pi>) a}"
@@ -128,8 +130,9 @@ proof -
       by auto
   next
     assume "e \<in> set \<pi>2"
-    have "\<pi> = \<pi>1 @ [e'] @ (butlast \<pi>2)"
-      by (metis \<open>e \<in> set \<pi>2\<close> \<pi>1_\<pi>2_e'_p(1) append_is_Nil_conv butlast_append butlast_snoc in_set_conv_decomp_first)
+    then have "\<pi> = \<pi>1 @ [e'] @ (butlast \<pi>2)"
+      by (metis \<pi>1_\<pi>2_e'_p(1) append_is_Nil_conv butlast_append butlast_snoc 
+          in_set_conv_decomp_first)
     moreover
     have "a \<in> aexp_edge e'"
       by (simp add: \<pi>1_\<pi>2_e'_p(2))
@@ -274,7 +277,8 @@ lemma aexp_edge_list_S_hat_edge_list_iff:
 
 lemma aexp_path_S_hat_path_iff: 
   "a \<in> aexp_path \<pi> \<longleftrightarrow> a \<in> fw_must.S_hat_path \<pi> d_init_AE"
-  using S_hat_edge_list_aexp_edge_list aexp_edge_list_S_hat_edge_list' aexp_path_def fw_must.S_hat_path_def by blast
+  using S_hat_edge_list_aexp_edge_list aexp_edge_list_S_hat_edge_list' aexp_path_def 
+    fw_must.S_hat_path_def by blast
 
 definition summarizes_AE :: "(pred, ('n, 'a, 'v arith) cst) pred_val \<Rightarrow> bool" where
    "summarizes_AE \<rho> \<longleftrightarrow>

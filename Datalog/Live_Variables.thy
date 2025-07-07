@@ -16,7 +16,9 @@ fun use_edge :: "('n,'v action) edge \<Rightarrow> 'v set" where
   "use_edge (q1, \<alpha>, q2) = use_action \<alpha>"
 
 definition use_edge_list :: "('n,'v action) edge list \<Rightarrow> 'v \<Rightarrow> bool" where
-  "use_edge_list \<pi> x = (\<exists>\<pi>1 \<pi>2 e. \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and> x \<in> use_edge e \<and> (\<not>(\<exists>e' \<in> set \<pi>1. x \<in> def_edge e')))"
+  "use_edge_list \<pi> x = (\<exists>\<pi>1 \<pi>2 e. \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and> 
+                                  x \<in> use_edge e \<and> 
+                                  (\<not>(\<exists>e' \<in> set \<pi>1. x \<in> def_edge e')))"
 
 definition use_path :: "'n list \<times> 'v action list \<Rightarrow> 'v set" where
   "use_path \<pi> = {x. use_edge_list (LTS.transition_list \<pi>) x}"
@@ -60,7 +62,9 @@ proof (induction \<pi>)
 next
   case (Cons e \<pi>)
   note Cons_inner = Cons
-  from Cons(2) have "\<exists>\<pi>1 \<pi>2 e'. e # \<pi> = \<pi>1 @ [e'] @ \<pi>2 \<and> x \<in> use_edge e' \<and> \<not> (\<exists>e''\<in>set \<pi>1. x \<in> def_edge e'')"
+  from Cons(2) have "\<exists>\<pi>1 \<pi>2 e'. e # \<pi> = \<pi>1 @ [e'] @ \<pi>2 \<and> 
+                                x \<in> use_edge e' \<and> 
+                                \<not> (\<exists>e''\<in>set \<pi>1. x \<in> def_edge e'')"
     unfolding use_edge_list_def by auto
   then obtain \<pi>1 \<pi>2 e' where \<pi>1_\<pi>2_e'_p:
     "e # \<pi> = \<pi>1 @ [e'] @ \<pi>2"
@@ -198,7 +202,8 @@ next
   qed
 qed
 
-lemma use_edge_list_UNIV_S_hat_edge_list: "{x. use_edge_list \<pi> x} = bw_may.S_hat_edge_list \<pi> d_init_LV"
+lemma use_edge_list_UNIV_S_hat_edge_list: 
+  "{x. use_edge_list \<pi> x} = bw_may.S_hat_edge_list \<pi> d_init_LV"
   using use_edge_list_S_hat_edge_list S_hat_edge_list_use_edge_list by auto
 
 lemma use_path_S_hat_path: "use_path \<pi> = bw_may.S_hat_path \<pi> d_init_LV"

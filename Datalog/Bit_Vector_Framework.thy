@@ -41,34 +41,56 @@ datatype ('n,'a,'d) cst =
   | is_Elem: Elem (the_Elem: 'd)
   | is_Action: Action (the_Action: "'a")
 
-abbreviation may_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("may\<langle>_\<rangle> :- _ .") where 
+abbreviation may_Cls 
+  :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> 
+      (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> 
+      (pred, var, ('n,'v,'d) cst) clause" ("may\<langle>_\<rangle> :- _ .") where
    "may\<langle>ids\<rangle> :- ls. \<equiv> Cls the_may ids ls"
 
-abbreviation must_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("must\<langle>_\<rangle> :- _ .") where
+abbreviation must_Cls 
+  :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> 
+      (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> 
+      (pred, var, ('n,'v,'d) cst) clause" ("must\<langle>_\<rangle> :- _ .") where
   "must\<langle>ids\<rangle> :- ls. \<equiv> Cls the_must ids ls"
 
-abbreviation init_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("init\<langle>_\<rangle> :- _ .") where 
+abbreviation init_Cls 
+  :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> 
+      (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> 
+      (pred, var, ('n,'v,'d) cst) clause" ("init\<langle>_\<rangle> :- _ .") where 
   "init\<langle>ids\<rangle> :- ls. \<equiv> Cls the_init ids ls"
 
-abbreviation anadom_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("anadom\<langle>_\<rangle> :- _ .") where 
+abbreviation anadom_Cls 
+  :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> 
+      (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> 
+      (pred, var, ('n,'v,'d) cst) clause" ("anadom\<langle>_\<rangle> :- _ .") where 
   "anadom\<langle>ids\<rangle> :- ls. \<equiv> Cls the_anadom ids ls"
 
-abbreviation kill_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("kill\<langle>_\<rangle> :- _ .") where 
+abbreviation kill_Cls 
+  :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> 
+      (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> 
+      (pred, var, ('n,'v,'d) cst) clause" ("kill\<langle>_\<rangle> :- _ .") where 
   "kill\<langle>ids\<rangle> :- ls. \<equiv> Cls the_kill ids ls"
 
-abbreviation gen_Cls :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> (pred, var, ('n,'v,'d) cst) clause" ("gen\<langle>_\<rangle> :- _ .") where 
+abbreviation gen_Cls 
+  :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> 
+      (pred, var, ('n,'v,'d) cst) rh list \<Rightarrow> 
+      (pred, var, ('n,'v,'d) cst) clause" ("gen\<langle>_\<rangle> :- _ .") where 
   "gen\<langle>ids\<rangle> :- ls. \<equiv> Cls the_gen ids ls"
 
-abbreviation BV_lh :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) lh" ("may\<langle>_\<rangle>.") where  
+abbreviation BV_lh :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) lh" 
+  ("may\<langle>_\<rangle>.") where  
   "may\<langle>ids\<rangle>. \<equiv> (the_may, ids)"
 
-abbreviation must_lh :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) lh" ("must\<langle>_\<rangle>.") where 
+abbreviation must_lh :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) lh" 
+  ("must\<langle>_\<rangle>.") where 
   "must\<langle>ids\<rangle>. \<equiv> (the_must, ids)"
 
-abbreviation init_lh :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) lh" ("init\<langle>_\<rangle>.") where
+abbreviation init_lh :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) lh" 
+  ("init\<langle>_\<rangle>.") where
   "init\<langle>ids\<rangle>. \<equiv> (the_init, ids)"
 
-abbreviation dom_lh :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) lh" ("anadom\<langle>_\<rangle>.") where
+abbreviation dom_lh :: "(var, ('n,'v,'d) cst) id list \<Rightarrow> (pred, var, ('n,'v,'d) cst) lh" 
+  ("anadom\<langle>_\<rangle>.") where
   "anadom\<langle>ids\<rangle>. \<equiv> (the_anadom, ids)"
 
 abbreviation \<uu> :: "(var, 'a) id" where
@@ -117,7 +139,8 @@ locale analysis_BV_forward_may = finite_program_graph pg
 begin
 
 lemma finite_d_init: "finite d_init"
-  by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def analysis_BV_forward_may_def rev_finite_subset)
+  by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def 
+      analysis_BV_forward_may_def rev_finite_subset)
 
 interpretation LTS edges .
 
@@ -177,7 +200,8 @@ definition ana_kill_edge :: "('n, 'a) edge \<Rightarrow> (pred, var, ('n, 'a, 'd
   "ana_kill_edge e = ana_kill_edge_d e ` (kill_set e)"
 
 lemma kill_set_eq_kill_set_inter_analysis_dom: "kill_set e = kill_set e \<inter> analysis_dom"
-  by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def analysis_BV_forward_may_def inf.orderE)
+  by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def 
+      analysis_BV_forward_may_def inf.orderE)
 
 fun ana_gen_edge_d :: "('n, 'a) edge \<Rightarrow> 'd \<Rightarrow> (pred, var, ('n, 'a, 'd) cst) clause" where
   "ana_gen_edge_d (q\<^sub>o, \<alpha>, q\<^sub>s) d = gen\<langle>[Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, Cst\<^sub>E d]\<rangle> :- []."
@@ -186,7 +210,8 @@ definition ana_gen_edge :: "('n, 'a) edge \<Rightarrow> (pred, var, ('n, 'a, 'd)
   "ana_gen_edge e = ana_gen_edge_d e ` (gen_set e)"
 
 lemma gen_set_eq_gen_set_inter_analysis_dom: "gen_set e = gen_set e \<inter> analysis_dom"
-  by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def analysis_BV_forward_may_def inf.orderE)
+  by (meson analysis_BV_forward_may_axioms analysis_BV_forward_may_axioms_def 
+      analysis_BV_forward_may_def inf.orderE)
 
 definition ana_init :: "'d \<Rightarrow> (pred, var, ('n, 'a, 'd) cst) clause" where
   "ana_init d = init\<langle>[Cst\<^sub>E d]\<rangle> :- []."
@@ -253,7 +278,8 @@ lemma S_hat_path_append:
   shows "S^\<^sub>P\<lbrakk>(qs @ [qnminus1, qn], w @ [\<alpha>])\<rbrakk> d_init =
     S^\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> (S^\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init)"
 proof -
-  have "S^\<^sub>P\<lbrakk> (qs @ [qnminus1, qn], w @ [\<alpha>])\<rbrakk> d_init = S^\<^sub>E\<^sub>s\<lbrakk>(transition_list (qs @ [qnminus1, qn], w @ [\<alpha>]))\<rbrakk> d_init"
+  have "S^\<^sub>P\<lbrakk> (qs @ [qnminus1, qn], w @ [\<alpha>])\<rbrakk> d_init = 
+        S^\<^sub>E\<^sub>s\<lbrakk>(transition_list (qs @ [qnminus1, qn], w @ [\<alpha>]))\<rbrakk> d_init"
     unfolding S_hat_path_def by auto
   moreover
   have "S^\<^sub>E\<^sub>s\<lbrakk>(transition_list (qs @ [qnminus1, qn], w @ [\<alpha>]))\<rbrakk> d_init =
@@ -261,8 +287,9 @@ proof -
     using transition_list_reversed_simp[of qs w] assms
     by auto
   moreover
-  have "... = S^\<^sub>E\<^sub>s\<lbrakk>[(qnminus1, \<alpha>, qn)]\<rbrakk> (S_hat_edge_list (transition_list (qs @ [qnminus1], w)) d_init)"
-    using S_hat_edge_list_append[of "transition_list (qs @ [qnminus1], w)" " [(qnminus1, \<alpha>, qn)]" d_init]
+  have 
+    "... = S^\<^sub>E\<^sub>s\<lbrakk>[(qnminus1, \<alpha>, qn)]\<rbrakk> (S_hat_edge_list (transition_list (qs @ [qnminus1], w)) d_init)"
+    using S_hat_edge_list_append[of "transition_list (qs @ [qnminus1], w)" "[(qnminus1, \<alpha>, qn)]" d_init]
     by auto
   moreover
   have "... = S^\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> (S^\<^sub>P\<lbrakk> (qs @ [qnminus1], w)\<rbrakk> d_init)"
@@ -360,7 +387,8 @@ proof -
     using lh_consequence_def by metis
   ultimately
   show "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>kill [Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, Cst\<^sub>E d]"
-    using solves_NegLit_least[of ana_pg_fw_may \<rho> s_BV "[Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, Cst\<^sub>E d]" the_kill] by auto
+    using solves_NegLit_least[of ana_pg_fw_may \<rho> s_BV "[Cst\<^sub>N q\<^sub>o, Cst\<^sub>A \<alpha>, Cst\<^sub>N q\<^sub>s, Cst\<^sub>E d]" the_kill] 
+    by auto
 qed
 
 lemma S_hat_edge_list_subset_analysis_dom:
@@ -385,7 +413,8 @@ lemma S_hat_path_subset_analysis_dom:
 
 lemma S_hat_path_last:
   assumes "length qs = length w"
-  shows "S^\<^sub>P\<lbrakk>(qs @ [qnminus1, qn], w @ [\<alpha>])\<rbrakk> d_init = S^\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> (S^\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init)"
+  shows "S^\<^sub>P\<lbrakk>(qs @ [qnminus1, qn], w @ [\<alpha>])\<rbrakk> d_init =
+         S^\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> (S^\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init)"
   using assms transition_list_reversed_simp unfolding S_hat_path_def by force
 
 lemma gen_sound:
@@ -438,7 +467,8 @@ next
   
   have "d \<in> S^\<^sub>E\<lbrakk>(qnminus1, \<alpha>, qn)\<rbrakk> (S^\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init)"
     using "2.prems"(2) S_hat_path_last len by blast
-  then have "d \<in> (S^\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init) - kill_set (qnminus1, \<alpha>, qn) \<or> d \<in> gen_set (qnminus1, \<alpha>, qn)"
+  then have "d \<in> (S^\<^sub>P\<lbrakk>(qs @ [qnminus1], w)\<rbrakk> d_init) - kill_set (qnminus1, \<alpha>, qn) \<or>
+             d \<in> gen_set (qnminus1, \<alpha>, qn)"
     unfolding S_hat_def by simp
   then show ?case
   proof 
@@ -449,20 +479,25 @@ next
     from dSnotkill have "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>kill [Cst\<^sub>N qnminus1, Cst\<^sub>A \<alpha>, Cst\<^sub>N qn, Cst\<^sub>E d]"
       using not_kill[of d qnminus1 \<alpha> qn \<rho>] 2(6) by auto
     moreover
-    have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s may\<langle>[Cst\<^sub>N qn, \<uu>]\<rangle> :- [may [Cst\<^sub>N qnminus1, \<uu>], \<^bold>\<not>kill [Cst\<^sub>N qnminus1, Cst\<^sub>A \<alpha>, Cst\<^sub>N qn, \<uu>]] ."
-      using 2(6) "2.hyps"(2) by (force simp add: ana_pg_fw_may_def solves_program_def least_solution_def)
-    then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s may\<langle>[Cst\<^sub>N qn, Cst\<^sub>E d]\<rangle> :- [may [Cst\<^sub>N qnminus1, Cst\<^sub>E d], \<^bold>\<not>kill [Cst\<^sub>N qnminus1, Cst\<^sub>A \<alpha>, Cst\<^sub>N qn, Cst\<^sub>E d]]."
+    have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s may\<langle>[Cst\<^sub>N qn, \<uu>]\<rangle> :- [may [Cst\<^sub>N qnminus1, \<uu>],
+                                      \<^bold>\<not>kill [Cst\<^sub>N qnminus1, Cst\<^sub>A \<alpha>, Cst\<^sub>N qn, \<uu>]]."
+      using 2(6) "2.hyps"(2) 
+      by (force simp add: ana_pg_fw_may_def solves_program_def least_solution_def)
+    then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s may\<langle>[Cst\<^sub>N qn, Cst\<^sub>E d]\<rangle> :- [may [Cst\<^sub>N qnminus1, Cst\<^sub>E d], 
+                                               \<^bold>\<not>kill [Cst\<^sub>N qnminus1, Cst\<^sub>A \<alpha>, Cst\<^sub>N qn, Cst\<^sub>E d]]."
       using substitution_lemma[of \<rho> _ "\<lambda>u. Cst\<^sub>E d"] by force
     ultimately 
     have "\<rho> \<Turnstile>\<^sub>l\<^sub>h may\<langle>[Cst\<^sub>N qn, Cst\<^sub>E d]\<rangle>."
-      by (metis (no_types, lifting) Cons_eq_appendI prop_inf_last_from_cls_rh_to_cls modus_ponens_rh self_append_conv2)
+      by (metis (no_types, lifting) Cons_eq_appendI prop_inf_last_from_cls_rh_to_cls modus_ponens_rh 
+          self_append_conv2)
     then show "?case"
       by (auto simp add: LTS.end_of_def)
   next
     assume d_gen: "d \<in> gen_set (qnminus1, \<alpha>, qn)"
 
     have "\<forall>c\<in>ana_edge (qnminus1, \<alpha>, qn). \<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
-      using 2(6) "2.hyps"(2) unfolding ana_pg_fw_may_def solves_program_def least_solution_def by blast
+      using 2(6) "2.hyps"(2) unfolding ana_pg_fw_may_def solves_program_def least_solution_def 
+      by blast
     then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s may\<langle>[Cst\<^sub>N qn, \<uu>]\<rangle> :- [gen [Cst\<^sub>N qnminus1, Cst\<^sub>A \<alpha>, Cst\<^sub>N qn, \<uu>]] ."
       by auto
     then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s may\<langle>[Cst\<^sub>N qn, Cst\<^sub>E d]\<rangle> :- [gen [Cst\<^sub>N qnminus1, Cst\<^sub>A \<alpha>, Cst\<^sub>N qn, Cst\<^sub>E d]] ."
@@ -562,8 +597,10 @@ lemma gen_subs_analysis_dom: "(gen_set (rev_edge e)) \<subseteq> analysis_dom"
   by (meson analysis_BV_backward_may.axioms(2) analysis_BV_backward_may_axioms 
       analysis_BV_backward_may_axioms_def)
 
-interpretation fw_may: analysis_BV_forward_may pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
-  using analysis_BV_forward_may_def finite_pg_rev analysis_BV_backward_may_axioms analysis_BV_backward_may_def
+interpretation fw_may: analysis_BV_forward_may 
+  pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
+  using analysis_BV_forward_may_def finite_pg_rev analysis_BV_backward_may_axioms 
+    analysis_BV_backward_may_def
   by (metis (no_types, lifting) analysis_BV_backward_may_axioms_def 
       analysis_BV_forward_may_axioms_def finite_program_graph_def program_graph.edges_def)
  
@@ -724,9 +761,14 @@ definition summarizes_fw_must :: "(pred, ('n, 'a, 'd) cst) pred_val \<Rightarrow
    "summarizes_fw_must \<rho> \<longleftrightarrow>
      (\<forall>q d.
          \<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>. \<longrightarrow>
-          (\<forall>\<pi>. \<pi> \<in> path_with_word \<longrightarrow> start_of \<pi> = start \<longrightarrow> end_of \<pi> = the_Node\<^sub>i\<^sub>d q \<longrightarrow> (the_Elem\<^sub>i\<^sub>d d) \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init))"
+           (\<forall>\<pi>. \<pi> \<in> path_with_word \<longrightarrow>
+                start_of \<pi> = start \<longrightarrow>
+                end_of \<pi> = the_Node\<^sub>i\<^sub>d q \<longrightarrow>
+                (the_Elem\<^sub>i\<^sub>d d) \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init))"
 
-interpretation fw_may: analysis_BV_forward_may pg analysis_dom "\<lambda>e. analysis_dom - (kill_set e)" "(\<lambda>e. analysis_dom - gen_set e)" "analysis_dom - d_init"
+interpretation fw_may: analysis_BV_forward_may 
+  pg analysis_dom "\<lambda>e. analysis_dom - (kill_set e)" "(\<lambda>e. analysis_dom - gen_set e)" 
+  "analysis_dom - d_init"
   using analysis_BV_forward_may.intro[of pg] analysis_BV_forward_must_def[of pg] 
     analysis_BV_forward_may_axioms_def analysis_BV_forward_must_axioms 
     analysis_BV_forward_must_axioms_def by (metis Diff_subset)
@@ -1127,10 +1169,11 @@ proof (rule ccontr)
       fw_may.ana_must_def by auto
   then obtain q' where "c = must\<langle>[Cst\<^sub>N q',\<uu>]\<rangle> :- [\<^bold>\<not>may[Cst\<^sub>N q',\<uu>], anadom[\<uu>]]."
     by auto
-  then have "lh_consequence \<rho> (must\<langle>[Cst\<^sub>N q',\<uu>]\<rangle> :- [\<^bold>\<not>may[Cst\<^sub>N q',\<uu>], anadom[\<uu>]].) (must\<langle>[q \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined), Cst\<^sub>A undefined]\<rangle>.)"
+  then have "lh_consequence \<rho> (must\<langle>[Cst\<^sub>N q',\<uu>]\<rangle> :- [\<^bold>\<not>may[Cst\<^sub>N q',\<uu>], anadom[\<uu>]].) 
+                              (must\<langle>[q \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined), Cst\<^sub>A undefined]\<rangle>.)"
     using c_p(2) by auto
-  then have "\<exists>\<sigma>'. (must\<langle>[Cst\<^sub>N q', \<uu>]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = must\<langle>[q \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined), Cst\<^sub>A undefined]\<rangle>. \<and>
-        \<lbrakk>[\<^bold>\<not>may[Cst\<^sub>N q', \<uu>], anadom[\<uu>]]\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
+  then have "\<exists>\<sigma>'. (must\<langle>[Cst\<^sub>N q', \<uu>]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = must\<langle>[q \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined), Cst\<^sub>A undefined]\<rangle>.
+                  \<and> \<lbrakk>[\<^bold>\<not>may[Cst\<^sub>N q', \<uu>], anadom[\<uu>]]\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>'"
     unfolding lh_consequence_def using the_lh.simps clause.sel(3) by metis
   then obtain \<sigma>' where \<sigma>'_p:
     "(must\<langle>[Cst\<^sub>N q', \<uu>]\<rangle>. \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = must\<langle>[q \<cdot>\<^sub>v\<^sub>i\<^sub>d (\<lambda>x. Action undefined), Cst\<^sub>A undefined]\<rangle>."
@@ -1147,7 +1190,8 @@ qed
 lemma if_must:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_fw_must s_BV"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q,d]\<rangle>."
-  shows "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>may[q, d] \<and> \<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[d]\<rangle>. \<and> is_Node\<^sub>i\<^sub>d q \<and> is_Elem\<^sub>i\<^sub>d d \<and> the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom"
+  shows 
+    "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>may[q, d] \<and> \<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[d]\<rangle>." "is_Node\<^sub>i\<^sub>d q" "is_Elem\<^sub>i\<^sub>d d" "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom"
 proof -
   have Csts: "is_Cst q" "is_Cst d"
     using must_fst_id_is_Cst must_snd_id_is_Cst using assms by auto
@@ -1194,7 +1238,8 @@ proof -
     using solves_rh_substv_rh_if_meaning_rh \<open>\<sigma> the_\<uu> = d'\<close> \<open>d = Cst d'\<close> \<open>q = Cst\<^sub>N q'\<close> by force
   then have "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom \<and> is_Elem\<^sub>i\<^sub>d d"
     using in_analysis_dom_if_anadom[of \<rho> d] assms by fastforce
-  show ?thesis
+  show 
+    "\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>may[q, d] \<and> \<rho> \<Turnstile>\<^sub>l\<^sub>h anadom\<langle>[d]\<rangle>." "is_Node\<^sub>i\<^sub>d q" "is_Elem\<^sub>i\<^sub>d d" "the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom"
     using \<open>\<rho> \<Turnstile>\<^sub>r\<^sub>h \<^bold>\<not>may [q, d]\<close> \<open>\<rho> \<Turnstile>\<^sub>r\<^sub>h anadom [d]\<close> \<open>q = Cst\<^sub>N q'\<close>
       \<open>the_Elem\<^sub>i\<^sub>d d \<in> analysis_dom \<and> is_Elem\<^sub>i\<^sub>d d\<close> by auto
 qed
@@ -1285,7 +1330,8 @@ proof -
     by (metis cst.sel(2) assms(1) assms(2) id.sel(2) is_encode_elem_if_must_right_arg)
 
   have not_may: "\<not> \<rho> \<Turnstile>\<^sub>l\<^sub>h may\<langle>[Cst\<^sub>N (end_of \<pi>), d]\<rangle>."
-    using not_solves_must_and_may[OF assms(1), of "(end_of \<pi>)" "the_Elem\<^sub>i\<^sub>d d"] assms(2) \<pi>e d_encdec by force
+    using not_solves_must_and_may[OF assms(1), of "(end_of \<pi>)" "the_Elem\<^sub>i\<^sub>d d"] assms(2) \<pi>e d_encdec 
+    by force
   have "\<not>the_Elem\<^sub>i\<^sub>d d \<in> fw_may.S_hat_path \<pi> (analysis_dom - d_init)"
     using fw_may.sound_ana_pg_fw_may assms(1)
     unfolding fw_may.summarizes_fw_may_def
@@ -1373,7 +1419,8 @@ definition summarizes_bw_must :: "(pred, ('n, 'v, 'd) cst) pred_val \<Rightarrow
          \<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>. \<longrightarrow>
           (\<forall>\<pi>. \<pi> \<in> path_with_word_from_to (the_Node\<^sub>i\<^sub>d q) end \<longrightarrow> the_Elem\<^sub>i\<^sub>d d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init))"
 
-interpretation fw_must: analysis_BV_forward_must pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
+interpretation fw_must: analysis_BV_forward_must 
+  pg_rev analysis_dom "\<lambda>e. (kill_set (rev_edge e))" "(\<lambda>e. gen_set (rev_edge e))" d_init
   using analysis_BV_forward_must_def finite_pg_rev analysis_BV_backward_must_axioms
     analysis_BV_backward_must_def analysis_BV_backward_must_axioms_def
     analysis_BV_forward_must_axioms.intro finite_program_graph.intro
