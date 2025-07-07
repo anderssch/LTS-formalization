@@ -352,11 +352,20 @@ fun dl_program_lte_strata :: "('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rig
 fun dl_program_on_strata :: "('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'c) dl_program" ("_ ==_== _" 0) where 
   "(dl ==s== n) = {(Cls p ids rhs)| p ids rhs . (Cls p ids rhs) \<in> dl \<and> s p = n}"
 
+\<comment> \<open>The ordering on predicate valuations from
+     Flemming Nielson and Hanne Riis Nielson. 
+     Program analysis (an appetizer). 
+     CoRR,abs/2012.10086, 2020.\<close>
 definition lt :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'c) pred_val \<Rightarrow> bool" ("_ \<sqsubset>_\<sqsubset> _") where
   "(\<rho> \<sqsubset>s\<sqsubset> \<rho>') \<longleftrightarrow> (\<exists>p. \<rho> p \<subset> \<rho>' p \<and>
                        (\<forall>p'. s p' = s p \<longrightarrow> \<rho> p' \<subseteq> \<rho>' p') \<and>
                        (\<forall>p'. s p' < s p \<longrightarrow> \<rho> p' = \<rho>' p'))"
 
+\<comment> \<open>The ordering on predicate valuations from
+     Teodor C. Przymusinski.
+     On the declarative semantics of deductive databases and logic programs.
+     In Jack Minker, editor, Foundations of Deductive Databases and Logic Programming,
+       pages 193–216. Morgan Kaufmann, 1988.\<close>
 definition lt_prz :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'c) pred_val \<Rightarrow> bool" ("_ \<sqsubset>_\<sqsubset>\<^sub>p\<^sub>r\<^sub>z _") where
   "(\<rho>\<^sub>M \<sqsubset>s\<sqsubset>\<^sub>p\<^sub>r\<^sub>z \<rho>\<^sub>N) \<longleftrightarrow> \<rho>\<^sub>N \<noteq> \<rho>\<^sub>M \<and> (\<forall>p\<^sub>A c\<^sub>A. c\<^sub>A \<in> \<rho>\<^sub>N p\<^sub>A - \<rho>\<^sub>M p\<^sub>A \<longrightarrow> (\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>M p\<^sub>B - \<rho>\<^sub>N p\<^sub>B \<and> s p\<^sub>A > s p\<^sub>B))"
 
@@ -536,11 +545,11 @@ next
     by (metis least_rank_p_st_def linorder_not_le)
 qed
 
-lemma
+lemma lt_if_lt_prz:
   assumes "\<rho>\<^sub>M \<sqsubset>s\<sqsubset>\<^sub>p\<^sub>r\<^sub>z \<rho>\<^sub>N"
   shows "\<rho>\<^sub>N \<sqsubset>s\<sqsubset> \<rho>\<^sub>M"
 proof -
-  from assms have nice: "\<rho>\<^sub>N \<noteq> \<rho>\<^sub>M \<and> (\<forall>p\<^sub>A c\<^sub>A. c\<^sub>A \<in> \<rho>\<^sub>N p\<^sub>A - \<rho>\<^sub>M p\<^sub>A \<longrightarrow> (\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>M p\<^sub>B - \<rho>\<^sub>N p\<^sub>B \<and> s p\<^sub>B < s p\<^sub>A))"
+  from assms have unf: "\<rho>\<^sub>N \<noteq> \<rho>\<^sub>M \<and> (\<forall>p\<^sub>A c\<^sub>A. c\<^sub>A \<in> \<rho>\<^sub>N p\<^sub>A - \<rho>\<^sub>M p\<^sub>A \<longrightarrow> (\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>M p\<^sub>B - \<rho>\<^sub>N p\<^sub>B \<and> s p\<^sub>B < s p\<^sub>A))"
     unfolding lt_prz_def by auto
   then have "\<exists>p. \<rho>\<^sub>N p \<noteq> \<rho>\<^sub>M p"
     by auto
@@ -560,7 +569,7 @@ proof -
     have "(\<forall>p'. s p' < s p \<longrightarrow> \<rho>\<^sub>N p' = \<rho>\<^sub>M p')"
       using \<open>least_rank_p_st (\<lambda>p. \<rho>\<^sub>N p \<noteq> \<rho>\<^sub>M p) p s\<close> below_least_rank_p_st by fastforce
     have "(\<forall>p'. s p' = s p \<longrightarrow> \<rho>\<^sub>N p' \<subseteq> \<rho>\<^sub>M p')"
-      using \<open>\<forall>p'. s p' < s p \<longrightarrow> \<rho>\<^sub>N p' = \<rho>\<^sub>M p'\<close> nice by auto
+      using \<open>\<forall>p'. s p' < s p \<longrightarrow> \<rho>\<^sub>N p' = \<rho>\<^sub>M p'\<close> unf by auto
     then show ?thesis
       unfolding lt_def using \<open>\<forall>p'. s p' < s p \<longrightarrow> \<rho>\<^sub>N p' = \<rho>\<^sub>M p'\<close> \<open>\<rho>\<^sub>N p \<noteq> \<rho>\<^sub>M p\<close> by blast
   next 
@@ -568,7 +577,7 @@ proof -
     then obtain c where "c \<in> \<rho>\<^sub>N p \<and> c \<notin> \<rho>\<^sub>M p"
       by auto
     then have "\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>M p\<^sub>B - \<rho>\<^sub>N p\<^sub>B \<and> s p\<^sub>B < s p"
-      using nice by auto
+      using unf by auto
     then obtain p\<^sub>B c\<^sub>B where "c\<^sub>B \<in> \<rho>\<^sub>M p\<^sub>B - \<rho>\<^sub>N p\<^sub>B" "s p\<^sub>B < s p"
       by auto
     then have "False"
@@ -578,7 +587,7 @@ proof -
   qed
 qed
 
-lemma
+lemma lt_prz_if_lt_if:
   assumes "\<rho>\<^sub>M \<sqsubset>s\<sqsubset> \<rho>\<^sub>N"
   shows "\<rho>\<^sub>N \<sqsubset>s\<sqsubset>\<^sub>p\<^sub>r\<^sub>z \<rho>\<^sub>M"
 proof -
@@ -596,6 +605,10 @@ proof -
   show "\<rho>\<^sub>N \<sqsubset>s\<sqsubset>\<^sub>p\<^sub>r\<^sub>z \<rho>\<^sub>M"
     unfolding lt_prz_def by auto
 qed
+
+lemma lt_prz_iff_lt:
+  "\<rho>\<^sub>M \<sqsubset>s\<sqsubset> \<rho>\<^sub>N \<longleftrightarrow> \<rho>\<^sub>N \<sqsubset>s\<sqsubset>\<^sub>p\<^sub>r\<^sub>z \<rho>\<^sub>M"
+  using lt_if_lt_prz lt_prz_if_lt_if by blast
 
 lemma solves_leq:
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> m)"
