@@ -101,6 +101,8 @@ lemma countable_l: "countable {l |l. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
 lemma countable_star_tuple: "countable {(c, l, c') | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
   using countable_star_f_p[of "\<lambda>c l c'. (c, l, c')" "\<lambda>c c'. True"] by presburger
 
+lemma countable_star_set: "countable {l | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<and> c \<in> C \<and> c' \<in> C'}"
+  using countable_star_f_p by fast
 end
 
 
@@ -118,8 +120,11 @@ definition weight_post_star :: "('state \<Rightarrow> 'weight) \<Rightarrow> ('s
 definition weight_reach :: "('state \<Rightarrow> 'weight) \<Rightarrow> ('state \<Rightarrow> 'weight) \<Rightarrow> 'weight" where
   "weight_reach C C' = \<^bold>\<Sum>{(C c) * l * (C' c') | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c'}"
 
-definition weight_reach_set :: "('state set) \<Rightarrow> ('state set) \<Rightarrow> 'weight" where
-  "weight_reach_set C C' = \<^bold>\<Sum>{l | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<and> c \<in> C \<and> c' \<in> C'}"
+definition weight_reach_set :: "('state set) \<Rightarrow> ('state set) \<Rightarrow> 'weight" ("\<^bold>\<Sigma>\<langle>_\<Rightarrow>\<^sup>*_\<rangle>" [99,99] 100) where
+  "\<^bold>\<Sigma>\<langle>C\<Rightarrow>\<^sup>*C'\<rangle> = \<^bold>\<Sum>{l | c l c'. c \<Midarrow>l\<Rightarrow>\<^sup>* c' \<and> c \<in> C \<and> c' \<in> C'}"
+
+lemma weight_reach_set_singleton: "\<^bold>\<Sigma>\<langle>{c} \<Rightarrow>\<^sup>* {c'}\<rangle> = \<^bold>\<Sum>{d. c \<Midarrow>d\<Rightarrow>\<^sup>* c'}"
+  unfolding weight_reach_set_def by (metis (lifting) singleton_iff)
 
 end
 

@@ -506,6 +506,48 @@ proof -
   then show ?thesis using assms SumInf_insert_0[of X] SumInf_insert_0[of Y] by simp
 qed
 
+lemma SumInf_union:
+  assumes "countable (X \<union> Y)" 
+  shows "\<^bold>\<Sum>(X \<union> Y) = \<^bold>\<Sum> X + \<^bold>\<Sum> Y"
+proof -
+  have cX: "countable X" using assms by simp
+  have cY: "countable Y" using assms by simp
+  obtain X' where X': "X' \<subseteq> X" "finite X'" "\<^bold>\<Sum> X = \<Sum> X'"
+    by (fact SumInf_obtains_finite_subset[OF cX])
+  obtain Y' where Y': "Y' \<subseteq> Y" "finite Y'" "\<^bold>\<Sum> Y = \<Sum> Y'"
+    by (fact SumInf_obtains_finite_subset[OF cY])
+  have finU: "finite (X' \<union> Y')" using X'(2) Y'(2) by simp
+  then have A:"\<^bold>\<Sum> X + \<^bold>\<Sum> Y = \<Sum>(X' \<union> Y')"
+    using X'(3) Y'(3) idem_sum_union by metis
+  have sub: "X' \<union> Y' \<subseteq> X \<union> Y" using X'(1) Y'(1) by blast
+  have U_leq: "\<^bold>\<Sum>(X \<union> Y) \<le> \<^bold>\<Sum> X + \<^bold>\<Sum> Y"
+    using SumInf_mono[OF sub assms] A finite_SumInf_is_sum[OF finU] by order
+  
+  obtain W where W: "W \<subseteq> X \<union> Y" "finite W" "\<^bold>\<Sum>(X \<union> Y) = \<Sum> W"
+    by (fact SumInf_obtains_finite_subset[OF assms])
+  then have A: "W = (W \<inter> X) \<union> (W \<inter> Y)" by auto
+  have f:"finite ((W \<inter> X) \<union> (W \<inter> Y))" using A W(2) by blast
+  have leqX: "\<^bold>\<Sum> X \<le> \<Sum>(W \<inter> X)"
+    using SumInf_mono[OF _ cX, of "W \<inter> X"] finite_SumInf_is_sum[of "W \<inter> X"] by fastforce
+  have leqY: "\<^bold>\<Sum> Y \<le> \<Sum>(W \<inter> Y)"
+    using SumInf_mono[OF _ cY, of "W \<inter> Y"] finite_SumInf_is_sum[of "W \<inter> Y"] by fastforce
+  have "\<Sum> W = \<Sum>(W \<inter> X) + \<Sum>(W \<inter> Y)"
+    using A idem_sum_union[OF f] by presburger
+  then have U_geq: "\<^bold>\<Sum>(X \<union> Y) \<ge> \<^bold>\<Sum> X + \<^bold>\<Sum> Y"
+    unfolding W(3) using leqX leqY by (metis meet.inf_mono)
+
+  show ?thesis using U_leq U_geq by order
+qed
+
+lemma SumInf_union_0:
+  assumes "countable X"
+  assumes "Y \<subseteq> {0}"
+  shows "\<^bold>\<Sum>(X \<union> Y) = \<^bold>\<Sum> X"
+proof -
+  have cY: "countable Y" using countable_subset[OF assms(2)] by blast
+  show ?thesis using SumInf_union assms(1) cY assms(2) by force
+qed
+
 lemma SumInf_split_Qor0:
   assumes "countable {x. P x}"
   assumes "(\<And>x. \<not> Q x \<Longrightarrow> f x = 0)"

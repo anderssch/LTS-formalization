@@ -63,15 +63,16 @@ context
   fixes \<Delta> :: "('ctr_loc::enum, 'label::finite, 'weight::bounded_dioid) w_rule list"
 begin
 
-interpretation finite_WPDS "(set \<Delta>)" 
-  using finite_WPDS_def by auto
+interpretation finite_WPDS "(set \<Delta>)" using finite_WPDS_def by auto
+interpretation countable_dioidLTS transition_rel apply standard using countable_transition_rel .
+notation weight_reach_set ("\<^bold>\<Sigma>\<langle>_\<Rightarrow>\<^sup>*_\<rangle>" [99,99] 100)
 
-interpretation countable_dioidLTS transition_rel apply standard
-  using countable_transition_rel .
-
-lemma weight_reach_set'_lang_aut_is_weight_reach'_language_full:
+context 
   fixes ts :: "(('ctr_loc, 'noninit::enum) state, 'label) transition set"
   fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
+begin
+
+lemma weight_reach_set'_lang_aut_is_weight_reach'_language_full:
   assumes "finite ts"
   assumes "finite ts'"
   shows "weight_reach_set (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals') =
@@ -79,11 +80,9 @@ lemma weight_reach_set'_lang_aut_is_weight_reach'_language_full:
   unfolding lang_aut_is_language_full[OF assms(1)] lang_aut_is_language_full[OF assms(2)]
   using weight_reach_set_is_weight_reach by blast
 
-lemma WPDS_reach_exec_correct:
-  fixes ts :: "(('ctr_loc, 'noninit::enum) state, 'label) transition set"
-  fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
+lemma WPDS_reach_exec_correct':
   assumes "run_WPDS_reach \<Delta> ts ts' finals finals' = Some w"
-  shows "w = (weight_reach_set (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals'))"
+  shows "w = \<^bold>\<Sigma>\<langle>P_Automaton.lang_aut ts Init finals \<Rightarrow>\<^sup>* P_Automaton.lang_aut ts' Init finals'\<rangle>"
 proof -
   have "WPDS_Code.checking ((ts_to_wts ts')::(('ctr_loc, 'noninit) state, 'label, 'weight::bounded_dioid) w_transitions)"
     using assms unfolding run_WPDS_reach_def run_WPDS_reach'_def
@@ -94,10 +93,72 @@ proof -
     unfolding inits_set_def mem_Collect_eq WPDS_Code.checking_def
     by simp
   then show ?thesis
-    unfolding weight_reach_set'_lang_aut_is_weight_reach'_language_full[of ts ts' finals finals', unfolded finite_code, simplified]
+    unfolding weight_reach_set'_lang_aut_is_weight_reach'_language_full[of finals finals', unfolded finite_code, simplified]
     using assms unfolding run_WPDS_reach_def run_WPDS_reach'_def
     by (metis (lifting) option.distinct(1) option.inject)
 qed
+
+theorem WPDS_reach_exec_correct:
+  assumes "\<And>p \<gamma> q. is_Init q \<Longrightarrow> (p, \<gamma>, q) \<notin> ts'"
+  shows "run_WPDS_reach \<Delta> ts ts' finals finals' = Some (\<^bold>\<Sigma>\<langle>P_Automaton.lang_aut ts Init finals \<Rightarrow>\<^sup>* P_Automaton.lang_aut ts' Init finals'\<rangle>)"
+proof -
+  have "WPDS_Code.checking (ts_to_wts ts')" 
+    using assms WPDS_Code.checking_def ts_to_wts_not_member_is_0[of ts']
+    by fastforce
+  then show ?thesis
+    using WPDS_reach_exec_correct'[of finals finals']
+    unfolding run_WPDS_reach_def run_WPDS_reach'_def 
+    by force
+qed
+
+\<comment> \<open>Alternative variants covering the None case. 
+   Somewhat interestingly, if 0=1 in the dioid, the result is always (Some 0)\<close>
+theorem WPDS_reach_exec_correct'':
+  assumes "(0::'weight::bounded_dioid) \<noteq> 1"
+  shows "run_WPDS_reach \<Delta> ts ts' finals finals' = 
+        (if (\<forall>p \<gamma> q. is_Init q \<longrightarrow> (p, \<gamma>, q) \<notin> ts') 
+         then Some (\<^bold>\<Sigma>\<langle>P_Automaton.lang_aut ts Init finals \<Rightarrow>\<^sup>* P_Automaton.lang_aut ts' Init finals'\<rangle>)
+         else None)"
+proof (cases "\<forall>p \<gamma> q. is_Init q \<longrightarrow> (p, \<gamma>, q) \<notin> ts'")
+  case True
+  then show ?thesis by (meson WPDS_reach_exec_correct)
+next
+  case False
+  then have "\<not> WPDS_Code.checking ((ts_to_wts ts')::(('ctr_loc, 'noninit) state, 'label, 'weight::bounded_dioid) w_transitions)"
+    unfolding WPDS_Code.checking_def using ts_to_wts_1_if_member[of ts', simplified] assms 
+    by metis
+  then show ?thesis 
+    unfolding run_WPDS_reach_def run_WPDS_reach'_def using False by argo
+qed
+lemma zero_eq_one_all_zero: "(0::'weight::bounded_dioid) = 1 \<Longrightarrow> (a::'weight::bounded_dioid) = 0"
+  by (metis mult_1 mult_zero_left)
+lemma WPDS_reach_exec_correct_zero_one: 
+  assumes "(0::'weight::bounded_dioid) = 1"
+  shows "run_WPDS_reach \<Delta> ts ts' finals finals' = Some 0"
+proof -
+  have "WPDS_Code.checking ((ts_to_wts ts')::(('ctr_loc, 'noninit) state, 'label, 'weight::bounded_dioid) w_transitions)"
+    unfolding WPDS_Code.checking_def using zero_eq_one_all_zero[OF assms]
+    by presburger
+  then show ?thesis
+    unfolding run_WPDS_reach_def run_WPDS_reach'_def
+    using zero_eq_one_all_zero[OF assms]
+    by simp
+qed
+theorem WPDS_reach_exec_correct''': "run_WPDS_reach \<Delta> ts ts' finals finals' =
+        (if (\<forall>p \<gamma> q. is_Init q \<longrightarrow> (p, \<gamma>, q) \<notin> ts' \<or> (0::'weight::bounded_dioid) = 1)
+         then Some (\<^bold>\<Sigma>\<langle>P_Automaton.lang_aut ts Init finals \<Rightarrow>\<^sup>* P_Automaton.lang_aut ts' Init finals'\<rangle>)
+         else None)"
+proof (cases "(0::'weight::bounded_dioid) = 1")
+  case True
+  show ?thesis 
+    using WPDS_reach_exec_correct_zero_one[OF True, of finals finals']
+          zero_eq_one_all_zero[OF True] 
+    by (metis (full_types))
+next
+  case False
+  then show ?thesis using WPDS_reach_exec_correct''[OF False] by meson
+qed
+end
 end
 
 end

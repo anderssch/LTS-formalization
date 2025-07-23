@@ -982,4 +982,30 @@ qed
 
 end
 
+
+\<comment> \<open>Language with union and concatenation is an idempotent semiring, but it is not a bounded dioid\<close>
+interpretation language_dioid: idempotent_semiring_ord "(\<union>)" "(\<supseteq>)" "(\<supset>)" "{[]}" "(@@)" "{}" 
+  by standard (auto simp add: conc_assoc)
+lemma lang_not_wf: "\<forall>f::nat\<Rightarrow>'a lang. \<exists>i. \<not> f i \<subset> f (Suc i) \<Longrightarrow> False"
+proof (erule allE[of _ "\<lambda>i. {[],[SOME x::'a. True]} ^^ i"], erule exE)
+  fix i
+  have "{[], [SOME x::'a. True]} ^^ i \<subset> {[], [SOME x::'a. True]} ^^ Suc i"
+  proof 
+    show "{[], [SOME x::'a. True]} ^^ i \<subseteq> {[], [SOME x::'a. True]} ^^ Suc i" by (auto intro: concI_if_Nil1)
+    have "\<And>n. {[SOME x::'a. True]} ^^ (Suc n) \<noteq> {}" 
+      subgoal for n by (induct n, auto) done
+    then obtain w::"'a list" where w: "w \<in> {[SOME x::'a. True]} ^^ (Suc i)" "Suc i \<le> length w"
+      using length_lang_pow_lb[of "{[SOME x::'a. True]}" 1 _ "Suc i"] by auto
+    have sub: "\<And>n. {[SOME x::'a. True]} ^^ n \<subseteq> {[], [SOME x::'a. True]} ^^ n"
+      subgoal for n by (induct n, auto) done
+    then have "w \<in> {[], [SOME x::'a. True]} ^^ Suc i" using w by fast
+    then show "{[], [SOME x::'a. True]} ^^ i \<noteq> {[], [SOME x::'a. True]} ^^ Suc i"
+      using length_lang_pow_ub[of "{[],[SOME x::'a. True]}" 1 _ i, simplified] w(2) not_less_eq_eq 
+      by metis
+  qed
+  then show "\<not> {[], [SOME x::'a. True]} ^^ i \<subset> {[], [SOME x::'a. True]} ^^ Suc i \<Longrightarrow> False"
+    by blast
+qed
+
+
 end

@@ -486,6 +486,7 @@ notation step_relp (infix "\<Rightarrow>" 80)
 notation step_starp (infix "\<Rightarrow>\<^sup>*" 80)
 notation l_step_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow> (_)/" [70,70,80] 80)
 notation monoid_star_relp ("(_)/ \<Midarrow> (_)/ \<Rightarrow>\<^sup>* (_)/" [90,90,100] 100) 
+notation weight_reach_set ("\<^bold>\<Sigma>\<langle>_\<Rightarrow>\<^sup>*_\<rangle>" [99,99] 100)
 
 lemma finite_pre_star_rule_set: "finite {ts'. pre_star_rule ts ts'}"
 proof -
@@ -514,17 +515,6 @@ qed
 
 
 subsection \<open>Pre* correctness\<close>
-
-abbreviation (input) ctr_loc_pred_weight :: "('ctr_loc * 'label list) \<Rightarrow> 'ctr_loc \<Rightarrow> 'weight" ("\<^bold>\<Sigma>_\<Rightarrow>\<^sup>*_") where
-  "(\<^bold>\<Sigma>pw\<Rightarrow>\<^sup>*p') \<equiv> \<^bold>\<Sum>{d'. pw \<Midarrow>d'\<Rightarrow>\<^sup>* (p',[])}"
-
-abbreviation (input) ctr_loc_preds_weight :: "('ctr_loc * 'label list) \<Rightarrow> 'ctr_loc set \<Rightarrow> 'weight" ("\<^bold>\<Sigma>\<^sub>s_\<Rightarrow>\<^sup>*_") where
-  "(\<^bold>\<Sigma>\<^sub>spw\<Rightarrow>\<^sup>*Q) \<equiv> \<^bold>\<Sum> {l |l q. q \<in> Q \<and> pw \<Midarrow> l \<Rightarrow>\<^sup>* (q, [])}"
-
-lemma push_seq_weight_def2:
-  "(\<^bold>\<Sigma>pw\<Rightarrow>\<^sup>*p') = \<^bold>\<Sum> {d |d. pw \<Midarrow> d \<Rightarrow>\<^sup>* (p', [])}"
-  by auto
-
 lemma countable_monoid_star_all_triple: "countable {(d', q, w). (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, w)}"
   by (auto simp: dissect_set countable_monoid_star_variant1)
 
@@ -556,10 +546,10 @@ lemma countable_push_seq_weight3:
   by (auto simp add: dissect_set countable_monoid_star_all)
 
 definition sound :: "(('ctr_loc, 'label, 'weight) w_transitions) \<Rightarrow> bool" where
-  "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> \<lbrakk>A\<rbrakk> \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,[\<gamma>])\<Rightarrow>\<^sup>*p')"
+  "sound A \<longleftrightarrow> (\<forall>p p' \<gamma> d. (p, ([\<gamma>],d), p') \<in> \<lbrakk>A\<rbrakk> \<longrightarrow> d \<ge> \<^bold>\<Sigma>\<langle> {(p,[\<gamma>])} \<Rightarrow>\<^sup>* {(p',[])} \<rangle>)"
 
 lemma sound_intro:
-  assumes "\<And>p p' \<gamma> d. (p, ([\<gamma>], d), p') \<in> \<lbrakk>A\<rbrakk> \<Longrightarrow> (\<^bold>\<Sigma>(p, [\<gamma>])\<Rightarrow>\<^sup>*p') \<le> d"
+  assumes "\<And>p p' \<gamma> d. (p, ([\<gamma>], d), p') \<in> \<lbrakk>A\<rbrakk> \<Longrightarrow> \<^bold>\<Sigma>\<langle>{(p,[\<gamma>])} \<Rightarrow>\<^sup>* {(p',[])} \<rangle> \<le> d"
   shows "sound A"
   unfolding sound_def using assms by auto
 
@@ -600,111 +590,107 @@ lemma monoid_star_relp_if_l_step_relp:
 
 lemma push_seq_weight_if_monoid_star_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow>\<^sup>* (p',[])"
-  shows "(\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p') \<le> d"
-  using countable_SumInf_elem[of "{d'. (p, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}" d] 
+  shows "\<^bold>\<Sigma>\<langle> {(p, w)} \<Rightarrow>\<^sup>* {(p',[])} \<rangle> \<le> d"
+  unfolding weight_reach_set_singleton
+  using countable_SumInf_elem[of "{d'. (p, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}" d]
     assms by (auto simp add: countable_monoid_star_all)
 
 lemma push_seq_weight_if_l_step_relp:
   assumes "(p,w) \<Midarrow>d\<Rightarrow> (p',[])"
-  shows "(\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p') \<le> d"
+  shows "\<^bold>\<Sigma>\<langle> {(p, w)} \<Rightarrow>\<^sup>* {(p',[])} \<rangle> \<le> d"
   by (simp add: assms monoid_star_relp_if_l_step_relp push_seq_weight_if_monoid_star_relp)
 
 lemma push_seq_weight_trans:
-  assumes "(\<^bold>\<Sigma>(p'', w')\<Rightarrow>\<^sup>*p\<^sub>i) \<le> d1"
-  assumes "(\<^bold>\<Sigma>(p\<^sub>i, w'')\<Rightarrow>\<^sup>*p2) \<le> d2"
-  shows "(\<^bold>\<Sigma>(p'', w'@w'')\<Rightarrow>\<^sup>*p2) \<le> d1 * d2"
+  assumes "\<^bold>\<Sigma>\<langle> {(p\<^sub>1, w\<^sub>1)} \<Rightarrow>\<^sup>* {(p\<^sub>2,[])} \<rangle> \<le> d\<^sub>1"
+  assumes "\<^bold>\<Sigma>\<langle> {(p\<^sub>2, w\<^sub>2)} \<Rightarrow>\<^sup>* {(p\<^sub>3,[])} \<rangle> \<le> d\<^sub>2"
+  shows "\<^bold>\<Sigma>\<langle> {(p\<^sub>1, w\<^sub>1@w\<^sub>2)} \<Rightarrow>\<^sup>* {(p\<^sub>3,[])} \<rangle> \<le> d\<^sub>1 * d\<^sub>2"
 proof -
-  have "(\<^bold>\<Sigma>(p'',w'@w'') \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d1' * d2'| d1'  d2'. (p'',w') \<Midarrow>d1'\<Rightarrow>\<^sup>* (p\<^sub>i,[]) \<and> (p\<^sub>i,w'') \<Midarrow>d2'\<Rightarrow>\<^sup>* (p2,[])}"
-    using SumInf_mono[of "{d1' * d2' |d1' d2'. (p'', w') \<Midarrow> d1' \<Rightarrow>\<^sup>* (p\<^sub>i, []) \<and> (p\<^sub>i, w'') \<Midarrow> d2' \<Rightarrow>\<^sup>* (p2, [])}" 
-        "{d'. (p'', w' @ w'') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}"]
+  have "\<^bold>\<Sigma>\<langle> {(p\<^sub>1, w\<^sub>1@w\<^sub>2)} \<Rightarrow>\<^sup>* {(p\<^sub>3,[])} \<rangle> \<le> \<^bold>\<Sum>{d\<^sub>1' * d\<^sub>2'| d\<^sub>1'  d\<^sub>2'. (p\<^sub>1,w\<^sub>1) \<Midarrow>d\<^sub>1'\<Rightarrow>\<^sup>* (p\<^sub>2,[]) \<and> (p\<^sub>2,w\<^sub>2) \<Midarrow>d\<^sub>2'\<Rightarrow>\<^sup>* (p\<^sub>3,[])}"
+    unfolding weight_reach_set_def
+    using SumInf_mono[of "{d\<^sub>1' * d\<^sub>2' |d\<^sub>1' d\<^sub>2'. (p\<^sub>1, w\<^sub>1) \<Midarrow> d\<^sub>1' \<Rightarrow>\<^sup>* (p\<^sub>2, []) \<and> (p\<^sub>2, w\<^sub>2) \<Midarrow> d\<^sub>2' \<Rightarrow>\<^sup>* (p\<^sub>3, [])}" 
+        "{d'. (p\<^sub>1, w\<^sub>1 @ w\<^sub>2) \<Midarrow> d' \<Rightarrow>\<^sup>* (p\<^sub>3, [])}"]
       step_relp_seq by (force simp add: countable_monoid_star_all dissect_set)
-  also have "... \<le> (\<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* p\<^sub>i) * (\<^bold>\<Sigma>(p\<^sub>i,w'') \<Rightarrow>\<^sup>* p2)"
-    using SumInf_left_distr[of "{d'. (p\<^sub>i, w'') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}" "\<^bold>\<Sum> {d'. (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (p\<^sub>i, [])}"] 
-          SumInf_of_SumInf_right_distr_simple[of "\<lambda>d'. (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (p\<^sub>i, [])"]
+  also have "... \<le> \<^bold>\<Sigma>\<langle> {(p\<^sub>1, w\<^sub>1)} \<Rightarrow>\<^sup>* {(p\<^sub>2,[])} \<rangle> * \<^bold>\<Sigma>\<langle> {(p\<^sub>2, w\<^sub>2)} \<Rightarrow>\<^sup>* {(p\<^sub>3,[])} \<rangle>"
+    unfolding weight_reach_set_def
+    using SumInf_left_distr[of "{d'. (p\<^sub>2, w\<^sub>2) \<Midarrow> d' \<Rightarrow>\<^sup>* (p\<^sub>3, [])}" "\<^bold>\<Sum> {d'. (p\<^sub>1, w\<^sub>1) \<Midarrow> d' \<Rightarrow>\<^sup>* (p\<^sub>2, [])}"] 
+          SumInf_of_SumInf_right_distr_simple[of "\<lambda>d'. (p\<^sub>1, w\<^sub>1) \<Midarrow> d' \<Rightarrow>\<^sup>* (p\<^sub>2, [])"]
     by (simp add: dissect_set countable_monoid_star_all)
-  also have "... \<le> d1 * d2"
+  also have "... \<le> d\<^sub>1 * d\<^sub>2"
     using assms BoundedDioid.mult_isol_var by auto
   finally 
   show ?thesis
     by auto
 qed
 
-lemma push_seq_weight_trans_push:
-  assumes "(\<^bold>\<Sigma>(p'', [\<mu>'])\<Rightarrow>\<^sup>*p\<^sub>i) \<le> d1"
-  assumes "(\<^bold>\<Sigma>(p\<^sub>i, [\<mu>''])\<Rightarrow>\<^sup>*p2) \<le> d2"
-  shows "(\<^bold>\<Sigma>(p'', [\<mu>', \<mu>''])\<Rightarrow>\<^sup>*p2) \<le> d1 * d2"
-  using assms push_seq_weight_trans[of p'' "[\<mu>']" p\<^sub>i d1 "[\<mu>'']" p2 d2] by auto
-
 lemma monoid_star_relp_push_seq_weight_trans:
-  assumes "(p1, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p'', w')"
-  assumes "(\<^bold>\<Sigma>(p'', w')\<Rightarrow>\<^sup>*p2) \<le> d'"
-  shows "(\<^bold>\<Sigma>(p1, w)\<Rightarrow>\<^sup>*p2) \<le> d * d'"
+  assumes "(p\<^sub>1, w\<^sub>1) \<Midarrow>d\<Rightarrow>\<^sup>* (p\<^sub>2, w\<^sub>2)"
+  assumes "\<^bold>\<Sigma>\<langle> {(p\<^sub>2, w\<^sub>2)} \<Rightarrow>\<^sup>* {(p\<^sub>3,[])} \<rangle> \<le> d'"
+  shows "\<^bold>\<Sigma>\<langle> {(p\<^sub>1, w\<^sub>1)} \<Rightarrow>\<^sup>* {(p\<^sub>3,[])} \<rangle> \<le> d * d'"
 proof -
-  have "(\<^bold>\<Sigma> (p1, w) \<Rightarrow>\<^sup>* p2) \<le> \<^bold>\<Sum>{d * d'| d'. (p1, w) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',w') \<and> (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-    using SumInf_mono[of "{d * d' |d'. (p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w') \<and> (p'', w') \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}" 
-        "{d'. (p1, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (p2, [])}"]
-    monoid_rtranclp_trans by (force simp add: countable_monoid_star_all dissect_set)
-  also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p'',w') \<Midarrow>d'\<Rightarrow>\<^sup>* (p2,[])}"
-    using \<open>(p1, w) \<Midarrow> d \<Rightarrow>\<^sup>* (p'', w')\<close> by fastforce
-  also have "... \<le> d * \<^bold>\<Sigma>(p'',w') \<Rightarrow>\<^sup>* p2"
+  have "\<^bold>\<Sigma>\<langle> {(p\<^sub>1, w\<^sub>1)} \<Rightarrow>\<^sup>* {(p\<^sub>3,[])} \<rangle> \<le> \<^bold>\<Sum>{d * d'| d'. (p\<^sub>1, w\<^sub>1) \<Midarrow>d\<Rightarrow>\<^sup>* (p\<^sub>2,w\<^sub>2) \<and> (p\<^sub>2,w\<^sub>2) \<Midarrow>d'\<Rightarrow>\<^sup>* (p\<^sub>3,[])}"
+    using SumInf_mono[of "{d * d' |d'. (p\<^sub>1, w\<^sub>1) \<Midarrow> d \<Rightarrow>\<^sup>* (p\<^sub>2, w\<^sub>2) \<and> (p\<^sub>2, w\<^sub>2) \<Midarrow> d' \<Rightarrow>\<^sup>* (p\<^sub>3, [])}" 
+        "{d'. (p\<^sub>1, w\<^sub>1) \<Midarrow> d' \<Rightarrow>\<^sup>* (p\<^sub>3, [])}"] 
+    using monoid_rtranclp_trans unfolding weight_reach_set_def
+    by (force simp add: countable_monoid_star_all dissect_set)
+  also have "... \<le> \<^bold>\<Sum>{d * d'| d'. (p\<^sub>2,w\<^sub>2) \<Midarrow>d'\<Rightarrow>\<^sup>* (p\<^sub>3,[])}"
+    using \<open>(p\<^sub>1, w\<^sub>1) \<Midarrow> d \<Rightarrow>\<^sup>* (p\<^sub>2, w\<^sub>2)\<close> by fastforce
+  also have "... \<le> d * \<^bold>\<Sigma>\<langle> {(p\<^sub>2, w\<^sub>2)} \<Rightarrow>\<^sup>* {(p\<^sub>3,[])} \<rangle>"
+    unfolding weight_reach_set_def
     by (simp add: SumInf_left_distr countable_monoid_star_all dissect_set)
   also have "... \<le> d * d'"
-    using assms by (simp add: assms BoundedDioid.mult_isol)
-  finally 
-  show ?thesis
+    by (simp add: assms BoundedDioid.mult_isol)
+  finally show ?thesis
     by auto
 qed
 
 lemma push_seq_weight_trans_Cons:
-  assumes "(\<^bold>\<Sigma>(p, [\<gamma>])\<Rightarrow>\<^sup>*p\<^sub>i) \<le> d1"
-  assumes "(\<^bold>\<Sigma>(p\<^sub>i, w)\<Rightarrow>\<^sup>*p') \<le> d2"
-  shows "(\<^bold>\<Sigma>(p, \<gamma> # w)\<Rightarrow>\<^sup>*p') \<le> d1 * d2"
-  using assms push_seq_weight_trans[of p "[\<gamma>]" p\<^sub>i d1 w p' d2] by auto
+  assumes "\<^bold>\<Sigma>\<langle> {(p\<^sub>1, [\<gamma>])} \<Rightarrow>\<^sup>* {(p\<^sub>2,[])} \<rangle> \<le> d\<^sub>1"
+  assumes "\<^bold>\<Sigma>\<langle> {(p\<^sub>2, w)} \<Rightarrow>\<^sup>* {(p\<^sub>3,[])} \<rangle> \<le> d\<^sub>2"
+  shows "\<^bold>\<Sigma>\<langle> {(p\<^sub>1, \<gamma>#w)} \<Rightarrow>\<^sup>* {(p\<^sub>3,[])} \<rangle> \<le> d\<^sub>1 * d\<^sub>2"
+  using assms push_seq_weight_trans[of p\<^sub>1 "[\<gamma>]" p\<^sub>2 d\<^sub>1 w p\<^sub>3 d\<^sub>2] by auto
 
 lemma leq_ctr_loc_pred_weight_if_leq_all_paths:
   assumes "\<forall>d. c \<Midarrow> d \<Rightarrow>\<^sup>* (q, []) \<longrightarrow> X \<le> d"
-  shows "X \<le> (\<^bold>\<Sigma>c \<Rightarrow>\<^sup>* q)"
-  by (metis (mono_tags, lifting) Collect_mono_iff SumInf_bounded_if_set_bounded assms countable_l_c_c' 
-      countable_subset mem_Collect_eq)
+  shows "X \<le> \<^bold>\<Sigma>\<langle>{c} \<Rightarrow>\<^sup>* {(q,[])}\<rangle>"
+  unfolding weight_reach_set_def using assms
+  using SumInf_bounded_if_set_bounded[OF countable_star_set[of "{c}" "{(q,[])}"], of X]
+  by blast
 
 lemma leq_ctr_loc_preds_weight_if_leq_ctr_loc_pred_weight:
-  assumes "\<forall>q\<in>finals. X \<le> (\<^bold>\<Sigma>c \<Rightarrow>\<^sup>* q)"
-  shows "X \<le> (\<^bold>\<Sigma>\<^sub>sc \<Rightarrow>\<^sup>* finals)"
+  assumes "\<forall>q\<in>finals. X \<le> \<^bold>\<Sigma>\<langle>{c} \<Rightarrow>\<^sup>* {(q,[])}\<rangle>"
+  shows "X \<le> \<^bold>\<Sigma>\<langle>{c} \<Rightarrow>\<^sup>* {(q,[])|q. q\<in>finals}\<rangle>"
 proof -
   have "\<forall>l q. q \<in> finals \<longrightarrow> c \<Midarrow> l \<Rightarrow>\<^sup>* (q, []) \<longrightarrow> X \<le> l"
   proof -
     { 
       fix w :: 'weight and q :: 'ctr_loc
-      have "\<forall>p c w. p \<Midarrow> w \<Rightarrow>\<^sup>* (c, []) \<longrightarrow> \<^bold>\<Sum> {w. p \<Midarrow> w \<Rightarrow>\<^sup>* (c, [])} \<le> w"
+      have "\<forall>c q w. c \<Midarrow> w \<Rightarrow>\<^sup>* (q, []) \<longrightarrow> \<^bold>\<Sigma>\<langle> {c} \<Rightarrow>\<^sup>* {(q,[])} \<rangle> \<le> w"
         by (simp add: push_seq_weight_if_monoid_star_relp)
       then have "c \<Midarrow> w \<Rightarrow>\<^sup>* (q, []) \<longrightarrow> q \<in> finals \<longrightarrow> X \<le> w"
-        using assms dual_order.trans by blast 
+        using assms dual_order.trans by blast
     }
     then show ?thesis
       by blast
   qed
   then show ?thesis
-    by (smt (verit, best) Collect_mono_iff SumInf_bounded_if_set_bounded countable_l_c_c' countable_subset mem_Collect_eq)
+    unfolding weight_reach_set_def
+    using SumInf_bounded_if_set_bounded[OF countable_star_set[of "{c}" "{(q,[])|q. q\<in>finals}"], of X]
+    by blast
 qed
 
 lemma ctr_loc_preds_weight_is_ctr_loc_pred_weight:
-  "(\<^bold>\<Sigma>\<^sub>s(p,v)\<Rightarrow>\<^sup>*finals) = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
+  "\<^bold>\<Sigma>\<langle>{(p,w)} \<Rightarrow>\<^sup>* {(q,[])|q. q\<in>finals}\<rangle> = \<^bold>\<Sum>{\<^bold>\<Sigma>\<langle>{(p,w)} \<Rightarrow>\<^sup>* {(q,[])}\<rangle> |q. q \<in> finals}"
 proof -
-  have "(\<^bold>\<Sigma>\<^sub>s(p,v)\<Rightarrow>\<^sup>*finals) = \<^bold>\<Sum> {d' |d' q. q \<in> finals \<and> (p,v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])}"
-    by auto
+  have "\<^bold>\<Sigma>\<langle>{(p,w)} \<Rightarrow>\<^sup>* {(q,[])|q. q\<in>finals}\<rangle> = \<^bold>\<Sum>{d' |d' q. (p,w) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, []) \<and> q \<in> finals}"
+    unfolding weight_reach_set_def by auto
   moreover
-  have "... = \<^bold>\<Sum> {uu. \<exists>x y. uu = x \<and> (p, v) \<Midarrow> x \<Rightarrow>\<^sup>* (y, []) \<and> y \<in> finals}"
+  have "... = \<^bold>\<Sum> {uu. \<exists>x y. uu = x \<and> (p, w) \<Midarrow> x \<Rightarrow>\<^sup>* (y, []) \<and> y \<in> finals}"
     by metis
   moreover
-  have "... = \<^bold>\<Sum> {\<^bold>\<Sum> {x |x. (p, v) \<Midarrow> x \<Rightarrow>\<^sup>* (y, [])} |y. y \<in> finals}"
-    using SumInf_of_SumInf[of "\<lambda>q. q \<in> finals" "%d' q. (p, v) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])" "\<lambda>d' q. d'"]
+  have "... = \<^bold>\<Sum>{\<^bold>\<Sigma>\<langle>{(p,w)} \<Rightarrow>\<^sup>* {(q,[])}\<rangle> | q. q \<in> finals}"
+    unfolding weight_reach_set_def 
+    using SumInf_of_SumInf[of "\<lambda>q. q \<in> finals" "\<lambda>d' q. (p, w) \<Midarrow> d' \<Rightarrow>\<^sup>* (q, [])" "\<lambda>d' q. d'"]
     by (auto simp add: countable_star_f_p9)
-  moreover
-  have "... = \<^bold>\<Sum> {\<^bold>\<Sum>{d'. (p,v) \<Midarrow>d'\<Rightarrow>\<^sup>* (q,[])} | q. q \<in> finals}"
-    by auto
-  moreover
-  have "... = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
-    by auto
   ultimately show ?thesis
     by auto
 qed
@@ -712,7 +698,7 @@ qed
 lemma sound_elim2:
   assumes "sound A"
   assumes "(p, (w,d), p') \<in> \<lbrakk>A\<rbrakk>\<^sup>\<odot>"
-  shows "d \<ge> \<^bold>\<Sigma>(p,w) \<Rightarrow>\<^sup>* p'"
+  shows "d \<ge> \<^bold>\<Sigma>\<langle> {(p,w)} \<Rightarrow>\<^sup>* {(p',[])} \<rangle>"
   using assms(2) 
 proof (induction w arbitrary: d p)
   case Nil
@@ -720,7 +706,8 @@ proof (induction w arbitrary: d p)
     by (simp add: mstar_wts_empty_one)
   have "(p, []) \<Midarrow>1\<Rightarrow>\<^sup>* (p', [])"
     using Nil monoid_star_pop by fastforce
-  have "d \<ge> \<^bold>\<Sigma>(p, []) \<Rightarrow>\<^sup>* p'" 
+  have "d \<ge> \<^bold>\<Sigma>\<langle> {(p,[])} \<Rightarrow>\<^sup>* {(p',[])} \<rangle>"
+    unfolding weight_reach_set_def
     using countable_SumInf_elem[of "{d'. (p, []) \<Midarrow> d' \<Rightarrow>\<^sup>* (p', [])}" d]
           \<open>(p, []) \<Midarrow> 1 \<Rightarrow>\<^sup>* (p', [])\<close> \<open>d = 1\<close> 
     by (simp add: countable_monoid_star_all dissect_set)
@@ -738,12 +725,12 @@ next
     "(pi, (w, d2), p') \<in> \<lbrakk>A\<rbrakk>\<^sup>\<odot>"
     "(p, ([\<gamma>], d1), pi) \<in> \<lbrakk>A\<rbrakk>"
     by blast
-  then have d2_sound: "d2 \<ge> \<^bold>\<Sigma>(pi, w) \<Rightarrow>\<^sup>* p'"
+  then have d2_sound: "d2 \<ge> \<^bold>\<Sigma>\<langle> {(pi,w)} \<Rightarrow>\<^sup>* {(p',[])} \<rangle>"
     using Cons(1)[of pi d2] by auto
 
-  have "d1 \<ge> (\<^bold>\<Sigma> (p, [\<gamma>]) \<Rightarrow>\<^sup>* pi)"
+  have "d1 \<ge> \<^bold>\<Sigma>\<langle> {(p,[\<gamma>])} \<Rightarrow>\<^sup>* {(pi,[])} \<rangle>"
     using assms(1) pi_d1_d2_p(3) sound_def by blast
-  then have "(\<^bold>\<Sigma> (p, \<gamma> # w) \<Rightarrow>\<^sup>* p') \<le>  d1 * d2"
+  then have "\<^bold>\<Sigma>\<langle> {(p, \<gamma> # w)} \<Rightarrow>\<^sup>* {(p',[])} \<rangle> \<le>  d1 * d2"
     using d2_sound push_seq_weight_trans_Cons by auto
   also have "... = d" 
     using \<open>d = d1 * d2\<close> by fast 
@@ -751,13 +738,13 @@ next
 qed
 
 lemma sound_def2:
-  "sound A \<longleftrightarrow> (\<forall>p p' w d. (p, (w,d), p') \<in> \<lbrakk>A\<rbrakk>\<^sup>\<odot> \<longrightarrow> d \<ge> \<^bold>\<Sigma>(p,w) \<Rightarrow>\<^sup>* p')"
+  "sound A \<longleftrightarrow> (\<forall>p p' w d. (p, (w,d), p') \<in> \<lbrakk>A\<rbrakk>\<^sup>\<odot> \<longrightarrow> d \<ge> \<^bold>\<Sigma>\<langle> {(p,w)} \<Rightarrow>\<^sup>* {(p',[])} \<rangle>)"
 proof
   assume "sound A"
-  then show "\<forall>p p' w d. (p, (w, d), p') \<in> \<lbrakk>A\<rbrakk>\<^sup>\<odot> \<longrightarrow> (\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p') \<le> d"
+  then show "\<forall>p p' w d. (p, (w, d), p') \<in> \<lbrakk>A\<rbrakk>\<^sup>\<odot> \<longrightarrow> \<^bold>\<Sigma>\<langle> {(p,w)} \<Rightarrow>\<^sup>* {(p',[])} \<rangle> \<le> d"
     using sound_elim2 by blast
 next
-  assume "\<forall>p p' w d. (p, (w, d), p') \<in> \<lbrakk>A\<rbrakk>\<^sup>\<odot> \<longrightarrow> (\<^bold>\<Sigma>(p, w)\<Rightarrow>\<^sup>*p') \<le> d"
+  assume "\<forall>p p' w d. (p, (w, d), p') \<in> \<lbrakk>A\<rbrakk>\<^sup>\<odot> \<longrightarrow> \<^bold>\<Sigma>\<langle> {(p,w)} \<Rightarrow>\<^sup>* {(p',[])} \<rangle> \<le> d"
   then show "sound A"
     using monoid_star_intros_step unfolding sound_def by blast
 qed
@@ -778,14 +765,14 @@ proof -
   proof (rule sound_intro)
     fix p1 p2 \<mu> D
     assume p1_\<mu>_l_p2: "(p1, ([\<mu>], D), p2) \<in> \<lbrakk>A'\<rbrakk>"
-    show "D \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
+    show "D \<ge> \<^bold>\<Sigma>\<langle> {(p1, [\<mu>])} \<Rightarrow>\<^sup>* {(p2,[])} \<rangle>"
     proof (cases "p1 = p' \<and> \<mu> = \<gamma>' \<and> p2 = q")
       case True
       then have True': "p1 = p'" "\<mu> = \<gamma>'" "p2 = q"
         by auto
       have l_eql: "D = d'' + d * d'"
         using p1_\<mu>_l_p2 unfolding ps(4) True' unfolding wts_to_monoidLTS_def by auto
-      have d''_geq: "d'' \<ge> \<^bold>\<Sigma> (p1,[\<mu>]) \<Rightarrow>\<^sup>* p2"
+      have d''_geq: "d'' \<ge> \<^bold>\<Sigma>\<langle> {(p1, [\<mu>])} \<Rightarrow>\<^sup>* {(p2,[])} \<rangle>"
         using ps(5) assms(1) True unfolding sound_def wts_to_monoidLTS_def by force
       have p1_to_p'': "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow> (p'', lbl w')"
         using ps(1) True step_relp_def2 by auto
@@ -796,23 +783,23 @@ proof -
         assume "w' = pop"
         from p1_to_p'' have "(p1, [\<mu>]) \<Midarrow>d * d'\<Rightarrow> (p2,[])"
           using \<open>d' = 1\<close> \<open>w' = pop\<close> \<open>p2 = p''\<close> by auto
-        then have "d * d' \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
+        then have "d * d' \<ge> \<^bold>\<Sigma>\<langle> {(p1, [\<mu>])} \<Rightarrow>\<^sup>* {(p2,[])} \<rangle>"
           using push_seq_weight_if_l_step_relp[of p1 "[\<mu>]" "d * d'" p2] by auto
-        then show "D \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
-          using d''_geq l_eql by auto
+        then show "D \<ge> \<^bold>\<Sigma>\<langle> {(p1, [\<mu>])} \<Rightarrow>\<^sup>* {(p2,[])} \<rangle>"
+          using d''_geq l_eql unfolding weight_reach_set_def by auto
       next
         fix \<mu>'
         assume "A $ (p'', \<mu>', p2) = d'"
         assume w'_swap: "w' = swap \<mu>'"
         from ps(3) have "(p'', ([\<mu>'],d'), p2) \<in> \<lbrakk>A\<rbrakk>\<^sup>\<odot>"
           using True'(3) \<open>w' = swap \<mu>'\<close> by force
-        then have p''_to_p2: "d' \<ge> \<^bold>\<Sigma> (p'',[\<mu>']) \<Rightarrow>\<^sup>* p2"
+        then have p''_to_p2: "d' \<ge> \<^bold>\<Sigma>\<langle> {(p'',[\<mu>'])} \<Rightarrow>\<^sup>* {(p2,[])} \<rangle>"
           using assms(1) sound_elim2 by force
         from p1_to_p'' have "(p1, [\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>'])"
           unfolding True' w'_swap using monoid_rtranclp.monoid_rtrancl_into_rtrancl by fastforce
-        then have "(\<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2) \<le> d * d'"
+        then have "\<^bold>\<Sigma>\<langle> {(p1, [\<mu>])} \<Rightarrow>\<^sup>* {(p2,[])} \<rangle> \<le> d * d'"
           using p''_to_p2 monoid_star_relp_push_seq_weight_trans by auto
-        then show "D \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
+        then show "D \<ge> \<^bold>\<Sigma>\<langle> {(p1, [\<mu>])} \<Rightarrow>\<^sup>* {(p2,[])} \<rangle>"
           using d''_geq l_eql by auto
       next
         fix \<mu>' \<mu>'' pi
@@ -823,18 +810,19 @@ proof -
         have "d' = d1 * d2"
           using d1_def d2_def trans_weights by auto
 
-        from p1_to_p'' have "(p1,[\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>',\<mu>''])"
+        from p1_to_p'' have A:"(p1,[\<mu>]) \<Midarrow>d\<Rightarrow>\<^sup>* (p'',[\<mu>',\<mu>''])"
           using \<open>w' = push \<mu>' \<mu>''\<close> monoid_rtranclp.monoid_rtrancl_into_rtrancl by fastforce
         moreover
-        have "d1 \<ge> \<^bold>\<Sigma>(p'',[\<mu>']) \<Rightarrow>\<^sup>* pi"
+        have "d1 \<ge> \<^bold>\<Sigma>\<langle> {(p'',[\<mu>'])} \<Rightarrow>\<^sup>* {(pi,[])} \<rangle>"
           using d1_def assms(1) sound_def by (force simp add: wts_to_monoidLTS_def)
         moreover
-        have "d2 \<ge> \<^bold>\<Sigma>(pi,[\<mu>'']) \<Rightarrow>\<^sup>* p2"
+        have "d2 \<ge> \<^bold>\<Sigma>\<langle> {(pi,[\<mu>''])} \<Rightarrow>\<^sup>* {(p2,[])} \<rangle>"
           using d2_def assms(1) sound_def by (force simp add: wts_to_monoidLTS_def)
         ultimately
-        have "d * d1 * d2 \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
-          by (simp add: mult.assoc push_seq_weight_trans_push monoid_star_relp_push_seq_weight_trans)
-        then show "D \<ge> \<^bold>\<Sigma> (p1, [\<mu>]) \<Rightarrow>\<^sup>* p2"
+        have "d * d1 * d2 \<ge> \<^bold>\<Sigma>\<langle> {(p1, [\<mu>])} \<Rightarrow>\<^sup>* {(p2,[])} \<rangle>"
+          using push_seq_weight_trans[of p'' "[\<mu>']" pi d1 "[\<mu>'']" p2 d2]
+          by (simp add: mult.assoc monoid_star_relp_push_seq_weight_trans)
+        then show "D \<ge> \<^bold>\<Sigma>\<langle> {(p1, [\<mu>])} \<Rightarrow>\<^sup>* {(p2,[])} \<rangle>"
           using d''_geq l_eql by (simp add: \<open>d' = d1 * d2\<close> mult.assoc) 
       qed
     next
@@ -902,64 +890,46 @@ context fixes finals :: "'ctr_loc::finite set" begin
 abbreviation language'' ("\<L>(_)" [1000] 1000) where "language'' \<equiv> language' finals" 
 
 lemma weight_pre_star_K0_is_pred_weight:
-   "weight_pre_star \<L>(K$ 0) (p, w) = (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
+   "weight_pre_star \<L>(K$ 0) (p, w) = \<^bold>\<Sigma>\<langle>{(p,w)} \<Rightarrow>\<^sup>* {(q,[])|q. q\<in>finals}\<rangle>"
 proof -
-  have count: "countable {uu. \<exists>q. q \<in> finals \<and> (p, w) \<Midarrow> uu \<Rightarrow>\<^sup>* (q, [])}"
+  have count: "countable {l * 1 |l q v. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v) \<and> q \<in> finals \<and> v = []}"
     using Collect_mono_iff countable_l_c_c' countable_subset by fastforce
-
   have "weight_pre_star \<L>(K$ 0) (p, w) = \<^bold>\<Sum> {l * \<L>(K$ 0) c' |l c'. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* c'}"
     unfolding weight_pre_star_def ..
   also have "... = \<^bold>\<Sum> {l * \<L>(K$ 0) (q,v) |l q v. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q,v)}"
     by auto
   also have "... = \<^bold>\<Sum> {l * (if q \<in> finals \<and> v = [] then 1 else 0) |l q v. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)}"
     unfolding language_K0_iff by auto
-  also have "... = \<^bold>\<Sum> ({l * 1 |l q v. q \<in> finals \<and> v = [] \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)} \<union>
-                       {l * 0 |l q v. \<not>(q \<in> finals \<and> v = []) \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)})"
-    apply -
-    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
-    apply auto
-    done
-  also have "... = \<^bold>\<Sum> ({l * 1 |l q v. q \<in> finals \<and> v = [] \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)} \<union>
-                       {0 |l q v. \<not>(q \<in> finals \<and> v = []) \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)})"
-    apply -
-    apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
-    apply auto
-    done
-  also have "... = \<^bold>\<Sum> ({l * 1 |l q v. q \<in> finals \<and> v = [] \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)})"
-    apply (cases "\<exists>l q v. \<not>(q \<in> finals \<and> v = []) \<and> (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v)")
-    subgoal
-      using SumInf_insert_0[OF count]
-      apply auto
-      done
-    subgoal
-      apply auto
-      apply (smt (verit, best) Collect_empty_eq sup_bot.right_neutral)
-      done
-    done
-  also have "... = (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
-    by auto
+  also have "... = \<^bold>\<Sum> ({l * 1 |l q v. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v) \<and> q \<in> finals \<and> v = []} \<union>
+                       {0 |l q v. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v) \<and> \<not>(q \<in> finals \<and> v = [])})"
+    by (rule arg_cong[of _ _ "\<^bold>\<Sum>"]) auto
+  also have "... = \<^bold>\<Sum> ({l * 1 |l q v. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v) \<and> q \<in> finals \<and> v = []})"
+    using SumInf_union_0[OF count, of "{0 |l q v. (p, w) \<Midarrow> l \<Rightarrow>\<^sup>* (q, v) \<and> \<not>(q \<in> finals \<and> v = [])}"]
+    by blast
+  also have "... =  \<^bold>\<Sigma>\<langle>{(p,w)} \<Rightarrow>\<^sup>* {(q,[])|q. q\<in>finals}\<rangle>"
+    unfolding weight_reach_set_def by auto
   finally show ?thesis
     by blast
 qed
 
 lemma sound_language_geq_pred_weight:
   assumes soundA': "sound A'"
-  shows "\<L>(A') pv \<ge> (\<^bold>\<Sigma>\<^sub>spv\<Rightarrow>\<^sup>*finals)"
+  shows "\<L>(A') pv \<ge> \<^bold>\<Sigma>\<langle>{pv} \<Rightarrow>\<^sup>* {(q,[])|q. q\<in>finals}\<rangle>"
 proof -
   obtain p v where pv_split: "pv = (p, v)"
     by (cases pv)   
-  have "(\<^bold>\<Sigma>\<^sub>s(p,v)\<Rightarrow>\<^sup>*finals) = \<^bold>\<Sum>{(\<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q) | q. q \<in> finals}"
-    using ctr_loc_preds_weight_is_ctr_loc_pred_weight by blast
-  also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sigma>(p,v) \<Rightarrow>\<^sup>* q |d q. q \<in> finals \<and> (p, (v, d), q) \<in> \<lbrakk>A'\<rbrakk>\<^sup>\<odot>}" 
-    using SumInf_mono[of "{pvq. \<exists>d q. pvq = (\<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q) \<and> q \<in> finals \<and> (p, (v, d), q) \<in> \<lbrakk>A'\<rbrakk>\<^sup>\<odot>}" 
-        "{\<^bold>\<Sigma>(p, v)\<Rightarrow>\<^sup>*q |q. q \<in> finals}"] by (force simp add: countable_monoid_rtrancl_wts_to_monoidLTS_all dissect_set)
+  have "\<^bold>\<Sigma>\<langle>{(p,v)} \<Rightarrow>\<^sup>* {(q,[])|q. q\<in>finals}\<rangle> = \<^bold>\<Sum>{\<^bold>\<Sigma>\<langle>{(p,v)} \<Rightarrow>\<^sup>* {(q,[])}\<rangle> | q. q \<in> finals}"
+    using ctr_loc_preds_weight_is_ctr_loc_pred_weight[of p v finals] by blast
+  also have "... \<le> \<^bold>\<Sum>{\<^bold>\<Sigma>\<langle>{(p,v)} \<Rightarrow>\<^sup>* {(q,[])}\<rangle> |d q. q \<in> finals \<and> (p, (v, d), q) \<in> \<lbrakk>A'\<rbrakk>\<^sup>\<odot>}" 
+    using SumInf_mono[of "{pvq. \<exists>d q. pvq = \<^bold>\<Sigma>\<langle>{(p,v)} \<Rightarrow>\<^sup>* {(q,[])}\<rangle> \<and> q \<in> finals \<and> (p, (v, d), q) \<in> \<lbrakk>A'\<rbrakk>\<^sup>\<odot>}" 
+        "{\<^bold>\<Sigma>\<langle>{(p,v)} \<Rightarrow>\<^sup>* {(q,[])}\<rangle> |q. q \<in> finals}"] by (force simp add: countable_monoid_rtrancl_wts_to_monoidLTS_all dissect_set)
   also have "... \<le> \<^bold>\<Sum>{d |d q. q \<in> finals \<and> (p, (v, d), q) \<in> \<lbrakk>A'\<rbrakk>\<^sup>\<odot>}" 
     using SumInf_mono_wrt_img_of_set[of 
         "\<lambda>(d, q). q \<in> finals \<and> (p, (v, d), q) \<in> \<lbrakk>A'\<rbrakk>\<^sup>\<odot>"
-        "\<lambda>(d, q). \<^bold>\<Sigma> (p,v) \<Rightarrow>\<^sup>* q"
+        "\<lambda>(d, q). \<^bold>\<Sigma>\<langle>{(p,v)} \<Rightarrow>\<^sup>* {(q,[])}\<rangle>"
         "\<lambda>(d, q). d"
-        ]
-    using soundA' sound_def2 countable_monoid_rtrancl_wts_to_monoidLTS 
+        , simplified]
+    using soundA' sound_def2 countable_monoid_rtrancl_wts_to_monoidLTS unfolding weight_reach_set_def
     by (force simp add: countable_monoid_rtrancl_wts_to_monoidLTS_all dissect_set)
   also have "... = \<L>(A') (p,v)"
     unfolding language_def by (simp split: prod.split)
@@ -969,13 +939,13 @@ qed
 
 lemma rtranclp_pre_star_geq_pred_weight:
   assumes "pre_star_rule\<^sup>*\<^sup>* (K$ 0) A'"
-  shows "\<L>(A') (p,w) \<ge> (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
+  shows "\<L>(A') (p,w) \<ge> \<^bold>\<Sigma>\<langle>{(p,w)} \<Rightarrow>\<^sup>* {(q,[])|q. q\<in>finals}\<rangle>"
   using pre_star_rule_rtranclp_sound[OF sound_empty, of A'] assms sound_language_geq_pred_weight 
   by presburger 
 
 lemma saturation_pre_star_geq_pred_weight:
   assumes "saturation pre_star_rule (K$ 0) A"
-  shows "\<L>(A) (p,w) \<ge> (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
+  shows "\<L>(A) (p,w) \<ge> \<^bold>\<Sigma>\<langle>{(p,w)} \<Rightarrow>\<^sup>* {(q,[])|q. q\<in>finals}\<rangle>"
   using assms rtranclp_pre_star_geq_pred_weight unfolding saturation_def by auto
 
 lemma saturated_pre_star_rule_transition:
@@ -1090,7 +1060,7 @@ lemma language_if_saturated_monoid_star_relp_final:
 lemma saturated_pre_star_leq_ctr_loc_pred_weight:
   assumes "saturated pre_star_rule A"
   assumes "q \<in> finals"
-  shows "\<L>(A) c \<le> \<^bold>\<Sigma>c\<Rightarrow>\<^sup>*q"
+  shows "\<L>(A) c \<le> \<^bold>\<Sigma>\<langle>{c} \<Rightarrow>\<^sup>* {(q,[])}\<rangle>"
 proof -
   define X where "X = \<L>(A) c"
   show ?thesis
@@ -1101,23 +1071,25 @@ qed
 
 lemma saturated_pre_star_leq_pred_weight:
   assumes "saturated pre_star_rule A"
-  shows "\<L>(A) c \<le> (\<^bold>\<Sigma>\<^sub>sc\<Rightarrow>\<^sup>*finals)"
+  shows "\<L>(A) c \<le> \<^bold>\<Sigma>\<langle>{c} \<Rightarrow>\<^sup>* {(q,[])|q. q\<in>finals}\<rangle>"
   using saturated_pre_star_leq_ctr_loc_pred_weight[OF assms, of _ c]
-  using leq_ctr_loc_preds_weight_if_leq_ctr_loc_pred_weight by auto 
+  using leq_ctr_loc_preds_weight_if_leq_ctr_loc_pred_weight
+  
+  by auto
 
 lemma saturation_pre_star_leq_pred_weight':
   assumes "saturation pre_star_rule A A'"
-  shows "\<L>(A') c \<le> (\<^bold>\<Sigma>\<^sub>sc\<Rightarrow>\<^sup>*finals)"
+  shows "\<L>(A') c \<le> \<^bold>\<Sigma>\<langle>{c} \<Rightarrow>\<^sup>* {(q,[])|q. q\<in>finals}\<rangle>"
   by (metis (no_types, lifting) assms saturated_pre_star_leq_pred_weight saturation_def)
 
 lemma saturation_pre_star_leq_pred_weight:
   assumes "saturation pre_star_rule (K$ 0) A"
-  shows "\<L>(A) c \<le> (\<^bold>\<Sigma>\<^sub>sc\<Rightarrow>\<^sup>*finals)"
+  shows "\<L>(A) c \<le> \<^bold>\<Sigma>\<langle>{c} \<Rightarrow>\<^sup>* {(q,[])|q. q\<in>finals}\<rangle>"
   by (metis (no_types, lifting) assms saturated_pre_star_leq_pred_weight saturation_def)
 
 theorem correctness:
   assumes "saturation pre_star_rule (K$ 0) A"
-  shows "\<L>(A) (p,w) = (\<^bold>\<Sigma>\<^sub>s(p,w)\<Rightarrow>\<^sup>*finals)"
+  shows "\<L>(A) (p,w) = \<^bold>\<Sigma>\<langle>{(p,w)} \<Rightarrow>\<^sup>* {(q,[])|q. q\<in>finals}\<rangle>"
   using saturation_pre_star_leq_pred_weight[of A "(p,w)", OF assms]
     saturation_pre_star_geq_pred_weight[OF assms, of p w] by order 
 
@@ -2546,8 +2518,9 @@ context
 begin
 interpretation finite_WPDS \<Delta> using finite_WPDS_def finite_rules by auto
 interpretation countable_dioidLTS transition_rel apply standard using countable_transition_rel .
+notation weight_reach_set ("\<^bold>\<Sigma>\<langle>_\<Rightarrow>\<^sup>*_\<rangle>" [99,99] 100)
 
-lemma pre_star_correctness_full: 
+theorem pre_star_correctness_full: 
   fixes ts :: "(('ctr_loc, 'noninit::enum) state, 'label) transition set"
   fixes ts' :: "(('ctr_loc, 'noninit) state, 'label) transition set"
   assumes "\<And>p \<gamma> q. is_Init q \<Longrightarrow> (p, \<gamma>, q) \<notin> ts'"
@@ -2555,7 +2528,7 @@ lemma pre_star_correctness_full:
   assumes "prod_ts = (ts_to_wts ts) \<inter>\<^sub>w ts'\<^sub>s\<^sub>a\<^sub>t"
   assumes "prod_finals = finals\<times>finals'"
   shows "\<^bold>\<Sum>{d |p w d. d = dioidLTS.language prod_ts prod_finals ((p,p),w) \<and> is_Init p}
-       = weight_reach_set (P_Automaton.lang_aut ts Init finals) (P_Automaton.lang_aut ts' Init finals')" (is "?A = ?B")
+       = \<^bold>\<Sigma>\<langle>P_Automaton.lang_aut ts Init finals \<Rightarrow>\<^sup>* P_Automaton.lang_aut ts' Init finals'\<rangle>" (is "?A = ?B")
 proof -
   have c0:"\<And>y. is_Init (fst y) \<Longrightarrow> countable {(x, y) |x. fst (snd x) \<in> finals \<and> snd (snd x) \<in> finals' \<and> ((fst y, fst y), (snd y, fst x), fst (snd x), snd (snd x)) \<in> \<lbrakk>(ts_to_wts ts)\<inter>\<^sub>wts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>}"
   proof -
@@ -2641,7 +2614,7 @@ proof -
       apply (rule exI[of _ "Init p"])
       by auto
     done
-  moreover have "... = \<^bold>\<Sum> {d * d'| p d q d' q' w. q \<in> finals \<and> (Init p, (w, d), q) \<in> \<lbrakk>ts_to_wts ts\<rbrakk>\<^sup>\<odot> \<and> q' \<in> finals' \<and> (Init p, (w, d'), q') \<in> \<lbrakk>ts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>}"
+  moreover have "... = \<^bold>\<Sum>{d * d'| p d q d' q' w. q \<in> finals \<and> (Init p, (w, d), q) \<in> \<lbrakk>ts_to_wts ts\<rbrakk>\<^sup>\<odot> \<and> q' \<in> finals' \<and> (Init p, (w, d'), q') \<in> \<lbrakk>ts'\<^sub>s\<^sub>a\<^sub>t\<rbrakk>\<^sup>\<odot>}"
     apply (rule arg_cong[of _ _ "\<^bold>\<Sum>"])
     using w_inters_sound_and_complete[OF binary_aut_ts_to_wts[of ts], of _ _ _ _ _ _ ts'\<^sub>s\<^sub>a\<^sub>t]
     by fastforce
