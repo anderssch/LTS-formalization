@@ -2,7 +2,7 @@ theory Reaching_Definitions imports Bit_Vector_Framework begin
 
 \<comment> \<open>We encode the Reaching Definitions analysis into Datalog. First we define the analysis, then
     we encode the analysis directly into Datalog and prove the encoding correct. Hereafter we
-    encode it into Datalog again, but this time using our Bit-Vector Framework locale. We also prove
+    encode it into Datalog again, but this time using our Bit-Vector Framework locale. We also prove 
     this encoding correct. This latter encoding is described in our SAC 2024 paper. \<close>
 
 
@@ -63,16 +63,13 @@ fun Cst\<^sub>R\<^sub>D\<^sub>N_Q :: "'n option \<Rightarrow> (RD_var, ('n, 'v) 
 abbreviation Cst\<^sub>R\<^sub>D\<^sub>V :: "'v \<Rightarrow> (RD_var, ('n, 'v) RD_elem) id" where
   "Cst\<^sub>R\<^sub>D\<^sub>V v == Cst (RD_Var v)"
 
-abbreviation RD_Cls :: "(RD_var, ('n, 'v) RD_elem) id list \<Rightarrow> 
-                        (RD_pred, RD_var, ('n, 'v) RD_elem) rh list \<Rightarrow> 
-                        (RD_pred, RD_var, ('n, 'v) RD_elem) clause" ("RD\<langle>_\<rangle> :- _ .") where 
+abbreviation RD_Cls :: "(RD_var, ('n, 'v) RD_elem) id list \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) rh list \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) clause" ("RD\<langle>_\<rangle> :- _ .") where 
   "RD\<langle>args\<rangle> :- ls. \<equiv> Cls the_RD args ls"
 
 abbreviation VAR_Cls :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) clause" ("VAR\<langle>_\<rangle> :-.") where
   "VAR\<langle>x\<rangle> :-. == Cls the_VAR [Cst\<^sub>R\<^sub>D\<^sub>V x] []"
 
-abbreviation RD_lh :: "(RD_var, ('n, 'v) RD_elem) id list \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) lh" 
-  ("RD\<langle>_\<rangle>.") where 
+abbreviation RD_lh :: "(RD_var, ('n, 'v) RD_elem) id list \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) lh" ("RD\<langle>_\<rangle>.") where 
   "RD\<langle>args\<rangle>. \<equiv> (the_RD, args)"
 
 abbreviation VAR_lh :: "'v \<Rightarrow> (RD_pred, RD_var, ('n, 'v) RD_elem) lh" ("VAR\<langle>_\<rangle>.") where 
@@ -135,8 +132,7 @@ definition var_contraints :: "(RD_pred, RD_var, ('n,'v) RD_elem) clause set" whe
 
 type_synonym ('n,'v) quadruple = "'n *'v * 'n option * 'n"
 
-fun summarizes_RD :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('n,'v action) program_graph \<Rightarrow> bool" 
-  where
+fun summarizes_RD :: "(RD_pred,('n,'v) RD_elem) pred_val \<Rightarrow> ('n,'v action) program_graph \<Rightarrow> bool" where
   "summarizes_RD \<rho> (es, start, end) =
     (\<forall>\<pi> x q1 q2.
        \<pi> \<in> LTS.path_with_word_from es start \<longrightarrow>
@@ -174,7 +170,7 @@ lemma not_last_def_transition:
 proof -
   obtain y where y_p: "(x, q1, q2) = def_var (transition_list (ss @ [s], w) @ [(s, \<alpha>, s')]) y start"
     by (metis (no_types, lifting) assms(1) assms(3) def_path_def imageE transition_list_reversed_simp)
-  have "(x, q1, q2) \<in> range (\<lambda>x. def_var (transition_list (ss @ [s], w)) x start)"
+  have " (x, q1, q2) \<in> range (\<lambda>x. def_var (transition_list (ss @ [s], w)) x start)"
   proof (cases "y = x")
     case True
     then show ?thesis 
@@ -283,16 +279,11 @@ next
         unfolding ana_RD.simps by force
       from this False have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N s', \<u>, \<v>, \<w>]\<rangle> :- [RD [Cst\<^sub>R\<^sub>D\<^sub>N s, \<u>, \<v>, \<w>], \<u> \<^bold>\<noteq> Cst\<^sub>R\<^sub>D\<^sub>V y] ."
         by (meson "2.prems"(3) UnCI solves_program_def)
-      moreover have 
-        "(RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N s', \<u>, \<v>, \<w>]\<rangle> :-
+      moreover have "(RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N s', \<u>, \<v>, \<w>]\<rangle> :-
           [
             RD[Cst\<^sub>R\<^sub>D\<^sub>N s, \<u>, \<v>, \<w>],
             \<u> \<^bold>\<noteq> (Cst\<^sub>R\<^sub>D\<^sub>V y)
-          ].) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<mu> = 
-          RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N s', Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]\<rangle> :- 
-          [
-            RD [Cst\<^sub>R\<^sub>D\<^sub>N s,  Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2], 
-            Cst\<^sub>R\<^sub>D\<^sub>V x \<^bold>\<noteq> Cst\<^sub>R\<^sub>D\<^sub>V y] ."
+          ].) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<mu> = RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N s', Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]\<rangle> :- [RD [Cst\<^sub>R\<^sub>D\<^sub>N s,  Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2], Cst\<^sub>R\<^sub>D\<^sub>V x \<^bold>\<noteq> Cst\<^sub>R\<^sub>D\<^sub>V y] ."
         unfolding \<mu>_def by auto
       ultimately
       have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N s', Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]\<rangle>
@@ -319,8 +310,7 @@ next
       then have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N s', \<u>, \<v>, \<w>]\<rangle> :- [RD [Cst\<^sub>R\<^sub>D\<^sub>N s, \<u>, \<v>, \<w>]] ."
         by (meson "2.prems"(3) UnCI solves_program_def)
       moreover have "(RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N s', \<u>, \<v>, \<w>]\<rangle> :- [RD[Cst\<^sub>R\<^sub>D\<^sub>N s, \<u>, \<v>, \<w>]].) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<mu> =
-                      RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N s', Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]\<rangle> :- 
-                        [RD[Cst\<^sub>R\<^sub>D\<^sub>N s, Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]]."
+                     RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N s', Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]\<rangle> :- [RD[Cst\<^sub>R\<^sub>D\<^sub>N s, Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]]."
         unfolding \<mu>_def by auto
       ultimately have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N s', Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]\<rangle> 
                                :- [RD [Cst\<^sub>R\<^sub>D\<^sub>N s, Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]] ."
@@ -343,8 +333,7 @@ next
         by (meson "2.prems"(3) UnCI solves_program_def)
       moreover
       have "(RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N s', \<u>, \<v>, \<w>]\<rangle> :- [RD [Cst\<^sub>R\<^sub>D\<^sub>N s, \<u>, \<v>, \<w>]] .) \<cdot>\<^sub>c\<^sub>l\<^sub>s \<mu> =
-            RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N s', Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]\<rangle>  :- 
-              [RD [Cst\<^sub>R\<^sub>D\<^sub>N s, Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]]."
+            RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N s', Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]\<rangle>  :- [RD [Cst\<^sub>R\<^sub>D\<^sub>N s, Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]]."
         unfolding \<mu>_def by auto
       ultimately 
       have "\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s RD\<langle>[Cst\<^sub>R\<^sub>D\<^sub>N s', Cst\<^sub>R\<^sub>D\<^sub>V x, Cst\<^sub>R\<^sub>D\<^sub>N_Q q1, Cst\<^sub>R\<^sub>D\<^sub>N q2]\<rangle> 
@@ -428,8 +417,7 @@ proof -
   proof (cases \<alpha>)
     case (Asg y exp)
     then show ?thesis
-      by (metis (no_types, lifting) DiffI Un_iff assms(1) x_not_def def_action.simps(1) def_var_x 
-          fw_may.S_hat_def kill_set_RD.simps(1) mem_Sigma_iff old.prod.case prod.collapse)
+      by (metis (no_types, lifting) DiffI Un_iff assms(1) x_not_def def_action.simps(1) def_var_x fw_may.S_hat_def kill_set_RD.simps(1) mem_Sigma_iff old.prod.case prod.collapse)
   next
     case (Bool b)
     then show ?thesis
@@ -456,8 +444,7 @@ next
     then have "def_var (\<pi> @[t]) x start = def_var [t] x start"
       by (simp add: def_var_def)
     moreover
-    have "fw_may.S_hat_edge_list (\<pi> @ [t]) d_init_RD = 
-          fw_may.S_hat t (fw_may.S_hat_edge_list \<pi> d_init_RD)"
+    have "fw_may.S_hat_edge_list (\<pi> @ [t]) d_init_RD = fw_may.S_hat t (fw_may.S_hat_edge_list \<pi> d_init_RD)"
       unfolding fw_may.S_hat_edge_list_def2 by simp
     moreover
     obtain q1 \<alpha> q2 where t_split: "t = (q1, \<alpha>, q2)"
@@ -491,8 +478,7 @@ proof -
     by auto
   then have "\<exists>e\<in>set (\<pi> @ [(q1, x ::= exp, q2)]). x \<in> def_edge e"
     by auto
-  have "def_var (\<pi> @ [(q1, x ::= exp, q2)]) x start = 
-        def_of x (last (filter (\<lambda>e. x \<in> def_edge e) (\<pi> @ [(q1, x ::= exp, q2)])))"
+  have "def_var (\<pi> @ [(q1, x ::= exp, q2)]) x start = def_of x (last (filter (\<lambda>e. x \<in> def_edge e) (\<pi> @ [(q1, x ::= exp, q2)])))"
     unfolding def_var_def by auto
   also
   have "... = def_of x (q1, x ::= exp, q2)"
@@ -505,14 +491,10 @@ proof -
     .
 qed
 
-lemma S_hat_edge_list_last: 
-  "fw_may.S_hat_edge_list (\<pi> @ [e]) d_init_RD = fw_may.S_hat e (fw_may.S_hat_edge_list \<pi> d_init_RD)"
+lemma S_hat_edge_list_last: "fw_may.S_hat_edge_list (\<pi> @ [e]) d_init_RD = fw_may.S_hat e (fw_may.S_hat_edge_list \<pi> d_init_RD)"
   using fw_may.S_hat_edge_list_def2 foldl_conv_foldr by simp
 
-lemma def_var_if_S_hat:
-  assumes "(x,q1,q2) \<in> fw_may.S_hat_edge_list \<pi> d_init_RD"
-  shows "(x,q1,q2) = (def_var \<pi>) x start"
-  using assms
+lemma def_var_if_S_hat: "(x,q1,q2) \<in> fw_may.S_hat_edge_list \<pi> d_init_RD \<Longrightarrow> (x,q1,q2) = (def_var \<pi>) x start"
 proof (induction \<pi> rule: rev_induct)
   case Nil
   then show ?case
@@ -561,8 +543,7 @@ next
   qed
 qed
 
-lemma def_var_UNIV_S_hat_edge_list: 
-  "(\<lambda>x. def_var \<pi> x start) ` UNIV = fw_may.S_hat_edge_list \<pi> d_init_RD"
+lemma def_var_UNIV_S_hat_edge_list: "(\<lambda>x. def_var \<pi> x start) ` UNIV = fw_may.S_hat_edge_list \<pi> d_init_RD"
 proof (rule; rule)
   fix x
   assume "x \<in> range (\<lambda>x. def_var \<pi> x start)"
@@ -585,9 +566,8 @@ definition summarizes_RD :: "(pred, ('n,'v action,('n,'v) def) cst) pred_val \<R
 theorem RD_sound: 
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t fw_may.ana_pg_fw_may s_BV"
   shows "summarizes_RD \<rho>"
-  using assms def_path_S_hat_path fw_may.sound_ana_pg_fw_may unfolding fw_may.summarizes_fw_may_def 
-    summarizes_RD.simps using edges_def in_mono edges_def start_def start_def summarizes_RD_def 
-  by fastforce 
+  using assms def_path_S_hat_path fw_may.sound_ana_pg_fw_may unfolding fw_may.summarizes_fw_may_def summarizes_RD.simps
+  using edges_def in_mono edges_def start_def start_def summarizes_RD_def by fastforce 
 
 end
 

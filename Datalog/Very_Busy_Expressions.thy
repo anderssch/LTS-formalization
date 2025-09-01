@@ -7,9 +7,7 @@ theory Very_Busy_Expressions imports Available_Expressions begin
 section \<open>Very Busy Expressions\<close>
 
 definition vbexp_edge_list :: "('n,'v action) edge list \<Rightarrow> 'v arith \<Rightarrow> bool" where
-  "vbexp_edge_list \<pi> a = (\<exists>\<pi>1 \<pi>2 e. \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and> 
-                                    a \<in> aexp_edge e \<and> 
-                                    (\<forall>e' \<in> set \<pi>1. fv_arith a \<inter> def_edge e' = {}))"
+  "vbexp_edge_list \<pi> a = (\<exists>\<pi>1 \<pi>2 e. \<pi> = \<pi>1 @ [e] @ \<pi>2 \<and> a \<in> aexp_edge e \<and> (\<forall>e' \<in> set \<pi>1. fv_arith a \<inter> def_edge e' = {}))"
 
 definition vbexp_path :: "'n list \<times> 'v action list \<Rightarrow> 'v arith set" where
   "vbexp_path \<pi> = {a. vbexp_edge_list (LTS.transition_list \<pi>) a}"
@@ -85,7 +83,7 @@ proof -
   qed
 qed
 
-lemma vbexp_edge_list_Cons:
+lemma vbexp_edge_list_append_singleton:
   assumes "vbexp_edge_list (e # \<pi>) a"
   shows "vbexp_edge_list \<pi> a \<or> a \<in> aexp_edge e"
 proof -
@@ -191,7 +189,7 @@ next
 
   have "vbexp_edge_list \<pi> a \<or> a \<in> aexp_edge e"
     using Cons(2)
-    by (simp add: vbexp_edge_list_Cons)
+    by (simp add: vbexp_edge_list_append_singleton)
   then show ?case
   proof
     assume "vbexp_edge_list \<pi> a"

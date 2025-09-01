@@ -58,8 +58,7 @@ next
     "q \<in> nodes_on_edge e"
     unfolding node_on_edge_list_def by auto
   then have "e = (q', l, q'') \<or> e \<in> set ((q'', l', q''') # ts)"
-    by (metis (no_types, lifting) append_Cons hd_append in_set_conv_decomp list.sel(1) list.sel(3) 
-        tl_append2)
+    by (metis (no_types, lifting) append_Cons hd_append in_set_conv_decomp list.sel(1) list.sel(3) tl_append2)
   then show ?case
   proof 
     assume "e = (q', l, q'')"
@@ -80,8 +79,7 @@ next
   next
     assume "e \<in> set ((q'', l', q''') # ts)"
     then have "q \<in> bw_may.S_hat_edge_list ((q'', l', q''') # ts) d_init_RN"
-      by (metis "2.IH" "2.hyps"(2) "2.prems"(2) \<open>q \<in> nodes_on_edge e\<close> append_Cons append_Nil 
-          in_set_conv_decomp last.simps list.distinct(1) node_on_edge_list_def)
+      by (metis "2.IH" "2.hyps"(2) "2.prems"(2) \<open>q \<in> nodes_on_edge e\<close> append_Cons append_Nil in_set_conv_decomp last.simps list.distinct(1) node_on_edge_list_def)
     then show ?case
       unfolding bw_may.S_hat_edge_list.simps bw_may.S_hat_def by auto
   qed
@@ -119,16 +117,13 @@ next
       assume "\<pi> = []"
       then show "node_on_edge_list (e # \<pi>) q"
         using d_init_RN_def q_Shat
-        by (metis Cons.prems(2) Diff_empty append.left_neutral append_Cons 
-            bw_may.S_hat_edge_list.simps(1) insertI1 insert_commute kill_set_RN.elims last_ConsL 
-            nodes_on_edge.elims node_on_edge_list_def singleton_iff trans_tl.simps)   
+        by (metis Cons.prems(2) Diff_empty append.left_neutral append_Cons bw_may.S_hat_edge_list.simps(1) insertI1 insert_commute kill_set_RN.elims last_ConsL nodes_on_edge.elims node_on_edge_list_def singleton_iff trans_tl.simps)   
  qed
   next
     assume "q \<in> gen_set_RN e"
     then show ?thesis
       unfolding node_on_edge_list_def
-      by (metis append.left_neutral append_Cons empty_iff gen_set_RN.elims insert_iff 
-          nodes_on_edge.simps)
+      by (metis append.left_neutral append_Cons empty_iff gen_set_RN.elims insert_iff nodes_on_edge.simps)
   qed
 qed
 
@@ -323,9 +318,8 @@ proof -
 qed
 
 definition summarizes_RN where
-  "summarizes_RN \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> path_with_word_to end \<longrightarrow> 
-                              d \<in> nodes_on_path \<pi> \<longrightarrow> 
-                              \<rho> \<Turnstile>\<^sub>l\<^sub>h may\<langle>[Cst\<^sub>N (start_of \<pi>), Cst\<^sub>E d]\<rangle>.)"
+  "summarizes_RN \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> path_with_word_to end \<longrightarrow> d \<in> nodes_on_path \<pi> \<longrightarrow> 
+                         \<rho> \<Turnstile>\<^sub>l\<^sub>h may\<langle>[Cst\<^sub>N (start_of \<pi>), Cst\<^sub>E d]\<rangle>.)"
 
 theorem RN_sound:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t bw_may.ana_pg_bw_may s_BV"

@@ -301,7 +301,7 @@ proof (induction c)
   have "\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) = \<lbrakk>rhs \<cdot>\<^sub>r\<^sub>h\<^sub>s \<eta>\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>"
     using substitution_lemma_rhs by blast
   moreover
-  have "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) = \<lbrakk>(p, ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
+  have  "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> (\<eta> \<circ>\<^sub>s\<^sub>v \<sigma>) = \<lbrakk>(p, ids \<cdot>\<^sub>i\<^sub>d\<^sub>s \<eta>)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
     using substitution_lemma_lh by metis
   ultimately
   show ?case
@@ -340,48 +340,33 @@ fun strat_wf_cls :: "'p strat \<Rightarrow> ('p,'x,'c) clause \<Rightarrow> bool
 definition strat_wf :: "'p strat \<Rightarrow> ('p,'x,'c) dl_program \<Rightarrow> bool" where
   "strat_wf s dl \<longleftrightarrow> (\<forall>c \<in> dl. strat_wf_cls s c)"
 
-definition max_stratum :: "'p strat \<Rightarrow> ('p,'x,'c) dl_program \<Rightarrow> nat" where
-  "max_stratum s dl = Max {s p | p ids rhs. Cls p ids rhs \<in> dl}"
+definition max_strata :: "'p strat \<Rightarrow> ('p,'x,'c) dl_program \<Rightarrow> nat" where
+  "max_strata s dl = Max {s p | p ids rhs. Cls p ids rhs \<in> dl}"
 
-fun pred_val_lte_stratum :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'c) pred_val" 
-  ("_ \<le>\<le>\<le>_\<le>\<le>\<le> _" 0) where 
+fun pred_val_lte_strata :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'c) pred_val" ("_ \<le>\<le>\<le>_\<le>\<le>\<le> _" 0) where 
   "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) p = (if s p \<le> n then \<rho> p else {})"
 
-fun dl_program_lte_stratum :: "('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'c) dl_program" 
-  ("_ \<le>\<le>_\<le>\<le> _" 0) where 
+fun dl_program_lte_strata :: "('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'c) dl_program" ("_ \<le>\<le>_\<le>\<le> _" 0) where 
   "(dl \<le>\<le>s\<le>\<le> n) = {(Cls p ids rhs)| p ids rhs . (Cls p ids rhs) \<in> dl \<and> s p \<le> n}"
 
-fun dl_program_on_stratum :: "('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'c) dl_program" 
-  ("_ ==_== _" 0) where
+fun dl_program_on_strata :: "('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> nat \<Rightarrow> ('p,'x,'c) dl_program" ("_ ==_== _" 0) where 
   "(dl ==s== n) = {(Cls p ids rhs)| p ids rhs . (Cls p ids rhs) \<in> dl \<and> s p = n}"
 
-\<comment> \<open>The ordering on predicate valuations from
-     Flemming Nielson and Hanne Riis Nielson. 
-     Program analysis (an appetizer). 
-     CoRR,abs/2012.10086, 2020.\<close>
 definition lt :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'c) pred_val \<Rightarrow> bool" ("_ \<sqsubset>_\<sqsubset> _") where
   "(\<rho> \<sqsubset>s\<sqsubset> \<rho>') \<longleftrightarrow> (\<exists>p. \<rho> p \<subset> \<rho>' p \<and>
                        (\<forall>p'. s p' = s p \<longrightarrow> \<rho> p' \<subseteq> \<rho>' p') \<and>
                        (\<forall>p'. s p' < s p \<longrightarrow> \<rho> p' = \<rho>' p'))"
 
-\<comment> \<open>The ordering on predicate valuations from
-     Teodor C. Przymusinski.
-     On the declarative semantics of deductive databases and logic programs.
-     In Jack Minker, editor, Foundations of Deductive Databases and Logic Programming,
-       pages 193–216. Morgan Kaufmann, 1988.\<close>
 definition lt_prz :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'c) pred_val \<Rightarrow> bool" ("_ \<sqsubset>_\<sqsubset>\<^sub>p\<^sub>r\<^sub>z _") where
-  "(\<rho>\<^sub>M \<sqsubset>s\<sqsubset>\<^sub>p\<^sub>r\<^sub>z \<rho>\<^sub>N) \<longleftrightarrow> \<rho>\<^sub>N \<noteq> \<rho>\<^sub>M \<and> 
-                     (\<forall>p\<^sub>A c\<^sub>A. c\<^sub>A \<in> \<rho>\<^sub>N p\<^sub>A - \<rho>\<^sub>M p\<^sub>A \<longrightarrow> (\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>M p\<^sub>B - \<rho>\<^sub>N p\<^sub>B \<and> s p\<^sub>A > s p\<^sub>B))"
+  "(\<rho>\<^sub>M \<sqsubset>s\<sqsubset>\<^sub>p\<^sub>r\<^sub>z \<rho>\<^sub>N) \<longleftrightarrow> \<rho>\<^sub>N \<noteq> \<rho>\<^sub>M \<and> (\<forall>p\<^sub>A c\<^sub>A. c\<^sub>A \<in> \<rho>\<^sub>N p\<^sub>A - \<rho>\<^sub>M p\<^sub>A \<longrightarrow> (\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>M p\<^sub>B - \<rho>\<^sub>N p\<^sub>B \<and> s p\<^sub>A > s p\<^sub>B))"
 
 definition lte :: "('p,'c) pred_val \<Rightarrow> 'p strat \<Rightarrow> ('p,'c) pred_val \<Rightarrow> bool" ("_ \<sqsubseteq>_\<sqsubseteq> _") where
   "(\<rho> \<sqsubseteq>s\<sqsubseteq> \<rho>') \<longleftrightarrow> \<rho> = \<rho>' \<or> (\<rho> \<sqsubset>s\<sqsubset> \<rho>')"
 
-definition least_solution :: "('p,'c) pred_val \<Rightarrow> ('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> bool" 
-  ("_ \<Turnstile>\<^sub>l\<^sub>s\<^sub>t") where
+definition least_solution :: "('p,'c) pred_val \<Rightarrow> ('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> bool" ("_ \<Turnstile>\<^sub>l\<^sub>s\<^sub>t") where
   "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s \<longleftrightarrow> \<rho> \<Turnstile>\<^sub>d\<^sub>l dl \<and> (\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l dl \<longrightarrow> \<rho> \<sqsubseteq>s\<sqsubseteq> \<rho>')"
 
-definition minimal_solution :: "('p,'c) pred_val \<Rightarrow> ('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> bool"
-  ("_ \<Turnstile>\<^sub>m\<^sub>i\<^sub>n") where
+definition minimal_solution :: "('p,'c) pred_val \<Rightarrow> ('p,'x,'c) dl_program \<Rightarrow> 'p strat \<Rightarrow> bool"  ("_ \<Turnstile>\<^sub>m\<^sub>i\<^sub>n") where
   "\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n dl s \<longleftrightarrow> \<rho> \<Turnstile>\<^sub>d\<^sub>l dl \<and> (\<nexists>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l dl \<and> \<rho>' \<sqsubset>s\<sqsubset> \<rho>)"
 
 lemma lte_def2:
@@ -391,28 +376,28 @@ lemma lte_def2:
 
 subsection \<open>Solving lower strata\<close>
 
-lemma strat_wf_lte_if_strat_wf_lte:
+lemma strat_wf_mod_if_strat_wf_mod:
   assumes "n > m"
   assumes "strat_wf s (dl \<le>\<le>s\<le>\<le> n)"
   shows "strat_wf s (dl \<le>\<le>s\<le>\<le> m)"
   using assms unfolding strat_wf_def by fastforce
 
-lemma strat_wf_lte_if_strat_wf:
+lemma strat_wf_mod_if_strat_wf:
   assumes "strat_wf s dl"
   shows "strat_wf s (dl \<le>\<le>s\<le>\<le> n)"
   using assms unfolding strat_wf_def by auto
 
-lemma meaning_lte_m_iff_meaning_rh:
+lemma meaning_mod_m_iff_meaning_rh:
   assumes "rnk s rh \<le> n"
   shows "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) \<sigma> \<longleftrightarrow> \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
-  using assms equals0D meaning_rh.elims(3) pred_val_lte_stratum.simps by fastforce
+  using assms equals0D meaning_rh.elims(3) pred_val_lte_strata.simps by fastforce
 
-lemma meaning_lte_m_iff_meaning_lh:
+lemma meaning_mod_m_iff_meaning_lh:
   assumes "s p \<le> m"
   shows "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<sigma> \<longleftrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
   using assms by auto
 
-lemma meaning_lte_m_iff_meaning_cls:
+lemma meaning_mod_m_iff_meaning_cls:
   assumes "strat_wf_cls s (Cls p ids rhs)"
   assumes "s p \<le> m"
   shows "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<sigma> \<longleftrightarrow> \<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
@@ -423,16 +408,16 @@ proof -
     using assms assms(2) dual_order.trans by (metis (no_types, lifting) p_leq_m strat_wf_cls.simps)
 
   show "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<sigma> \<longleftrightarrow> \<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho> \<sigma>"
-    using meaning_lte_m_iff_meaning_rh[of s _ m \<rho> \<sigma>] p_leq_m rh_leq_m assms(2) by force
+    using meaning_mod_m_iff_meaning_rh[of s _ m \<rho> \<sigma>] p_leq_m rh_leq_m assms(2) by force
 qed
 
-lemma solves_lte_m_iff_solves_cls:
+lemma solves_mod_m_iff_solves_cls:
   assumes "strat_wf_cls s (Cls p ids rhs)"
   assumes "s p \<le> m"
   shows "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs \<longleftrightarrow> \<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
-  by (meson assms meaning_lte_m_iff_meaning_cls solves_cls_def)
+  by (meson assms meaning_mod_m_iff_meaning_cls solves_cls_def)
                                           
-lemma downward_lte_solves:
+lemma downward_mod_solves:
   assumes "n > m"
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> n)"
   assumes "strat_wf s dl"
@@ -448,7 +433,7 @@ proof
     using assms(1) by blast
   moreover
   have "strat_wf_cls s (Cls p ids rhs)"
-    using a assms(3) c_split strat_wf_lte_if_strat_wf strat_wf_def by blast
+    using a assms(3) c_split strat_wf_mod_if_strat_wf strat_wf_def by blast
   moreover
   have "s p \<le> m"
     using a c_split by force
@@ -457,7 +442,7 @@ proof
     using c_split assms a unfolding solves_program_def by force  
   ultimately
   show "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
-    using c_split by (simp add: solves_lte_m_iff_solves_cls)
+    using c_split by (simp add: solves_mod_m_iff_solves_cls)
 qed
 
 lemma downward_solves:
@@ -475,7 +460,7 @@ proof
     using \<open>c \<in> (dl \<le>\<le>s\<le>\<le> m)\<close> assms(1) solves_program_def by auto
 
   have "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s Cls p ids rhs"
-    using \<open>\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c\<close> a assms(2) c_def solves_lte_m_iff_solves_cls strat_wf_def by fastforce
+    using \<open>\<rho> \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c\<close> a assms(2) c_def solves_mod_m_iff_solves_cls strat_wf_def by fastforce
   then show "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>c\<^sub>l\<^sub>s c"
     using c_def by auto
 qed
@@ -551,13 +536,11 @@ next
     by (metis least_rank_p_st_def linorder_not_le)
 qed
 
-lemma lt_if_lt_prz:
+lemma
   assumes "\<rho>\<^sub>M \<sqsubset>s\<sqsubset>\<^sub>p\<^sub>r\<^sub>z \<rho>\<^sub>N"
   shows "\<rho>\<^sub>N \<sqsubset>s\<sqsubset> \<rho>\<^sub>M"
 proof -
-  from assms have unf: 
-    "\<rho>\<^sub>N \<noteq> \<rho>\<^sub>M"
-    "\<forall>p\<^sub>A c\<^sub>A. c\<^sub>A \<in> \<rho>\<^sub>N p\<^sub>A - \<rho>\<^sub>M p\<^sub>A \<longrightarrow> (\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>M p\<^sub>B - \<rho>\<^sub>N p\<^sub>B \<and> s p\<^sub>B < s p\<^sub>A)"
+  from assms have nice: "\<rho>\<^sub>N \<noteq> \<rho>\<^sub>M \<and> (\<forall>p\<^sub>A c\<^sub>A. c\<^sub>A \<in> \<rho>\<^sub>N p\<^sub>A - \<rho>\<^sub>M p\<^sub>A \<longrightarrow> (\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>M p\<^sub>B - \<rho>\<^sub>N p\<^sub>B \<and> s p\<^sub>B < s p\<^sub>A))"
     unfolding lt_prz_def by auto
   then have "\<exists>p. \<rho>\<^sub>N p \<noteq> \<rho>\<^sub>M p"
     by auto
@@ -577,7 +560,7 @@ proof -
     have "(\<forall>p'. s p' < s p \<longrightarrow> \<rho>\<^sub>N p' = \<rho>\<^sub>M p')"
       using \<open>least_rank_p_st (\<lambda>p. \<rho>\<^sub>N p \<noteq> \<rho>\<^sub>M p) p s\<close> below_least_rank_p_st by fastforce
     have "(\<forall>p'. s p' = s p \<longrightarrow> \<rho>\<^sub>N p' \<subseteq> \<rho>\<^sub>M p')"
-      using \<open>\<forall>p'. s p' < s p \<longrightarrow> \<rho>\<^sub>N p' = \<rho>\<^sub>M p'\<close> unf by auto
+      using \<open>\<forall>p'. s p' < s p \<longrightarrow> \<rho>\<^sub>N p' = \<rho>\<^sub>M p'\<close> nice by auto
     then show ?thesis
       unfolding lt_def using \<open>\<forall>p'. s p' < s p \<longrightarrow> \<rho>\<^sub>N p' = \<rho>\<^sub>M p'\<close> \<open>\<rho>\<^sub>N p \<noteq> \<rho>\<^sub>M p\<close> by blast
   next 
@@ -585,7 +568,7 @@ proof -
     then obtain c where "c \<in> \<rho>\<^sub>N p \<and> c \<notin> \<rho>\<^sub>M p"
       by auto
     then have "\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>M p\<^sub>B - \<rho>\<^sub>N p\<^sub>B \<and> s p\<^sub>B < s p"
-      using unf by auto
+      using nice by auto
     then obtain p\<^sub>B c\<^sub>B where "c\<^sub>B \<in> \<rho>\<^sub>M p\<^sub>B - \<rho>\<^sub>N p\<^sub>B" "s p\<^sub>B < s p"
       by auto
     then have "False"
@@ -595,7 +578,7 @@ proof -
   qed
 qed
 
-lemma lt_prz_if_lt_if:
+lemma
   assumes "\<rho>\<^sub>M \<sqsubset>s\<sqsubset> \<rho>\<^sub>N"
   shows "\<rho>\<^sub>N \<sqsubset>s\<sqsubset>\<^sub>p\<^sub>r\<^sub>z \<rho>\<^sub>M"
 proof -
@@ -606,17 +589,13 @@ proof -
   proof (rule, rule, rule)
     fix p\<^sub>A c\<^sub>A
     assume "c\<^sub>A \<in> \<rho>\<^sub>M p\<^sub>A - \<rho>\<^sub>N p\<^sub>A"
-    then show "\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>N p\<^sub>B - \<rho>\<^sub>M p\<^sub>B \<and> s p\<^sub>B < s p\<^sub>A"
-      by (smt (verit) DiffD1 DiffD2 antisym_conv3 assms lt_def psubset_imp_ex_mem subsetD)
+    show "\<exists>p\<^sub>B c\<^sub>B. c\<^sub>B \<in> \<rho>\<^sub>N p\<^sub>B - \<rho>\<^sub>M p\<^sub>B \<and> s p\<^sub>B < s p\<^sub>A"
+      by (smt (verit) DiffD1 DiffD2 \<open>c\<^sub>A \<in> \<rho>\<^sub>M p\<^sub>A - \<rho>\<^sub>N p\<^sub>A\<close> antisym_conv3 assms lt_def psubset_imp_ex_mem subsetD)
   qed
   ultimately
   show "\<rho>\<^sub>N \<sqsubset>s\<sqsubset>\<^sub>p\<^sub>r\<^sub>z \<rho>\<^sub>M"
     unfolding lt_prz_def by auto
 qed
-
-lemma lt_prz_iff_lt:
-  "\<rho>\<^sub>M \<sqsubset>s\<sqsubset> \<rho>\<^sub>N \<longleftrightarrow> \<rho>\<^sub>N \<sqsubset>s\<sqsubset>\<^sub>p\<^sub>r\<^sub>z \<rho>\<^sub>M"
-  using lt_if_lt_prz lt_prz_if_lt_if by blast
 
 lemma solves_leq:
   assumes "\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> m)"
@@ -673,7 +652,7 @@ proof -
     unfolding \<rho>''_def by auto
 qed
 
-lemma solve_pg_above_empty:
+lemma solve_pg_Suc_empty:
   assumes "s p > n"
   shows "(solve_pg s dl n) p = {}"
   using assms proof (induction n arbitrary: p)
@@ -726,7 +705,7 @@ proof -
     unfolding \<rho>'_def solves_cls_def solves_program_def by fastforce
   moreover
   have "\<forall>p. (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> m) p = solve_pg s dl m p"
-    unfolding \<rho>'_def using solve_pg_above_empty[of m s _ dl] by auto
+    unfolding \<rho>'_def using solve_pg_Suc_empty[of m s _ dl] by auto
   ultimately
   show ?thesis 
     by force
@@ -752,12 +731,9 @@ next
       using Suc by auto
     then have solve_pg_sp_m: "(solve_pg s dl (s p)) p = (solve_pg s dl m) p"
       using Suc by auto
-    have \<rho>'_solve_pg: "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<longrightarrow>
-                           (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> m) = solve_pg s dl m \<longrightarrow>
-                           \<rho>' p = solve_pg s dl m p"
-      by (metis pred_val_lte_stratum.simps s_p)
-    have "\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> m) = solve_pg s dl m} p =
-          solve_pg s dl (s p) p"
+    have \<rho>'_solve_pg: "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> m) = solve_pg s dl m \<longrightarrow> \<rho>' p = solve_pg s dl m p"
+      by (metis pred_val_lte_strata.simps s_p)
+    have "\<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> m) = solve_pg s dl m} p = solve_pg s dl (s p) p"
     proof (rule; rule)
       fix x 
       assume "x \<in> \<^bold>\<Inter> {\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc m) \<and> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> m) = solve_pg s dl m} p"
@@ -780,14 +756,14 @@ lemma solve_pg_two_agree_above:
   shows "(solve_pg s dl m) p = (solve_pg s dl n) p"
   using assms solve_pg_agree_above by metis
 
-lemma pos_rhs_stratum_leq_clause_stratum:
+lemma pos_rhs_strata_leq_clause_strata:
   assumes "strat_wf s dl"
   assumes "Cls p ids rhs \<in> dl"
   assumes "\<^bold>+ p' ids' \<in> set rhs"
   shows "s p' \<le> s p"
   using assms unfolding strat_wf_def by fastforce
 
-lemma neg_rhs_stratum_less_clause_stratum:
+lemma neg_rhs_strata_less_clause_strata:
   assumes "strat_wf s dl"
   assumes "Cls p ids rhs \<in> dl"
   assumes "\<^bold>\<not> p' ids' \<in> set rhs"
@@ -812,10 +788,10 @@ next
 next
   case (PosLit p' ids')
   then have "s p' \<le> m"
-    using assms pos_rhs_stratum_leq_clause_stratum by fastforce
+    using assms pos_rhs_strata_leq_clause_strata by fastforce
   moreover
   from PosLit have "s p' \<le> n"
-    using assms pos_rhs_stratum_leq_clause_stratum by fastforce
+    using assms pos_rhs_strata_leq_clause_strata by fastforce
   ultimately
   have "solve_pg s dl m p' = solve_pg s dl n p'"
     using solve_pg_two_agree_above[of s p' n m dl] by force
@@ -824,10 +800,10 @@ next
 next
   case (NegLit p' ids)
   then have "s p' < m"
-    using assms neg_rhs_stratum_less_clause_stratum by fastforce
+    using assms neg_rhs_strata_less_clause_strata by fastforce
   moreover
   from NegLit have "s p' < n"
-    using assms neg_rhs_stratum_less_clause_stratum by fastforce
+    using assms neg_rhs_strata_less_clause_strata by fastforce
   ultimately
   have "solve_pg s dl m p' = solve_pg s dl n p'"
     using solve_pg_two_agree_above[of s p' n m dl] by force
@@ -847,8 +823,7 @@ lemma solve_pg_two_agree_above_on_cls:
   assumes "s p \<le> n"
   assumes "s p \<le> m"
   shows "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl n) \<sigma> \<longleftrightarrow> \<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl m) \<sigma>"
-  using assms solve_pg_two_agree_above_on_rh solve_pg_two_agree_above_on_lh
-  by (meson meaning_rhs.simps meaning_cls.simps)
+  by (meson assms meaning_rhs.simps meaning_cls.simps solve_pg_two_agree_above_on_rh solve_pg_two_agree_above_on_lh)
 
 lemma solve_pg_two_agree_above_on_cls_Suc:
   assumes "strat_wf s dl"
@@ -857,16 +832,15 @@ lemma solve_pg_two_agree_above_on_cls_Suc:
   shows "\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl (Suc n)) \<sigma> \<longleftrightarrow> \<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s (solve_pg s dl n) \<sigma>"
   using solve_pg_two_agree_above_on_cls[OF assms(1,2,3), of "Suc n" \<sigma>] assms(3) by auto
 
-lemma stratum0_no_neg':
+lemma strata0_no_neg':
   assumes "strat_wf s dl"
   assumes "Cls p ids rhs \<in> dl"
   assumes "s p = 0"
   assumes "rh \<in> set rhs"
   shows "\<nexists>p' ids. rh = \<^bold>\<not> p' ids"
-  by (metis One_nat_def add_eq_0_iff_both_eq_0 assms bot_nat_0.extremum_uniqueI 
-      bot_nat_0.not_eq_extremum rnk.simps(4) strat_wf_cls.simps strat_wf_def zero_less_Suc)
+  by (metis One_nat_def add_eq_0_iff_both_eq_0 assms bot_nat_0.extremum_uniqueI bot_nat_0.not_eq_extremum rnk.simps(4) strat_wf_cls.simps strat_wf_def zero_less_Suc)
 
-lemma stratumSuc_less_neg':
+lemma strataSuc_less_neg':
   assumes "strat_wf s dl"
   assumes "Cls p ids rhs \<in> dl"
   assumes "s p = Suc n"
@@ -874,19 +848,19 @@ lemma stratumSuc_less_neg':
   shows "s p' \<le> n"
   using assms unfolding strat_wf_def by force
 
-lemma stratum0_no_neg:
+lemma strata0_no_neg:
   assumes "strat_wf s dl"
   assumes "Cls p ids rhs \<in> (dl \<le>\<le>s\<le>\<le> 0)"
   assumes "rh \<in> set rhs"
   shows "\<nexists>p' ids. rh = \<^bold>\<not> p ids"
-  using assms stratum0_no_neg' by fastforce 
+  using assms strata0_no_neg' by fastforce 
 
-lemma stratumSuc_less_neg:
+lemma strataSuc_less_neg:
   assumes "strat_wf s dl"
   assumes "Cls p ids rhs \<in> (dl \<le>\<le>s\<le>\<le> Suc n)"
   assumes "\<^bold>\<not> p' ids' \<in> set rhs"
   shows "s p' \<le> n"
-  using assms neg_rhs_stratum_less_clause_stratum by fastforce
+  using assms neg_rhs_strata_less_clause_strata by fastforce
 
 lemma all_meaning_rh_if_solve_pg_0:
   assumes "strat_wf s dl"
@@ -910,7 +884,7 @@ next
 next
   case (NegLit p ids)
   then show ?thesis
-    using assms stratum0_no_neg' by fastforce
+    using assms strata0_no_neg' by fastforce
 qed
 
 lemma all_meaning_rh_if_solve_pg_Suc:
@@ -936,10 +910,9 @@ next
 next
   case (NegLit p' ids')
   then have "s p' \<le> n"
-    using stratumSuc_less_neg[OF assms(1) assms(6), of p'] assms(5) by auto
+    using strataSuc_less_neg[OF assms(1) assms(6), of p'] assms(5) by auto
   then have "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl n) \<sigma>"
-    by (metis NegLit assms(2) le_imp_less_Suc less_imp_le_nat meaning_rh.simps(4) 
-        solve_pg_two_agree_above)
+    by (metis NegLit assms(2) le_imp_less_Suc less_imp_le_nat meaning_rh.simps(4) solve_pg_two_agree_above)
   then have "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) \<sigma>"
     using assms(4) by presburger
   then show ?thesis
@@ -971,8 +944,7 @@ lemma all_meaning_if_solve_pg_Suc_lh:
   using assms by (auto simp add: Inter'_def)
 
 lemma solve_pg_Suc_iff_all_meaning_lh:
-  "(\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl (Suc n)) \<sigma>) \<longleftrightarrow>
-   (\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>)"
+  "(\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl (Suc n)) \<sigma>) \<longleftrightarrow> (\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>)"
   by (auto simp add: Inter'_def)
 
 lemma solve_pg_0_meaning_cls':
@@ -1019,15 +991,10 @@ next
     proof
       define \<rho>'' :: "'a \<Rightarrow> 'c list set" where "\<rho>'' = (solve_pg s dl (Suc n))"
       assume "\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s (solve_pg s dl (Suc n)) \<sigma>"
-      then have 
-        "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> 
-              (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n \<longrightarrow> 
-              (\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>)"
+      then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n \<longrightarrow> (\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>' \<sigma>)"
         using all_meaning_rh_if_solve_pg_Suc[OF assms(1) _ _ _ _ Suc(3), of _ \<sigma>] 
         by auto
-      then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow>
-                 (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n \<longrightarrow> 
-                 \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
+      then have "\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l (dl ==s== Suc n) \<longrightarrow> (\<rho>' \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
         using meaning_cls.simps solves_cls_def solves_program_def cls_in_Suc meaning_rhs.simps by metis
       then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl (Suc n)) \<sigma>"
         using solve_pg_Suc_if_all_meaning_lh[of dl s n p ids \<sigma>] by auto
@@ -1043,8 +1010,7 @@ next
     then have "(\<forall>rh\<in>set rhs. \<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (solve_pg s dl n) \<sigma>) \<longrightarrow> \<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h (solve_pg s dl n) \<sigma>"
       using Suc by auto
     then show ?thesis
-      using False' meaning_cls.simps solve_pg_two_agree_above_on_cls_Suc assms cls_in s_p_n 
-        meaning_rhs.simps by metis
+      using False' meaning_cls.simps solve_pg_two_agree_above_on_cls_Suc assms cls_in s_p_n meaning_rhs.simps by metis
   qed
 qed
 
@@ -1259,17 +1225,16 @@ lemma eq_if_agree_below_eq_agree_above_eq:
   assumes "agree_below_eq \<rho> \<rho>' n s"
   assumes "agree_above_eq \<rho> \<rho>' n s"
   shows "\<rho> = \<rho>'"
-  by (meson agree_above_def agree_above_eq_def eq_if_agree_below_eq_agree_above assms 
-      less_imp_le_nat)
+  by (meson agree_above_def agree_above_eq_def eq_if_agree_below_eq_agree_above assms less_imp_le_nat)
 
-lemma agree_below_eq_pred_val_lte_stratum:
+lemma agree_below_eq_pred_val_lte_strata:
   "agree_below_eq \<rho> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) n s"
   by (simp add: agree_below_eq_def)
 
-lemma agree_below_eq_pred_val_lte_stratum_less_eq:
+lemma agree_below_eq_pred_val_lte_strata_less_eq:
   assumes "m \<le> n"
   shows "agree_below_eq \<rho> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) m s"
-  using agree_below_eq_less_eq agree_below_eq_pred_val_lte_stratum assms by blast
+  using agree_below_eq_less_eq agree_below_eq_pred_val_lte_strata assms by blast
 
 lemma agree_below_eq_solve_pg:
   assumes "l \<le> m"
@@ -1324,17 +1289,15 @@ next
         by (metis \<rho>''n_below_\<rho> \<open>\<rho>''n p \<noteq> \<rho> p\<close> lte_def)
       moreover
       have "\<forall>p'. \<rho>''n p' \<noteq> \<rho> p' \<longrightarrow> s p \<le> s p'"
-        by (metis agree_\<rho>''n1_\<rho>''n \<open>s p \<le> n\<close> agg agree_below_def agree_below_eq_def le_trans 
-            linorder_le_cases linorder_le_less_linear)
+        by (metis agree_\<rho>''n1_\<rho>''n \<open>s p \<le> n\<close> agg agree_below_def agree_below_eq_def le_trans linorder_le_cases linorder_le_less_linear)
       then have "least_rank_p_st (\<lambda>p. \<rho>''n p \<noteq> \<rho> p) p s"
           using \<open>\<rho>''n p \<noteq> \<rho> p\<close> unfolding least_rank_p_st_def by auto
       ultimately
       have "\<rho>''n p \<subset> \<rho> p \<and>
            (\<forall>p'. s p' = s p \<longrightarrow> \<rho>''n p' \<subseteq> \<rho> p') \<and>
            (\<forall>p'. s p' < s p \<longrightarrow> \<rho>''n p' = \<rho> p')"
-        using least_disagreement_proper_subset[of \<rho>''n s \<rho> p]
-          subset_on_least_disagreement[of \<rho>''n s \<rho> p] equal_below_least_disagreement[of \<rho>''n s \<rho> p] 
-        by metis
+        using least_disagreement_proper_subset[of \<rho>''n s \<rho> p] subset_on_least_disagreement[of \<rho>''n s \<rho> p] 
+          equal_below_least_disagreement[of \<rho>''n s \<rho> p] by metis
       then have "\<rho>''n1 p \<subset> \<rho> p \<and>
            (\<forall>p'. s p' = s p \<longrightarrow> \<rho>''n1 p' \<subseteq> \<rho> p') \<and>
            (\<forall>p'. s p' < s p \<longrightarrow> \<rho>''n1 p' = \<rho> p')"
@@ -1355,13 +1318,13 @@ next
           using \<open>Suc n \<le> i\<close> agree_below_eq_least_disagreement i_def p_p by fastforce
         moreover
         have "agree_below_eq \<rho> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) n s"
-          by (simp add: agree_below_eq_pred_val_lte_stratum)
+          by (simp add: agree_below_eq_pred_val_lte_strata)
         ultimately
         have "agree_below_eq \<rho>''n (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) n s"
           using agree_below_trans by metis
         moreover
         have "agree_above \<rho>''n (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) n s"
-          using \<rho>''n_def by (simp add: agree_above_def solve_pg_above_empty)
+          using \<rho>''n_def by (simp add: agree_above_def solve_pg_Suc_empty)
         ultimately
         have "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) = \<rho>''n"
            using eq_if_agree_below_eq_agree_above by blast
@@ -1378,8 +1341,7 @@ next
         using dis by auto
       moreover
       have "\<forall>p'. s p' = s p \<longrightarrow> \<rho>''n1 p' \<subseteq> \<rho> p'"
-        using \<open>\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> Suc n) \<and> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n\<close> \<rho>''n1_def 
-          solve_pg_subset_solution by fastforce
+        using \<open>\<rho> \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> Suc n) \<and> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> n) = solve_pg s dl n\<close> \<rho>''n1_def solve_pg_subset_solution by fastforce
       moreover
       have "\<forall>p'. s p' < s p \<longrightarrow> \<rho>''n1 p' = \<rho> p'"
         using below_least_rank_p_st p_p by fastforce
@@ -1397,10 +1359,10 @@ lemma solve_pg_least_solution':
   shows "solve_pg s dl n \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl \<le>\<le>s\<le>\<le> n) s"
   using assms least_solution_def solve_pg_below_solution solve_pg_solves_dl by blast 
 
-lemma stratum_less_eq_max_stratum:
+lemma strata_less_eq_max_strata:
   assumes "finite dl"
   assumes "Cls p ids rhs \<in> dl"
-  shows "s p \<le> max_stratum s dl"
+  shows "s p \<le> max_strata s dl"
 proof -
   have "s p \<in> {s p | p ids rhs. Cls p ids rhs \<in> dl}"
     using assms(2) by auto
@@ -1411,12 +1373,12 @@ proof -
     by (simp add: assms(1))
   ultimately
   show ?thesis
-    unfolding max_stratum_def using Max.coboundedI by auto
+    unfolding max_strata_def using Max.coboundedI by auto
 qed
 
-lemma finite_above_max_stratum:
+lemma finite_above_max_strata:
   assumes "finite dl"
-  assumes "max_stratum s dl \<le> n"
+  assumes "max_strata s dl \<le> n"
   shows "(dl \<le>\<le>s\<le>\<le> n) = dl"
 proof (rule; rule)
   fix c
@@ -1430,28 +1392,28 @@ next
     by (cases c) auto
   then have c_in_dl': "Cls p ids rhs \<in> dl"
     using c_in_dl by auto
-  then have "s p \<le> max_stratum s dl"
-    using stratum_less_eq_max_stratum assms by metis
+  then have "s p \<le> max_strata s dl"
+    using strata_less_eq_max_strata assms by metis
   then have "Cls p ids rhs \<in> (dl \<le>\<le>s\<le>\<le> n)"
     using c_in_dl' assms(2) by auto 
   then show "c \<in> (dl \<le>\<le>s\<le>\<le> n)"
     unfolding c_split by auto
 qed 
 
-lemma finite_max_stratum:
+lemma finite_max_strata:
   assumes "finite dl"
-  shows "(dl \<le>\<le>s\<le>\<le> max_stratum s dl) = dl"
-  using assms finite_above_max_stratum[of dl s "max_stratum s dl"] by auto 
+  shows "(dl \<le>\<le>s\<le>\<le> max_strata s dl) = dl"
+  using assms finite_above_max_strata[of dl s "max_strata s dl"] by auto 
 
 lemma solve_pg_least_solution:
   assumes "finite dl"
   assumes "strat_wf s dl"
-  shows "solve_pg s dl (max_stratum s dl) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
+  shows "solve_pg s dl (max_strata s dl) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
 proof -
-  have "solve_pg s dl (max_stratum s dl) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl \<le>\<le>s\<le>\<le> (max_stratum s dl)) s"
+  have "solve_pg s dl (max_strata s dl) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl \<le>\<le>s\<le>\<le> (max_strata s dl)) s"
     using solve_pg_least_solution' assms by auto
   then show ?thesis
-    using finite_max_stratum assms by metis
+    using finite_max_strata assms by metis
 qed
 
 lemma exi_least_solution:
@@ -1469,12 +1431,12 @@ lemma least_iff_minimal:
   shows "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s \<longleftrightarrow> \<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n dl s"
 proof
   assume "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
-  then have \<rho>_least: "\<rho> \<Turnstile>\<^sub>d\<^sub>l dl" "(\<forall>\<sigma>'. \<sigma>' \<Turnstile>\<^sub>d\<^sub>l dl \<longrightarrow> \<rho> \<sqsubseteq>s\<sqsubseteq> \<sigma>')"
+  then have \<sigma>_least: "\<rho> \<Turnstile>\<^sub>d\<^sub>l dl" "(\<forall>\<sigma>'. \<sigma>' \<Turnstile>\<^sub>d\<^sub>l dl \<longrightarrow> \<rho> \<sqsubseteq>s\<sqsubseteq> \<sigma>')"
     unfolding least_solution_def by auto
   then have "(\<nexists>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l dl \<and> \<rho>' \<sqsubset>s\<sqsubset> \<rho>)"
     by (metis (full_types) \<open>\<forall>\<rho>'. \<rho>' \<Turnstile>\<^sub>d\<^sub>l dl \<longrightarrow> \<rho> \<sqsubseteq>s\<sqsubseteq> \<rho>'\<close> lt_def lte_def nat_neq_iff psubsetE)
   then show "\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n dl s"
-    unfolding minimal_solution_def using \<rho>_least by metis
+    unfolding minimal_solution_def using \<sigma>_least by metis
 next
   assume min: "\<rho> \<Turnstile>\<^sub>m\<^sub>i\<^sub>n dl s"
   have "\<exists>\<rho>'. \<rho>' \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
@@ -1504,14 +1466,14 @@ lemma downward_least_solution:
 proof (rule ccontr)
   assume a: "\<not> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl \<le>\<le>s\<le>\<le> m) s"
   have s_dl_m: "strat_wf s (dl \<le>\<le>s\<le>\<le> m)"
-    using assms strat_wf_lte_if_strat_wf by auto
+    using assms strat_wf_mod_if_strat_wf by auto
   have strat_wf_n: "strat_wf s (dl \<le>\<le>s\<le>\<le> n)"
-    using assms strat_wf_lte_if_strat_wf by auto
+    using assms strat_wf_mod_if_strat_wf by auto
   from a have "\<not> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>m\<^sub>i\<^sub>n (dl \<le>\<le>s\<le>\<le> m) s"
     using least_iff_minimal s_dl_m assms(1) finite_below_finite by metis
   moreover 
   have "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> m)"
-    using assms downward_lte_solves least_solution_def by blast
+    using assms downward_mod_solves least_solution_def by blast
   ultimately
   have "(\<exists>\<sigma>'. \<sigma>' \<Turnstile>\<^sub>d\<^sub>l (dl \<le>\<le>s\<le>\<le> m) \<and> (\<sigma>' \<sqsubset>s\<sqsubset> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m)))"
     unfolding minimal_solution_def by auto
@@ -1521,8 +1483,7 @@ proof (rule ccontr)
                     (\<forall>p'. s p' = s p \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p') \<and>
                     (\<forall>p'. s p' < s p \<longrightarrow> \<rho>' p' = (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p')"
     unfolding lt_def by auto
-  then obtain p where 
-    p_p1: "\<rho>' p \<subset> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p" and
+  then obtain p where p_p1: "\<rho>' p \<subset> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p" and
     p_p2: "\<forall>p'. s p' = s p \<longrightarrow> \<rho>' p' \<subseteq> (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p'" and
     p_p3: "\<forall>p'. s p' < s p \<longrightarrow> \<rho>' p' = (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) p'"
     by auto
@@ -1535,7 +1496,7 @@ proof (rule ccontr)
   moreover
   have "\<forall>p'. s p' = s p \<longrightarrow> \<rho>'' p' \<subseteq> \<rho> p'"
     using p_p2
-    by (metis \<rho>''_def calculation pred_val_lte_stratum.simps top.extremum_strict)
+    by (metis \<rho>''_def calculation pred_val_lte_strata.simps top.extremum_strict)
   moreover
   have "\<forall>p'. s p' < s p \<longrightarrow> \<rho>'' p' = \<rho> p'"
     using \<rho>''_def p_p3 calculation(1) by force
@@ -1587,17 +1548,17 @@ proof (rule ccontr)
               case (PosLit p ids)
               then show ?thesis
                 using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> \<open>c \<in> (dl \<le>\<le>s\<le>\<le> m)\<close> \<open>rh \<in> set rhs\<close> \<rho>''_def assms(3) c_def 
-                  pos_rhs_stratum_leq_clause_stratum by fastforce
+                  pos_rhs_strata_leq_clause_strata by fastforce
             next
               case (NegLit p ids)
               then show ?thesis
                 using \<open>\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho>'' \<sigma>\<close> \<open>c \<in> (dl \<le>\<le>s\<le>\<le> m)\<close> \<open>rh \<in> set rhs\<close> \<rho>''_def c_def 
-                  neg_rhs_stratum_less_clause_stratum s_dl_m by fastforce
+                  neg_rhs_strata_less_clause_strata s_dl_m by fastforce
             qed
           qed
           then have "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>"
             using \<open>\<lbrakk>Cls p ids rhs\<rbrakk>\<^sub>c\<^sub>l\<^sub>s \<rho>' \<sigma>\<close> by force
-          then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>'' \<sigma>"
+          then show  "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho>'' \<sigma>"
             using \<rho>''_def by force
         qed
       next
@@ -1623,20 +1584,20 @@ lemma downward_least_solution_same_stratum:
   assumes "strat_wf s dl"
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl s"
   shows "(\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> m) \<Turnstile>\<^sub>l\<^sub>s\<^sub>t (dl \<le>\<le>s\<le>\<le> m) s"
-proof (cases "m < max_stratum s dl")
+proof (cases "m < max_strata s dl")
   case True
-  have "(dl \<le>\<le>s\<le>\<le> max_stratum s dl) = dl"
-    using assms(1) finite_max_stratum by blast
+  have "(dl \<le>\<le>s\<le>\<le> max_strata s dl) = dl"
+    using assms(1) finite_max_strata by blast
   with True show ?thesis
-    using downward_least_solution[of dl m "max_stratum s dl" s \<rho>]
+    using downward_least_solution[of dl m "max_strata s dl" s \<rho>]
       assms by auto
 next
   case False
-  then have "max_stratum s dl \<le> m"
+  then have "max_strata s dl \<le> m"
     by auto
   moreover
   have "(dl \<le>\<le>s\<le>\<le> m) = dl"
-    using assms(1) calculation finite_above_max_stratum by blast
+    using assms(1) calculation finite_above_max_strata by blast
   then
   show ?thesis
     using assms below_subset downward_least_solution least_solution_def lessI less_imp_le_nat 
@@ -1655,11 +1616,10 @@ fun vars_ids :: "('a, 'b) id list \<Rightarrow> 'a set" where
 fun vars_lh :: "('p,'x,'c) lh \<Rightarrow> 'x set" where
   "vars_lh (p,ids) = vars_ids ids"
 
-definition lh_consequence :: "('p, 'c) pred_val \<Rightarrow> ('p, 'x, 'c) clause \<Rightarrow> ('p, 'x, 'c) lh \<Rightarrow> bool" 
-  where
+definition lh_consequence :: "('p, 'c) pred_val \<Rightarrow> ('p, 'x, 'c) clause \<Rightarrow> ('p, 'x, 'c) lh \<Rightarrow> bool" where
   "lh_consequence \<rho> c lh \<longleftrightarrow> (\<exists>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = lh \<and> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>')"
 
-lemma meaning_rh_iff_meaning_rh_pred_val_lte_stratum:
+lemma meaning_rh_iff_meaning_rh_pred_val_lte_strata:
   assumes "c \<in> (dl \<le>\<le>s\<le>\<le> s p)"
   assumes "strat_wf s dl"
   assumes "rh \<in> set (the_rhs c)"
@@ -1678,11 +1638,11 @@ next
   proof
     assume "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>'"
     then show "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> s p) \<sigma>'"
-      using PosLit assms pos_rhs_stratum_leq_clause_stratum by fastforce
+      using PosLit assms pos_rhs_strata_leq_clause_strata by fastforce
   next
     assume "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> s p) \<sigma>'"
     then show "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>'"
-      by (metis PosLit equals0D meaning_rh.simps(3) pred_val_lte_stratum.simps)
+      by (metis PosLit equals0D meaning_rh.simps(3) pred_val_lte_strata.simps)
   qed
 next
   case (NegLit p' ids)
@@ -1694,15 +1654,15 @@ next
   next
     assume "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> s p) \<sigma>'"
     then show "\<lbrakk>rh\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>'"
-      using NegLit assms(1) assms(2) assms(3) neg_rhs_stratum_less_clause_stratum by fastforce
+      using NegLit assms(1) assms(2) assms(3) neg_rhs_strata_less_clause_strata by fastforce
   qed
 qed
 
-lemma meaning_rhs_iff_meaning_rhs_pred_val_lte_stratum:
+lemma meaning_rhs_iff_meaning_rhs_pred_val_lte_strata:
   assumes "c \<in> (dl \<le>\<le>s\<le>\<le> s p)"
   assumes "strat_wf s dl"
   shows "\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho> \<sigma>' \<longleftrightarrow> \<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s (\<rho> \<le>\<le>\<le>s\<le>\<le>\<le> s p) \<sigma>'"
-  by (meson assms(1) assms(2) meaning_rh_iff_meaning_rh_pred_val_lte_stratum meaning_rhs.simps)
+  by (meson assms(1) assms(2) meaning_rh_iff_meaning_rh_pred_val_lte_strata meaning_rhs.simps)
 
 lemma meaning_rhs_if_meaning_rhs_with_removed_top_strata:
   assumes "\<lbrakk>rhs\<rbrakk>\<^sub>r\<^sub>h\<^sub>s (\<rho>'(p := \<rho>' p - {\<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma>})) \<sigma>'"
@@ -1730,8 +1690,7 @@ proof -
     next
       case (PosLit p'' ids'')
       then show ?thesis
-        by (metis Diff_empty Diff_insert0 \<open>rh \<in> set rhs\<close> assms fun_upd_other fun_upd_same insertCI 
-            insert_Diff meaning_rh.simps(3) meaning_rhs.elims(2))
+        by (metis Diff_empty Diff_insert0 \<open>rh \<in> set rhs\<close> assms fun_upd_other fun_upd_same insertCI insert_Diff meaning_rh.simps(3) meaning_rhs.elims(2))
     next
       case (NegLit p'' ids'')
       have "p'' \<noteq> p"
@@ -1759,13 +1718,12 @@ proof (rule ccontr)
   define dl' where "dl' = (dl \<le>\<le>s\<le>\<le> s p)"
 
   have \<rho>'_least: "\<rho>' \<Turnstile>\<^sub>l\<^sub>s\<^sub>t dl' s"
-    using downward_solves[of \<rho> dl s] assms downward_least_solution_same_stratum 
-    unfolding \<rho>'_def dl'_def by blast
+    using downward_solves[of \<rho> dl s] assms downward_least_solution_same_stratum unfolding \<rho>'_def dl'_def by blast
   moreover
   have no_match: "\<forall>c \<in> dl'. \<forall>\<sigma>'. ((the_lh c) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') = ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>) \<longrightarrow> \<not>(\<lbrakk>the_rhs c\<rbrakk>\<^sub>r\<^sub>h\<^sub>s \<rho>' \<sigma>')"
     using a
     unfolding dl'_def \<rho>'_def
-    by (meson assms(3) below_subset meaning_rhs_iff_meaning_rhs_pred_val_lte_stratum in_mono)
+    by (meson assms(3) below_subset meaning_rhs_iff_meaning_rhs_pred_val_lte_strata in_mono)
 
   define \<rho>'' where "\<rho>'' = \<rho>'(p := \<rho>' p - {\<lbrakk>ids\<rbrakk>\<^sub>i\<^sub>d\<^sub>s \<sigma>})"
     
@@ -1789,8 +1747,7 @@ proof (rule ccontr)
           using meaning_rhs_if_meaning_rhs_with_removed_top_strata[of rhs' \<rho>' p ids \<sigma> \<sigma>']
             \<rho>''_def assms(3) c_dl' c_split dl'_def using \<rho>''_def by force 
         have "\<lbrakk>(p',ids')\<rbrakk>\<^sub>l\<^sub>h \<rho>' \<sigma>'"
-          by (metis rhs'_true c_split c_dl' \<rho>'_least clause.inject least_solution_def 
-              meaning_cls.elims(2) solves_cls_def solves_program_def)
+          by (metis rhs'_true c_split c_dl' \<rho>'_least clause.inject least_solution_def meaning_cls.elims(2) solves_cls_def solves_program_def)
         moreover
         have "((p', ids') \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>') \<noteq> ((p, ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
           using no_match rhs'_true c_split c_dl' by fastforce
@@ -1821,8 +1778,7 @@ proof (rule ccontr)
   qed
   ultimately
   show "False"
-    by (metis assms(1,3) dl'_def finite_below_finite least_iff_minimal minimal_solution_def 
-        strat_wf_lte_if_strat_wf)
+    by (metis assms(1,3) dl'_def finite_below_finite least_iff_minimal minimal_solution_def strat_wf_mod_if_strat_wf)
 qed
 
 lemma meaning_lh_least':
@@ -1846,9 +1802,9 @@ next
   assume "\<exists>c \<in> dl. lh_consequence \<rho> c ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
   then show "\<lbrakk>(p, ids)\<rbrakk>\<^sub>l\<^sub>h \<rho> \<sigma>"
     unfolding lh_consequence_def
-    using assms(2) eval_ids_is_substv_ids least_solution_def meaning_cls.simps meaning_lh.simps 
-      solves_cls_def solves_program_def clause.exhaust clause.sel(3) prod.inject substv_lh.simps 
-      the_lh.simps by metis
+    using assms(2) eval_ids_is_substv_ids least_solution_def meaning_cls.simps meaning_lh.simps solves_cls_def 
+      solves_program_def clause.exhaust clause.sel(3)
+      prod.inject substv_lh.simps the_lh.simps by metis
 qed
 
 lemma meaning_PosLit_least:
@@ -1864,9 +1820,9 @@ next
   assume "\<exists>c \<in> dl. lh_consequence \<rho> c ((p,ids) \<cdot>\<^sub>v\<^sub>l\<^sub>h \<sigma>)"
   then show "\<lbrakk>\<^bold>+ p ids\<rbrakk>\<^sub>r\<^sub>h \<rho> \<sigma>"
     unfolding lh_consequence_def
-    using assms(2) eval_ids_is_substv_ids least_solution_def meaning_cls.simps meaning_lh.simps 
-      solves_cls_def solves_program_def clause.exhaust clause.sel(3) meaning_rh.simps(3) prod.inject 
-      substv_lh.simps the_lh.simps by metis
+    using assms(2) eval_ids_is_substv_ids least_solution_def meaning_cls.simps meaning_lh.simps solves_cls_def 
+      solves_program_def clause.exhaust clause.sel(3) meaning_rh.simps(3) 
+      prod.inject substv_lh.simps the_lh.simps by metis
 qed
 
 lemma meaning_NegLit_least:
