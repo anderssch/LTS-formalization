@@ -1522,15 +1522,7 @@ lemma summarizes_bw_must_forward_backward:
   assumes "fw_must.summarizes_fw_must \<rho>"
   shows "summarizes_bw_must \<rho>"
   unfolding summarizes_bw_must_def
-proof(rule; rule ; rule ;rule ;rule)
-  fix q d \<pi>
-  assume "\<rho> \<Turnstile>\<^sub>l\<^sub>h must\<langle>[q, d]\<rangle>."
-  moreover
-  assume "\<pi> \<in> path_with_word_from_to (the_Node\<^sub>i\<^sub>d q) end"
-  ultimately
-  show "the_Elem\<^sub>i\<^sub>d d \<in> S^\<^sub>P\<lbrakk>\<pi>\<rbrakk> d_init"
-    using assms summarizes_fw_must_forward_backward' by auto
-qed
+  using assms summarizes_fw_must_forward_backward' by auto
 
 theorem sound_ana_pg_bw_must:
   assumes "\<rho> \<Turnstile>\<^sub>l\<^sub>s\<^sub>t ana_pg_bw_must s_BV"
