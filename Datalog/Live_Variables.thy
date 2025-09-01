@@ -202,12 +202,12 @@ next
   qed
 qed
 
-lemma use_edge_list_UNIV_S_hat_edge_list: 
+lemma use_edge_list_set_S_hat_edge_list: 
   "{x. use_edge_list \<pi> x} = bw_may.S_hat_edge_list \<pi> d_init_LV"
   using use_edge_list_S_hat_edge_list S_hat_edge_list_use_edge_list by auto
 
 lemma use_path_S_hat_path: "use_path \<pi> = bw_may.S_hat_path \<pi> d_init_LV"
-  by (simp add: use_edge_list_UNIV_S_hat_edge_list bw_may.S_hat_path_def use_path_def)
+  by (simp add: use_edge_list_set_S_hat_edge_list bw_may.S_hat_path_def use_path_def)
 
 definition summarizes_LV :: "(pred, ('n,'v action,'v) cst) pred_val \<Rightarrow> bool" where
   "summarizes_LV \<rho> \<longleftrightarrow> (\<forall>\<pi> d. \<pi> \<in> path_with_word_to end \<longrightarrow> d \<in> use_path \<pi> \<longrightarrow> 

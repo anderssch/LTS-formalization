@@ -83,7 +83,7 @@ proof -
   qed
 qed
 
-lemma vbexp_edge_list_append_singleton:
+lemma vbexp_edge_list_Cons:
   assumes "vbexp_edge_list (e # \<pi>) a"
   shows "vbexp_edge_list \<pi> a \<or> a \<in> aexp_edge e"
 proof -
@@ -189,7 +189,7 @@ next
 
   have "vbexp_edge_list \<pi> a \<or> a \<in> aexp_edge e"
     using Cons(2)
-    by (simp add: vbexp_edge_list_append_singleton)
+    by (simp add: vbexp_edge_list_Cons)
   then show ?case
   proof
     assume "vbexp_edge_list \<pi> a"

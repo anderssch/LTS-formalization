@@ -128,8 +128,9 @@ proof -
       by auto
   next
     assume "e \<in> set \<pi>2"
-    have "\<pi> = \<pi>1 @ [e'] @ (butlast \<pi>2)"
-      by (metis \<open>e \<in> set \<pi>2\<close> \<pi>1_\<pi>2_e'_p(1) append_is_Nil_conv butlast_append butlast_snoc in_set_conv_decomp_first)
+    then have "\<pi> = \<pi>1 @ [e'] @ (butlast \<pi>2)"
+      by (metis \<pi>1_\<pi>2_e'_p(1) append_is_Nil_conv butlast_append butlast_snoc 
+          in_set_conv_decomp_first)
     moreover
     have "a \<in> aexp_edge e'"
       by (simp add: \<pi>1_\<pi>2_e'_p(2))
